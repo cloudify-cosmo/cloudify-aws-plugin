@@ -24,7 +24,6 @@ from cloudify.decorators import operation
 @operation
 def run(**kwargs):
     ctx.instance.runtime_properties['ami_image_id'] = 'a'
-    return ctx.instance.runtime_properties['ami_image_id']
 
 def start(**kwargs):
     return True
