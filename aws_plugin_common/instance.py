@@ -14,13 +14,26 @@
 #    * limitations under the License.
 
 # ctx is imported and used in operations
+
 from cloudify import ctx
 
 # put the operation decorator on any function that is a task
 from cloudify.decorators import operation
 
-def run(ami_image_id, instance_type, **kwargs):
-    return _run(ami_image_id, instance_type)
 
-def _run(ami_image_id, instance_type):
-    return ami_image_id
+@operation
+def run(**kwargs):
+    ctx.instance.runtime_properties['ami_image_id'] = 'a'
+    return ctx.instance.runtime_properties['ami_image_id']
+
+def start(**kwargs):
+    return True
+
+def stop(**kwargs):
+    return True
+
+def terminate(**kwargs):
+    return True
+
+def creation_validation(**kwargs):
+    return True

@@ -29,27 +29,26 @@ class TestPlugin(unittest.TestCase):
 
         # inject input from test
         inputs = {
-            'test_input_a': 'new_test_input',
-            'test_input_b': 'newer_test_input'
+            'test_input_a': 'a',
+            'test_input_b': 'b'
         }
 
         # setup local workflow execution environment
         self.env = local.init_env(blueprint_path,
-                                  name=self._run,
+                                  name=self.test_run,
                                   inputs=inputs)
 
-    def test_my_task(self):
+    def test_run(self):
 
         # execute install workflow
-        self.env.execute('run', task_retries=0)
+        self.env.execute('install', task_retries=0)
 
         # extract single node instance
         instance = self.env.storage.get_node_instances()[0]
 
-        # assert runtime properties is properly set in node instance
         self.assertEqual(instance.runtime_properties['ami_image_id'],
-                         'new_test_input')
+                         'a')
 
         # assert deployment outputs are ok
         self.assertDictEqual(self.env.outputs(),
-                             {'test_output': 'new_test_input'})
+                             {'test_output': 'a' })

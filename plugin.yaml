@@ -3,18 +3,19 @@
 ##################################################################################
 
 plugins:
-  openstack:
+  cloudify-aws-plugin:
     executor: central_deployment_agent
-    source: https://github.com/earthmant/cloudify-boto-plugin/archive/master.zip
+    source: https://github.com/earthmant/cloudify-aws-plugin/archive/master.zip
+    install: false
 
 node_types:
-  cloudify.aws-cloudify-plugin.aws_plugin_commons.Instance:
+  cloudify.aws.nodes.Instance:
     derived_from: cloudify.nodes.Compute
     properties:
       server:
         default: {}
-      ami_image_id:
-      instance_type:
+      ami_image_id: {}
+      instance_type: {}
       use_external_resource:
         default: false
       resource_id:
@@ -22,18 +23,18 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
-          implementation: aws-cloudify-plugin.aws_plugin_commons.Instance.run
+          implementation: cloudify-aws-plugin.aws_plugin_common.instance.run
           inputs: {}
         start:
-          implementation: aws-cloudify-plugin.aws_plugin_commons.Instance.start
+          implementation: cloudify-aws-plugin.aws_plugin_common.instance.start
           inputs: {}
         stop:
-          implementation: aws-cloudify-plugin.aws_plugin_commons.Instance.stop
+          implementation: cloudify-aws-plugin.aws_plugin_common.instance.stop
           inputs: {}
         delete:
-          implementation: aws-cloudify-plugin.aws_plugin_commons.Instance.terminate
+          implementation: cloudify-aws-plugin.aws_plugin_common.instance.terminate
           inputs: {}
       cloudify.interfaces.validation:
         creation:
-          implementation: aws-cloudify-plugin.aws_plugin_commons.Instance.creation_validation
+          implementation: cloudify-aws-plugin.aws_plugin_common.instance.creation_validation
           inputs: {}
