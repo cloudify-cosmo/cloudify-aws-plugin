@@ -1,0 +1,32 @@
+# DSL version, should appear in the main blueprint.yaml
+# and may appear in other imports. In such case, the versions must match
+tosca_definitions_version: cloudify_dsl_1_0
+
+imports:
+    - http://www.getcloudify.org/spec/cloudify/3.2m1/types.yaml
+    - test_plugin.yaml
+
+inputs:
+    test_input_a:
+        description: an input for the test
+        default: default_test_input_a
+
+    test_input_b:
+        description: an input for the test
+        default: default_test_input_b
+
+node_templates:
+    test_node_template:
+        type: cloudify.aws.ec2.nodes.Instance
+        interfaces:
+            cloudify.interfaces.lifecycle:
+                start:
+                    implementation: cloudify-aws-plugin.aws_plugin_common.instance.run
+                    inputs:
+                        ami_image_id: { get_input: test_input_a }
+                        instance_type: { get_input: test_input_b}
+
+outputs:
+    test_output:
+        description: an output for the test
+        value: { get_attribute: [test_node_template, ami_image_id] }

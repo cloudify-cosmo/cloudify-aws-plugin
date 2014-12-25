@@ -1,0 +1,39 @@
+##################################################################################
+# Cloudify AWS EC2 built in types and plugins definitions.
+##################################################################################
+
+plugins:
+  openstack:
+    executor: central_deployment_agent
+    source: https://github.com/earthmant/cloudify-boto-plugin/archive/master.zip
+
+node_types:
+  cloudify.aws-cloudify-plugin.aws_plugin_commons.Instance:
+    derived_from: cloudify.nodes.Compute
+    properties:
+      server:
+        default: {}
+      ami_image_id:
+      instance_type:
+      use_external_resource:
+        default: false
+      resource_id:
+        default: ''
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws-cloudify-plugin.aws_plugin_commons.Instance.run
+          inputs: {}
+        start:
+          implementation: aws-cloudify-plugin.aws_plugin_commons.Instance.start
+          inputs: {}
+        stop:
+          implementation: aws-cloudify-plugin.aws_plugin_commons.Instance.stop
+          inputs: {}
+        delete:
+          implementation: aws-cloudify-plugin.aws_plugin_commons.Instance.terminate
+          inputs: {}
+      cloudify.interfaces.validation:
+        creation:
+          implementation: aws-cloudify-plugin.aws_plugin_commons.Instance.creation_validation
+          inputs: {}

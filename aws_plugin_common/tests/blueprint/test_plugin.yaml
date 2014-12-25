@@ -1,0 +1,4 @@
+plugins:
+    aws_plugin_common:
+        executor: central_deployment_agent
+        install: false
