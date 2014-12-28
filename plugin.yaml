@@ -5,7 +5,7 @@
 plugins:
   cloudify-aws-plugin:
     executor: central_deployment_agent
-    source: https://github.com/earthmant/cloudify-aws-plugin/archive/master.zip
+    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/master.zip
     install: false
 
 node_types:
@@ -23,18 +23,18 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
-          implementation: cloudify-aws-plugin.aws_plugin_common.instance.run
+          implementation: cloudify-aws-plugin.ec2.instance.run
           inputs: {}
         start:
-          implementation: cloudify-aws-plugin.aws_plugin_common.instance.start
+          implementation: cloudify-aws-plugin.ec2.instance.start
           inputs: {}
         stop:
-          implementation: cloudify-aws-plugin.aws_plugin_common.instance.stop
+          implementation: cloudify-aws-plugin.ec2.instance.stop
           inputs: {}
         delete:
-          implementation: cloudify-aws-plugin.aws_plugin_common.instance.terminate
+          implementation: cloudify-aws-plugin.ec2.instance.terminate
           inputs: {}
       cloudify.interfaces.validation:
         creation:
-          implementation: cloudify-aws-plugin.aws_plugin_common.instance.creation_validation
+          implementation: cloudify-aws-plugin.ec2.instance.creation_validation
           inputs: {}
