@@ -29,13 +29,13 @@ class TestPlugin(unittest.TestCase):
 
         # inject input from test
         inputs = {
-            'test_input_a': 'a',
-            'test_input_b': 'b'
+            'test_ami_image_id': 'ami-e214778a',
+            'test_instance_type': 't1.micro'
         }
 
         # setup local workflow execution environment
         self.env = local.init_env(blueprint_path,
-                                  name=self.test_run,
+                                  name=self._testMethodName,
                                   inputs=inputs)
 
     def test_run(self):
@@ -46,8 +46,8 @@ class TestPlugin(unittest.TestCase):
         # extract single node instance
         instance = self.env.storage.get_node_instances()[0]
 
-        self.assertEqual(instance.runtime_properties['ami_image_id'],
-                         'a')
+        self.assertEqual(instance.runtime_properties['ami_image_id'], test_ami_image_id)
+        self.assertEqual(instance.runtime_properties['instance_type'], test_instance_type)
 
         # assert deployment outputs are ok
         self.assertDictEqual(self.env.outputs(),

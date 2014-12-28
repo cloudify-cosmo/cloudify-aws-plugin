@@ -20,19 +20,41 @@ from cloudify import ctx
 # put the operation decorator on any function that is a task
 from cloudify.decorators import operation
 
+# boto imports
+from boto.ec2 import EC2Connection
+
+REGION = 'us-east-1'
+
 
 @operation
-def run(**kwargs):
-    ctx.instance.runtime_properties['ami_image_id'] = 'a'
+def run(ami_image_id,
+        instance_type):
+    """
+    :param ami_image_id: the id of the ami image.
+    :param instance_type: the instance type (
+    :return: reservation
+    """
 
-def start(**kwargs):
+    reservation = EC2Connection().run_instances(image_id=ami_image_id, instance_type=instance_type)
+
+    ctx.runtime_properties['ami_image_id'] = ami_image_id
+    ctx.runtime_properties['instance_type'] = instance_type
+    ctx.runtime_properties['reservation'] = reservation
+
+    return reservation
+
+
+def start():
     return True
 
-def stop(**kwargs):
+
+def stop():
     return True
 
-def terminate(**kwargs):
+
+def terminate():
     return True
 
-def creation_validation(**kwargs):
+
+def creation_validation():
     return True

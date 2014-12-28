@@ -1,4 +1,4 @@
 plugins:
-    aws_plugin_common:
+    ec2:
         executor: central_deployment_agent
         install: false
