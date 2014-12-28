@@ -31,8 +31,7 @@ node_templates:
               ami_image_id: { get_input: test_ami_image_id }
               instance_type: { get_input: test_instance_type }
 
-
 outputs:
-  test_output:
-    description: an output for the test
-    value: { get_attribute: [test_node_template, ami_image_id] }
+  reservation:
+    description: Output from run
+    value: { get_attribute: [ test_node_template, ami_image_id ] }
