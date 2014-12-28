@@ -8,13 +8,13 @@ imports:
 
 inputs:
 
-  test_input_a:
+  test_ami_image_id:
     description: an input for the test
-    default: a
+    default: ''
 
-  test_input_b:
+  test_instance_type:
     description: an input for the test
-    default: b
+    default: ''
 
 node_templates:
     test_node_template:
@@ -26,10 +26,10 @@ node_templates:
       interfaces:
         cloudify.interfaces.lifecycle:
           start:
-            implementation: cloudify-aws-plugin.aws_plugin_common.instance.run
+            implementation: cloudify-aws-plugin.ec2.instance.run
             inputs:
-              ami_image_id: { get_input: test_input_a }
-              instance_type: { get_input: test_input_b }
+              ami_image_id: { get_input: test_ami_image_id }
+              instance_type: { get_input: test_instance_type }
 
 
 outputs:
