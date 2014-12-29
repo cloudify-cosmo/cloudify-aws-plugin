@@ -47,7 +47,7 @@ def run(**kwargs):
 
     try:
         reservation = EC2().run_instances(image_id=ami_image_id, instance_type=instance_type)
-        ctx.node.runtime_properties['reservation'] = reservation
+        ctx.instance.runtime_properties['reservation'] = reservation
         return True
     except EC2ResponseError as e:
         raise NonRecoverableError(e.body)
@@ -75,15 +75,15 @@ def set_instance_state(instance):
     """
 
     state = EC2().get_all_instance_status(instance_ids=instance.id)[0]
-    ctx.node.runtime_properties['{0}_state_name'.format(instance.id)] = state.state_name
-    ctx.node.runtime_properties['{0}_state_code'.format(instance.id)] = state.state_code
+    ctx.instance.runtime_properties['{0}_state_name'.format(instance.id)] = state.state_name
+    ctx.instance.runtime_properties['{0}_state_code'.format(instance.id)] = state.state_code
 
 
 def set_instance_states():
     """ The above method for many instances.
     :return:
     """
-    reservation = ctx.node.runtime_properties['reservation']
+    reservation = ctx.instance.runtime_properties['reservation']
     for instance in reservation.instances:
         set_instance_state(instance)
 
@@ -94,7 +94,7 @@ def state_equals_state(instance, state):
     :param state: a state from EC2 Instance States
     :return: True if the states are equal, otherwise False.
     """
-    instance_state = ctx.node.runtime_properties['{0}_state_code'.format(instance.id)]
+    instance_state = ctx.instance.runtime_properties['{0}_state_code'.format(instance.id)]
 
     if instance_state == state:
         return True
@@ -127,6 +127,6 @@ def poll_for_states(state=INSTANCE_RUNNING, timeout=30):
     :param timeout: How long you want to try for (in secs).
     :return:
     """
-    reservation = ctx.node.runtime_properties['reservation']
+    reservation = ctx.instance.runtime_properties['reservation']
     for instance in reservation.instances:
         poll_for_state(instance, state, timeout)
