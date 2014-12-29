@@ -14,6 +14,7 @@
 #    * limitations under the License.
 
 # ctx is imported and used in operations
+from cloudify import ctx
 
 # put the operation decorator on any function that is a task
 from cloudify.decorators import operation
@@ -23,18 +24,15 @@ from boto.ec2 import EC2Connection
 
 
 @operation
-def run(ami_image_id,
-        instance_type,
-        **kwargs):
+def run(**kwargs):
     """
-    :param ami_image_id: the id of the ami image.
-    :param instance_type: the instance type
     :return: reservation object
     """
 
-    reservation = EC2Connection().run_instances(
-        image_id=ami_image_id,
-        instance_type=instance_type)
+    ami_image_id = ctx.node.properties['ami_image_id']
+    instance_type = ctx.node.propertes['instance_type']
+
+    reservation = EC2Connection().run_instances(image_id=ami_image_id, instance_type=instance_type)
 
     return reservation
 
