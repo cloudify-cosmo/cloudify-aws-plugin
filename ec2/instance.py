@@ -15,13 +15,17 @@
 
 # ctx is imported and used in operations
 from cloudify import ctx
+from cloudify.exceptions import NonRecoverableError
 
 # put the operation decorator on any function that is a task
 from cloudify.decorators import operation
 
 # boto imports
 from boto.ec2 import EC2Connection
+from boto.exception import EC2ResponseError
 
+# working with xml
+import xml.etree.ElementTree as ET
 
 @operation
 def run(**kwargs):
@@ -32,7 +36,10 @@ def run(**kwargs):
     ami_image_id = ctx.node.properties['ami_image_id']
     instance_type = ctx.node.propertes['instance_type']
 
-    reservation = EC2Connection().run_instances(image_id=ami_image_id, instance_type=instance_type)
+    try:
+        reservation = EC2Connection().run_instances(image_id=ami_image_id, instance_type=instance_type)
+    except EC2ResponseError as e:
+        raise NonRecoverableError(e.body)
 
     return reservation
 
@@ -51,3 +58,6 @@ def terminate():
 
 def creation_validation():
     return True
+
+def xml_message(xml):
+    xml_string = ET.fromstring(xml)
