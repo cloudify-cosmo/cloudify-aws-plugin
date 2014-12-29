@@ -68,6 +68,7 @@ def terminate():
 def creation_validation():
     return True
 
+
 def set_instance_state(instance):
     """
     :param instance: an instance in reservation.instances
@@ -77,15 +78,6 @@ def set_instance_state(instance):
     state = EC2().get_all_instance_status(instance_ids=instance.id)[0]
     ctx.instance.runtime_properties['{0}_state_name'.format(instance.id)] = state.state_name
     ctx.instance.runtime_properties['{0}_state_code'.format(instance.id)] = state.state_code
-
-
-def set_instance_states():
-    """ The above method for many instances.
-    :return:
-    """
-    reservation = ctx.instance.runtime_properties['reservation']
-    for instance in reservation.instances:
-        set_instance_state(instance)
 
 
 def state_equals_state(instance, state):
@@ -98,38 +90,21 @@ def state_equals_state(instance, state):
 
     return True if state == int(instance_state) else False
 
+
 def poll_for_state(instance, state=INSTANCE_RUNNING):
     """
     :param instance: an instance in reservation.instances
     :param state: a state from the EC2 Instance States
-    :param timeout: How long you want to try for (in secs).
     :return:
     """
 
-    outcome = False
-
-    now = time.time()
-
-    timeout = now + (15*60)
+    timeout = time.time() + 15 * 60
 
     while True:
         set_instance_state(instance)
         if state_equals_state(instance, state):
             return True
-            break
         elif time.time() > timeout:
             return False
-            break
         else:
             time.sleep(15)
-
-
-def poll_for_states(state=INSTANCE_RUNNING, timeout=30):
-    """ The above method for many instances.
-    :param state: a state from the EC2 Instance States
-    :param timeout: How long you want to try for (in secs).
-    :return:
-    """
-    reservation = ctx.instance.runtime_properties['reservation']
-    for instance in reservation.instances:
-        poll_for_state(instance, state, timeout)
