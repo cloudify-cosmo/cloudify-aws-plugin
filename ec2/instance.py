@@ -111,6 +111,8 @@ def poll_for_state(instance, state=INSTANCE_RUNNING, timeout=30):
 
     outcome = False
 
+    timeout = time.time() + timeout
+
     while True:
         set_instance_state(instance)
         if state_equals_state(instance, state):
