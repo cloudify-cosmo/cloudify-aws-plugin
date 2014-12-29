@@ -22,8 +22,8 @@ setup(
 
     # Do not use underscores in the plugin name.
     name='cloudify-aws-plugin',
-    author='idanmo',
-    author_email='idan@gigaspaces.com',
+    author='Gigaspaces',
+    author_email='cosmo-admin@gigaspaces.com',
 
     version='0.1',
     description='Cloudify plugin for AWS infrastructure.',
