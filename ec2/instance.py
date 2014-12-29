@@ -96,12 +96,9 @@ def state_equals_state(instance, state):
     """
     instance_state = ctx.instance.runtime_properties['{0}_state_code'.format(instance.id)]
 
-    if instance_state == state:
-        return True
-    else:
-        return False
+    return True if state == instance_state else False
 
-def poll_for_state(instance, state=INSTANCE_RUNNING, timeout=30):
+def poll_for_state(instance, state=INSTANCE_RUNNING, timeout=30, sleep_for=5):
     """
     :param instance: an instance in reservation.instances
     :param state: a state from the EC2 Instance States
@@ -120,6 +117,8 @@ def poll_for_state(instance, state=INSTANCE_RUNNING, timeout=30):
             break
         elif time.time() > timeout:
             break
+        else:
+            time.sleep(sleep_for)
 
     return outcome
 
