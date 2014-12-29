@@ -22,16 +22,18 @@ setup(
 
     # Do not use underscores in the plugin name.
     name='cloudify-aws-plugin',
+    author='idanmo',
+    author_email='idan@gigaspaces.com',
 
     version='0.1',
     description='Cloudify plugin for AWS infrastructure.',
 
     # This must correspond to the actual packages in the plugin.
-    packages=['aws_plugin_common'],
+    packages=['ec2'],
 
     license='LICENSE',
     install_requires=[
         'cloudify-plugins-common==3.2a1',
-        'boto', 'cloudify'
+        'boto=2.34.0'
     ]
 )
