@@ -24,8 +24,6 @@ from cloudify.decorators import operation
 from boto.ec2 import EC2Connection
 from boto.exception import EC2ResponseError
 
-# working with xml
-import xml.etree.ElementTree as ET
 
 @operation
 def run(**kwargs):
@@ -58,6 +56,3 @@ def terminate():
 
 def creation_validation():
     return True
-
-def xml_message(xml):
-    xml_string = ET.fromstring(xml)
