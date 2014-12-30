@@ -37,7 +37,8 @@ class TestPlugin(unittest.TestCase):
         test_node_id = '{0}'.format(test_name)
         test_properties = {
             'image_id': TEST_AMI_IMAGE_ID,
-            'instance_type': TEST_INSTANCE_TYPE
+            'instance_type': TEST_INSTANCE_TYPE,
+            'attributes': dict()
         }
 
         ctx = MockCloudifyContext(
