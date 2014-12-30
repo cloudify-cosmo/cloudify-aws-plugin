@@ -63,7 +63,7 @@ def create(**kwargs):
 
 
 @operation
-def start():
+def start(**kwargs):
 
     instance_id = ctx.instance.runtime_properties['instance_id']
 
@@ -103,7 +103,7 @@ def stop(**kwargs):
 
 
 @operation
-def terminate():
+def terminate(**kwargs):
 
     instance_id = ctx.instance.runtime_properties['instance_id']
 
