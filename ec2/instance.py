@@ -13,19 +13,17 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
-# general imports
+# built-in package
 import time
 
-# ctx is imported and used in operations
-from cloudify import ctx
-from cloudify.exceptions import NonRecoverableError
-
-# put the operation decorator on any function that is a task
-from cloudify.decorators import operation
-
-# boto imports
+# other packages
 from boto.ec2 import EC2Connection as EC2
 from boto.exception import EC2ResponseError
+
+# ctx packages
+from cloudify import ctx
+from cloudify.exceptions import NonRecoverableError, RecoverableError
+from cloudify.decorators import operation
 
 # EC2 Instance States
 INSTANCE_PENDING = 0
@@ -36,7 +34,9 @@ INSTANCE_STOPPING = 64
 INSTANCE_STOPPED = 80
 
 CREATION_TIMEOUT = 15 * 60
-
+START_TIMEOUT = 15 * 30
+STOP_TIMEOUT = 3 * 60
+TERMINATION_TIMEOUT = 3 * 60
 
 @operation
 def create(**kwargs):
@@ -49,29 +49,76 @@ def create(**kwargs):
 
     try:
         reservation = EC2().run_instances(image_id=ami_image_id, instance_type=instance_type)
-    except EC2ResponseError as e:
-        raise NonRecoverableError(e.body)
+    except EC2ResponseError:
+        raise NonRecoverableError(EC2ResponseError.body)
 
-    if state_validation(reservation.instances[0].id, INSTANCE_RUNNING, CREATION_TIMEOUT):
+    instance_id = reservation.instances[0].id
+
+    if _state_validation(instance_id, INSTANCE_RUNNING, CREATION_TIMEOUT):
+        ctx.instance.runtime_properties['instance_id'] = instance_id
+    else:
+        raise NonRecoverableError('Instance did not create within specified timeout: {0}.'
+                                  .format(CREATION_TIMEOUT))
+
+
+@operation
+def start():
+
+    instance_id = ctx.instance.runtime_properties['instance_id']
+
+    try:
+        EC2().start_instances(instance_id)
+    except EC2ResponseError:
+        raise NonRecoverableError(EC2ResponseError.body)
+
+    if _state_validation(instance_id, INSTANCE_RUNNING, START_TIMEOUT):
+        pass
+    elif _state_validation(instance_id, INSTANCE_RUNNING, 15):
+        raise RecoverableError('Instance still starting, but didn\'t stop within specified timeout: {0}.'
+                               .format(START_TIMEOUT))
+    else:
+        raise RecoverableError('Instance not started.'
+                               .format(START_TIMEOUT))
+
+
+@operation
+def stop(**kwargs):
+
+    instance_id = ctx.instance.runtime_properties['instance_id']
+
+    try:
+        EC2().stop_instances(instance_id)
+    except EC2ResponseError:
+        raise NonRecoverableError(EC2ResponseError.body)
+
+    if _state_validation(instance_id, INSTANCE_STOPPED, STOP_TIMEOUT):
+        pass
+    elif _state_validation(instance_id, INSTANCE_STOPPING, 15):
+        raise RecoverableError('Instance still shutting down, but didn\'t stop within specified timeout: {0}.'
+                               .format(STOP_TIMEOUT))
+    else:
+        raise RecoverableError('Instance not stopped.'
+                               .format(STOP_TIMEOUT))
+
+
+@operation
+def terminate():
+
+    instance_id = ctx.instance.runtime_properties['instance_id']
+
+    try:
+        EC2().terminate_instances(instance_id)
+    except EC2ResponseError:
+        raise NonRecoverableError(EC2ResponseError.body)
+
+    if _state_validation(instance_id, INSTANCE_TERMINATED, TERMINATION_TIMEOUT):
         pass
     else:
-        raise NonRecoverableError('Instance id {0} did not create within specified timeout: {1}.'
-                                  .format(reservation.instances[0].id, CREATION_TIMEOUT))
+        raise RecoverableError('Instance did not terminate within specified timeout: {0}.'
+                               .format(TERMINATION_TIMEOUT))
 
 
-def start():
-    pass
-
-
-def stop():
-    pass
-
-
-def terminate():
-    pass
-
-
-def state_validation(instance_id, state, timeout_len):
+def _state_validation(instance_id, state, timeout_len):
 
     timeout = time.time() + timeout_len
 
@@ -83,3 +130,15 @@ def state_validation(instance_id, state, timeout_len):
             return False
         else:
             time.sleep(15)
+
+
+@operation
+def creation_validation(**kwargs):
+    instance_id = ctx.instance.runtime_properties['instance_id']
+    state = INSTANCE_RUNNING
+    timeout_len = CREATION_TIMEOUT
+
+    if _state_validation(instance_id, state, timeout_len):
+        pass
+    else:
+        raise NonRecoverableError('Instance not running.')
