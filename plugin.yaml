@@ -11,7 +11,7 @@ node_types:
   cloudify.aws.nodes.Instance:
     derived_from: cloudify.nodes.Compute
     properties:
-      server:
+      instance:
         default: {}
       ami_image_id: {}
       instance_type: {}
