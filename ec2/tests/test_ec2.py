@@ -36,7 +36,7 @@ class TestPlugin(unittest.TestCase):
         test_name = 'test_instance_create'
         test_node_id = '{0}'.format(test_name)
         test_properties = {
-            'ami_image_id': TEST_AMI_IMAGE_ID,
+            'image_id': TEST_AMI_IMAGE_ID,
             'instance_type': TEST_INSTANCE_TYPE
         }
 
@@ -54,7 +54,7 @@ class TestPlugin(unittest.TestCase):
         test_name = 'test_instance_stop'
         test_node_id = '{0}'.format(test_name)
         test_properties = {
-            'ami_image_id': TEST_AMI_IMAGE_ID,
+            'image_id': TEST_AMI_IMAGE_ID,
             'instance_type': TEST_INSTANCE_TYPE
         }
 
@@ -72,7 +72,7 @@ class TestPlugin(unittest.TestCase):
         test_name = 'test_instance_start'
         test_node_id = '{0}'.format(test_name)
         test_properties = {
-            'ami_image_id': TEST_AMI_IMAGE_ID,
+            'image_id': TEST_AMI_IMAGE_ID,
             'instance_type': TEST_INSTANCE_TYPE
         }
 
@@ -91,7 +91,7 @@ class TestPlugin(unittest.TestCase):
         test_name = 'test_instance_terminate'
         test_node_id = '{0}'.format(test_name)
         test_properties = {
-            'ami_image_id': TEST_AMI_IMAGE_ID,
+            'image_id': TEST_AMI_IMAGE_ID,
             'instance_type': TEST_INSTANCE_TYPE
         }
 
