@@ -33,7 +33,7 @@ class TestPlugin(unittest.TestCase):
 
     def test_instance_create(self):
 
-        test_name = 'test_instance_run'
+        test_name = 'test_instance_create'
         test_node_id = '{0}'.format(test_name)
         test_properties = {
             'ami_image_id': TEST_AMI_IMAGE_ID,
