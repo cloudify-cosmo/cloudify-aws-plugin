@@ -19,6 +19,7 @@ import time
 # other packages
 from boto.ec2 import EC2Connection as EC2
 from boto.exception import EC2ResponseError
+from inspect import getargspec
 
 # ctx packages
 from cloudify import ctx
@@ -39,17 +40,25 @@ START_TIMEOUT = 15 * 30
 STOP_TIMEOUT = 3 * 60
 TERMINATION_TIMEOUT = 3 * 60
 
+# EC2 Method Arguments
+RUN_INSTANCES_ALL_ARGS = getargspec(EC2().run_instances).args[1:]
+RUN_INSTANCES_UNSUPPORTED_ARGS = {
+    'min_count': 1,
+    'max_count': 1
+}
+
 @operation
 def create(**kwargs):
     """
     :return: reservation object
     """
 
-    ami_image_id = ctx.node.properties['ami_image_id']
-    instance_type = ctx.node.properties['instance_type']
+    attributes = ctx.node.properties['attributes']
+    attributes['image_id'] = ctx.node.properties['image_id']
+    attributes['instance_type'] = ctx.node.properties['instance_type']
 
     try:
-        reservation = EC2().run_instances(image_id=ami_image_id, instance_type=instance_type)
+        reservation = EC2().run_instances(image_id=attributes['image_id'], instance_type=attributes['instance_type'])
     except EC2ResponseError:
         raise NonRecoverableError(EC2ResponseError.body)
 
