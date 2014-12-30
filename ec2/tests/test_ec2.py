@@ -46,4 +46,5 @@ class TestPlugin(unittest.TestCase):
                 node_id=test_node_id,
                 properties=test_properties
             )
-            self.assertTrue(instance.create(ctx=ctx))
+
+            instance.create(ctx=ctx)
