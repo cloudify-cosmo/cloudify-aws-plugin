@@ -53,7 +53,7 @@ def create(**kwargs):
     :return: reservation object
     """
 
-    attributes = ctx.node.properties['attributes']
+    attributes = dict()
     attributes['image_id'] = ctx.node.properties['image_id']
     attributes['instance_type'] = ctx.node.properties['instance_type']
 
