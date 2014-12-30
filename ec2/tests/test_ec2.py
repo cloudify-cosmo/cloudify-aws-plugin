@@ -40,11 +40,67 @@ class TestPlugin(unittest.TestCase):
             'instance_type': TEST_INSTANCE_TYPE
         }
 
+        ctx = MockCloudifyContext(
+            node_id=test_node_id,
+            properties=test_properties
+        )
+
         with mock_ec2():
 
-            ctx = MockCloudifyContext(
-                node_id=test_node_id,
-                properties=test_properties
-            )
-
             instance.create(ctx=ctx)
+
+    def test_instance_stop(self):
+
+        test_name = 'test_instance_stop'
+        test_node_id = '{0}'.format(test_name)
+        test_properties = {
+            'ami_image_id': TEST_AMI_IMAGE_ID,
+            'instance_type': TEST_INSTANCE_TYPE
+        }
+
+        ctx = MockCloudifyContext(
+            node_id=test_node_id,
+            properties=test_properties
+        )
+
+        with mock_ec2():
+            instance.create(ctx=ctx)
+            instance.stop(ctx=ctx)
+
+    def test_instance_start(self):
+
+        test_name = 'test_instance_start'
+        test_node_id = '{0}'.format(test_name)
+        test_properties = {
+            'ami_image_id': TEST_AMI_IMAGE_ID,
+            'instance_type': TEST_INSTANCE_TYPE
+        }
+
+        ctx = MockCloudifyContext(
+            node_id=test_node_id,
+            properties=test_properties
+        )
+
+        with mock_ec2():
+            instance.create(ctx=ctx)
+            instance.stop(ctx=ctx)
+            instance.start(ctx=ctx)
+
+    def test_instance_terminate(self):
+
+        test_name = 'test_instance_terminate'
+        test_node_id = '{0}'.format(test_name)
+        test_properties = {
+            'ami_image_id': TEST_AMI_IMAGE_ID,
+            'instance_type': TEST_INSTANCE_TYPE
+        }
+
+        ctx = MockCloudifyContext(
+            node_id=test_node_id,
+            properties=test_properties
+        )
+
+        with mock_ec2():
+            instance.create(ctx=ctx)
+            instance.stop(ctx=ctx)
+            instance.terminate(ctx=ctx)
