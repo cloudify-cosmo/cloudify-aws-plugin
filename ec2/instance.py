@@ -35,6 +35,8 @@ INSTANCE_TERMINATED = 48
 INSTANCE_STOPPING = 64
 INSTANCE_STOPPED = 80
 
+CREATION_TIMEOUT = 15 * 60
+
 
 @operation
 def create(**kwargs):
@@ -47,62 +49,35 @@ def create(**kwargs):
 
     try:
         reservation = EC2().run_instances(image_id=ami_image_id, instance_type=instance_type)
-        ctx.instance.runtime_properties['reservation'] = reservation
-        return poll_for_state(reservation.instances[0], INSTANCE_RUNNING)
     except EC2ResponseError as e:
         raise NonRecoverableError(e.body)
 
+    if state_validation(reservation.instances[0].id, INSTANCE_RUNNING, CREATION_TIMEOUT):
+        pass
+    else:
+        raise NonRecoverableError('Instance id {0} did not create within specified timeout: {1}.'
+                                  .format(reservation.instances[0].id, CREATION_TIMEOUT))
+
 
 def start():
-    return True
+    pass
 
 
 def stop():
-    return True
+    pass
 
 
 def terminate():
-    return True
+    pass
 
 
-def creation_validation():
-    return True
+def state_validation(instance_id, state, timeout_len):
 
-
-def set_instance_state(instance):
-    """
-    :param instance: an instance in reservation.instances
-    :return:
-    """
-
-    state = EC2().get_all_instance_status(instance_ids=instance.id)[0]
-    ctx.instance.runtime_properties['{0}_state_name'.format(instance.id)] = state.state_name
-    ctx.instance.runtime_properties['{0}_state_code'.format(instance.id)] = state.state_code
-
-
-def state_equals_state(instance, state):
-    """
-    :param instance: an instance in reservation.instances
-    :param state: a state from EC2 Instance States
-    :return: True if the states are equal, otherwise False.
-    """
-    instance_state = ctx.instance.runtime_properties['{0}_state_code'.format(instance.id)]
-
-    return True if state == int(instance_state) else False
-
-
-def poll_for_state(instance, state=INSTANCE_RUNNING):
-    """
-    :param instance: an instance in reservation.instances
-    :param state: a state from the EC2 Instance States
-    :return:
-    """
-
-    timeout = time.time() + 15 * 60
+    timeout = time.time() + timeout_len
 
     while True:
-        set_instance_state(instance)
-        if state_equals_state(instance, state):
+        instance_state = EC2().get_all_instance_status(instance_ids=instance_id)[0]
+        if state == int(instance_state.state_code):
             return True
         elif time.time() > timeout:
             return False
