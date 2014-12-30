@@ -37,18 +37,18 @@ INSTANCE_STOPPED = 80
 
 
 @operation
-def run(**kwargs):
+def create(**kwargs):
     """
     :return: reservation object
     """
 
     ami_image_id = ctx.node.properties['ami_image_id']
-    instance_type = ctx.node.propertes['instance_type']
+    instance_type = ctx.node.properties['instance_type']
 
     try:
         reservation = EC2().run_instances(image_id=ami_image_id, instance_type=instance_type)
         ctx.instance.runtime_properties['reservation'] = reservation
-        return True
+        return poll_for_state(reservation.instances[0], INSTANCE_RUNNING)
     except EC2ResponseError as e:
         raise NonRecoverableError(e.body)
 
