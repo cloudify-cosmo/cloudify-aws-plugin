@@ -16,9 +16,13 @@
 
 import unittest
 
-# AWS Imports
+# ec2 imports Imports
 from boto.ec2.instance import Reservation
 from ec2 import instance
+from moto import mock_ec2
+
+# ctx is imported and used in operations
+from cloudify.mocks import MockCloudifyContext
 
 TEST_AMI_IMAGE_ID = 'ami-e214778a'
 TEST_INSTANCE_TYPE = 't1.micro'
@@ -27,10 +31,19 @@ RESERVATION_OBJECT_TYPE = Reservation
 
 class TestPlugin(unittest.TestCase):
 
-    def test_instance_run(self):
-        reservation = instance.run(TEST_AMI_IMAGE_ID, TEST_INSTANCE_TYPE)
-        self.assertEqual(type(reservation), RESERVATION_OBJECT_TYPE)
-        self.assertEqual(TEST_AMI_IMAGE_ID,
-                         reservation.instances[0].image_id)
-        self.assertEqual(TEST_INSTANCE_TYPE,
-                         reservation.instances[0].instance_type)
+    def test_instance_create(self):
+
+        test_name = 'test_instance_run'
+        test_node_id = '{0}'.format(test_name)
+        test_properties = {
+            'ami_image_id': TEST_AMI_IMAGE_ID,
+            'instance_type': TEST_INSTANCE_TYPE
+        }
+
+        with mock_ec2():
+
+            ctx = MockCloudifyContext(
+                node_id=test_node_id,
+                properties=test_properties
+            )
+            self.assertTrue(instance.create(ctx=ctx))
