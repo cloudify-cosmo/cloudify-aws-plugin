@@ -87,7 +87,8 @@ def create(**kwargs):
     """ Creates an AWS Instance from an (AMI) image_id and an instance_type.
     """
 
-    arguments = build_arg_dict(ctx.node.properties['attributes'].copy(), RUN_INSTANCES_DEFAULTS, RUN_INSTANCES_UNSUPPORTED)
+    arguments = build_arg_dict(ctx.node.properties['attributes'].copy(),
+                               RUN_INSTANCES_DEFAULTS, RUN_INSTANCES_UNSUPPORTED)
     arguments['image_id'] = ctx.node.properties['image_id']
     arguments['instance_type'] = ctx.node.properties['instance_type']
 
