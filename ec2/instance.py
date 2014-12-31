@@ -19,7 +19,6 @@ import time
 # other packages
 from boto.ec2 import EC2Connection as EC2
 from boto.exception import EC2ResponseError
-from inspect import getargspec
 
 # ctx packages
 from cloudify import ctx
@@ -41,24 +40,59 @@ STOP_TIMEOUT = 3 * 60
 TERMINATION_TIMEOUT = 3 * 60
 
 # EC2 Method Arguments
-RUN_INSTANCES_ALL_ARGS = getargspec(EC2().run_instances).args[1:]
-RUN_INSTANCES_UNSUPPORTED_ARGS = {
-    'min_count': 1,
-    'max_count': 1
+RUN_INSTANCES_DEFAULTS = {
+    'key_name': None,
+    'security_groups': None,
+    'user_data': None,
+    'addressing_type': None,
+    'placement': None,
+    'kernel_id': None,
+    'ramdisk_id': None,
+    'monitoring_enabled': False,
+    'subnet_id': None,
+    'block_device_map': None,
+    'disable_api_termination': False,
+    'instance_initiated_shutdown_behavior': None,
+    'private_ip_address': None,
+    'placement_group': None,
+    'client_token': None,
+    'security_group_ids': None,
+    'additional_info': None,
+    'instance_profile_name': None,
+    'instance_profile_arn': None,
+    'tenancy': None,
+    'ebs_optimized': False,
+    'network_interfaces': None
 }
+
+RUN_INSTANCES_UNSUPPORTED = {
+    'min_count': 1,
+    'max_count': 1,
+    'dry_run': False
+}
+
+
+def build_arg_dict(user_supplied, defaults, unsupported):
+
+    arguments = defaults.copy()
+    for pair in user_supplied.iteritems():
+        arguments['{0}'.format(pair[0])] = pair[1]
+    for pair in unsupported.iteritems():
+        arguments['{0}'.format(pair[0])] = pair[1]
+    return arguments
+
 
 @operation
 def create(**kwargs):
-    """
-    :return: reservation object
+    """ Creates an AWS Instance from an (AMI) image_id and an instance_type.
     """
 
-    attributes = dict()
-    attributes['image_id'] = ctx.node.properties['image_id']
-    attributes['instance_type'] = ctx.node.properties['instance_type']
+    arguments = build_arg_dict(ctx.node.properties['attributes'].copy(), RUN_INSTANCES_DEFAULTS, RUN_INSTANCES_UNSUPPORTED)
+    arguments['image_id'] = ctx.node.properties['image_id']
+    arguments['instance_type'] = ctx.node.properties['instance_type']
 
     try:
-        reservation = EC2().run_instances(image_id=attributes['image_id'], instance_type=attributes['instance_type'])
+        reservation = EC2().run_instances(**arguments)
     except EC2ResponseError:
         raise NonRecoverableError(EC2ResponseError.body)
 
