@@ -52,10 +52,12 @@ def create(**kwargs):
     """ Creates an AWS Instance from an (AMI) image_id and an instance_type.
     """
 
-    arguments = build_arg_dict(ctx.node.properties['attributes'].copy(),
-                               RUN_INSTANCES_UNSUPPORTED)
+    arguments = dict()
     arguments['image_id'] = ctx.node.properties['image_id']
     arguments['instance_type'] = ctx.node.properties['instance_type']
+    arguments_to_merge = build_arg_dict(ctx.node.properties['attributes'].copy(),
+                               RUN_INSTANCES_UNSUPPORTED)
+    arguments.update(arguments_to_merge)
 
     ctx.logger.info('(Node: {0}): Creating instance.'.format(ctx.instance.id))
     ctx.logger.debug("""(Node: {0}): Attempting to create instance.
@@ -78,6 +80,7 @@ def create(**kwargs):
                                           EC2ResponseError.body))
 
     instance_id = reservation.instances[0].id
+    ctx.instance.runtime_properties['instance_id'] = instance_id
 
     ctx.logger.debug("""(Node: {0}):
                         Attempting to verify the instance is running.
@@ -244,14 +247,14 @@ def terminate(**kwargs):
 
     if _state_validation(instance_id, INSTANCE_TERMINATED,
                          TERMINATION_TIMEOUT, CHECK_INTERVAL):
-        ctx.logger.info('(Node: {0}): Instance stopped. (Instance id: {1}).'
+        ctx.logger.info('(Node: {0}): Instance terminated. (Instance id: {1}).'
                         .format(ctx.instance.id, instance_id))
+        del ctx.instance.runtime_properties['instance_id']
     else:
         ctx.logger.error("""(Node: {0}):
                             Failed to verify that the instance is terminated.
                             (Instance id: {1})."""
                          .format(ctx.instance.id, instance_id))
-        del ctx.instance.runtime_properties['instance_id']
         raise NonRecoverableError("""(Node: {0}): Instance did not terminate
                                      within specified timeout: {0}."""
                                   .format(ctx.instance.id,
@@ -261,7 +264,7 @@ def terminate(**kwargs):
 def _state_validation(instance_id, state, timeout_length, check_interval):
 
     ctx.logger.debug("""Beginning state validation: instance id: {0},
-                        state: {1}, timeout length: {2}""")
+                        states: {1}, timeout length: {2}""")
 
     timeout = time.time() + timeout_length
 
@@ -292,7 +295,7 @@ def build_arg_dict(user_supplied, unsupported):
 
     arguments = {}
     for pair in user_supplied.items():
-        arguments['{0}'.format(pair[0])] = pair[1]
+        arguments[pair[0]] = pair[1]
     for pair in unsupported.items():
-        arguments['{0}'.format(pair[0])] = pair[1]
+        arguments[pair[0]] = pair[1]
     return arguments
