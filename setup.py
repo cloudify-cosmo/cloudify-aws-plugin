@@ -32,7 +32,9 @@ setup(
     packages=['ec2'],
 
     license='LICENSE',
-    install_requires=['cloudify-plugins-common==3.2a1',
-                      'boto=2.34.0',
-                      'moto==0.3.9']
+    install_requires=[
+        'cloudify-plugins-common==3.2a1',
+        'boto==2.34.0',
+        'moto==0.3.9'
+    ]
 )
