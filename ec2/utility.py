@@ -25,6 +25,7 @@ from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
 from cloudify.decorators import operation
 
+
 @operation
 def validate_state(instance, state, timeout_length, check_interval, **kwargs):
     """ Check if an EC2 instance is in a particular state.
@@ -84,6 +85,7 @@ def get_instance_state(instance, **kwargs):
                      .format(ctx.instance.id, state))
     return instance.state_code
 
+
 @operation
 def handle_ec2_error(ctx_instance_id, ec2_error, action, **kwargs):
     """
@@ -103,6 +105,7 @@ def handle_ec2_error(ctx_instance_id, ec2_error, action, **kwargs):
                               .format(ctx_instance_id, action,
                                       ec2_error.body))
 
+
 @operation
 def validate_instance_id(instance_id, **kwargs):
     """
@@ -116,7 +119,7 @@ def validate_instance_id(instance_id, **kwargs):
         instance = EC2().get_all_instances(instance_id)
     except EC2ResponseError:
         handle_ec2_error(ctx.instance.id, EC2ResponseError,
-                              'validate')
+                         'validate')
     except BotoServerError:
         handle_ec2_error(ctx.instance.id, BotoServerError, 'create')
 
