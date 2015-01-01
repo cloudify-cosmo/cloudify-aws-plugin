@@ -21,7 +21,7 @@ from boto.ec2 import EC2Connection
 from moto import mock_ec2
 
 # ctx is imported and used in operations
-import connection
+from ec2 import connection
 from cloudify.mocks import MockCloudifyContext
 from ec2 import instance
 
