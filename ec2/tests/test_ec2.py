@@ -17,11 +17,14 @@
 import unittest
 
 # ec2 imports Imports
-from ec2 import instance
 from moto import mock_ec2
+from boto.ec2 import EC2Connection
 
 # ctx is imported and used in operations
+from ec2 import instance
+from ec2 import utility
 from cloudify.mocks import MockCloudifyContext
+from cloudify.exceptions import NonRecoverableError
 
 TEST_AMI_IMAGE_ID = 'ami-e214778a'
 TEST_INSTANCE_TYPE = 't1.micro'
@@ -82,3 +85,30 @@ class TestPlugin(unittest.TestCase):
             instance.create(ctx=ctx)
             instance.stop(ctx=ctx)
             instance.terminate(ctx=ctx)
+
+    def test_validate_instance_id(self):
+
+        ctx = self.mock_ctx('test_validate_instance_id')
+
+        with mock_ec2():
+            instance.create(ctx=ctx)
+            instance_id = ctx.instance.runtime_properties['instance_id']
+            self.assertTrue(utility.validate_instance_id(instance_id))
+
+    def test_raise_error(self):
+
+        ctx = self.mock_ctx('test_raise_error')
+        ctx.instance.runtime_properties['instance_id'] = 'Not an instance id'
+
+        with mock_ec2():
+            self.assertRaises(NonRecoverableError, instance.terminate, ctx=ctx)
+
+    def test_get_instance_state(self):
+        ctx = self.mock_ctx('test_get_instance_state')
+        with mock_ec2():
+            reservation = EC2Connection().run_instances(
+                image_id=TEST_AMI_IMAGE_ID,instance_type=TEST_INSTANCE_TYPE)
+            instance_object = reservation.instances[0]
+            instance_state = utility.get_instance_state(instance_object,
+                                                        ctx=ctx)
+            self.assertEqual(instance_state, 16)

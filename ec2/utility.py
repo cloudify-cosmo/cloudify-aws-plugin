@@ -23,9 +23,10 @@ from boto.exception import EC2ResponseError, BotoServerError
 # ctx packages
 from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
+from cloudify.decorators import operation
 
-
-def validate_state(self, instance, state, timeout_length, check_interval):
+@operation
+def validate_state(instance, state, timeout_length, check_interval, **kwargs):
     """ Check if an EC2 instance is in a particular state.
 
     :param instance: And EC2 instance.
@@ -47,7 +48,7 @@ def validate_state(self, instance, state, timeout_length, check_interval):
     timeout = time.time() + timeout_length
 
     while True:
-        if state == self.get_instance_state(instance):
+        if state == get_instance_state(instance):
             ctx.logger.info("""(Node: {0}):
                                Instance state validated: instance {0}."""
                             .format(instance.state))
@@ -70,7 +71,8 @@ def validate_state(self, instance, state, timeout_length, check_interval):
         time.sleep(check_interval)
 
 
-def get_instance_state(self, instance):
+@operation
+def get_instance_state(instance, **kwargs):
     """
 
     :param instance:
@@ -82,8 +84,8 @@ def get_instance_state(self, instance):
                      .format(ctx.instance.id, state))
     return instance.state_code
 
-
-def handle_ec2_error(self, ctx_instance_id, ec2_error, action):
+@operation
+def handle_ec2_error(ctx_instance_id, ec2_error, action, **kwargs):
     """
 
     :param ctx_instance_id: the Cloudify Context node ID
@@ -101,8 +103,8 @@ def handle_ec2_error(self, ctx_instance_id, ec2_error, action):
                               .format(ctx_instance_id, action,
                                       ec2_error.body))
 
-
-def validate_instance_id(self, instance_id, **kwargs):
+@operation
+def validate_instance_id(instance_id, **kwargs):
     """
 
     :param instance_id: An EC2 instance ID
@@ -113,10 +115,10 @@ def validate_instance_id(self, instance_id, **kwargs):
     try:
         instance = EC2().get_all_instances(instance_id)
     except EC2ResponseError:
-        self.handle_ec2_error(ctx.instance.id, EC2ResponseError,
+        handle_ec2_error(ctx.instance.id, EC2ResponseError,
                               'validate')
     except BotoServerError:
-        self.handle_ec2_error(ctx.instance.id, BotoServerError, 'create')
+        handle_ec2_error(ctx.instance.id, BotoServerError, 'create')
 
     if instance:
         return True
