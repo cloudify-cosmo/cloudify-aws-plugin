@@ -18,29 +18,111 @@ import time
 
 # other packages
 from boto.ec2 import EC2Connection as EC2
+from boto.exception import EC2ResponseError, BotoServerError
 
 # ctx packages
+from cloudify import ctx
+from cloudify.exceptions import NonRecoverableError
 
 
 class Utility():
 
-    def state_validation(self, instance_id, state, timeout_length, check_interval):
+    def validate_state(self, instance, state, timeout_length, check_interval):
         """ Check if an EC2 instance is in a particular state.
 
-        :param instance_id: The ID of a EC2 instance.
-        :param state: The state code (pending = 0, running = 16, shutting down = 32,
-                      terminated = 48, stopping = 64, stopped = 80
-        :param timeout_length: How long to wait for a positive answer before we stop checking.
+        :param instance: And EC2 instance.
+        :param state: The state code (pending = 0, running = 16,
+                      shutting down = 32, terminated = 48, stopping = 64,
+                      stopped = 80
+        :param timeout_length: How long to wait for a positive answer
+               before we stop checking.
         :param check_interval: How long to wait between checks.
         :return: bool (True the desired state was reached, False, it was not.)
         """
 
+        ctx.logger.debug("""(Node: {0}): Attempting state validation:
+                            instance id: {0}, state: {1}, timeout length: {2},
+                            check interval: {3}.""".format(instance.id, state,
+                                                           timeout_length,
+                                                           check_interval))
+
         timeout = time.time() + timeout_length
+
         while True:
-            instance_state = EC2().get_all_instance_status(instance_ids=instance_id)[0]
-            if state == int(instance_state.state_code):
+            if state == self.get_instance_state(instance):
+                ctx.logger.info("""(Node: {0}):
+                                   Instance state validated: instance {0}."""
+                                .format(instance.state))
                 return True
             elif time.time() > timeout:
-                return False
-            else:
-                time.sleep(check_interval)
+                ctx.logger.error("""(Node: {0}): Timed out during instance
+                                    state validation: instance: {1},
+                                    timeout length: {2},
+                                    check interval: {3}."""
+                                 .format(ctx.instance.node, instance.id,
+                                         timeout_length, check_interval))
+                raise NonRecoverableError("""(Node: {0}): Timed out during
+                                             instance state validation:
+                                             instance: {1},
+                                             timeout length: {2},
+                                             check interval: {3}."""
+                                          .format(ctx.instance.id,
+                                                  timeout_length,
+                                                  check_interval))
+            time.sleep(check_interval)
+
+    def get_instance_state(self, instance):
+        """
+
+        :param instance:
+        :return:
+        """
+
+        state = instance.update()
+        ctx.logger.debug('(Node: {0}): Instance state is {1}.'
+                         .format(ctx.instance.id, state))
+        return instance.state_code
+
+    def handle_ec2_error(self, ctx_instance_id, ec2_error, action):
+        """
+
+        :param ctx_instance_id: the Cloudify Context node ID
+        :param ec2_error: EC2 Error Object
+        :param action: A string that fits in nicely with the error code :)
+        """
+
+        ctx.logger.error("""(Node: {0}): Error. Failed to {1} instance:
+                            API returned: {2}.""" .format(ctx_instance_id,
+                                                          action,
+                                                          ec2_error.body))
+        raise NonRecoverableError("""(Node: {0}): Error.
+                                     Failed to {1} instance:
+                                     API returned: {2}."""
+                                  .format(ctx_instance_id, action,
+                                          ec2_error.body))
+
+    def validate_instance_id(self, instance_id):
+        """
+
+        :param instance_id: An EC2 instance ID
+        :return: True that the instance ID is valid or
+                 throws unrecoverable error
+        """
+
+        try:
+            instance = EC2().get_all_instances(instance_id)
+        except EC2ResponseError:
+            self.handle_ec2_error(ctx.instance.id, EC2ResponseError,
+                                  'validate')
+        except BotoServerError:
+            self.handle_ec2_error(ctx.instance.id, BotoServerError, 'create')
+
+        if instance:
+            return True
+        else:
+            ctx.logger.error("""(Node: {0}): Unable to validate
+                                instance ID: {1}.""".format(ctx.instance.id,
+                                                            instance_id))
+            raise NonRecoverableError("""(Node: {0}): Unable to validate
+                                         instance ID: {1}."""
+                                      .format(ctx.instance.id, instance_id))
