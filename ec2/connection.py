@@ -23,6 +23,7 @@ from boto.exception import EC2ResponseError
 # ctx packages
 from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
+from cloudify.decorators import operation
 
 
 class EC2Client():
@@ -30,32 +31,34 @@ class EC2Client():
     def __init__(self):
         self.connection = None
 
-    def connect(self):
+    @operation
+    def connect(self, **kwargs):
 
-        ctx.logger.info('(Node: {0}): Connecting to AWS EC2.'.format(ctx.instance.id))
+        ctx.logger.info('(Connecting to AWS EC2.')
 
         try:
             self.connection = EC2Connection()
         except EC2ResponseError:
-            ctx.logger.error("""(Node: {0}): Error.
-                             Failed to connect to EC2: API returned: {1}."""
-                             .format(ctx.instance.id, EC2ResponseError.body))
-            raise NonRecoverableError('(Node: {0}): Error. Failed to connect to EC2: API returned: {1}.'
-                                      .format(ctx.instance.id, EC2ResponseError.body))
+            ctx.logger.error("""Failed to connect to EC2: API returned: {0}."""
+                             .format(EC2ResponseError))
+            raise NonRecoverableError("""Error. Failed to connect to EC2:
+                                         API returned: {0}."""
+                                      .format(EC2ResponseError))
 
         return self.connection
 
-    def connect_to_region(self, region):
+    @operation
+    def connect_to_region(self, region, **kwargs):
 
-        ctx.logger.info('(Node: {0}): Connecting to AWS EC2 region: {1}.'.format(ctx.instance.id, region))
+        ctx.logger.info('(Connecting to AWS EC2.')
 
         try:
             self.connection = connect_to_region(region)
         except EC2ResponseError:
-            ctx.logger.error("""(Node: {0}): Error.
-                             Failed to connect to EC2 region {1}: API returned: {2}."""
-                             .format(ctx.instance.id, region, EC2ResponseError.body))
-            raise NonRecoverableError('(Node: {0}): Error. Failed to connect to EC2 region {1}: API returned: {2}.'
-                                      .format(ctx.instance.id, region, EC2ResponseError.body))
+            ctx.logger.error("""Failed to connect to EC2: API returned: {0}."""
+                             .format(EC2ResponseError))
+            raise NonRecoverableError("""Error. Failed to connect to EC2:
+                                         API returned: {0}."""
+                                      .format(EC2ResponseError))
 
         return self.connection
