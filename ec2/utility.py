@@ -98,12 +98,12 @@ def handle_ec2_error(ctx_instance_id, ec2_error, action, **kwargs):
     ctx.logger.error("""(Node: {0}): Error. Failed to {1} instance:
                         API returned: {2}.""" .format(ctx_instance_id,
                                                       action,
-                                                      ec2_error.body))
+                                                      ec2_error))
     raise NonRecoverableError("""(Node: {0}): Error.
                                  Failed to {1} instance:
                                  API returned: {2}."""
                               .format(ctx_instance_id, action,
-                                      ec2_error.body))
+                                      ec2_error))
 
 
 @operation
