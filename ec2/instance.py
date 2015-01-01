@@ -55,9 +55,9 @@ def create(**kwargs):
     arguments = dict()
     arguments['image_id'] = ctx.node.properties['image_id']
     arguments['instance_type'] = ctx.node.properties['instance_type']
-    arguments_to_merge = build_arg_dict(ctx.node.properties['attributes'].copy(),
-                               RUN_INSTANCES_UNSUPPORTED)
-    arguments.update(arguments_to_merge)
+    args_to_merge = build_arg_dict(ctx.node.properties['attributes'].copy(),
+                                   RUN_INSTANCES_UNSUPPORTED)
+    arguments.update(args_to_merge)
 
     ctx.logger.info('(Node: {0}): Creating instance.'.format(ctx.instance.id))
     ctx.logger.debug("""(Node: {0}): Attempting to create instance.
