@@ -58,9 +58,12 @@ def create(**kwargs):
     arguments['instance_type'] = ctx.node.properties['instance_type']
 
     ctx.logger.info('(Node: {0}): Creating instance.'.format(ctx.instance.id))
-    ctx.logger.debug('(Node: {0}): Attempting to create instance. (Image id: {1}. Instance type: {2}.)'
-                     .format(ctx.instance.id, arguments['image_id'],arguments['instance_type']))
-    ctx.logger.debug('(Node: {0}): Run instance parameters: {1}.'.format(ctx.instance.id, arguments))
+    ctx.logger.debug("""(Node: {0}): Attempting to create instance.
+                        (Image id: {1}. Instance type: {2}.)"""
+                     .format(ctx.instance.id, arguments['image_id'],
+                             arguments['instance_type']))
+    ctx.logger.debug('(Node: {0}): Run instance parameters: {1}.'
+                     .format(ctx.instance.id, arguments))
 
     try:
         reservation = EC2().run_instances(**arguments)
@@ -68,25 +71,36 @@ def create(**kwargs):
         ctx.logger.error("""(Node: {0}): Error.
                          Failed to create instance: API returned: {1}."""
                          .format(ctx.instance.id, EC2ResponseError.body))
-        raise NonRecoverableError('(Node: {0}): Error. Failed to create instance: API returned: {1}.'
-                                  .format(ctx.instance.id, EC2ResponseError.body))
+        raise NonRecoverableError("""(Node: {0}): Error.
+                                     Failed to create instance:
+                                     API returned: {1}."""
+                                  .format(ctx.instance.id,
+                                          EC2ResponseError.body))
 
     instance_id = reservation.instances[0].id
 
-    ctx.logger.debug("""(Node: {0}): Attempting to verify the instance is running.
-                     (Instance id: {1}.)"""
+    ctx.logger.debug("""(Node: {0}):
+                        Attempting to verify the instance is running.
+                        (Instance id: {1}.)"""
                      .format(ctx.instance.id, instance_id))
-    ctx.logger.debug('(Node: {0}): Checking State: Running, Timeout: {1}. Check Interval: {2}.)'
-                     .format(ctx.instance.id, CREATION_TIMEOUT, CHECK_INTERVAL))
+    ctx.logger.debug("""(Node: {0}): Checking State: Running, Timeout: {1}.
+                        Check Interval: {2}.)"""
+                     .format(ctx.instance.id,
+                             CREATION_TIMEOUT, CHECK_INTERVAL))
 
-    if _state_validation(instance_id, INSTANCE_RUNNING, CREATION_TIMEOUT, CHECK_INTERVAL):
+    if _state_validation(instance_id, INSTANCE_RUNNING, CREATION_TIMEOUT,
+                         CHECK_INTERVAL):
         ctx.instance.runtime_properties['instance_id'] = instance_id
-        ctx.logger.info('(Node: {0}): Instance started & is running. (Instance id: {1}).'
+        ctx.logger.info("""(Node: {0}): Instance started & is running.
+                           (Instance id: {1})."""
                         .format(ctx.instance.id, instance_id))
     else:
-        ctx.logger.error('(Node: {0}): Failed to verify that the instance is running. (Instance id: {1}).'
+        ctx.logger.error("""(Node: {0}):
+                            Failed to verify that the instance is running.
+                            (Instance id: {1})."""
                          .format(ctx.instance.id, instance_id))
-        raise NonRecoverableError('(Node: {0}): Instance did not create within specified timeout: {0}.'
+        raise NonRecoverableError("""(Node: {0}): Instance did not create within
+                                      specified timeout: {0}."""
                                   .format(ctx.instance.id, CREATION_TIMEOUT))
 
 
@@ -96,7 +110,8 @@ def start(**kwargs):
     instance_id = ctx.instance.runtime_properties['instance_id']
 
     ctx.logger.info('(Node: {0}): Starting instance.'.format(ctx.instance.id))
-    ctx.logger.debug('(Node: {0}): Attempting to start instance. (Instance id: {1}.)'
+    ctx.logger.debug("""(Node: {0}): Attempting to start instance.
+                        (Instance id: {1}.)"""
                      .format(ctx.instance.id, instance_id))
 
     try:
@@ -105,27 +120,42 @@ def start(**kwargs):
         ctx.logger.error("""(Node: {0}): Error.
                          Failed to start instance: API returned: {1}."""
                          .format(ctx.instance.id, EC2ResponseError.body))
-        raise NonRecoverableError('(Node: {0}): Error. Failed to start instance: API returned: {1}.'
-                                  .format(ctx.instance.id, EC2ResponseError.body))
+        raise NonRecoverableError("""(Node: {0}):
+                                     Error. Failed to start instance:
+                                     API returned: {1}."""
+                                  .format(ctx.instance.id,
+                                          EC2ResponseError.body))
 
     ctx.logger.debug("""(Node: {0}): Attempting to verify the instance is started.
                      (Instance id: {1}.)"""
                      .format(ctx.instance.id, instance_id))
-    ctx.logger.debug('(Node: {0}): Checking State: Running, Timeout: {1}. Check Interval: {2}.)'
-                     .format(ctx.instance.id, CREATION_TIMEOUT, CHECK_INTERVAL))
+    ctx.logger.debug("""(Node: {0}): Checking State: Running, Timeout: {1}.
+                        Check Interval: {2}.)"""
+                     .format(ctx.instance.id,
+                             CREATION_TIMEOUT, CHECK_INTERVAL))
 
-    if _state_validation(instance_id, INSTANCE_RUNNING, START_TIMEOUT, CHECK_INTERVAL):
-        ctx.logger.info('(Node: {0}): Instance started & is running. (Instance id: {1}).'
+    if _state_validation(instance_id, INSTANCE_RUNNING,
+                         START_TIMEOUT, CHECK_INTERVAL):
+        ctx.logger.info("""(Node: {0}): Instance started & is running.
+                           (Instance id: {1})."""
                         .format(ctx.instance.id, instance_id))
-    elif _state_validation(instance_id, INSTANCE_RUNNING, START_TIMEOUT, CHECK_INTERVAL):
-        ctx.logger.debug('(Node: {0}): Instance still starting, but didn\'t start within specified timeout {0}.'
+    elif _state_validation(instance_id, INSTANCE_RUNNING,
+                           START_TIMEOUT, CHECK_INTERVAL):
+        ctx.logger.debug("""(Node: {0}): Instance still starting, but didn\'t
+                            start within specified timeout {0}."""
                          .format(ctx.instance.id, START_TIMEOUT))
-        raise RecoverableError('(Node: {0}): Instance still starting, but didn\'t start within specified timeout: {0}.'
+        raise RecoverableError("""(Node: {0}): Instance still starting,
+                                  but didn\'t start within specified timeout:
+                                  {0}."""
                                .format(ctx.instance.id, START_TIMEOUT))
     else:
-        ctx.logger.error('(Node: {0}): Failed to verify that the instance is running. (Instance id: {1}).'
+        ctx.logger.error("""(Node: {0}):
+                            Failed to verify that the instance is running.
+                            (Instance id: {1})."""
                          .format(ctx.instance.id, instance_id))
-        raise NonRecoverableError('(Node: {0}): Instance did not create within specified timeout: {0}.'
+        raise NonRecoverableError("""(Node: {0}):
+                                     Instance did not create within specified
+                                     timeout: {0}."""
                                   .format(ctx.instance.id, START_TIMEOUT))
 
 
@@ -144,27 +174,40 @@ def stop(**kwargs):
         ctx.logger.error("""(Node: {0}): Error.
                          Failed to stop instance: API returned: {1}."""
                          .format(ctx.instance.id, EC2ResponseError.body))
-        raise NonRecoverableError('(Node: {0}): Error. Failed to stop instance: API returned: {1}.'
-                                  .format(ctx.instance.id, EC2ResponseError.body))
+        raise NonRecoverableError("""(Node: {0}): Error.
+                                     Failed to stop instance: API returned:
+                                     {1}."""
+                                  .format(ctx.instance.id,
+                                          EC2ResponseError.body))
 
-    ctx.logger.debug("""(Node: {0}): Attempting to verify the instance is stopped.
+    ctx.logger.debug("""(Node: {0}):
+                        Attempting to verify the instance is stopped.
                      (Instance id: {1}.)"""
                      .format(ctx.instance.id, instance_id))
-    ctx.logger.debug('(Node: {0}): Checking State: Stopped, Timeout: {1}. Check Interval: {2}.)'
-                     .format(ctx.instance.id, CREATION_TIMEOUT, CHECK_INTERVAL))
+    ctx.logger.debug("""(Node: {0}): Checking State: Stopped, Timeout: {1}
+                        Check Interval: {2}.)"""
+                     .format(ctx.instance.id,
+                             CREATION_TIMEOUT, CHECK_INTERVAL))
 
-    if _state_validation(instance_id, INSTANCE_STOPPED, STOP_TIMEOUT, CHECK_INTERVAL):
+    if _state_validation(instance_id, INSTANCE_STOPPED,
+                         STOP_TIMEOUT, CHECK_INTERVAL):
         ctx.logger.info('(Node: {0}): Instance stopped. (Instance id: {1}).'
                         .format(ctx.instance.id, instance_id))
-    elif _state_validation(instance_id, INSTANCE_STOPPED, STOP_TIMEOUT, CHECK_INTERVAL):
-        ctx.logger.debug('(Node: {0}): Instance didn\'t stop within specified timeout {0}.'
+    elif _state_validation(instance_id, INSTANCE_STOPPED,
+                           STOP_TIMEOUT, CHECK_INTERVAL):
+        ctx.logger.debug("""(Node: {0}):
+                            Instance didn\'t stop within specified timeout
+                            {0}."""
                          .format(ctx.instance.id, STOP_TIMEOUT))
-        raise RecoverableError('(Node: {0}): Instance didn\'t stop within specified timeout: {0}.'
+        raise RecoverableError("""(Node: {0}): Instance didn\'t stop within
+                                  specified timeout: {0}."""
                                .format(ctx.instance.id, STOP_TIMEOUT))
     else:
-        ctx.logger.error('(Node: {0}): Failed to verify that the instance is stopped. (Instance id: {1}).'
+        ctx.logger.error("""(Node: {0}): Failed to verify that the instance is
+                            stopped. (Instance id: {1})."""
                          .format(ctx.instance.id, instance_id))
-        raise NonRecoverableError('(Node: {0}): Instance did not stop within specified timeout: {0}.'
+        raise NonRecoverableError("""(Node: {0}): Instance did not stop within
+                                     specified timeout: {0}."""
                                   .format(ctx.instance.id, STOP_TIMEOUT))
 
 
@@ -173,7 +216,8 @@ def terminate(**kwargs):
 
     instance_id = ctx.instance.runtime_properties['instance_id']
 
-    ctx.logger.info('(Node: {0}): Terminating instance.'.format(ctx.instance.id))
+    ctx.logger.info('(Node: {0}): Terminating instance.'
+                    .format(ctx.instance.id))
     ctx.logger.debug('(Node: {0}): Attempting to terminate instance.'
                      .format(ctx.instance.id))
 
@@ -183,34 +227,47 @@ def terminate(**kwargs):
         ctx.logger.error("""(Node: {0}): Error.
                          Failed to terminate instance: API returned: {1}."""
                          .format(ctx.instance.id, EC2ResponseError.body))
-        raise NonRecoverableError('(Node: {0}): Error. Failed to terminate instance: API returned: {1}.'
-                                  .format(ctx.instance.id, EC2ResponseError.body))
+        raise NonRecoverableError("""(Node: {0}): Error.
+                                     Failed to terminate instance:
+                                     API returned: {1}."""
+                                  .format(ctx.instance.id,
+                                          EC2ResponseError.body))
 
-    ctx.logger.debug("""(Node: {0}): Attempting to verify the instance is terminated.
+    ctx.logger.debug("""(Node: {0}):
+                        Attempting to verify the instance is terminated.
                      (Instance id: {1}.)"""
                      .format(ctx.instance.id, instance_id))
-    ctx.logger.debug('(Node: {0}): Checking State: terminated, Timeout: {1}. Check Interval: {2}.)'
-                     .format(ctx.instance.id, TERMINATION_TIMEOUT, CHECK_INTERVAL))
+    ctx.logger.debug("""(Node: {0}): Checking State: terminated, Timeout: {1}.
+                        Check Interval: {2}.)"""
+                     .format(ctx.instance.id, TERMINATION_TIMEOUT,
+                             CHECK_INTERVAL))
 
-    if _state_validation(instance_id, INSTANCE_TERMINATED, TERMINATION_TIMEOUT, CHECK_INTERVAL):
+    if _state_validation(instance_id, INSTANCE_TERMINATED,
+                         TERMINATION_TIMEOUT, CHECK_INTERVAL):
         ctx.logger.info('(Node: {0}): Instance stopped. (Instance id: {1}).'
                         .format(ctx.instance.id, instance_id))
     else:
-        ctx.logger.error('(Node: {0}): Failed to verify that the instance is terminated. (Instance id: {1}).'
+        ctx.logger.error("""(Node: {0}):
+                            Failed to verify that the instance is terminated.
+                            (Instance id: {1})."""
                          .format(ctx.instance.id, instance_id))
         del ctx.instance.runtime_properties['instance_id']
-        raise NonRecoverableError('(Node: {0}): Instance did not terminate within specified timeout: {0}.'
-                                  .format(ctx.instance.id, TERMINATION_TIMEOUT))
+        raise NonRecoverableError("""(Node: {0}): Instance did not terminate
+                                     within specified timeout: {0}."""
+                                  .format(ctx.instance.id,
+                                          TERMINATION_TIMEOUT))
 
 
 def _state_validation(instance_id, state, timeout_length, check_interval):
 
-    ctx.logger.debug('Beginning state validation: instance id: {0}, state: {1}, timeout length: {2}')
+    ctx.logger.debug("""Beginning state validation: instance id: {0},
+                        state: {1}, timeout length: {2}""")
 
     timeout = time.time() + timeout_length
 
     while True:
-        instance_state = EC2().get_all_instance_status(instance_ids=instance_id)[0]
+        instance_state = EC2().get_all_instance_status(
+            instance_ids=instance_id)[0]
         if state == int(instance_state.state_code):
             return True
         elif time.time() > timeout:
