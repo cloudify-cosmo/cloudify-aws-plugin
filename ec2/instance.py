@@ -19,6 +19,7 @@ import time
 # other packages
 from boto.ec2 import EC2Connection as EC2
 from boto.exception import EC2ResponseError
+from boto.exception import BotoServerError
 
 # ctx packages
 from cloudify import ctx
@@ -78,6 +79,15 @@ def create(**kwargs):
                                      API returned: {1}."""
                                   .format(ctx.instance.id,
                                           EC2ResponseError.body))
+    except BotoServerError:
+        ctx.logger.error("""(Node: {0}): Error.
+                         Problem with server: API returned: {1}."""
+                         .format(ctx.instance.id, BotoServerError.body))
+        raise NonRecoverableError("""(Node: {0}): Error.
+                                     Problem with server:
+                                     API returned: {1}."""
+                                  .format(ctx.instance.id,
+                                          BotoServerError.body))
 
     instance_id = reservation.instances[0].id
     ctx.instance.runtime_properties['instance_id'] = instance_id
@@ -264,7 +274,9 @@ def terminate(**kwargs):
 def _state_validation(instance_id, state, timeout_length, check_interval):
 
     ctx.logger.debug("""Beginning state validation: instance id: {0},
-                        states: {1}, timeout length: {2}""")
+                        states: {1}, timeout length: {2}, check interval: {3}.
+                        """.format(instance_id, state,
+                                   timeout_length, check_interval))
 
     timeout = time.time() + timeout_length
 
