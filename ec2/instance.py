@@ -72,7 +72,8 @@ def create(**kwargs):
     except BotoServerError:
         handle_ec2_error(ctx.instance.id, BotoServerError, 'create')
 
-    ctx.instance.runtime_properties['instance_id'] = reservation.instances[0].id
+    instance_id = reservation.instances[0].id
+    ctx.instance.runtime_properties['instance_id'] = instance_id
 
     if validate_instance_id(reservation.instances[0].id):
         validate_state(reservation.instances[0], INSTANCE_RUNNING,
@@ -204,7 +205,8 @@ def _get_instance_state(instance):
     """
 
     state = instance.update()
-    ctx.logger.debug('(Node: {0}): Instance state is {1}.'.format(ctx.instance.id, state))
+    ctx.logger.debug('(Node: {0}): Instance state is {1}.'
+                     .format(ctx.instance.id, state))
     return instance.state_code
 
 
