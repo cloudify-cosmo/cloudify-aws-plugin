@@ -22,8 +22,8 @@ from moto import mock_ec2
 
 # ctx is imported and used in operations
 from ec2 import connection
-from cloudify.mocks import MockCloudifyContext
 from ec2 import instance
+from cloudify.mocks import MockCloudifyContext
 
 TEST_AMI_IMAGE_ID = 'ami-e214778a'
 TEST_INSTANCE_TYPE = 't1.micro'
@@ -85,9 +85,10 @@ class TestPlugin(unittest.TestCase):
             instance.stop(ctx=ctx)
             instance.terminate(ctx=ctx)
 
+    @mock_ec2
     def test_connect(self):
-        with mock_ec2:
-            c = connection.EC2Client().connect()
-            self.assertTrue(type(c), EC2Connection)
-            self.assertTrue(c.DefaultRegionEndpoint,
-                            'ec2.us-east-1.amazonaws.com')
+
+        c = connection.EC2Client().connect()
+        self.assertTrue(type(c), EC2Connection)
+        self.assertTrue(c.DefaultRegionEndpoint,
+                        'ec2.us-east-1.amazonaws.com')
