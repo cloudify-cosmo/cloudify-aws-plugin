@@ -107,7 +107,7 @@ class TestPlugin(unittest.TestCase):
         ctx = self.mock_ctx('test_get_instance_state')
         with mock_ec2():
             reservation = EC2Connection().run_instances(
-                image_id=TEST_AMI_IMAGE_ID,instance_type=TEST_INSTANCE_TYPE)
+                image_id=TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
             instance_object = reservation.instances[0]
             instance_state = utility.get_instance_state(instance_object,
                                                         ctx=ctx)
