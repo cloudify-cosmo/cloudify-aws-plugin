@@ -37,7 +37,7 @@ class TestPlugin(unittest.TestCase):
             'image_id': TEST_AMI_IMAGE_ID,
             'instance_type': TEST_INSTANCE_TYPE,
             'attributes': {
-                'security_groups': 'sg-73cd3f1e',
+                'security_groups': ['sg-73cd3f1e'],
                 'instance_initiated_shutdown_behavior': 'stop'
             }
         }
