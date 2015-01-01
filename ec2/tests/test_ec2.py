@@ -17,7 +17,6 @@
 import unittest
 
 # ec2 imports Imports
-from boto.ec2.instance import Reservation
 from ec2 import instance
 from moto import mock_ec2
 
@@ -26,24 +25,33 @@ from cloudify.mocks import MockCloudifyContext
 
 TEST_AMI_IMAGE_ID = 'ami-e214778a'
 TEST_INSTANCE_TYPE = 't1.micro'
-RESERVATION_OBJECT_TYPE = Reservation
 
 
 class TestPlugin(unittest.TestCase):
 
-    def test_instance_create(self):
+    def mock_ctx(self, test_name):
 
-        test_name = 'test_instance_create'
         test_node_id = '{0}'.format(test_name)
+
         test_properties = {
-            'ami_image_id': TEST_AMI_IMAGE_ID,
-            'instance_type': TEST_INSTANCE_TYPE
+            'image_id': TEST_AMI_IMAGE_ID,
+            'instance_type': TEST_INSTANCE_TYPE,
+            'attributes': {
+                'security_groups': 'sg-73cd3f1e',
+                'instance_initiated_shutdown_behavior': 'stop'
+            }
         }
 
         ctx = MockCloudifyContext(
             node_id=test_node_id,
             properties=test_properties
         )
+
+        return ctx
+
+    def test_instance_create(self):
+
+        ctx = self.mock_ctx('test_instance_create')
 
         with mock_ec2():
 
@@ -51,17 +59,7 @@ class TestPlugin(unittest.TestCase):
 
     def test_instance_stop(self):
 
-        test_name = 'test_instance_stop'
-        test_node_id = '{0}'.format(test_name)
-        test_properties = {
-            'ami_image_id': TEST_AMI_IMAGE_ID,
-            'instance_type': TEST_INSTANCE_TYPE
-        }
-
-        ctx = MockCloudifyContext(
-            node_id=test_node_id,
-            properties=test_properties
-        )
+        ctx = self.mock_ctx('test_instance_stop')
 
         with mock_ec2():
             instance.create(ctx=ctx)
@@ -69,17 +67,7 @@ class TestPlugin(unittest.TestCase):
 
     def test_instance_start(self):
 
-        test_name = 'test_instance_start'
-        test_node_id = '{0}'.format(test_name)
-        test_properties = {
-            'ami_image_id': TEST_AMI_IMAGE_ID,
-            'instance_type': TEST_INSTANCE_TYPE
-        }
-
-        ctx = MockCloudifyContext(
-            node_id=test_node_id,
-            properties=test_properties
-        )
+        ctx = self.mock_ctx('test_instance_start')
 
         with mock_ec2():
             instance.create(ctx=ctx)
@@ -88,17 +76,7 @@ class TestPlugin(unittest.TestCase):
 
     def test_instance_terminate(self):
 
-        test_name = 'test_instance_terminate'
-        test_node_id = '{0}'.format(test_name)
-        test_properties = {
-            'ami_image_id': TEST_AMI_IMAGE_ID,
-            'instance_type': TEST_INSTANCE_TYPE
-        }
-
-        ctx = MockCloudifyContext(
-            node_id=test_node_id,
-            properties=test_properties
-        )
+        ctx = self.mock_ctx('test_instance_terminate')
 
         with mock_ec2():
             instance.create(ctx=ctx)
