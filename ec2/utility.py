@@ -24,20 +24,23 @@ from boto.ec2 import EC2Connection as EC2
 
 class Utility():
 
-    def state_validation(self, instance_id, state, timeout_length, check_interval):
+    def state_validation(self, instance_id, state,
+                         timeout_length, check_interval):
         """ Check if an EC2 instance is in a particular state.
 
         :param instance_id: The ID of a EC2 instance.
-        :param state: The state code (pending = 0, running = 16, shutting down = 32,
-                      terminated = 48, stopping = 64, stopped = 80
-        :param timeout_length: How long to wait for a positive answer before we stop checking.
+        :param state: The state code (pending = 0, running = 16,
+            shutting down = 32, terminated = 48, stopping = 64, stopped = 80
+        :param timeout_length: How long to wait for a positive answer
+            before we stop checking.
         :param check_interval: How long to wait between checks.
         :return: bool (True the desired state was reached, False, it was not.)
         """
 
         timeout = time.time() + timeout_length
         while True:
-            instance_state = EC2().get_all_instance_status(instance_ids=instance_id)[0]
+            instance_state = EC2().get_all_instance_status(
+                instance_ids=instance_id)[0]
             if state == int(instance_state.state_code):
                 return True
             elif time.time() > timeout:
