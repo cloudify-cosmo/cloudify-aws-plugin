@@ -18,7 +18,7 @@ import unittest
 
 # ec2 imports Imports
 from moto import mock_ec2
-from boto.ec2 import EC2Connection
+from boto.ec2 import EC2Connection as EC2
 
 # ctx is imported and used in operations
 from ec2 import instance
@@ -91,9 +91,10 @@ class TestPlugin(unittest.TestCase):
         ctx = self.mock_ctx('test_validate_instance_id')
 
         with mock_ec2():
-            instance.create(ctx=ctx)
-            instance_id = ctx.instance.runtime_properties['instance_id']
-            self.assertTrue(utility.validate_instance_id(instance_id, ctx))
+            reservation = EC2().run_instances(image_id=TEST_AMI_IMAGE_ID,
+                                              instance_type=TEST_INSTANCE_TYPE)
+            self.assertTrue(utility.validate_instance_id(
+                reservation.instances[0].id, ctx=ctx))
 
     def test_raise_error(self):
 
@@ -106,7 +107,7 @@ class TestPlugin(unittest.TestCase):
     def test_get_instance_state(self):
         ctx = self.mock_ctx('test_get_instance_state')
         with mock_ec2():
-            reservation = EC2Connection().run_instances(
+            reservation = EC2().run_instances(
                 image_id=TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
             instance_object = reservation.instances[0]
             instance_state = utility.get_instance_state(instance_object,
