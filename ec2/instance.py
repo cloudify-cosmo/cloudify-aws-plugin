@@ -67,9 +67,9 @@ def create(**kwargs):
     except EC2ResponseError:
         ctx.logger.error("""(Node: {0}): Error.
                          Failed to create instance: API returned: {1}."""
-                         .format(ctx.instance.id, EC2ResponseError.body))
+                         .format(ctx.instance.id, EC2ResponseError))
         raise NonRecoverableError('(Node: {0}): Error. Failed to create instance: API returned: {1}.'
-                                  .format(ctx.instance.id, EC2ResponseError.body))
+                                  .format(ctx.instance.id, EC2ResponseError))
 
     instance_id = reservation.instances[0].id
 
@@ -104,9 +104,9 @@ def start(**kwargs):
     except EC2ResponseError:
         ctx.logger.error("""(Node: {0}): Error.
                          Failed to start instance: API returned: {1}."""
-                         .format(ctx.instance.id, EC2ResponseError.body))
+                         .format(ctx.instance.id, EC2ResponseError))
         raise NonRecoverableError('(Node: {0}): Error. Failed to start instance: API returned: {1}.'
-                                  .format(ctx.instance.id, EC2ResponseError.body))
+                                  .format(ctx.instance.id, EC2ResponseError))
 
     ctx.logger.debug("""(Node: {0}): Attempting to verify the instance is started.
                      (Instance id: {1}.)"""
@@ -143,9 +143,9 @@ def stop(**kwargs):
     except EC2ResponseError:
         ctx.logger.error("""(Node: {0}): Error.
                          Failed to stop instance: API returned: {1}."""
-                         .format(ctx.instance.id, EC2ResponseError.body))
+                         .format(ctx.instance.id, EC2ResponseError))
         raise NonRecoverableError('(Node: {0}): Error. Failed to stop instance: API returned: {1}.'
-                                  .format(ctx.instance.id, EC2ResponseError.body))
+                                  .format(ctx.instance.id, EC2ResponseError))
 
     ctx.logger.debug("""(Node: {0}): Attempting to verify the instance is stopped.
                      (Instance id: {1}.)"""
@@ -182,9 +182,9 @@ def terminate(**kwargs):
     except EC2ResponseError:
         ctx.logger.error("""(Node: {0}): Error.
                          Failed to terminate instance: API returned: {1}."""
-                         .format(ctx.instance.id, EC2ResponseError.body))
+                         .format(ctx.instance.id, EC2ResponseError))
         raise NonRecoverableError('(Node: {0}): Error. Failed to terminate instance: API returned: {1}.'
-                                  .format(ctx.instance.id, EC2ResponseError.body))
+                                  .format(ctx.instance.id, EC2ResponseError))
 
     ctx.logger.debug("""(Node: {0}): Attempting to verify the instance is terminated.
                      (Instance id: {1}.)"""
