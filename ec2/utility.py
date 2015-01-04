@@ -13,13 +13,11 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
-# built-in package
+# built-in import
 import time
 
-# other packages
+# other import
 from boto.ec2 import EC2Connection as EC2
-
-# ctx packages
 
 
 class Utility():
