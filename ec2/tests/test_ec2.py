@@ -90,5 +90,5 @@ class TestPlugin(unittest.TestCase):
 
         c = connection.EC2Client().connect()
         self.assertTrue(type(c), EC2Connection)
-        self.assertTrue(c.DefaultRegionEndpoint,
-                        'ec2.us-east-1.amazonaws.com')
+        self.assertEqual(c.DefaultRegionEndpoint,
+                         'ec2.us-east-1.amazonaws.com')
