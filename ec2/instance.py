@@ -68,17 +68,9 @@ def create(**kwargs):
     try:
         reservation = EC2().run_instances(**arguments)
     except EC2ResponseError:
-<<<<<<< HEAD
-        ctx.logger.error("""(Node: {0}): Error.
-                         Failed to create instance: API returned: {1}."""
-                         .format(ctx.instance.id, EC2ResponseError))
-        raise NonRecoverableError('(Node: {0}): Error. Failed to create instance: API returned: {1}.'
-                                  .format(ctx.instance.id, EC2ResponseError))
-=======
         handle_ec2_error(ctx.instance.id, EC2ResponseError, 'create')
     except BotoServerError:
         handle_ec2_error(ctx.instance.id, BotoServerError, 'create')
->>>>>>> d06a9782764322ca9f4c7dde59b801161dc56767
 
     instance_id = reservation.instances[0].id
     ctx.instance.runtime_properties['instance_id'] = instance_id
@@ -101,33 +93,6 @@ def start(**kwargs):
     try:
         instances = EC2().start_instances(instance_id)
     except EC2ResponseError:
-<<<<<<< HEAD
-        ctx.logger.error("""(Node: {0}): Error.
-                         Failed to start instance: API returned: {1}."""
-                         .format(ctx.instance.id, EC2ResponseError))
-        raise NonRecoverableError('(Node: {0}): Error. Failed to start instance: API returned: {1}.'
-                                  .format(ctx.instance.id, EC2ResponseError))
-
-    ctx.logger.debug("""(Node: {0}): Attempting to verify the instance is started.
-                     (Instance id: {1}.)"""
-                     .format(ctx.instance.id, instance_id))
-    ctx.logger.debug('(Node: {0}): Checking State: Running, Timeout: {1}. Check Interval: {2}.)'
-                     .format(ctx.instance.id, CREATION_TIMEOUT, CHECK_INTERVAL))
-
-    if _state_validation(instance_id, INSTANCE_RUNNING, START_TIMEOUT, CHECK_INTERVAL):
-        ctx.logger.info('(Node: {0}): Instance started & is running. (Instance id: {1}).'
-                        .format(ctx.instance.id, instance_id))
-    elif _state_validation(instance_id, INSTANCE_RUNNING, START_TIMEOUT, CHECK_INTERVAL):
-        ctx.logger.debug('(Node: {0}): Instance still starting, but didn\'t start within specified timeout {0}.'
-                         .format(ctx.instance.id, START_TIMEOUT))
-        raise RecoverableError('(Node: {0}): Instance still starting, but didn\'t start within specified timeout: {0}.'
-                               .format(ctx.instance.id, START_TIMEOUT))
-    else:
-        ctx.logger.error('(Node: {0}): Failed to verify that the instance is running. (Instance id: {1}).'
-                         .format(ctx.instance.id, instance_id))
-        raise NonRecoverableError('(Node: {0}): Instance did not create within specified timeout: {0}.'
-                                  .format(ctx.instance.id, START_TIMEOUT))
-=======
         handle_ec2_error(ctx.instance.id, EC2ResponseError, 'start')
     except BotoServerError:
         handle_ec2_error(ctx.instance.id, BotoServerError, 'start')
@@ -135,7 +100,6 @@ def start(**kwargs):
     if validate_instance_id(instances[0].id):
         validate_state(instances[0], INSTANCE_RUNNING,
                        START_TIMEOUT, CHECK_INTERVAL)
->>>>>>> d06a9782764322ca9f4c7dde59b801161dc56767
 
 
 @operation
@@ -150,33 +114,6 @@ def stop(**kwargs):
     try:
         instances = EC2().stop_instances(instance_id)
     except EC2ResponseError:
-<<<<<<< HEAD
-        ctx.logger.error("""(Node: {0}): Error.
-                         Failed to stop instance: API returned: {1}."""
-                         .format(ctx.instance.id, EC2ResponseError))
-        raise NonRecoverableError('(Node: {0}): Error. Failed to stop instance: API returned: {1}.'
-                                  .format(ctx.instance.id, EC2ResponseError))
-
-    ctx.logger.debug("""(Node: {0}): Attempting to verify the instance is stopped.
-                     (Instance id: {1}.)"""
-                     .format(ctx.instance.id, instance_id))
-    ctx.logger.debug('(Node: {0}): Checking State: Stopped, Timeout: {1}. Check Interval: {2}.)'
-                     .format(ctx.instance.id, CREATION_TIMEOUT, CHECK_INTERVAL))
-
-    if _state_validation(instance_id, INSTANCE_STOPPED, STOP_TIMEOUT, CHECK_INTERVAL):
-        ctx.logger.info('(Node: {0}): Instance stopped. (Instance id: {1}).'
-                        .format(ctx.instance.id, instance_id))
-    elif _state_validation(instance_id, INSTANCE_STOPPED, STOP_TIMEOUT, CHECK_INTERVAL):
-        ctx.logger.debug('(Node: {0}): Instance didn\'t stop within specified timeout {0}.'
-                         .format(ctx.instance.id, STOP_TIMEOUT))
-        raise RecoverableError('(Node: {0}): Instance didn\'t stop within specified timeout: {0}.'
-                               .format(ctx.instance.id, STOP_TIMEOUT))
-    else:
-        ctx.logger.error('(Node: {0}): Failed to verify that the instance is stopped. (Instance id: {1}).'
-                         .format(ctx.instance.id, instance_id))
-        raise NonRecoverableError('(Node: {0}): Instance did not stop within specified timeout: {0}.'
-                                  .format(ctx.instance.id, STOP_TIMEOUT))
-=======
         handle_ec2_error(ctx.instance.id, EC2ResponseError, 'stop')
     except BotoServerError:
         handle_ec2_error(ctx.instance.id, BotoServerError, 'stop')
@@ -184,7 +121,6 @@ def stop(**kwargs):
     if validate_instance_id(instances[0].id):
         validate_state(instances[0], INSTANCE_STOPPED,
                        STOP_TIMEOUT, CHECK_INTERVAL)
->>>>>>> d06a9782764322ca9f4c7dde59b801161dc56767
 
 
 @operation
@@ -200,19 +136,6 @@ def terminate(**kwargs):
     try:
         instances = EC2().terminate_instances(instance_id)
     except EC2ResponseError:
-<<<<<<< HEAD
-        ctx.logger.error("""(Node: {0}): Error.
-                         Failed to terminate instance: API returned: {1}."""
-                         .format(ctx.instance.id, EC2ResponseError))
-        raise NonRecoverableError('(Node: {0}): Error. Failed to terminate instance: API returned: {1}.'
-                                  .format(ctx.instance.id, EC2ResponseError))
-
-    ctx.logger.debug("""(Node: {0}): Attempting to verify the instance is terminated.
-                     (Instance id: {1}.)"""
-                     .format(ctx.instance.id, instance_id))
-    ctx.logger.debug('(Node: {0}): Checking State: terminated, Timeout: {1}. Check Interval: {2}.)'
-                     .format(ctx.instance.id, TERMINATION_TIMEOUT, CHECK_INTERVAL))
-=======
         handle_ec2_error(ctx.instance.id, EC2ResponseError, 'terminate')
     except BotoServerError:
         handle_ec2_error(ctx.instance.id, BotoServerError, 'terminate')
@@ -221,7 +144,6 @@ def terminate(**kwargs):
         validate_state(instances[0], INSTANCE_TERMINATED,
                        TERMINATION_TIMEOUT, CHECK_INTERVAL)
 
->>>>>>> d06a9782764322ca9f4c7dde59b801161dc56767
 
 def validate_instance_id(instance_id):
 
