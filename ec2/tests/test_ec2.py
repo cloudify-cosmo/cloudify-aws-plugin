@@ -13,14 +13,14 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
-
+# Built-in Imports
 import unittest
 
-# ec2 imports Imports
+# Boto Imports
 from ec2 import instance
 from moto import mock_ec2
 
-# ctx is imported and used in operations
+# Cloudify imports
 from cloudify.mocks import MockCloudifyContext
 
 TEST_AMI_IMAGE_ID = 'ami-e214778a'
