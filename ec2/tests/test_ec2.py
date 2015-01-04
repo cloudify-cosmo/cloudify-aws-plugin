@@ -93,7 +93,7 @@ class TestPlugin(unittest.TestCase):
         with mock_ec2():
             instance.create(ctx=ctx)
             instance_id = ctx.instance.runtime_properties['instance_id']
-            self.assertTrue(utility.validate_instance_id(instance_id))
+            self.assertTrue(utility.validate_instance_id(instance_id, ctx))
 
     def test_raise_error(self):
 
