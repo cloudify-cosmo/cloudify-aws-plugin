@@ -23,11 +23,9 @@ from boto.exception import EC2ResponseError, BotoServerError
 # Cloudify imports
 from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
-from cloudify.decorators import operation
 
 
-@operation
-def validate_state(instance, state, timeout_length, check_interval, **kwargs):
+def validate_state(instance, state, timeout_length, check_interval):
     """ Check if an EC2 instance is in a particular state.
 
     :param instance: And EC2 instance.
@@ -72,8 +70,7 @@ def validate_state(instance, state, timeout_length, check_interval, **kwargs):
         time.sleep(check_interval)
 
 
-@operation
-def get_instance_state(instance, **kwargs):
+def get_instance_state(instance, ctx):
     """
 
     :param instance:
@@ -86,8 +83,7 @@ def get_instance_state(instance, **kwargs):
     return instance.state_code
 
 
-@operation
-def handle_ec2_error(ctx_instance_id, ec2_error, action, **kwargs):
+def handle_ec2_error(ctx_instance_id, ec2_error, action, ctx):
     """
 
     :param ctx_instance_id: the Cloudify Context node ID
@@ -106,8 +102,7 @@ def handle_ec2_error(ctx_instance_id, ec2_error, action, **kwargs):
                                       ec2_error))
 
 
-@operation
-def validate_instance_id(instance_id, **kwargs):
+def validate_instance_id(instance_id, ctx):
     """
 
     :param instance_id: An EC2 instance ID
@@ -116,12 +111,14 @@ def validate_instance_id(instance_id, **kwargs):
     """
 
     try:
-        instance = EC2().get_all_instances(instance_id)
+        reservations = EC2().get_all_reservations(instance_id)
     except EC2ResponseError:
         handle_ec2_error(ctx.instance.id, EC2ResponseError,
                          'validate')
     except BotoServerError:
-        handle_ec2_error(ctx.instance.id, BotoServerError, 'create')
+        handle_ec2_error(ctx.instance.id, BotoServerError, 'validate')
+
+    instance = reservations[0].instances[0]
 
     if instance:
         return True
