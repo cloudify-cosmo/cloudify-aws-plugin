@@ -56,7 +56,7 @@ def validate_state(instance, state, timeout_length, check_interval):
                             .format(instance.state))
             return True
         elif time.time() > timeout:
-            raise NonRecoverableError('(Node: {0}): Timed out during'
+            raise NonRecoverableError('(Node: {0}): Timed out during '
                                       'instance state validation: '
                                       'instance: {1}, '
                                       'timeout length: {2}, '
