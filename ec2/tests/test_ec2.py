@@ -86,6 +86,14 @@ class TestPlugin(unittest.TestCase):
             instance.stop(ctx=ctx)
             instance.terminate(ctx=ctx)
 
+    def test_raise_error(self):
+
+        ctx = self.mock_ctx('test_raise_error')
+        ctx.instance.runtime_properties['instance_id'] = 'Not an instance id'
+
+        with mock_ec2():
+            self.assertRaises(NonRecoverableError, instance.terminate, ctx=ctx)
+
     def test_validate_instance_id(self):
 
         ctx = self.mock_ctx('test_validate_instance_id')
@@ -95,14 +103,6 @@ class TestPlugin(unittest.TestCase):
                                               instance_type=TEST_INSTANCE_TYPE)
             self.assertTrue(utility.validate_instance_id(
                 reservation.instances[0].id, ctx=ctx))
-
-    def test_raise_error(self):
-
-        ctx = self.mock_ctx('test_raise_error')
-        ctx.instance.runtime_properties['instance_id'] = 'Not an instance id'
-
-        with mock_ec2():
-            self.assertRaises(NonRecoverableError, instance.terminate, ctx=ctx)
 
     def test_get_instance_state(self):
         ctx = self.mock_ctx('test_get_instance_state')
