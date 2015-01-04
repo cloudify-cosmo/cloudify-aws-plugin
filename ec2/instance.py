@@ -13,15 +13,15 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
-# built-in package
+# Built-in Imports
 import time
 
-# other packages
+# Boto Imports
 from boto.ec2 import EC2Connection as EC2
 from boto.exception import EC2ResponseError
 from boto.exception import BotoServerError
 
-# ctx packages
+# Cloudify imports
 from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
 from cloudify.decorators import operation
