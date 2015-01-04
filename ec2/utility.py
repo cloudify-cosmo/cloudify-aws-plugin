@@ -80,15 +80,6 @@ def get_instance_state(instance, ctx):
     return instance.state_code
 
 
-def handle_ec2_error(ctx_instance_id, ec2_error, action, ctx):
-    """
-
-    :param ctx_instance_id: the Cloudify Context node ID
-    :param ec2_error: EC2 Error Object
-    :param action: A string that fits in nicely with the error code :)
-    """
-
-
 def validate_instance_id(instance_id, ctx):
     """
 
@@ -112,4 +103,4 @@ def validate_instance_id(instance_id, ctx):
     else:
         raise NonRecoverableError('(Node: {0}): Unable to validate '
                                   'instance ID: {1}.'
-                                  .format(ctx.instance.id, instance_id))
+                                  .format(ctx.instance.id))
