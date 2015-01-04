@@ -88,11 +88,6 @@ def handle_ec2_error(ctx_instance_id, ec2_error, action, ctx):
     :param action: A string that fits in nicely with the error code :)
     """
 
-    raise NonRecoverableError('(Node: {0}): Error. '
-                              'Failed to {1} instance: '
-                              'API returned: {2}.'
-                              .format(ctx_instance_id, action, ec2_error))
-
 
 def validate_instance_id(instance_id, ctx):
     """
@@ -104,11 +99,11 @@ def validate_instance_id(instance_id, ctx):
 
     try:
         reservations = EC2().get_all_reservations(instance_id)
-    except EC2ResponseError:
-        handle_ec2_error(ctx.instance.id, EC2ResponseError,
-                         'validate')
-    except BotoServerError:
-        handle_ec2_error(ctx.instance.id, BotoServerError, 'validate')
+    except (EC2ResponseError, BotoServerError) as e:
+        raise NonRecoverableError('(Node: {0}): Error. '
+                                  'Failed to validate instance id: '
+                                  'API returned: {1}.'
+                                  .format(ctx.instance.id, e))
 
     instance = reservations[0].instances[0]
 
