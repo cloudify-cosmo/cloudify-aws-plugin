@@ -13,14 +13,14 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
-
+# Other Imports
 import unittest
 
-# ec2 imports Imports
+# Boto Imports
 from boto.ec2 import EC2Connection
 from moto import mock_ec2
 
-# ctx is imported and used in operations
+# Cloudify Imports is imported and used in operations
 from ec2 import connection
 from ec2 import instance
 from cloudify.mocks import MockCloudifyContext
