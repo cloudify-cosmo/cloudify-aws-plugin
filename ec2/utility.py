@@ -79,7 +79,6 @@ def get_instance_state(instance, ctx):
                      .format(ctx.instance.id, state))
     return instance.state_code
 
-
 def validate_instance_id(instance_id, ctx):
     """
 

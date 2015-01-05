@@ -13,14 +13,16 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
-
+# Other Imports
 import unittest
 
-# ec2 imports Imports
+# Boto Imports
+from boto.ec2 import EC2Connection
 from moto import mock_ec2
 from boto.ec2 import EC2Connection as EC2
 
-# ctx is imported and used in operations
+# Cloudify Imports is imported and used in operations
+from ec2 import connection
 from ec2 import instance
 from ec2 import utility
 from cloudify.mocks import MockCloudifyContext
@@ -86,30 +88,10 @@ class TestPlugin(unittest.TestCase):
             instance.stop(ctx=ctx)
             instance.terminate(ctx=ctx)
 
-    def test_raise_error(self):
+    @mock_ec2
+    def test_connect(self):
 
-        ctx = self.mock_ctx('test_raise_error')
-        ctx.instance.runtime_properties['instance_id'] = 'Not an instance id'
-
-        with mock_ec2():
-            self.assertRaises(NonRecoverableError, instance.terminate, ctx=ctx)
-
-    def test_validate_instance_id(self):
-
-        ctx = self.mock_ctx('test_validate_instance_id')
-
-        with mock_ec2():
-            reservation = EC2().run_instances(image_id=TEST_AMI_IMAGE_ID,
-                                              instance_type=TEST_INSTANCE_TYPE)
-            self.assertTrue(utility.validate_instance_id(
-                reservation.instances[0].id, ctx=ctx))
-
-    def test_get_instance_state(self):
-        ctx = self.mock_ctx('test_get_instance_state')
-        with mock_ec2():
-            reservation = EC2().run_instances(
-                image_id=TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
-            instance_object = reservation.instances[0]
-            instance_state = utility.get_instance_state(instance_object,
-                                                        ctx=ctx)
-            self.assertEqual(instance_state, 16)
+        c = connection.EC2Client().connect()
+        self.assertTrue(type(c), EC2Connection)
+        self.assertEqual(c.DefaultRegionEndpoint,
+                         'ec2.us-east-1.amazonaws.com')
