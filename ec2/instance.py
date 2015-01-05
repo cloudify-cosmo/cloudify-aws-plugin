@@ -13,15 +13,15 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
-# built-in package
+# Built-in Imports
 import time
 
-# other packages
+# Other Imports
 from boto.ec2 import EC2Connection as EC2
 from boto.exception import EC2ResponseError
 from boto.exception import BotoServerError
 
-# ctx packages
+# Cloudify Imports
 from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
 from cloudify.decorators import operation
@@ -45,6 +45,7 @@ RUN_INSTANCES_UNSUPPORTED = {
 }
 
 
+#Please ignore everything below this line, it should be overwritten by CFY-1879
 @operation
 def create(**kwargs):
     """ Creates an AWS Instance from an (AMI) image_id and an instance_type.
