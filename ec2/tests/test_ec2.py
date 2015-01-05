@@ -17,6 +17,7 @@
 import unittest
 
 # Boto Imports
+from boto.ec2 import EC2Connection as EC2
 from ec2 import instance
 from moto import mock_ec2
 
@@ -61,7 +62,10 @@ class TestPlugin(unittest.TestCase):
         ctx = self.mock_ctx('test_instance_stop')
 
         with mock_ec2():
-            instance.create(ctx=ctx)
+            reservation = EC2().run_instances(TEST_AMI_IMAGE_ID,
+                                              instance_type=TEST_INSTANCE_TYPE)
+            id = reservation.instances[0].id
+            ctx.instance.runtime_properties['instance_id'] = id
             instance.stop(ctx=ctx)
 
     def test_instance_start(self):
@@ -69,8 +73,11 @@ class TestPlugin(unittest.TestCase):
         ctx = self.mock_ctx('test_instance_start')
 
         with mock_ec2():
-            instance.create(ctx=ctx)
-            instance.stop(ctx=ctx)
+            reservation = EC2().run_instances(TEST_AMI_IMAGE_ID,
+                                              instance_type=TEST_INSTANCE_TYPE)
+            id = reservation.instances[0].id
+            ctx.instance.runtime_properties['instance_id'] = id
+            EC2().stop_instances(id)
             instance.start(ctx=ctx)
 
     def test_instance_terminate(self):
@@ -78,6 +85,8 @@ class TestPlugin(unittest.TestCase):
         ctx = self.mock_ctx('test_instance_terminate')
 
         with mock_ec2():
-            instance.create(ctx=ctx)
-            instance.stop(ctx=ctx)
+            reservation = EC2().run_instances(TEST_AMI_IMAGE_ID,
+                                              instance_type=TEST_INSTANCE_TYPE)
+            id = reservation.instances[0].id
+            ctx.instance.runtime_properties['instance_id'] = id
             instance.terminate(ctx=ctx)
