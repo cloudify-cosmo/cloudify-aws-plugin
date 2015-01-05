@@ -118,3 +118,26 @@ def get_instance_from_id(instance_id, ctx):
     instance = reservations[0].instances[0]
 
     return instance
+
+
+def get_instance_variable(instance, variable):
+    while instance.update() != 'running':
+        time.sleep(5)
+    variable = getattr(instance, variable)
+    return variable
+
+
+def get_private_dns_name(instance):
+    return get_instance_variable(instance, 'private_dns_name')
+
+
+def get_public_dns_name(instance):
+    return get_instance_variable(instance, 'public_dns_name')
+
+
+def get_private_ip_address(instance):
+    return get_instance_variable(instance, 'private_ip_address')
+
+
+def get_public_ip_address(instance):
+    return get_instance_variable(instance, 'public_ip_address')
