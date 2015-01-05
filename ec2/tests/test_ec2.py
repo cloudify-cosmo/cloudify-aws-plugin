@@ -22,9 +22,6 @@ from moto import mock_ec2
 from boto.ec2 import EC2Connection as EC2
 
 # Cloudify Imports is imported and used in operations
-from ec2 import connection
-from ec2 import instance
-from ec2 import utility
 from cloudify.mocks import MockCloudifyContext
 from cloudify.exceptions import NonRecoverableError
 
