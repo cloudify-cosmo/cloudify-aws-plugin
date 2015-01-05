@@ -67,10 +67,10 @@ def create(**kwargs):
 
     try:
         reservation = EC2().run_instances(**arguments)
-    except EC2ResponseError:
-        handle_ec2_error(ctx.instance.id, EC2ResponseError, 'create')
-    except BotoServerError:
-        handle_ec2_error(ctx.instance.id, BotoServerError, 'create')
+    except (EC2ResponseError, BotoServerError) as e:
+        raise NonRecoverableError('(Node: {0}): Error. Failed to run '
+                                  'instance: API returned: {1}.'
+                                  .format(ctx.instance.id, e))
 
     instance_id = reservation.instances[0].id
     ctx.instance.runtime_properties['instance_id'] = instance_id
@@ -92,10 +92,10 @@ def start(**kwargs):
 
     try:
         instances = EC2().start_instances(instance_id)
-    except EC2ResponseError:
-        handle_ec2_error(ctx.instance.id, EC2ResponseError, 'start')
-    except BotoServerError:
-        handle_ec2_error(ctx.instance.id, BotoServerError, 'start')
+    except (EC2ResponseError, BotoServerError) as e:
+        raise NonRecoverableError('(Node: {0}): Error. Failed to start '
+                                  'instance: API returned: {1}.'
+                                  .format(ctx.instance.id, e))
 
     if validate_instance_id(instances[0].id):
         validate_state(instances[0], INSTANCE_RUNNING,
@@ -113,10 +113,10 @@ def stop(**kwargs):
 
     try:
         instances = EC2().stop_instances(instance_id)
-    except EC2ResponseError:
-        handle_ec2_error(ctx.instance.id, EC2ResponseError, 'stop')
-    except BotoServerError:
-        handle_ec2_error(ctx.instance.id, BotoServerError, 'stop')
+    except (EC2ResponseError, BotoServerError) as e:
+        raise NonRecoverableError('(Node: {0}): Error. Failed to stop '
+                                  'instance: API returned: {1}.'
+                                  .format(ctx.instance.id, e))
 
     if validate_instance_id(instances[0].id):
         validate_state(instances[0], INSTANCE_STOPPED,
@@ -135,65 +135,77 @@ def terminate(**kwargs):
 
     try:
         instances = EC2().terminate_instances(instance_id)
-    except EC2ResponseError:
-        handle_ec2_error(ctx.instance.id, EC2ResponseError, 'terminate')
-    except BotoServerError:
-        handle_ec2_error(ctx.instance.id, BotoServerError, 'terminate')
+    except (EC2ResponseError, BotoServerError) as e:
+        raise NonRecoverableError('(Node: {0}): Error. Failed to terminate '
+                                  'instance: API returned: {1}.'
+                                  .format(ctx.instance.id, e))
 
     if validate_instance_id(instances[0].id):
         validate_state(instances[0], INSTANCE_TERMINATED,
                        TERMINATION_TIMEOUT, CHECK_INTERVAL)
 
 
+@operation
+def creation_validation(**kwargs):
+    instance_id = ctx.instance.runtime_properties['instance_id']
+    state = INSTANCE_RUNNING
+    timeout_length = CREATION_TIMEOUT
+
+    if validate_state(instance_id, state, timeout_length, CHECK_INTERVAL):
+        ctx.logger.debug('Instance is running.')
+    else:
+        raise NonRecoverableError('Instance not running.')
+
+
+def build_arg_dict(user_supplied, unsupported):
+
+    arguments = {}
+    for pair in user_supplied.items():
+        arguments[pair[0]] = pair[1]
+    for pair in unsupported.items():
+        arguments[pair[0]] = pair[1]
+    return arguments
+
+
+# Everything below will be taken care of by utility module in CFY-1892
 def validate_instance_id(instance_id):
 
     try:
         instance = EC2().get_all_instances(instance_id)
-    except EC2ResponseError:
-        handle_ec2_error(ctx.instance.id, EC2ResponseError, 'validate')
-    except BotoServerError:
-        handle_ec2_error(ctx.instance.id, BotoServerError, 'create')
+    except (EC2ResponseError, BotoServerError) as e:
+        raise NonRecoverableError('(Node: {0}): Error. Failed to validate '
+                                  'instance: API returned: {1}.'
+                                  .format(ctx.instance.id, e))
 
     if instance:
         return True
     else:
-        ctx.logger.error('(Node: {0}): Unable to validate instance ID: {1}.'
-                         .format(ctx.instance.id, instance_id))
-        raise NonRecoverableError("""(Node: {0}):
-                                     Unable to validate instance ID: {1}."""
-                                  .format(ctx.instance.id, instance_id))
+        raise NonRecoverableError('(Node: {0}): Unable to validate instance '
+                                  'ID: {1}.'.format(ctx.instance.id,
+                                                    instance_id))
 
 
 def validate_state(instance, state, timeout_length, check_interval):
 
-    ctx.logger.debug("""(Node: {0}): Attempting state validation:
-                       instance id: {0}, state: {1}, timeout length: {2},
-                       check interval: {3}.""".format(instance.id, state,
-                                                      timeout_length,
-                                                      check_interval))
+    ctx.logger.debug('(Node: {0}): Attempting state validation: '
+                     'instance id: {0}, state: {1}, timeout length: {2}, '
+                     'check interval: {3}.'
+                     .format(instance.id, state, timeout_length,
+                             check_interval))
 
     timeout = time.time() + timeout_length
 
     while True:
         if state == _get_instance_state(instance):
-            ctx.logger.info("""(Node: {0}):
-                               Instance state validated: instance {0}."""
-                            .format(instance.state))
+            ctx.logger.info('(Node: {0}): Instance state validated: instance '
+                            '{0}.'.format(instance.state))
             return True
         elif time.time() > timeout:
-            ctx.logger.error("""(Node: {0}): Timedout during instance state
-                                validation: instance: {1}, timeout length: {2},
-                                check interval: {3}."""
-                             .format(ctx.instance.node, instance.id,
-                                     timeout_length, check_interval))
-            raise NonRecoverableError("""(Node: {0}): Timed out during instance
-                                         state validation: instance: {1},
-                                         timeout length: {2},
-                                         check interval: {3}."""
-                                      .format(ctx.instance.id,
-                                              TERMINATION_TIMEOUT))
-            return False
-
+            raise NonRecoverableError('(Node: {0}): Timed out during instance '
+                                      'state validation: instance: {1}, '
+                                      'timeout length: {2}, check interval: '
+                                      '{3}.'.format(ctx.instance.id,
+                                                    TERMINATION_TIMEOUT))
         time.sleep(check_interval)
 
 
@@ -212,32 +224,6 @@ def _get_instance_state(instance):
 
 def handle_ec2_error(instance, ec2_error, action):
 
-    ctx.logger.error("""(Node: {0}): Error. Failed to {1} instance:
-                        API returned: {2}.""" .format(ctx.instance.id, action,
-                                                      ec2_error))
-    raise NonRecoverableError("""(Node: {0}): Error. Failed to {1} instance:
-                                 API returned: {2}.""".format(ctx.instance.id,
-                                                              action,
-                                                              ec2_error))
-
-
-def build_arg_dict(user_supplied, unsupported):
-
-    arguments = {}
-    for pair in user_supplied.items():
-        arguments[pair[0]] = pair[1]
-    for pair in unsupported.items():
-        arguments[pair[0]] = pair[1]
-    return arguments
-
-
-@operation
-def creation_validation(**kwargs):
-    instance_id = ctx.instance.runtime_properties['instance_id']
-    state = INSTANCE_RUNNING
-    timeout_length = CREATION_TIMEOUT
-
-    if validate_state(instance_id, state, timeout_length, CHECK_INTERVAL):
-        ctx.logger.debug('Instance is running.')
-    else:
-        raise NonRecoverableError('Instance not running.')
+    raise NonRecoverableError('(Node: {0}): Error. Failed to {1} instance: '
+                              'API returned: {2}.'.format(ctx.instance.id,
+                                                          action, ec2_error))
