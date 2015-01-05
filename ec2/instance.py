@@ -45,7 +45,8 @@ RUN_INSTANCES_UNSUPPORTED = {
 }
 
 
-#Please ignore everything below this line, it should be overwritten by CFY-1879
+# Please ignore everything below this line
+# it should be overwritten by CFY-1879
 @operation
 def create(**kwargs):
     """ Creates an AWS Instance from an (AMI) image_id and an instance_type.
