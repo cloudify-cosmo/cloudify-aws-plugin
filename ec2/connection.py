@@ -13,11 +13,11 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
-# other imports
+# Other Imports
 from boto.ec2 import EC2Connection
 from boto.exception import EC2ResponseError, BotoServerError
 
-# Cloudify imports
+# Cloudify Imports
 from cloudify.exceptions import NonRecoverableError
 
 
