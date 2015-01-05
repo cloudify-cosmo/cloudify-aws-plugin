@@ -15,7 +15,7 @@
 
 # other imports
 from boto.ec2 import EC2Connection
-from boto.exception import EC2ResponseError
+from boto.exception import EC2ResponseError, BotoServerError
 
 # Cloudify imports
 from cloudify.exceptions import NonRecoverableError
@@ -30,9 +30,9 @@ class EC2Client():
 
         try:
             self.connection = EC2Connection()
-        except EC2ResponseError:
-            raise NonRecoverableError("""Error. Failed to connect to EC2:
-                                         API returned: {0}."""
-                                      .format(EC2ResponseError))
+        except (EC2ResponseError, BotoServerError) as e:
+            raise NonRecoverableError('Error. Failed to connect to EC2:'
+                                      'API returned: {0}.'
+                                      .format(e))
 
         return self.connection
