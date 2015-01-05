@@ -21,10 +21,18 @@ from boto.ec2 import EC2Connection as EC2
 from boto.exception import EC2ResponseError, BotoServerError
 
 # Cloudify imports
+<<<<<<< HEAD
 from cloudify.exceptions import NonRecoverableError
 
 
 def validate_state(instance, state, timeout_length, check_interval, ctx):
+=======
+from cloudify import ctx
+from cloudify.exceptions import NonRecoverableError
+
+
+def validate_state(instance, state, timeout_length, check_interval):
+>>>>>>> ade788ef429d83ae3ffcbc79190ad883b01a4f5d
     """ Check if an EC2 instance is in a particular state.
 
     :param instance: And EC2 instance.
@@ -49,7 +57,11 @@ def validate_state(instance, state, timeout_length, check_interval, ctx):
     timeout = time.time() + timeout_length
 
     while True:
+<<<<<<< HEAD
         if state == get_instance_state(instance, ctx=ctx):
+=======
+        if state == get_instance_state(instance):
+>>>>>>> ade788ef429d83ae3ffcbc79190ad883b01a4f5d
             ctx.logger.info('(Node: {0}): '
                             'Instance state validated: instance {0}.'
                             .format(instance.state))
@@ -103,6 +115,7 @@ def validate_instance_id(instance_id, ctx):
         raise NonRecoverableError('(Node: {0}): Unable to validate '
                                   'instance ID: {1}.'
                                   .format(ctx.instance.id, instance_id))
+<<<<<<< HEAD
 
 
 def get_instance_from_id(instance_id, ctx):
@@ -118,3 +131,5 @@ def get_instance_from_id(instance_id, ctx):
     instance = reservations[0].instances[0]
 
     return instance
+=======
+>>>>>>> ade788ef429d83ae3ffcbc79190ad883b01a4f5d
