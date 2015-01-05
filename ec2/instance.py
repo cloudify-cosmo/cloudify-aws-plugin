@@ -23,7 +23,7 @@ from boto.exception import BotoServerError
 
 # Cloudify imports
 from cloudify import ctx
-from cloudify.exceptions import NonRecoverableError
+from cloudify.exceptions import NonRecoverableError, RecoverableError
 from cloudify.decorators import operation
 
 # EC2 Instance States
@@ -47,7 +47,7 @@ RUN_INSTANCES_UNSUPPORTED = {
 
 @operation
 def create(**kwargs):
-    """ Creates an AWS Instance from an (AMI) image_id and an instance_type.
+    """ Creates an EC2 instance from an (AMI) image_id and an instance_type.
     """
 
     arguments = dict()
@@ -82,6 +82,8 @@ def create(**kwargs):
 
 @operation
 def start(**kwargs):
+    """ Starts an existing EC2 instance. If already started, this does nothing.
+    """
 
     instance_id = ctx.instance.runtime_properties['instance_id']
 
@@ -104,6 +106,8 @@ def start(**kwargs):
 
 @operation
 def stop(**kwargs):
+    """ Stops an existing EC2 instance. If already stopped, this does nothing.
+    """
 
     instance_id = ctx.instance.runtime_properties['instance_id']
 
@@ -125,6 +129,9 @@ def stop(**kwargs):
 
 @operation
 def terminate(**kwargs):
+    """ Terminates an existing EC2 instance.
+    If already terminated, this does nothing.
+    """
 
     instance_id = ctx.instance.runtime_properties['instance_id']
 
@@ -154,7 +161,7 @@ def creation_validation(**kwargs):
     if validate_state(instance_id, state, timeout_length, CHECK_INTERVAL):
         ctx.logger.debug('Instance is running.')
     else:
-        raise NonRecoverableError('Instance not running.')
+        raise RecoverableError('Instance not running.')
 
 
 def build_arg_dict(user_supplied, unsupported):
@@ -198,7 +205,7 @@ def validate_state(instance, state, timeout_length, check_interval):
     while True:
         if state == _get_instance_state(instance):
             ctx.logger.info('(Node: {0}): Instance state validated: instance '
-                            '{0}.'.format(instance.state))
+                            '{1}.'.format(ctx.instance.id, instance.state))
             return True
         elif time.time() > timeout:
             raise NonRecoverableError('(Node: {0}): Timed out during instance '
