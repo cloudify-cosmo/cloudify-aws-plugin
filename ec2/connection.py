@@ -13,27 +13,26 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
+# Other Imports
+from boto.ec2 import EC2Connection
+from boto.exception import EC2ResponseError, BotoServerError
 
-from setuptools import setup
+# Cloudify Imports
+from cloudify.exceptions import NonRecoverableError
 
-# Replace the place holders with values for your project
 
-setup(
+class EC2Client():
 
-    # Do not use underscores in the plugin name.
-    name='cloudify-aws-plugin',
-    author='Gigaspaces',
-    author_email='cosmo-admin@gigaspaces.com',
+    def __init__(self):
+        self.connection = None
 
-    version='0.1',
-    description='Cloudify plugin for AWS infrastructure.',
+    def connect(self):
 
-    # This must correspond to the actual packages in the plugin.
-    packages=['ec2'],
+        try:
+            self.connection = EC2Connection()
+        except (EC2ResponseError, BotoServerError) as e:
+            raise NonRecoverableError('Error. Failed to connect to EC2:'
+                                      'API returned: {0}.'
+                                      .format(e))
 
-    license='LICENSE',
-    install_requires=[
-        'cloudify-plugins-common==3.2a2',
-        'boto==2.34.0'
-    ]
-)
+        return self.connection
