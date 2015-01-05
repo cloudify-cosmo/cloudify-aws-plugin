@@ -103,4 +103,4 @@ def validate_instance_id(instance_id, ctx):
     else:
         raise NonRecoverableError('(Node: {0}): Unable to validate '
                                   'instance ID: {1}.'
-                                  .format(ctx.instance.id))
+                                  .format(ctx.instance.id, instance_id))
