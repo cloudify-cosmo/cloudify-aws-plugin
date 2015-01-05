@@ -17,11 +17,12 @@
 import unittest
 
 # Boto Imports
-from boto.ec2 import EC2Connection as EC2
-from ec2 import instance
+from boto.ec2 import EC2Connection
 from moto import mock_ec2
 
-# Cloudify imports
+# Cloudify Imports is imported and used in operations
+from ec2 import connection
+from ec2 import instance
 from cloudify.mocks import MockCloudifyContext
 
 TEST_AMI_IMAGE_ID = 'ami-e214778a'
@@ -90,3 +91,11 @@ class TestPlugin(unittest.TestCase):
             id = reservation.instances[0].id
             ctx.instance.runtime_properties['instance_id'] = id
             instance.terminate(ctx=ctx)
+
+    @mock_ec2
+    def test_connect(self):
+
+        c = connection.EC2Client().connect()
+        self.assertTrue(type(c), EC2Connection)
+        self.assertEqual(c.DefaultRegionEndpoint,
+                         'ec2.us-east-1.amazonaws.com')

@@ -13,9 +13,6 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
-# Built-in Imports
-import time
-
 # Boto Imports
 from boto.ec2 import EC2Connection as EC2
 from boto.exception import EC2ResponseError
@@ -23,8 +20,9 @@ from boto.exception import BotoServerError
 
 # Cloudify imports
 from cloudify import ctx
-from cloudify.exceptions import NonRecoverableError, RecoverableError
+from cloudify.exceptions import NonRecoverableError
 from cloudify.decorators import operation
+from ec2 import utility
 
 # EC2 Instance States
 INSTANCE_RUNNING = 16
@@ -75,9 +73,9 @@ def create(**kwargs):
     instance_id = reservation.instances[0].id
     ctx.instance.runtime_properties['instance_id'] = instance_id
 
-    if validate_instance_id(reservation.instances[0].id):
-        validate_state(reservation.instances[0], INSTANCE_RUNNING,
-                       CREATION_TIMEOUT, CHECK_INTERVAL)
+    if utility.validate_instance_id(reservation.instances[0].id, ctx=ctx):
+        utility.validate_state(reservation.instances[0], INSTANCE_RUNNING,
+                               CREATION_TIMEOUT, CHECK_INTERVAL, ctx=ctx)
 
 
 @operation
@@ -87,7 +85,7 @@ def start(**kwargs):
 
     instance_id = ctx.instance.runtime_properties['instance_id']
 
-    if validate_instance_id(instance_id):
+    if utility.validate_instance_id(instance_id, ctx=ctx):
         ctx.logger.error('(Node: {0}: No such instance exists.'
                          'Instance ID: {1}.'
                          .format(ctx.instance.id, instance_id))
@@ -105,9 +103,9 @@ def start(**kwargs):
                                   'instance: API returned: {1}.'
                                   .format(ctx.instance.id, e))
 
-    if validate_instance_id(instances[0].id):
-        validate_state(instances[0], INSTANCE_RUNNING,
-                       START_TIMEOUT, CHECK_INTERVAL)
+    if utility.validate_instance_id(instance_id, ctx=ctx):
+        utility.validate_state(instances[0], INSTANCE_RUNNING,
+                               START_TIMEOUT, CHECK_INTERVAL, ctx=ctx)
 
 
 @operation
@@ -117,7 +115,7 @@ def stop(**kwargs):
 
     instance_id = ctx.instance.runtime_properties['instance_id']
 
-    if validate_instance_id(instance_id):
+    if utility.validate_instance_id(instance_id, ctx=ctx):
         ctx.logger.error('(Node: {0}: No such instance exists.'
                          'Instance ID: {1}.'
                          .format(ctx.instance.id, instance_id))
@@ -135,9 +133,9 @@ def stop(**kwargs):
                                   'instance: API returned: {1}.'
                                   .format(ctx.instance.id, e))
 
-    if validate_instance_id(instances[0].id):
-        validate_state(instances[0], INSTANCE_STOPPED,
-                       STOP_TIMEOUT, CHECK_INTERVAL)
+    if utility.validate_instance_id(instance_id, ctx=ctx):
+        utility.validate_state(instances[0], INSTANCE_STOPPED,
+                               STOP_TIMEOUT, CHECK_INTERVAL, ctx=ctx)
 
 
 @operation
@@ -148,7 +146,7 @@ def terminate(**kwargs):
 
     instance_id = ctx.instance.runtime_properties['instance_id']
 
-    if validate_instance_id(instance_id):
+    if utility.validate_instance_id(instance_id, ctx=ctx):
         ctx.logger.error('(Node: {0}: No such instance exists.'
                          'Instance ID: {1}.'
                          .format(ctx.instance.id, instance_id))
@@ -167,9 +165,9 @@ def terminate(**kwargs):
                                   'instance: API returned: {1}.'
                                   .format(ctx.instance.id, e))
 
-    if validate_instance_id(instances[0].id):
-        validate_state(instances[0], INSTANCE_TERMINATED,
-                       TERMINATION_TIMEOUT, CHECK_INTERVAL)
+    if utility.validate_instance_id(instance_id, ctx=ctx):
+        utility.validate_state(instances[0], INSTANCE_TERMINATED,
+                               TERMINATION_TIMEOUT, CHECK_INTERVAL, ctx=ctx)
 
 
 @operation
@@ -178,77 +176,18 @@ def creation_validation(**kwargs):
     state = INSTANCE_RUNNING
     timeout_length = CREATION_TIMEOUT
 
-    if validate_state(instance_id, state, timeout_length, CHECK_INTERVAL):
+    if utility.validate_state(instance_id, state,
+                              timeout_length, CHECK_INTERVAL, ctx=ctx):
         ctx.logger.debug('Instance is running.')
     else:
-        raise RecoverableError('Instance not running.')
+        raise NonRecoverableError('Instance not running.')
 
 
 def build_arg_dict(user_supplied, unsupported):
 
     arguments = {}
     for pair in user_supplied.items():
-        arguments[pair[0]] = pair[1]
+        arguments['{0}'.format(pair[0])] = pair[1]
     for pair in unsupported.items():
-        arguments[pair[0]] = pair[1]
+        arguments['{0}'.format(pair[0])] = pair[1]
     return arguments
-
-
-# Everything below will be taken care of by utility module in CFY-1892
-def validate_instance_id(instance_id):
-
-    try:
-        instance = EC2().get_all_instances(instance_id)
-    except (EC2ResponseError, BotoServerError) as e:
-        raise NonRecoverableError('(Node: {0}): Error. Failed to validate '
-                                  'instance: API returned: {1}.'
-                                  .format(ctx.instance.id, e))
-
-    if instance:
-        return True
-    else:
-        raise NonRecoverableError('(Node: {0}): Unable to validate instance '
-                                  'ID: {1}.'.format(ctx.instance.id,
-                                                    instance_id))
-
-
-def validate_state(instance, state, timeout_length, check_interval):
-
-    if check_interval < 1:
-        check_interval = 1
-
-    ctx.logger.debug('(Node: {0}): Attempting state validation: '
-                     'instance id: {1}, state: {2}, timeout length: {3}, '
-                     'check interval: {4}.'
-                     .format(ctx.instance.id, instance.id, state,
-                             timeout_length, check_interval))
-
-    timeout = time.time() + timeout_length
-
-    while True:
-        if state == _get_instance_state(instance):
-            ctx.logger.info('(Node: {0}): Instance state validated: instance '
-                            '{1}.'.format(ctx.instance.id, instance.state))
-            return True
-        elif time.time() > timeout:
-            raise NonRecoverableError('(Node: {0}): Timed out during instance '
-                                      'state validation: instance: {1}, '
-                                      'timeout length: {2}, check interval: '
-                                      '{3}.'
-                                      .format(ctx.instance.id, instance.id,
-                                              TERMINATION_TIMEOUT,
-                                              check_interval))
-        time.sleep(check_interval)
-
-
-def _get_instance_state(instance):
-    """
-
-    :param instance:
-    :return:
-    """
-
-    state = instance.update()
-    ctx.logger.debug('(Node: {0}): Instance state is {1}.'
-                     .format(ctx.instance.id, state))
-    return instance.state_code
