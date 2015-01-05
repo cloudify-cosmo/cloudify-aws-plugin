@@ -61,7 +61,7 @@ def validate_state(instance, state, timeout_length, check_interval):
                                       'instance: {1}, '
                                       'timeout length: {2}, '
                                       'check interval: {3}.'
-                                      .format(ctx.instance.id,
+                                      .format(ctx.instance.id, instance.id,
                                               timeout_length,
                                               check_interval))
         time.sleep(check_interval)
