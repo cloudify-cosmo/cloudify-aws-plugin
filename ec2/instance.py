@@ -87,6 +87,12 @@ def start(**kwargs):
 
     instance_id = ctx.instance.runtime_properties['instance_id']
 
+    if validate_instance_id(instance_id):
+        ctx.logger.error('(Node: {0}: No such instance exists.'
+                         'Instance ID: {1}.'
+                         .format(ctx.instance.id, instance_id))
+        return None
+
     ctx.logger.info('(Node: {0}): Starting instance.'.format(ctx.instance.id))
     ctx.logger.debug('(Node: {0}): Attempting to start instance.'
                      '(Instance id: {1}.)'.format(ctx.instance.id,
@@ -111,9 +117,16 @@ def stop(**kwargs):
 
     instance_id = ctx.instance.runtime_properties['instance_id']
 
+    if validate_instance_id(instance_id):
+        ctx.logger.error('(Node: {0}: No such instance exists.'
+                         'Instance ID: {1}.'
+                         .format(ctx.instance.id, instance_id))
+        return None
+
     ctx.logger.info('(Node: {0}): Stopping instance.'.format(ctx.instance.id))
     ctx.logger.debug('(Node: {0}): Attempting to stop instance.'
-                     .format(ctx.instance.id))
+                     '(Instance id: {1}.)'.format(ctx.instance.id,
+                                                  instance_id))
 
     try:
         instances = EC2().stop_instances(instance_id)
@@ -135,10 +148,17 @@ def terminate(**kwargs):
 
     instance_id = ctx.instance.runtime_properties['instance_id']
 
+    if validate_instance_id(instance_id):
+        ctx.logger.error('(Node: {0}: No such instance exists.'
+                         'Instance ID: {1}.'
+                         .format(ctx.instance.id, instance_id))
+        return None
+
     ctx.logger.info('(Node: {0}): Terminating instance.'
                     .format(ctx.instance.id))
     ctx.logger.debug('(Node: {0}): Attempting to terminate instance.'
-                     .format(ctx.instance.id))
+                     '(Instance id: {1}.)'.format(ctx.instance.id,
+                                                  instance_id))
 
     try:
         instances = EC2().terminate_instances(instance_id)
@@ -194,6 +214,9 @@ def validate_instance_id(instance_id):
 
 def validate_state(instance, state, timeout_length, check_interval):
 
+    if check_interval < 1:
+        check_interval = 1
+
     ctx.logger.debug('(Node: {0}): Attempting state validation: '
                      'instance id: {1}, state: {2}, timeout length: {3}, '
                      'check interval: {4}.'
@@ -211,8 +234,10 @@ def validate_state(instance, state, timeout_length, check_interval):
             raise NonRecoverableError('(Node: {0}): Timed out during instance '
                                       'state validation: instance: {1}, '
                                       'timeout length: {2}, check interval: '
-                                      '{3}.'.format(ctx.instance.id,
-                                                    TERMINATION_TIMEOUT))
+                                      '{3}.'
+                                      .format(ctx.instance.id, instance.id,
+                                              TERMINATION_TIMEOUT,
+                                              check_interval))
         time.sleep(check_interval)
 
 
@@ -227,10 +252,3 @@ def _get_instance_state(instance):
     ctx.logger.debug('(Node: {0}): Instance state is {1}.'
                      .format(ctx.instance.id, state))
     return instance.state_code
-
-
-def handle_ec2_error(instance, ec2_error, action):
-
-    raise NonRecoverableError('(Node: {0}): Error. Failed to {1} instance: '
-                              'API returned: {2}.'.format(ctx.instance.id,
-                                                          action, ec2_error))
