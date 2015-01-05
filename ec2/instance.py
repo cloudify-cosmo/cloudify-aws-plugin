@@ -58,8 +58,8 @@ def create(**kwargs):
     arguments.update(args_to_merge)
 
     ctx.logger.info('(Node: {0}): Creating instance.'.format(ctx.instance.id))
-    ctx.logger.debug("""(Node: {0}): Attempting to create instance.
-                        (Image id: {1}. Instance type: {2}.)"""
+    ctx.logger.debug('(Node: {0}): Attempting to create instance.'
+                     '(Image id: {1}. Instance type: {2}.)'
                      .format(ctx.instance.id, arguments['image_id'],
                              arguments['instance_type']))
     ctx.logger.debug('(Node: {0}): Run instance parameters: {1}.'
@@ -86,9 +86,9 @@ def start(**kwargs):
     instance_id = ctx.instance.runtime_properties['instance_id']
 
     ctx.logger.info('(Node: {0}): Starting instance.'.format(ctx.instance.id))
-    ctx.logger.debug("""(Node: {0}): Attempting to start instance.
-                        (Instance id: {1}.)"""
-                     .format(ctx.instance.id, instance_id))
+    ctx.logger.debug('(Node: {0}): Attempting to start instance.'
+                     '(Instance id: {1}.)'.format(ctx.instance.id,
+                                                  instance_id))
 
     try:
         instances = EC2().start_instances(instance_id)
@@ -188,10 +188,10 @@ def validate_instance_id(instance_id):
 def validate_state(instance, state, timeout_length, check_interval):
 
     ctx.logger.debug('(Node: {0}): Attempting state validation: '
-                     'instance id: {0}, state: {1}, timeout length: {2}, '
-                     'check interval: {3}.'
-                     .format(instance.id, state, timeout_length,
-                             check_interval))
+                     'instance id: {1}, state: {2}, timeout length: {3}, '
+                     'check interval: {4}.'
+                     .format(ctx.instance.id, instance.id, state,
+                             timeout_length, check_interval))
 
     timeout = time.time() + timeout_length
 
