@@ -54,6 +54,17 @@ class TestPlugin(unittest.TestCase):
 
         return ctx
 
+    def setup_httpretty(self):
+        httpretty.enable()
+        httpretty.register_uri(httpretty.POST,
+                               re.compile(
+                                   '.*'),
+                               status=500)
+
+    def teardown_httpretty(self):
+        httpretty.disable()
+        httpretty.reset()
+
     def test_instance_create(self):
 
         ctx = self.mock_ctx('test_instance_create')
@@ -187,14 +198,9 @@ class TestPlugin(unittest.TestCase):
 
         ctx = self.mock_ctx('test_no_route_to_host_create')
 
-        httpretty.enable()
-        httpretty.register_uri(httpretty.POST,
-                               re.compile(
-                                   'https://ec2.us-east-1.amazonaws.com/.*'),
-                               status=500)
+        self.setup_httpretty()
         self.assertRaises(NonRecoverableError, instance.create, ctx=ctx)
-        httpretty.disable()
-        httpretty.reset()
+        self.teardown_httpretty()
 
     def test_no_route_to_host_start(self):
 
@@ -206,15 +212,9 @@ class TestPlugin(unittest.TestCase):
                                              instance_type=TEST_INSTANCE_TYPE)
             id = reservation.instances[0].id
             ctx.instance.runtime_properties['instance_id'] = id
-            httpretty.enable()
-            httpretty.register_uri(httpretty.POST,
-                                   re.compile(
-                                       'https://ec2.us-east-1.amazonaws.com/.*'
-                                   ),
-                                   status=500)
+            self.setup_httpretty()
             self.assertRaises(NonRecoverableError, instance.start, ctx=ctx)
-            httpretty.disable()
-            httpretty.reset()
+            self.teardown_httpretty()
 
     def test_no_route_to_host_stop(self):
 
@@ -226,15 +226,9 @@ class TestPlugin(unittest.TestCase):
                                              instance_type=TEST_INSTANCE_TYPE)
             id = reservation.instances[0].id
             ctx.instance.runtime_properties['instance_id'] = id
-            httpretty.enable()
-            httpretty.register_uri(httpretty.POST,
-                                   re.compile(
-                                       'https://ec2.us-east-1.amazonaws.com/.*'
-                                   ),
-                                   status=500)
+            self.setup_httpretty()
             self.assertRaises(NonRecoverableError, instance.stop, ctx=ctx)
-            httpretty.disable()
-            httpretty.reset()
+            self.teardown_httpretty()
 
     def test_no_route_to_host_terminate(self):
 
@@ -246,12 +240,6 @@ class TestPlugin(unittest.TestCase):
                                              instance_type=TEST_INSTANCE_TYPE)
             id = reservation.instances[0].id
             ctx.instance.runtime_properties['instance_id'] = id
-            httpretty.enable()
-            httpretty.register_uri(httpretty.POST,
-                                   re.compile(
-                                       'https://ec2.us-east-1.amazonaws.com/.*'
-                                   ),
-                                   status=500)
+            self.setup_httpretty()
             self.assertRaises(NonRecoverableError, instance.terminate, ctx=ctx)
-            httpretty.disable()
-            httpretty.reset()
+            self.teardown_httpretty()
