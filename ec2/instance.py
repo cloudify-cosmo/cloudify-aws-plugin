@@ -146,12 +146,6 @@ def terminate(**kwargs):
 
     instance_id = ctx.instance.runtime_properties['instance_id']
 
-    if utility.validate_instance_id(instance_id, ctx=ctx):
-        ctx.logger.error('(Node: {0}: No such instance exists.'
-                         'Instance ID: {1}.'
-                         .format(ctx.instance.id, instance_id))
-        return None
-
     ctx.logger.info('(Node: {0}): Terminating instance.'
                     .format(ctx.instance.id))
     ctx.logger.debug('(Node: {0}): Attempting to terminate instance.'
