@@ -54,17 +54,6 @@ class TestPlugin(unittest.TestCase):
 
         return ctx
 
-    def setup_httpretty(self):
-        httpretty.enable()
-        httpretty.register_uri(httpretty.POST,
-                               re.compile(
-                                   '.*'),
-                               status=500)
-
-    def teardown_httpretty(self):
-        httpretty.disable()
-        httpretty.reset()
-
     def test_instance_create(self):
 
         ctx = self.mock_ctx('test_instance_create')
@@ -173,13 +162,13 @@ class TestPlugin(unittest.TestCase):
         ctx = self.mock_ctx('test_instance_running_validate_state')
 
         with mock_ec2():
-            conn = connection.EC2Client().connect()
-            reservation = conn.run_instances(TEST_AMI_IMAGE_ID,
-                                             instance_type=TEST_INSTANCE_TYPE)
+            x = connection.EC2Client().connect()
+            reservation = x.run_instances(TEST_AMI_IMAGE_ID,
+                                          instance_type=TEST_INSTANCE_TYPE)
             id = reservation.instances[0].id
             ctx.instance.runtime_properties['instance_id'] = id
             instance_object = utility.get_instance_from_id(id, ctx=ctx)
-            conn.stop_instances(id)
+            x.stop_instances(id)
             self.assertRaises(NonRecoverableError,
                               utility.validate_state,
                               instance_object, 0, 1, .1, ctx=ctx)
@@ -198,48 +187,47 @@ class TestPlugin(unittest.TestCase):
 
         ctx = self.mock_ctx('test_no_route_to_host_create')
 
-        self.setup_httpretty()
-        self.assertRaises(NonRecoverableError, instance.create, ctx=ctx)
-        self.teardown_httpretty()
+        with mock_ec2():
+            instance.create(ctx=ctx)
 
     def test_no_route_to_host_start(self):
 
         ctx = self.mock_ctx('test_no_route_to_host_start')
 
         with mock_ec2():
-            conn = connection.EC2Client().connect()
-            reservation = conn.run_instances(TEST_AMI_IMAGE_ID,
-                                             instance_type=TEST_INSTANCE_TYPE)
+            aws = connection.EC2Client().connect()
+            reservation = aws.run_instances(
+                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
             id = reservation.instances[0].id
             ctx.instance.runtime_properties['instance_id'] = id
-            self.setup_httpretty()
-            self.assertRaises(NonRecoverableError, instance.start, ctx=ctx)
-            self.teardown_httpretty()
+            instance.start(ctx=ctx)
 
     def test_no_route_to_host_stop(self):
 
         ctx = self.mock_ctx('test_no_route_to_host_stop')
 
         with mock_ec2():
-            conn = connection.EC2Client().connect()
-            reservation = conn.run_instances(TEST_AMI_IMAGE_ID,
-                                             instance_type=TEST_INSTANCE_TYPE)
+            aws = connection.EC2Client().connect()
+            reservation = aws.run_instances(
+                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
             id = reservation.instances[0].id
             ctx.instance.runtime_properties['instance_id'] = id
-            self.setup_httpretty()
-            self.assertRaises(NonRecoverableError, instance.stop, ctx=ctx)
-            self.teardown_httpretty()
+            instance.stop(ctx=ctx)
 
     def test_no_route_to_host_terminate(self):
 
         ctx = self.mock_ctx('test_no_route_to_host_terminate')
 
         with mock_ec2():
-            conn = connection.EC2Client().connect()
-            reservation = conn.run_instances(TEST_AMI_IMAGE_ID,
-                                             instance_type=TEST_INSTANCE_TYPE)
+            aws = connection.EC2Client().connect()
+            reservation = aws.run_instances(
+                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
             id = reservation.instances[0].id
+            httpretty.enable()
+            httpretty.register_uri(httpretty.POST,
+                                   re.compile(
+                                       'https://ec2.us-east-1.amazonaws.com/.*'
+                                   ),
+                                   status=500)
             ctx.instance.runtime_properties['instance_id'] = id
-            self.setup_httpretty()
             self.assertRaises(NonRecoverableError, instance.terminate, ctx=ctx)
-            self.teardown_httpretty()
