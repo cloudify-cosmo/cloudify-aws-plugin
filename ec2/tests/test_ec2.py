@@ -221,23 +221,3 @@ class TestPlugin(unittest.TestCase):
             instance.stop(ctx=ctx)
             httpretty.disable()
             httpretty.reset()
-
-    def test_no_route_to_host_terminate(self):
-
-        ctx = self.mock_ctx('test_no_route_to_host_terminate')
-
-        with mock_ec2():
-            aws = connection.EC2Client().connect()
-            reservation = aws.run_instances(
-                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
-            id = reservation.instances[0].id
-            httpretty.enable()
-            httpretty.register_uri(httpretty.POST,
-                                   re.compile(
-                                       'https://ec2.us-east-1.amazonaws.com/.*'
-                                   ),
-                                   status=500)
-            ctx.instance.runtime_properties['instance_id'] = id
-            self.assertRaises(NonRecoverableError, instance.terminate, ctx=ctx)
-            httpretty.disable()
-            httpretty.reset()
