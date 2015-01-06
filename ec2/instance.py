@@ -156,7 +156,7 @@ def terminate(**kwargs):
 def creation_validation(**kwargs):
     instance_id = ctx.instance.runtime_properties['instance_id']
     state = INSTANCE_RUNNING
-    timeout_length = 5
+    timeout_length = 1
 
     instance_object = utility.get_instance_from_id(instance_id, ctx=ctx)
 
