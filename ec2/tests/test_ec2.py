@@ -202,3 +202,12 @@ class TestPlugin(unittest.TestCase):
             self.assertRaises(NonRecoverableError, instance.stop, ctx=ctx)
             httpretty.disable()
             httpretty.reset()
+
+    def test_bad_subnet_create_instance(self):
+
+        ctx = self.mock_ctx('test_bad_security_group_create')
+
+        with mock_ec2():
+            ctx.instance.runtime_properties['instance_id'] = id
+            ctx.node.properties['attributes']['subnet_id'] = 'test'
+            self.assertRaises(NonRecoverableError, instance.create, ctx=ctx)
