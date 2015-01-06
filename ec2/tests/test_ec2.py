@@ -214,6 +214,6 @@ class TestPlugin(unittest.TestCase):
                                        'https://ec2.us-east-1.amazonaws.com/.*'
                                    ),
                                    status=500)
-            instance.create(ctx=ctx)
+            self.assertRaises(NonRecoverableError, instance.create, ctx=ctx)
             httpretty.disable()
             httpretty.reset()
