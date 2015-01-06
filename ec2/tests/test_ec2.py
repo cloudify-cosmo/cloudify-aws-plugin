@@ -130,3 +130,53 @@ class TestPlugin(unittest.TestCase):
             instance_state = utility.get_instance_state(instance_object,
                                                         ctx=ctx)
             self.assertEqual(instance_state, 16)
+
+    def test_bad_instance_id_start(self):
+
+        ctx = self.mock_ctx('test_bad_instance_id_start')
+
+        with mock_ec2():
+            ctx.instance.runtime_properties['instance_id'] = 'bad_id'
+            self.assertRaises(NonRecoverableError, instance.start, ctx=ctx)
+
+    def test_bad_instance_id_stop(self):
+
+        ctx = self.mock_ctx('test_bad_instance_id_stop')
+
+        with mock_ec2():
+            ctx.instance.runtime_properties['instance_id'] = 'bad_id'
+            self.assertRaises(NonRecoverableError, instance.stop, ctx=ctx)
+
+    def test_bad_instance_id_terminate(self):
+
+        ctx = self.mock_ctx('test_bad_instance_id_terminate')
+
+        with mock_ec2():
+            ctx.instance.runtime_properties['instance_id'] = 'bad_id'
+            self.assertRaises(NonRecoverableError, instance.terminate, ctx=ctx)
+
+    def test_timeout_validate_state(self):
+
+        ctx = self.mock_ctx('test_instance_running_validate_state')
+
+        with mock_ec2():
+            conn = connection.EC2Client().connect()
+            reservation = conn.run_instances(TEST_AMI_IMAGE_ID,
+                                             instance_type=TEST_INSTANCE_TYPE)
+            id = reservation.instances[0].id
+            ctx.instance.runtime_properties['instance_id'] = id
+            instance_object = utility.get_instance_from_id(id, ctx=ctx)
+            conn.stop_instances(id)
+            self.assertRaises(NonRecoverableError,
+                              utility.validate_state,
+                              instance_object, 0, 1, .1, ctx=ctx)
+
+    def test_no_instance_get_instance_from_id(self):
+
+        ctx = self.mock_ctx('test_no_instance_get_instance_from_id')
+
+        with mock_ec2():
+
+            id = 'bad_id'
+            self.assertRaises(NonRecoverableError,
+                              utility.get_instance_from_id, id, ctx=ctx)
