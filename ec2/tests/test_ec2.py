@@ -17,6 +17,7 @@
 import unittest
 
 # Boto Imports
+from boto.ec2 import instance as ec2_instance_object
 from boto.ec2 import EC2Connection
 from moto import mock_ec2
 
@@ -29,6 +30,7 @@ from cloudify.exceptions import NonRecoverableError
 
 TEST_AMI_IMAGE_ID = 'ami-e214778a'
 TEST_INSTANCE_TYPE = 't1.micro'
+FQDN = '((?:[a-z][a-z\\.\\d\\-]+)\\.(?:[a-z][a-z\\-]+))(?![\\w\\.])'
 
 
 class TestPlugin(unittest.TestCase):
@@ -52,48 +54,6 @@ class TestPlugin(unittest.TestCase):
 
         return ctx
 
-    def test_instance_create(self):
-
-        ctx = self.mock_ctx('test_instance_create')
-
-        with mock_ec2():
-
-            instance.create(ctx=ctx)
-
-    def test_instance_stop(self):
-
-        ctx = self.mock_ctx('test_instance_stop')
-
-        with mock_ec2():
-            reservation = EC2Connection().run_instances(
-                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
-            id = reservation.instances[0].id
-            ctx.instance.runtime_properties['instance_id'] = id
-            instance.stop(ctx=ctx)
-
-    def test_instance_start(self):
-
-        ctx = self.mock_ctx('test_instance_start')
-
-        with mock_ec2():
-            reservation = EC2Connection().run_instances(
-                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
-            id = reservation.instances[0].id
-            ctx.instance.runtime_properties['instance_id'] = id
-            EC2Connection().stop_instances(id)
-            instance.start(ctx=ctx)
-
-    def test_instance_terminate(self):
-
-        ctx = self.mock_ctx('test_instance_terminate')
-
-        with mock_ec2():
-            reservation = EC2Connection().run_instances(
-                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
-            id = reservation.instances[0].id
-            ctx.instance.runtime_properties['instance_id'] = id
-            instance.terminate(ctx=ctx)
-
     @mock_ec2
     def test_connect(self):
 
@@ -102,31 +62,157 @@ class TestPlugin(unittest.TestCase):
         self.assertEqual(c.DefaultRegionEndpoint,
                          'ec2.us-east-1.amazonaws.com')
 
+    def test_instance_create(self):
+
+        ctx = self.mock_ctx('test_instance_create')
+
+        with mock_ec2():
+
+            instance.create(ctx=ctx)
+
+    def test_instance_start(self):
+
+        ctx = self.mock_ctx('test_instance_start')
+
+        with mock_ec2():
+            compute = connection.EC2Client().connect()
+            reservation = compute.run_instances(
+                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
+            id = reservation.instances[0].id
+            ctx.instance.runtime_properties['instance_id'] = id
+            EC2Connection().stop_instances(id)
+            instance.start(ctx=ctx)
+
+    def test_no_instance_start(self):
+
+        ctx = self.mock_ctx('test_no_instance_start')
+        ctx.instance.runtime_properties['instance_id'] = None
+
+        with mock_ec2():
+            self.assertRaises(IndexError, instance.start, ctx=ctx)
+
+    def test_bad_instance_start(self):
+
+        ctx = self.mock_ctx('test_bad_instance_start')
+        ctx.instance.runtime_properties['instance_id'] = 'bad instance'
+
+        with mock_ec2():
+            self.assertRaises(NonRecoverableError, instance.start, ctx=ctx)
+
+    def test_instance_stop(self):
+
+        ctx = self.mock_ctx('test_instance_stop')
+
+        with mock_ec2():
+            compute = connection.EC2Client().connect()
+            reservation = compute.run_instances(
+                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
+            id = reservation.instances[0].id
+            ctx.instance.runtime_properties['instance_id'] = id
+            instance.stop(ctx=ctx)
+
+    def test_no_instance_stop(self):
+
+        ctx = self.mock_ctx('test_no_instance_stop')
+        ctx.instance.runtime_properties['instance_id'] = None
+
+        with mock_ec2():
+            self.assertRaises(IndexError, instance.stop, ctx=ctx)
+
+    def test_bad_instance_stop(self):
+
+        ctx = self.mock_ctx('test_bad_instance_stop')
+        ctx.instance.runtime_properties['instance_id'] = 'bad instance'
+
+        with mock_ec2():
+            self.assertRaises(NonRecoverableError, instance.stop, ctx=ctx)
+
+    def test_instance_terminate(self):
+
+        ctx = self.mock_ctx('test_instance_terminate')
+
+        with mock_ec2():
+            compute = connection.EC2Client().connect()
+            reservation = compute.run_instances(
+                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
+            id = reservation.instances[0].id
+            ctx.instance.runtime_properties['instance_id'] = id
+            instance.terminate(ctx=ctx)
+
+    def test_no_instance_terminate(self):
+
+        ctx = self.mock_ctx('test_no_instance_terminate')
+        ctx.instance.runtime_properties['instance_id'] = None
+
+        with mock_ec2():
+            self.assertRaises(IndexError, instance.terminate, ctx=ctx)
+
+    def test_bad_instance_terminate(self):
+
+        ctx = self.mock_ctx('test_bad_instance_terminate')
+        ctx.instance.runtime_properties['instance_id'] = 'bad instance'
+
+        with mock_ec2():
+            self.assertRaises(NonRecoverableError, instance.terminate, ctx=ctx)
+
     def test_validate_instance_id(self):
 
         ctx = self.mock_ctx('test_validate_instance_id')
 
         with mock_ec2():
-            reservation = EC2Connection().run_instances(
+            compute = connection.EC2Client().connect()
+            reservation = compute.run_instances(
                 TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
             id = reservation.instances[0].id
             self.assertTrue(utility.validate_instance_id(id, ctx=ctx))
 
-    def test_raise_error(self):
+    def test_get_instance_from_id(self):
 
-        ctx = self.mock_ctx('test_raise_error')
-        ctx.instance.runtime_properties['instance_id'] = 'Not an instance id'
+        ctx = self.mock_ctx('test_get_instance_from_id')
 
         with mock_ec2():
-            self.assertRaises(NonRecoverableError, instance.terminate, ctx=ctx)
+            compute = connection.EC2Client().connect()
+            reservation = compute.run_instances(
+                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
+            id = reservation.instances[0].id
+            instance_object = utility.get_instance_from_id(id, ctx=ctx)
+            self.assertEqual(type(instance_object),
+                             ec2_instance_object.Instance)
 
     def test_get_instance_state(self):
         ctx = self.mock_ctx('test_get_instance_state')
         with mock_ec2():
-            instance.create(ctx=ctx)
-            instance_id = ctx.instance.runtime_properties['instance_id']
-            instance_object = utility.get_instance_from_id(
-                instance_id, ctx=ctx)
+            compute = connection.EC2Client().connect()
+            reservation = compute.run_instances(
+                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
+            id = reservation.instances[0].id
+            instance_object = utility.get_instance_from_id(id, ctx=ctx)
             instance_state = utility.get_instance_state(instance_object,
                                                         ctx=ctx)
             self.assertEqual(instance_state, 16)
+
+    def test_get_private_dns_name(self):
+
+        ctx = self.mock_ctx('test_get_private_dns_name')
+
+        with mock_ec2():
+            compute = connection.EC2Client().connect()
+            reservation = compute.run_instances(
+                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
+            id = reservation.instances[0].id
+            instance_object = utility.get_instance_from_id(id, ctx=ctx)
+            dns_name = utility.get_private_dns_name(instance_object)
+            self.assertRegexpMatches(dns_name, FQDN)
+
+    def test_get_public_dns_name(self):
+
+        ctx = self.mock_ctx('test_get_public_dns_name')
+
+        with mock_ec2():
+            compute = connection.EC2Client().connect()
+            reservation = compute.run_instances(
+                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
+            id = reservation.instances[0].id
+            instance_object = utility.get_instance_from_id(id, ctx=ctx)
+            dns_name = utility.get_public_dns_name(instance_object)
+            self.assertRegexpMatches(dns_name, FQDN)
