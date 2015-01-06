@@ -211,16 +211,8 @@ class TestPlugin(unittest.TestCase):
             reservation = aws.run_instances(
                 TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
             id = reservation.instances[0].id
-            httpretty.enable()
-            httpretty.register_uri(httpretty.POST,
-                                   re.compile(
-                                       'https://ec2.us-east-1.amazonaws.com/.*'
-                                   ),
-                                   status=500)
             ctx.instance.runtime_properties['instance_id'] = id
             instance.stop(ctx=ctx)
-            httpretty.disable()
-            httpretty.reset()
 
     def test_no_route_to_host_terminate(self):
 
