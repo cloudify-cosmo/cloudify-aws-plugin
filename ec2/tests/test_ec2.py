@@ -185,7 +185,7 @@ class TestPlugin(unittest.TestCase):
 
     def test_no_route_to_host_create(self):
 
-        ctx = self.mock_ctx('test_no_instance_get_instance_from_id')
+        ctx = self.mock_ctx('test_no_route_to_host_create')
 
         httpretty.enable()
         httpretty.register_uri(httpretty.POST,
@@ -201,8 +201,11 @@ class TestPlugin(unittest.TestCase):
         ctx = self.mock_ctx('test_no_route_to_host_start')
 
         with mock_ec2():
-            instance.create(ctx=ctx)
-
+            conn = connection.EC2Client().connect()
+            reservation = conn.run_instances(TEST_AMI_IMAGE_ID,
+                                             instance_type=TEST_INSTANCE_TYPE)
+            id = reservation.instances[0].id
+            ctx.instance.runtime_properties['instance_id'] = id
             httpretty.enable()
             httpretty.register_uri(httpretty.POST,
                                    re.compile(
@@ -218,8 +221,11 @@ class TestPlugin(unittest.TestCase):
         ctx = self.mock_ctx('test_no_route_to_host_stop')
 
         with mock_ec2():
-            instance.create(ctx=ctx)
-
+            conn = connection.EC2Client().connect()
+            reservation = conn.run_instances(TEST_AMI_IMAGE_ID,
+                                             instance_type=TEST_INSTANCE_TYPE)
+            id = reservation.instances[0].id
+            ctx.instance.runtime_properties['instance_id'] = id
             httpretty.enable()
             httpretty.register_uri(httpretty.POST,
                                    re.compile(
@@ -235,8 +241,11 @@ class TestPlugin(unittest.TestCase):
         ctx = self.mock_ctx('test_no_route_to_host_terminate')
 
         with mock_ec2():
-            instance.create(ctx=ctx)
-
+            conn = connection.EC2Client().connect()
+            reservation = conn.run_instances(TEST_AMI_IMAGE_ID,
+                                             instance_type=TEST_INSTANCE_TYPE)
+            id = reservation.instances[0].id
+            ctx.instance.runtime_properties['instance_id'] = id
             httpretty.enable()
             httpretty.register_uri(httpretty.POST,
                                    re.compile(
