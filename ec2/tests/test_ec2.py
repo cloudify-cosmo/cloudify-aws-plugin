@@ -183,15 +183,6 @@ class TestPlugin(unittest.TestCase):
             self.assertRaises(NonRecoverableError,
                               utility.get_instance_from_id, id, ctx=ctx)
 
-    def test_bad_subnet_create_instance(self):
-
-        ctx = self.mock_ctx('test_bad_security_group_create')
-
-        with mock_ec2():
-            ctx.instance.runtime_properties['instance_id'] = id
-            ctx.node.properties['attributes']['subnet_id'] = 'test'
-            self.assertRaises(NonRecoverableError, instance.create, ctx=ctx)
-
     def test_no_route_to_host_stop(self):
 
         ctx = self.mock_ctx('test_no_route_to_host_stop')
