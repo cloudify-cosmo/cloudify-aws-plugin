@@ -15,10 +15,12 @@
 
 # Built-in Imports
 import unittest
+import re
 
-# Boto Imports
+# Third Party Imports
 from boto.ec2 import EC2Connection
 from moto import mock_ec2
+import httpretty
 
 # Cloudify Imports is imported and used in operations
 from ec2 import connection
@@ -180,3 +182,67 @@ class TestPlugin(unittest.TestCase):
             id = 'bad_id'
             self.assertRaises(NonRecoverableError,
                               utility.get_instance_from_id, id, ctx=ctx)
+
+    def test_no_route_to_host_create(self):
+
+        ctx = self.mock_ctx('test_no_instance_get_instance_from_id')
+
+        httpretty.enable()
+        httpretty.register_uri(httpretty.POST,
+                               re.compile(
+                                   'https://ec2.us-east-1.amazonaws.com/.*'),
+                               status=500)
+        self.assertRaises(NonRecoverableError, instance.create, ctx=ctx)
+        httpretty.disable()
+        httpretty.reset()
+
+    def test_no_route_to_host_start(self):
+
+        ctx = self.mock_ctx('test_no_route_to_host_start')
+
+        with mock_ec2():
+            instance.create(ctx=ctx)
+
+            httpretty.enable()
+            httpretty.register_uri(httpretty.POST,
+                                   re.compile(
+                                       'https://ec2.us-east-1.amazonaws.com/.*'
+                                   ),
+                                   status=500)
+            self.assertRaises(NonRecoverableError, instance.start, ctx=ctx)
+            httpretty.disable()
+            httpretty.reset()
+
+    def test_no_route_to_host_stop(self):
+
+        ctx = self.mock_ctx('test_no_route_to_host_stop')
+
+        with mock_ec2():
+            instance.create(ctx=ctx)
+
+            httpretty.enable()
+            httpretty.register_uri(httpretty.POST,
+                                   re.compile(
+                                       'https://ec2.us-east-1.amazonaws.com/.*'
+                                   ),
+                                   status=500)
+            self.assertRaises(NonRecoverableError, instance.stop, ctx=ctx)
+            httpretty.disable()
+            httpretty.reset()
+
+    def test_no_route_to_host_terminate(self):
+
+        ctx = self.mock_ctx('test_no_route_to_host_terminate')
+
+        with mock_ec2():
+            instance.create(ctx=ctx)
+
+            httpretty.enable()
+            httpretty.register_uri(httpretty.POST,
+                                   re.compile(
+                                       'https://ec2.us-east-1.amazonaws.com/.*'
+                                   ),
+                                   status=500)
+            self.assertRaises(NonRecoverableError, instance.terminate, ctx=ctx)
+            httpretty.disable()
+            httpretty.reset()
