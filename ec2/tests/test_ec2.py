@@ -183,25 +183,6 @@ class TestPlugin(unittest.TestCase):
             self.assertRaises(NonRecoverableError,
                               utility.get_instance_from_id, id, ctx=ctx)
 
-    def test_no_route_to_host_create(self):
-
-        ctx = self.mock_ctx('test_no_route_to_host_create')
-
-        with mock_ec2():
-            instance.create(ctx=ctx)
-
-    def test_no_route_to_host_start(self):
-
-        ctx = self.mock_ctx('test_no_route_to_host_start')
-
-        with mock_ec2():
-            aws = connection.EC2Client().connect()
-            reservation = aws.run_instances(
-                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
-            id = reservation.instances[0].id
-            ctx.instance.runtime_properties['instance_id'] = id
-            instance.start(ctx=ctx)
-
     def test_no_route_to_host_stop(self):
 
         ctx = self.mock_ctx('test_no_route_to_host_stop')
@@ -218,6 +199,21 @@ class TestPlugin(unittest.TestCase):
                                    ),
                                    status=500)
             ctx.instance.runtime_properties['instance_id'] = id
-            instance.stop(ctx=ctx)
+            self.assertRaises(NonRecoverableError, instance.stop, ctx=ctx)
+            httpretty.disable()
+            httpretty.reset()
+
+    def test_no_route_to_host_create(self):
+
+        ctx = self.mock_ctx('test_no_route_to_host_create')
+
+        with mock_ec2():
+            httpretty.enable()
+            httpretty.register_uri(httpretty.POST,
+                                   re.compile(
+                                       'https://ec2.us-east-1.amazonaws.com/.*'
+                                   ),
+                                   status=500)
+            instance.create(ctx=ctx)
             httpretty.disable()
             httpretty.reset()
