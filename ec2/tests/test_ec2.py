@@ -229,7 +229,7 @@ class TestPlugin(unittest.TestCase):
 
         ctx = self.mock_ctx('test_bad_id_validate_instance_id')
 
-        with mock_ec2:
+        with mock_ec2():
             self.assertRaises(NonRecoverableError,
                               utility.validate_instance_id, 'bad id', ctx=ctx)
 
