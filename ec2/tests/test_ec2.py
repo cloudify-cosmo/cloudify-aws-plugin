@@ -15,12 +15,10 @@
 
 # Built-in Imports
 import unittest
-import re
 
 # Third Party Imports
 from boto.ec2 import EC2Connection
 from moto import mock_ec2
-import httpretty
 
 # Cloudify Imports is imported and used in operations
 from ec2 import connection
@@ -232,27 +230,3 @@ class TestPlugin(unittest.TestCase):
         with mock_ec2():
             self.assertRaises(NonRecoverableError,
                               utility.validate_instance_id, 'bad id', ctx=ctx)
-
-    def test_no_route_to_host_stop(self):
-        """ This tests that the NonRecoverableError is triggered
-        when there is no route to host, i.e. the connection
-        to amazonaws cannot be made
-        """
-
-        ctx = self.mock_ctx('test_no_route_to_host_stop')
-
-        with mock_ec2():
-            aws = connection.EC2Client().connect()
-            reservation = aws.run_instances(
-                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
-            id = reservation.instances[0].id
-            httpretty.enable()
-            httpretty.register_uri(httpretty.POST,
-                                   re.compile(
-                                       'https://ec2.us-east-1.amazonaws.com/.*'
-                                   ),
-                                   status=500)
-            ctx.instance.runtime_properties['instance_id'] = id
-            self.assertRaises(NonRecoverableError, instance.stop, ctx=ctx)
-            httpretty.disable()
-            httpretty.reset()
