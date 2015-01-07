@@ -222,21 +222,16 @@ class TestPlugin(unittest.TestCase):
             ctx.node.properties['attributes']['subnet_id'] = 'test'
             self.assertRaises(NonRecoverableError, instance.create, ctx=ctx)
 
-    def test_bad_id_validate_id(self):
+    def test_bad_id_validate_instance_id(self):
         """ This tests that validate_id raises a NonRecoverableError
         when given an invalid id
         """
 
-        ctx = self.mock_ctx('test_bad_id_validate_id')
+        ctx = self.mock_ctx('test_bad_id_validate_instance_id')
 
         with mock_ec2:
-            aws = connection.EC2Client().connect()
-            reservation = aws.run_instances(
-                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
-            id = reservation.instances[0].id
-            id = id + 'bad'
-            self.assertRaises(NonRecoverableError, utility.validate_id, id,
-                              ctx=ctx)
+            self.assertRaises(NonRecoverableError,
+                              utility.validate_instance_id, 'bad id', ctx=ctx)
 
     def test_no_route_to_host_stop(self):
         """ This tests that the NonRecoverableError is triggered
