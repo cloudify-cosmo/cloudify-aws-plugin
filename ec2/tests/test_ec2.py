@@ -16,7 +16,7 @@
 # Built-in Imports
 import unittest
 
-# Boto Imports
+# Third Party Imports
 from boto.ec2 import EC2Connection
 from moto import mock_ec2
 
@@ -53,6 +53,8 @@ class TestPlugin(unittest.TestCase):
         return ctx
 
     def test_instance_create(self):
+        """ this tests that the instance create function works
+        """
 
         ctx = self.mock_ctx('test_instance_create')
 
@@ -61,6 +63,9 @@ class TestPlugin(unittest.TestCase):
             instance.create(ctx=ctx)
 
     def test_instance_stop(self):
+        """
+        this tests that the instance stop function works
+        """
 
         ctx = self.mock_ctx('test_instance_stop')
 
@@ -72,6 +77,8 @@ class TestPlugin(unittest.TestCase):
             instance.stop(ctx=ctx)
 
     def test_instance_start(self):
+        """ this tests that the instance.start function works
+        """
 
         ctx = self.mock_ctx('test_instance_start')
 
@@ -84,6 +91,9 @@ class TestPlugin(unittest.TestCase):
             instance.start(ctx=ctx)
 
     def test_instance_terminate(self):
+        """ this tests that the instance.terminate function
+        works
+        """
 
         ctx = self.mock_ctx('test_instance_terminate')
 
@@ -96,6 +106,9 @@ class TestPlugin(unittest.TestCase):
 
     @mock_ec2
     def test_connect(self):
+        """ this tests that a the correct region endpoint
+        in returned by the connect function
+        """
 
         c = connection.EC2Client().connect()
         self.assertTrue(type(c), EC2Connection)
@@ -103,6 +116,9 @@ class TestPlugin(unittest.TestCase):
                          'ec2.us-east-1.amazonaws.com')
 
     def test_validate_instance_id(self):
+        """ this tests that validate instance_id
+        is true if provided with a valid instance_id
+        """
 
         ctx = self.mock_ctx('test_validate_instance_id')
 
@@ -112,15 +128,11 @@ class TestPlugin(unittest.TestCase):
             id = reservation.instances[0].id
             self.assertTrue(utility.validate_instance_id(id, ctx=ctx))
 
-    def test_raise_error(self):
-
-        ctx = self.mock_ctx('test_raise_error')
-        ctx.instance.runtime_properties['instance_id'] = 'Not an instance id'
-
-        with mock_ec2():
-            self.assertRaises(NonRecoverableError, instance.terminate, ctx=ctx)
-
     def test_get_instance_state(self):
+        """ this tests that get instance state returns
+        running for a running instance
+        """
+
         ctx = self.mock_ctx('test_get_instance_state')
         with mock_ec2():
             instance.create(ctx=ctx)
@@ -130,3 +142,91 @@ class TestPlugin(unittest.TestCase):
             instance_state = utility.get_instance_state(instance_object,
                                                         ctx=ctx)
             self.assertEqual(instance_state, 16)
+
+    def test_bad_instance_id_start(self):
+        """this tests that start fails when given an invalid
+        instance_id
+        """
+
+        ctx = self.mock_ctx('test_bad_instance_id_start')
+
+        with mock_ec2():
+            ctx.instance.runtime_properties['instance_id'] = 'bad_id'
+            self.assertRaises(NonRecoverableError, instance.start, ctx=ctx)
+
+    def test_bad_instance_id_stop(self):
+        """ this tests that stop fails when given an invalid
+        instance_id
+        """
+
+        ctx = self.mock_ctx('test_bad_instance_id_stop')
+
+        with mock_ec2():
+            ctx.instance.runtime_properties['instance_id'] = 'bad_id'
+            self.assertRaises(NonRecoverableError, instance.stop, ctx=ctx)
+
+    def test_bad_instance_id_terminate(self):
+        """ this tests that a terminate fails when given an
+        invalid instance_id
+        """
+
+        ctx = self.mock_ctx('test_bad_instance_id_terminate')
+
+        with mock_ec2():
+            ctx.instance.runtime_properties['instance_id'] = 'bad_id'
+            self.assertRaises(NonRecoverableError, instance.terminate, ctx=ctx)
+
+    def test_timeout_validate_state(self):
+        """ this tests that a stopped image is not in a 'pending' statement
+        """
+
+        ctx = self.mock_ctx('test_instance_running_validate_state')
+
+        with mock_ec2():
+            x = connection.EC2Client().connect()
+            reservation = x.run_instances(TEST_AMI_IMAGE_ID,
+                                          instance_type=TEST_INSTANCE_TYPE)
+            id = reservation.instances[0].id
+            ctx.instance.runtime_properties['instance_id'] = id
+            instance_object = utility.get_instance_from_id(id, ctx=ctx)
+            x.stop_instances(id)
+            self.assertRaises(NonRecoverableError,
+                              utility.validate_state,
+                              instance_object, 0, 1, .1, ctx=ctx)
+
+    def test_no_instance_get_instance_from_id(self):
+        """ this tests that a NonRecoverableError is thrown
+        when a nonexisting instance_id is provided to the
+        get_instance_from_id function
+        """
+
+        ctx = self.mock_ctx('test_no_instance_get_instance_from_id')
+
+        with mock_ec2():
+
+            id = 'bad_id'
+            self.assertRaises(NonRecoverableError,
+                              utility.get_instance_from_id, id, ctx=ctx)
+
+    def test_bad_subnet_id_create(self):
+        """ This tests that the NonRecoverableError is triggered
+        when an non existing subnet_id is included in the create
+        statement
+        """
+
+        ctx = self.mock_ctx('test_bad_subnet_id_create')
+
+        with mock_ec2():
+            ctx.node.properties['attributes']['subnet_id'] = 'test'
+            self.assertRaises(NonRecoverableError, instance.create, ctx=ctx)
+
+    def test_bad_id_validate_instance_id(self):
+        """ This tests that validate_id raises a NonRecoverableError
+        when given an invalid id
+        """
+
+        ctx = self.mock_ctx('test_bad_id_validate_instance_id')
+
+        with mock_ec2():
+            self.assertRaises(NonRecoverableError,
+                              utility.validate_instance_id, 'bad id', ctx=ctx)

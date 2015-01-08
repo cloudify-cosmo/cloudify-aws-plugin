@@ -30,11 +30,11 @@ INSTANCE_TERMINATED = 48
 INSTANCE_STOPPED = 80
 
 # Timeouts
-CREATION_TIMEOUT = 15 * 60
-START_TIMEOUT = 15 * 30
-STOP_TIMEOUT = 3 * 60
-TERMINATION_TIMEOUT = 3 * 60
-CHECK_INTERVAL = 20
+CREATION_TIMEOUT = 1
+START_TIMEOUT = 1
+STOP_TIMEOUT = 1
+TERMINATION_TIMEOUT = 1
+CHECK_INTERVAL = 1
 
 # EC2 Method Arguments
 RUN_INSTANCES_UNSUPPORTED = {
@@ -85,12 +85,6 @@ def start(**kwargs):
 
     instance_id = ctx.instance.runtime_properties['instance_id']
 
-    if utility.validate_instance_id(instance_id, ctx=ctx):
-        ctx.logger.error('(Node: {0}: No such instance exists.'
-                         'Instance ID: {1}.'
-                         .format(ctx.instance.id, instance_id))
-        return None
-
     ctx.logger.info('(Node: {0}): Starting instance.'.format(ctx.instance.id))
     ctx.logger.debug('(Node: {0}): Attempting to start instance.'
                      '(Instance id: {1}.)'.format(ctx.instance.id,
@@ -114,12 +108,6 @@ def stop(**kwargs):
     """
 
     instance_id = ctx.instance.runtime_properties['instance_id']
-
-    if utility.validate_instance_id(instance_id, ctx=ctx):
-        ctx.logger.error('(Node: {0}: No such instance exists.'
-                         'Instance ID: {1}.'
-                         .format(ctx.instance.id, instance_id))
-        return None
 
     ctx.logger.info('(Node: {0}): Stopping instance.'.format(ctx.instance.id))
     ctx.logger.debug('(Node: {0}): Attempting to stop instance.'
@@ -146,12 +134,6 @@ def terminate(**kwargs):
 
     instance_id = ctx.instance.runtime_properties['instance_id']
 
-    if utility.validate_instance_id(instance_id, ctx=ctx):
-        ctx.logger.error('(Node: {0}: No such instance exists.'
-                         'Instance ID: {1}.'
-                         .format(ctx.instance.id, instance_id))
-        return None
-
     ctx.logger.info('(Node: {0}): Terminating instance.'
                     .format(ctx.instance.id))
     ctx.logger.debug('(Node: {0}): Attempting to terminate instance.'
@@ -174,9 +156,11 @@ def terminate(**kwargs):
 def creation_validation(**kwargs):
     instance_id = ctx.instance.runtime_properties['instance_id']
     state = INSTANCE_RUNNING
-    timeout_length = CREATION_TIMEOUT
+    timeout_length = 1
 
-    if utility.validate_state(instance_id, state,
+    instance_object = utility.get_instance_from_id(instance_id, ctx=ctx)
+
+    if utility.validate_state(instance_object, state,
                               timeout_length, CHECK_INTERVAL, ctx=ctx):
         ctx.logger.debug('Instance is running.')
     else:
