@@ -1,5 +1,1 @@
 testtools
-nose
-nose-cov
-testfixtures
-moto

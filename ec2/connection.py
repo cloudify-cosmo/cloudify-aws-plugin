@@ -22,5 +22,5 @@ class EC2Client():
     def __init__(self):
         self.connection = None
 
-    def ec2client(self):
+    def connect(self):
         return EC2Connection()

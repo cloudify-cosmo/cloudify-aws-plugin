@@ -14,7 +14,7 @@
 #    * limitations under the License.
 
 # Built-in Imports
-import testtools
+import unittest
 
 # Third Party Imports
 from boto.ec2 import EC2Connection
@@ -23,7 +23,7 @@ from moto import mock_ec2
 # Cloudify Imports is imported and used in operations
 from ec2 import connection
 from ec2 import instance
-from ec2 import utils
+from ec2 import utility
 from cloudify.mocks import MockCloudifyContext
 from cloudify.exceptions import NonRecoverableError
 
@@ -31,7 +31,7 @@ TEST_AMI_IMAGE_ID = 'ami-e214778a'
 TEST_INSTANCE_TYPE = 't1.micro'
 
 
-class TestPlugin(testtools.TestCase):
+class TestPlugin(unittest.TestCase):
 
     def mock_ctx(self, test_name):
 
@@ -59,9 +59,8 @@ class TestPlugin(testtools.TestCase):
         ctx = self.mock_ctx('test_instance_create')
 
         with mock_ec2():
+
             instance.create(ctx=ctx)
-            self.assertIn('instance_id',
-                          ctx.instance.runtime_properties.keys())
 
     def test_instance_stop(self):
         """
@@ -71,16 +70,11 @@ class TestPlugin(testtools.TestCase):
         ctx = self.mock_ctx('test_instance_stop')
 
         with mock_ec2():
-            ec2client = connection.EC2Client().ec2client()
-            reservation = ec2client.run_instances(
+            reservation = EC2Connection().run_instances(
                 TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
             id = reservation.instances[0].id
             ctx.instance.runtime_properties['instance_id'] = id
             instance.stop(ctx=ctx)
-            reservations = ec2client.get_all_reservations(id)
-            instance_object = reservations[0].instances[0]
-            state = instance_object.update()
-            self.assertEqual(state, 'stopped')
 
     def test_instance_start(self):
         """ this tests that the instance.start function works
@@ -89,17 +83,12 @@ class TestPlugin(testtools.TestCase):
         ctx = self.mock_ctx('test_instance_start')
 
         with mock_ec2():
-            ec2client = connection.EC2Client().ec2client()
-            reservation = ec2client.run_instances(
+            reservation = EC2Connection().run_instances(
                 TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
             id = reservation.instances[0].id
             ctx.instance.runtime_properties['instance_id'] = id
-            ec2client.stop_instances(id)
+            EC2Connection().stop_instances(id)
             instance.start(ctx=ctx)
-            reservations = ec2client.get_all_reservations(id)
-            instance_object = reservations[0].instances[0]
-            state = instance_object.update()
-            self.assertEqual(state, 'running')
 
     def test_instance_terminate(self):
         """ this tests that the instance.terminate function
@@ -109,16 +98,11 @@ class TestPlugin(testtools.TestCase):
         ctx = self.mock_ctx('test_instance_terminate')
 
         with mock_ec2():
-            ec2client = connection.EC2Client().ec2client()
-            reservation = ec2client.run_instances(
+            reservation = EC2Connection().run_instances(
                 TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
             id = reservation.instances[0].id
             ctx.instance.runtime_properties['instance_id'] = id
             instance.terminate(ctx=ctx)
-            reservations = ec2client.get_all_reservations(id)
-            instance_object = reservations[0].instances[0]
-            state = instance_object.update()
-            self.assertEqual(state, 'terminated')
 
     @mock_ec2
     def test_connect(self):
@@ -126,9 +110,9 @@ class TestPlugin(testtools.TestCase):
         in returned by the connect function
         """
 
-        ec2client = connection.EC2Client().ec2client()
-        self.assertTrue(type(ec2client), EC2Connection)
-        self.assertEqual(ec2client.DefaultRegionEndpoint,
+        c = connection.EC2Client().connect()
+        self.assertTrue(type(c), EC2Connection)
+        self.assertEqual(c.DefaultRegionEndpoint,
                          'ec2.us-east-1.amazonaws.com')
 
     def test_validate_instance_id(self):
@@ -139,11 +123,10 @@ class TestPlugin(testtools.TestCase):
         ctx = self.mock_ctx('test_validate_instance_id')
 
         with mock_ec2():
-            ec2client = connection.EC2Client().ec2client()
-            reservation = ec2client.run_instances(
+            reservation = EC2Connection().run_instances(
                 TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
             id = reservation.instances[0].id
-            self.assertTrue(utils.validate_instance_id(id, ctx=ctx))
+            self.assertTrue(utility.validate_instance_id(id, ctx=ctx))
 
     def test_get_instance_state(self):
         """ this tests that get instance state returns
@@ -154,10 +137,10 @@ class TestPlugin(testtools.TestCase):
         with mock_ec2():
             instance.create(ctx=ctx)
             instance_id = ctx.instance.runtime_properties['instance_id']
-            instance_object = utils.get_instance_from_id(
+            instance_object = utility.get_instance_from_id(
                 instance_id, ctx=ctx)
-            instance_state = utils.get_instance_state(instance_object,
-                                                      ctx=ctx)
+            instance_state = utility.get_instance_state(instance_object,
+                                                        ctx=ctx)
             self.assertEqual(instance_state, 16)
 
     def test_bad_instance_id_start(self):
@@ -169,9 +152,7 @@ class TestPlugin(testtools.TestCase):
 
         with mock_ec2():
             ctx.instance.runtime_properties['instance_id'] = 'bad_id'
-            ex = self.assertRaises(NonRecoverableError,
-                                   instance.start, ctx=ctx)
-            self.assertIn('InvalidInstanceID.NotFound', ex.message)
+            self.assertRaises(NonRecoverableError, instance.start, ctx=ctx)
 
     def test_bad_instance_id_stop(self):
         """ this tests that stop fails when given an invalid
@@ -182,9 +163,7 @@ class TestPlugin(testtools.TestCase):
 
         with mock_ec2():
             ctx.instance.runtime_properties['instance_id'] = 'bad_id'
-            ex = self.assertRaises(NonRecoverableError,
-                                   instance.stop, ctx=ctx)
-            self.assertIn('InvalidInstanceID.NotFound', ex.message)
+            self.assertRaises(NonRecoverableError, instance.stop, ctx=ctx)
 
     def test_bad_instance_id_terminate(self):
         """ this tests that a terminate fails when given an
@@ -195,9 +174,7 @@ class TestPlugin(testtools.TestCase):
 
         with mock_ec2():
             ctx.instance.runtime_properties['instance_id'] = 'bad_id'
-            ex = self.assertRaises(NonRecoverableError,
-                                   instance.terminate, ctx=ctx)
-            self.assertIn('InvalidInstanceID.NotFound', ex.message)
+            self.assertRaises(NonRecoverableError, instance.terminate, ctx=ctx)
 
     def test_timeout_validate_state(self):
         """ this tests that a stopped image is not in a 'pending' statement
@@ -206,18 +183,16 @@ class TestPlugin(testtools.TestCase):
         ctx = self.mock_ctx('test_instance_running_validate_state')
 
         with mock_ec2():
-            ec2client = connection.EC2Client().ec2client()
-            shorter = TEST_INSTANCE_TYPE
-            reservation = ec2client.run_instances(TEST_AMI_IMAGE_ID,
-                                                  instance_type=shorter)
+            x = connection.EC2Client().connect()
+            reservation = x.run_instances(TEST_AMI_IMAGE_ID,
+                                          instance_type=TEST_INSTANCE_TYPE)
             id = reservation.instances[0].id
             ctx.instance.runtime_properties['instance_id'] = id
-            instance_object = utils.get_instance_from_id(id, ctx=ctx)
-            ec2client.stop_instances(id)
-            ex = self.assertRaises(NonRecoverableError,
-                                   utils.validate_state,
-                                   instance_object, 0, 1, .1, ctx=ctx)
-            self.assertIn('Timed out', ex.message)
+            instance_object = utility.get_instance_from_id(id, ctx=ctx)
+            x.stop_instances(id)
+            self.assertRaises(NonRecoverableError,
+                              utility.validate_state,
+                              instance_object, 0, 1, .1, ctx=ctx)
 
     def test_no_instance_get_instance_from_id(self):
         """ this tests that a NonRecoverableError is thrown
@@ -230,9 +205,8 @@ class TestPlugin(testtools.TestCase):
         with mock_ec2():
 
             id = 'bad_id'
-            ex = self.assertRaises(NonRecoverableError,
-                                   utils.get_instance_from_id, id, ctx=ctx)
-            self.assertIn('InvalidInstanceID.NotFound', ex.message)
+            self.assertRaises(NonRecoverableError,
+                              utility.get_instance_from_id, id, ctx=ctx)
 
     def test_bad_subnet_id_create(self):
         """ This tests that the NonRecoverableError is triggered
@@ -244,9 +218,7 @@ class TestPlugin(testtools.TestCase):
 
         with mock_ec2():
             ctx.node.properties['attributes']['subnet_id'] = 'test'
-            ex = self.assertRaises(NonRecoverableError,
-                                   instance.create, ctx=ctx)
-            self.assertIn('InvalidSubnetID.NotFound', ex.message)
+            self.assertRaises(NonRecoverableError, instance.create, ctx=ctx)
 
     def test_bad_id_validate_instance_id(self):
         """ This tests that validate_id raises a NonRecoverableError
@@ -256,7 +228,5 @@ class TestPlugin(testtools.TestCase):
         ctx = self.mock_ctx('test_bad_id_validate_instance_id')
 
         with mock_ec2():
-            ex = self.assertRaises(NonRecoverableError,
-                                   utils.validate_instance_id,
-                                   'bad id', ctx=ctx)
-            self.assertIn('InvalidInstanceID.NotFound', ex.message)
+            self.assertRaises(NonRecoverableError,
+                              utility.validate_instance_id, 'bad id', ctx=ctx)
