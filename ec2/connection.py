@@ -17,10 +17,10 @@
 from boto.ec2 import EC2Connection
 
 
-class EC2Client():
+class EC2ConnectionClient():
 
     def __init__(self):
         self.connection = None
 
-    def connect(self):
+    def client(self):
         return EC2Connection()
