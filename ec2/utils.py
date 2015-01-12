@@ -17,10 +17,10 @@
 import time
 
 # other imports
-from boto.ec2 import EC2Connection as EC2
 from boto.exception import EC2ResponseError, BotoServerError
 
 # Cloudify imports
+from ec2 import connection
 from cloudify.exceptions import NonRecoverableError
 
 
@@ -86,9 +86,10 @@ def validate_instance_id(instance_id, ctx):
     :return: True that the instance ID is valid or
              throws unrecoverable error
     """
+    ec2_client = connection.EC2ConnectionClient().client()
 
     try:
-        reservations = EC2().get_all_reservations(instance_id)
+        reservations = ec2_client.get_all_reservations(instance_id)
     except (EC2ResponseError, BotoServerError) as e:
         raise NonRecoverableError('(Node: {0}): Error. '
                                   'Failed to validate instance id: '
@@ -106,9 +107,10 @@ def validate_instance_id(instance_id, ctx):
 
 
 def get_instance_from_id(instance_id, ctx):
+    ec2_client = connection.EC2ConnectionClient().client()
 
     try:
-        reservations = EC2().get_all_reservations(instance_id)
+        reservations = ec2_client.get_all_reservations(instance_id)
     except (EC2ResponseError, BotoServerError) as e:
         raise NonRecoverableError('(Node: {0}): Error. '
                                   'Failed to get instance by id: '

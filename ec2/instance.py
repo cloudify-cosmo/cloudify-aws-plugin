@@ -47,7 +47,7 @@ RUN_INSTANCES_UNSUPPORTED = {
 def create(**kwargs):
     """ Creates an EC2 instance from an (AMI) image_id and an instance_type.
     """
-    ec2client = connection.EC2Client().ec2client()
+    ec2_client = connection.EC2ConnectionClient().client()
 
     arguments = dict()
     arguments['image_id'] = ctx.node.properties['image_id']
@@ -65,7 +65,7 @@ def create(**kwargs):
                      .format(ctx.instance.id, arguments))
 
     try:
-        reservation = ec2client.run_instances(**arguments)
+        reservation = ec2_client.run_instances(**arguments)
     except (EC2ResponseError, BotoServerError) as e:
         raise NonRecoverableError('(Node: {0}): Error. Failed to run '
                                   'instance: API returned: {1}.'
@@ -83,7 +83,7 @@ def create(**kwargs):
 def start(**kwargs):
     """ Starts an existing EC2 instance. If already started, this does nothing.
     """
-    ec2client = connection.EC2Client().ec2client()
+    ec2_client = connection.EC2ConnectionClient().client()
 
     instance_id = ctx.instance.runtime_properties['instance_id']
 
@@ -93,7 +93,7 @@ def start(**kwargs):
                                                   instance_id))
 
     try:
-        instances = ec2client.start_instances(instance_id)
+        instances = ec2_client.start_instances(instance_id)
     except (EC2ResponseError, BotoServerError) as e:
         raise NonRecoverableError('(Node: {0}): Error. Failed to start '
                                   'instance: API returned: {1}.'
@@ -108,7 +108,7 @@ def start(**kwargs):
 def stop(**kwargs):
     """ Stops an existing EC2 instance. If already stopped, this does nothing.
     """
-    ec2client = connection.EC2Client().ec2client()
+    ec2_client = connection.EC2ConnectionClient().client()
 
     instance_id = ctx.instance.runtime_properties['instance_id']
 
@@ -118,7 +118,7 @@ def stop(**kwargs):
                                                   instance_id))
 
     try:
-        instances = ec2client.stop_instances(instance_id)
+        instances = ec2_client.stop_instances(instance_id)
     except (EC2ResponseError, BotoServerError) as e:
         raise NonRecoverableError('(Node: {0}): Error. Failed to stop '
                                   'instance: API returned: {1}.'
@@ -134,7 +134,7 @@ def terminate(**kwargs):
     """ Terminates an existing EC2 instance.
     If already terminated, this does nothing.
     """
-    ec2client = connection.EC2Client().ec2client()
+    ec2_client = connection.EC2ConnectionClient().client()
 
     instance_id = ctx.instance.runtime_properties['instance_id']
 
@@ -145,7 +145,7 @@ def terminate(**kwargs):
                                                   instance_id))
 
     try:
-        instances = ec2client.terminate_instances(instance_id)
+        instances = ec2_client.terminate_instances(instance_id)
     except (EC2ResponseError, BotoServerError) as e:
         raise NonRecoverableError('(Node: {0}): Error. Failed to terminate '
                                   'instance: API returned: {1}.'

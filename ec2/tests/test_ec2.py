@@ -71,13 +71,13 @@ class TestPlugin(testtools.TestCase):
         ctx = self.mock_ctx('test_instance_stop')
 
         with mock_ec2():
-            ec2client = connection.EC2Client().ec2client()
-            reservation = ec2client.run_instances(
+            ec2_client = connection.EC2ConnectionClient().client()
+            reservation = ec2_client.run_instances(
                 TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
             id = reservation.instances[0].id
             ctx.instance.runtime_properties['instance_id'] = id
             instance.stop(ctx=ctx)
-            reservations = ec2client.get_all_reservations(id)
+            reservations = ec2_client.get_all_reservations(id)
             instance_object = reservations[0].instances[0]
             state = instance_object.update()
             self.assertEqual(state, 'stopped')
@@ -89,14 +89,14 @@ class TestPlugin(testtools.TestCase):
         ctx = self.mock_ctx('test_instance_start')
 
         with mock_ec2():
-            ec2client = connection.EC2Client().ec2client()
-            reservation = ec2client.run_instances(
+            ec2_client = connection.EC2ConnectionClient().client()
+            reservation = ec2_client.run_instances(
                 TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
             id = reservation.instances[0].id
             ctx.instance.runtime_properties['instance_id'] = id
-            ec2client.stop_instances(id)
+            ec2_client.stop_instances(id)
             instance.start(ctx=ctx)
-            reservations = ec2client.get_all_reservations(id)
+            reservations = ec2_client.get_all_reservations(id)
             instance_object = reservations[0].instances[0]
             state = instance_object.update()
             self.assertEqual(state, 'running')
@@ -109,13 +109,13 @@ class TestPlugin(testtools.TestCase):
         ctx = self.mock_ctx('test_instance_terminate')
 
         with mock_ec2():
-            ec2client = connection.EC2Client().ec2client()
-            reservation = ec2client.run_instances(
+            ec2_client = connection.EC2ConnectionClient().client()
+            reservation = ec2_client.run_instances(
                 TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
             id = reservation.instances[0].id
             ctx.instance.runtime_properties['instance_id'] = id
             instance.terminate(ctx=ctx)
-            reservations = ec2client.get_all_reservations(id)
+            reservations = ec2_client.get_all_reservations(id)
             instance_object = reservations[0].instances[0]
             state = instance_object.update()
             self.assertEqual(state, 'terminated')
@@ -126,9 +126,9 @@ class TestPlugin(testtools.TestCase):
         in returned by the connect function
         """
 
-        ec2client = connection.EC2Client().ec2client()
-        self.assertTrue(type(ec2client), EC2Connection)
-        self.assertEqual(ec2client.DefaultRegionEndpoint,
+        ec2_client = connection.EC2ConnectionClient().client()
+        self.assertTrue(type(ec2_client), EC2Connection)
+        self.assertEqual(ec2_client.DefaultRegionEndpoint,
                          'ec2.us-east-1.amazonaws.com')
 
     def test_validate_instance_id(self):
@@ -139,8 +139,8 @@ class TestPlugin(testtools.TestCase):
         ctx = self.mock_ctx('test_validate_instance_id')
 
         with mock_ec2():
-            ec2client = connection.EC2Client().ec2client()
-            reservation = ec2client.run_instances(
+            ec2_client = connection.EC2ConnectionClient().client()
+            reservation = ec2_client.run_instances(
                 TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
             id = reservation.instances[0].id
             self.assertTrue(utils.validate_instance_id(id, ctx=ctx))
@@ -206,14 +206,14 @@ class TestPlugin(testtools.TestCase):
         ctx = self.mock_ctx('test_instance_running_validate_state')
 
         with mock_ec2():
-            ec2client = connection.EC2Client().ec2client()
+            ec2_client = connection.EC2ConnectionClient().client()
             shorter = TEST_INSTANCE_TYPE
-            reservation = ec2client.run_instances(TEST_AMI_IMAGE_ID,
-                                                  instance_type=shorter)
+            reservation = ec2_client.run_instances(TEST_AMI_IMAGE_ID,
+                                                   instance_type=shorter)
             id = reservation.instances[0].id
             ctx.instance.runtime_properties['instance_id'] = id
             instance_object = utils.get_instance_from_id(id, ctx=ctx)
-            ec2client.stop_instances(id)
+            ec2_client.stop_instances(id)
             ex = self.assertRaises(NonRecoverableError,
                                    utils.validate_state,
                                    instance_object, 0, 1, .1, ctx=ctx)
