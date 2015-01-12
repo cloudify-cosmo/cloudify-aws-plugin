@@ -22,7 +22,7 @@ from boto.exception import BotoServerError
 from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
 from cloudify.decorators import operation
-from ec2 import utility
+from ec2 import utils
 
 # EC2 Instance States
 INSTANCE_RUNNING = 16
@@ -73,9 +73,9 @@ def create(**kwargs):
     instance_id = reservation.instances[0].id
     ctx.instance.runtime_properties['instance_id'] = instance_id
 
-    if utility.validate_instance_id(reservation.instances[0].id, ctx=ctx):
-        utility.validate_state(reservation.instances[0], INSTANCE_RUNNING,
-                               CREATION_TIMEOUT, CHECK_INTERVAL, ctx=ctx)
+    if utils.validate_instance_id(reservation.instances[0].id, ctx=ctx):
+        utils.validate_state(reservation.instances[0], INSTANCE_RUNNING,
+                             CREATION_TIMEOUT, CHECK_INTERVAL, ctx=ctx)
 
 
 @operation
@@ -97,9 +97,9 @@ def start(**kwargs):
                                   'instance: API returned: {1}.'
                                   .format(ctx.instance.id, e))
 
-    if utility.validate_instance_id(instance_id, ctx=ctx):
-        utility.validate_state(instances[0], INSTANCE_RUNNING,
-                               START_TIMEOUT, CHECK_INTERVAL, ctx=ctx)
+    if utils.validate_instance_id(instance_id, ctx=ctx):
+        utils.validate_state(instances[0], INSTANCE_RUNNING,
+                             START_TIMEOUT, CHECK_INTERVAL, ctx=ctx)
 
 
 @operation
@@ -121,9 +121,9 @@ def stop(**kwargs):
                                   'instance: API returned: {1}.'
                                   .format(ctx.instance.id, e))
 
-    if utility.validate_instance_id(instance_id, ctx=ctx):
-        utility.validate_state(instances[0], INSTANCE_STOPPED,
-                               STOP_TIMEOUT, CHECK_INTERVAL, ctx=ctx)
+    if utils.validate_instance_id(instance_id, ctx=ctx):
+        utils.validate_state(instances[0], INSTANCE_STOPPED,
+                             STOP_TIMEOUT, CHECK_INTERVAL, ctx=ctx)
 
 
 @operation
@@ -147,9 +147,9 @@ def terminate(**kwargs):
                                   'instance: API returned: {1}.'
                                   .format(ctx.instance.id, e))
 
-    if utility.validate_instance_id(instance_id, ctx=ctx):
-        utility.validate_state(instances[0], INSTANCE_TERMINATED,
-                               TERMINATION_TIMEOUT, CHECK_INTERVAL, ctx=ctx)
+    if utils.validate_instance_id(instance_id, ctx=ctx):
+        utils.validate_state(instances[0], INSTANCE_TERMINATED,
+                             TERMINATION_TIMEOUT, CHECK_INTERVAL, ctx=ctx)
 
 
 @operation
@@ -158,10 +158,10 @@ def creation_validation(**kwargs):
     state = INSTANCE_RUNNING
     timeout_length = 1
 
-    instance_object = utility.get_instance_from_id(instance_id, ctx=ctx)
+    instance_object = utils.get_instance_from_id(instance_id, ctx=ctx)
 
-    if utility.validate_state(instance_object, state,
-                              timeout_length, CHECK_INTERVAL, ctx=ctx):
+    if utils.validate_state(instance_object, state,
+                            timeout_length, CHECK_INTERVAL, ctx=ctx):
         ctx.logger.debug('Instance is running.')
     else:
         raise NonRecoverableError('Instance not running.')
