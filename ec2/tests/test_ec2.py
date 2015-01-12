@@ -206,13 +206,14 @@ class TestPlugin(testtools.TestCase):
         ctx = self.mock_ctx('test_instance_running_validate_state')
 
         with mock_ec2():
-            x = connection.EC2Client().connect()
-            reservation = x.run_instances(TEST_AMI_IMAGE_ID,
-                                          instance_type=TEST_INSTANCE_TYPE)
+            ec2client = connection.EC2Client().ec2client()
+            shorter = TEST_INSTANCE_TYPE
+            reservation = ec2client.run_instances(TEST_AMI_IMAGE_ID,
+                                                  instance_type=shorter)
             id = reservation.instances[0].id
             ctx.instance.runtime_properties['instance_id'] = id
             instance_object = utils.get_instance_from_id(id, ctx=ctx)
-            x.stop_instances(id)
+            ec2client.stop_instances(id)
             ex = self.assertRaises(NonRecoverableError,
                                    utils.validate_state,
                                    instance_object, 0, 1, .1, ctx=ctx)
@@ -258,4 +259,4 @@ class TestPlugin(testtools.TestCase):
             ex = self.assertRaises(NonRecoverableError,
                                    utils.validate_instance_id,
                                    'bad id', ctx=ctx)
-            self.assertIn('InvalidSubnetID.NotFound', ex.message)
+            self.assertIn('InvalidInstanceID.NotFound', ex.message)
