@@ -318,6 +318,25 @@ class TestPlugin(testtools.TestCase):
                                    floatingip.attach, ctx=ctx)
             self.assertIn('InvalidAddress.NotFound', ex.message)
 
+    def test_good_address_attach(self):
+        """ Tests that when an address that is in the user's
+            EC2 account is provided to the attach function
+            no errors are raised
+        """
+
+        ctx = self.mock_ctx('test_good_address_attach')
+
+        with mock_ec2():
+
+            ec2_client = connection.EC2ConnectionClient().client()
+            reservation = ec2_client.run_instances(
+                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
+            id = reservation.instances[0].id
+            address = ec2_client.allocate_address()
+            ctx.instance.runtime_properties['instance_id'] = id
+            ctx.instance.runtime_properties['floatingip'] = address.public_ip
+            floatingip.attach(ctx=ctx)
+
     def test_bad_address_detach(self):
         """ Tests that NonRecoverableError: Invalid Address is
             raised when an address that is not in the user's
@@ -332,6 +351,25 @@ class TestPlugin(testtools.TestCase):
             ex = self.assertRaises(NonRecoverableError,
                                    floatingip.detach, ctx=ctx)
             self.assertIn('InvalidAddress.NotFound', ex.message)
+
+    def test_good_address_detach(self):
+        """ Tests that when an address that is in the user's
+            EC2 account is provided to the detach function
+            no errors are raised
+        """
+
+        ctx = self.mock_ctx('test_good_address_detach')
+
+        with mock_ec2():
+
+            ec2_client = connection.EC2ConnectionClient().client()
+            reservation = ec2_client.run_instances(
+                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
+            id = reservation.instances[0].id
+            address = ec2_client.allocate_address()
+            ctx.instance.runtime_properties['instance_id'] = id
+            ctx.instance.runtime_properties['floatingip'] = address.public_ip
+            floatingip.detach(ctx=ctx)
 
     def test_bad_address_delete(self):
         """ Tests that NonRecoverableError: Invalid request is
@@ -350,3 +388,18 @@ class TestPlugin(testtools.TestCase):
             ex = self.assertRaises(NonRecoverableError,
                                    floatingip.delete, ctx=ctx)
             self.assertIn('Invalid request', ex.message)
+
+    def test_good_address_delete(self):
+        """ Tests that when an address that is in the user's
+            EC2 account is provided to the delete function
+            no errors are raised
+        """
+
+        ctx = self.mock_ctx('test_good_address_delete')
+
+        with mock_ec2():
+
+            ec2_client = connection.EC2ConnectionClient().client()
+            address = ec2_client.allocate_address()
+            ctx.instance.runtime_properties['floatingip'] = address.public_ip
+            floatingip.delete(ctx=ctx)
