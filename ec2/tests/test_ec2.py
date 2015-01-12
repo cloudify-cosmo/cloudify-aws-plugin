@@ -66,11 +66,12 @@ class TestPlugin(unittest.TestCase):
         """
         this tests that the instance stop function works
         """
+        ec2client = connection.EC2Client().ec2client()
 
         ctx = self.mock_ctx('test_instance_stop')
 
         with mock_ec2():
-            reservation = EC2Connection().run_instances(
+            reservation = ec2client.run_instances(
                 TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
             id = reservation.instances[0].id
             ctx.instance.runtime_properties['instance_id'] = id
@@ -79,26 +80,28 @@ class TestPlugin(unittest.TestCase):
     def test_instance_start(self):
         """ this tests that the instance.start function works
         """
+        ec2client = connection.EC2Client().ec2client()
 
         ctx = self.mock_ctx('test_instance_start')
 
         with mock_ec2():
-            reservation = EC2Connection().run_instances(
+            reservation = ec2client.run_instances(
                 TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
             id = reservation.instances[0].id
             ctx.instance.runtime_properties['instance_id'] = id
-            EC2Connection().stop_instances(id)
+            ec2client.stop_instances(id)
             instance.start(ctx=ctx)
 
     def test_instance_terminate(self):
         """ this tests that the instance.terminate function
         works
         """
+        ec2client = connection.EC2Client().ec2client()
 
         ctx = self.mock_ctx('test_instance_terminate')
 
         with mock_ec2():
-            reservation = EC2Connection().run_instances(
+            reservation = ec2client.run_instances(
                 TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
             id = reservation.instances[0].id
             ctx.instance.runtime_properties['instance_id'] = id
@@ -110,20 +113,21 @@ class TestPlugin(unittest.TestCase):
         in returned by the connect function
         """
 
-        c = connection.EC2Client().connect()
-        self.assertTrue(type(c), EC2Connection)
-        self.assertEqual(c.DefaultRegionEndpoint,
+        ec2client = connection.EC2Client().ec2client()
+        self.assertTrue(type(ec2client), EC2Connection)
+        self.assertEqual(ec2client.DefaultRegionEndpoint,
                          'ec2.us-east-1.amazonaws.com')
 
     def test_validate_instance_id(self):
         """ this tests that validate instance_id
         is true if provided with a valid instance_id
         """
+        ec2client = connection.EC2Client().ec2client()
 
         ctx = self.mock_ctx('test_validate_instance_id')
 
         with mock_ec2():
-            reservation = EC2Connection().run_instances(
+            reservation = ec2client.run_instances(
                 TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
             id = reservation.instances[0].id
             self.assertTrue(utility.validate_instance_id(id, ctx=ctx))
