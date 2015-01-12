@@ -14,6 +14,7 @@
 #    * limitations under the License.
 
 # Boto Imports
+from boto.ec2 import EC2Connection as EC2
 from boto.exception import EC2ResponseError
 from boto.exception import BotoServerError
 
@@ -21,8 +22,7 @@ from boto.exception import BotoServerError
 from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
 from cloudify.decorators import operation
-from ec2 import utils
-from ec2 import connection
+from ec2 import utility
 
 # EC2 Instance States
 INSTANCE_RUNNING = 16
@@ -47,7 +47,6 @@ RUN_INSTANCES_UNSUPPORTED = {
 def create(**kwargs):
     """ Creates an EC2 instance from an (AMI) image_id and an instance_type.
     """
-    ec2client = connection.EC2Client().ec2client()
 
     arguments = dict()
     arguments['image_id'] = ctx.node.properties['image_id']
@@ -65,7 +64,7 @@ def create(**kwargs):
                      .format(ctx.instance.id, arguments))
 
     try:
-        reservation = ec2client.run_instances(**arguments)
+        reservation = EC2().run_instances(**arguments)
     except (EC2ResponseError, BotoServerError) as e:
         raise NonRecoverableError('(Node: {0}): Error. Failed to run '
                                   'instance: API returned: {1}.'
@@ -74,16 +73,15 @@ def create(**kwargs):
     instance_id = reservation.instances[0].id
     ctx.instance.runtime_properties['instance_id'] = instance_id
 
-    if utils.validate_instance_id(reservation.instances[0].id, ctx=ctx):
-        utils.validate_state(reservation.instances[0], INSTANCE_RUNNING,
-                             CREATION_TIMEOUT, CHECK_INTERVAL, ctx=ctx)
+    if utility.validate_instance_id(reservation.instances[0].id, ctx=ctx):
+        utility.validate_state(reservation.instances[0], INSTANCE_RUNNING,
+                               CREATION_TIMEOUT, CHECK_INTERVAL, ctx=ctx)
 
 
 @operation
 def start(**kwargs):
     """ Starts an existing EC2 instance. If already started, this does nothing.
     """
-    ec2client = connection.EC2Client().ec2client()
 
     instance_id = ctx.instance.runtime_properties['instance_id']
 
@@ -93,22 +91,21 @@ def start(**kwargs):
                                                   instance_id))
 
     try:
-        instances = ec2client.start_instances(instance_id)
+        instances = EC2().start_instances(instance_id)
     except (EC2ResponseError, BotoServerError) as e:
         raise NonRecoverableError('(Node: {0}): Error. Failed to start '
                                   'instance: API returned: {1}.'
                                   .format(ctx.instance.id, e))
 
-    if utils.validate_instance_id(instance_id, ctx=ctx):
-        utils.validate_state(instances[0], INSTANCE_RUNNING,
-                             START_TIMEOUT, CHECK_INTERVAL, ctx=ctx)
+    if utility.validate_instance_id(instance_id, ctx=ctx):
+        utility.validate_state(instances[0], INSTANCE_RUNNING,
+                               START_TIMEOUT, CHECK_INTERVAL, ctx=ctx)
 
 
 @operation
 def stop(**kwargs):
     """ Stops an existing EC2 instance. If already stopped, this does nothing.
     """
-    ec2client = connection.EC2Client().ec2client()
 
     instance_id = ctx.instance.runtime_properties['instance_id']
 
@@ -118,15 +115,15 @@ def stop(**kwargs):
                                                   instance_id))
 
     try:
-        instances = ec2client.stop_instances(instance_id)
+        instances = EC2().stop_instances(instance_id)
     except (EC2ResponseError, BotoServerError) as e:
         raise NonRecoverableError('(Node: {0}): Error. Failed to stop '
                                   'instance: API returned: {1}.'
                                   .format(ctx.instance.id, e))
 
-    if utils.validate_instance_id(instance_id, ctx=ctx):
-        utils.validate_state(instances[0], INSTANCE_STOPPED,
-                             STOP_TIMEOUT, CHECK_INTERVAL, ctx=ctx)
+    if utility.validate_instance_id(instance_id, ctx=ctx):
+        utility.validate_state(instances[0], INSTANCE_STOPPED,
+                               STOP_TIMEOUT, CHECK_INTERVAL, ctx=ctx)
 
 
 @operation
@@ -134,7 +131,6 @@ def terminate(**kwargs):
     """ Terminates an existing EC2 instance.
     If already terminated, this does nothing.
     """
-    ec2client = connection.EC2Client().ec2client()
 
     instance_id = ctx.instance.runtime_properties['instance_id']
 
@@ -145,15 +141,15 @@ def terminate(**kwargs):
                                                   instance_id))
 
     try:
-        instances = ec2client.terminate_instances(instance_id)
+        instances = EC2().terminate_instances(instance_id)
     except (EC2ResponseError, BotoServerError) as e:
         raise NonRecoverableError('(Node: {0}): Error. Failed to terminate '
                                   'instance: API returned: {1}.'
                                   .format(ctx.instance.id, e))
 
-    if utils.validate_instance_id(instance_id, ctx=ctx):
-        utils.validate_state(instances[0], INSTANCE_TERMINATED,
-                             TERMINATION_TIMEOUT, CHECK_INTERVAL, ctx=ctx)
+    if utility.validate_instance_id(instance_id, ctx=ctx):
+        utility.validate_state(instances[0], INSTANCE_TERMINATED,
+                               TERMINATION_TIMEOUT, CHECK_INTERVAL, ctx=ctx)
 
 
 @operation
@@ -162,10 +158,10 @@ def creation_validation(**kwargs):
     state = INSTANCE_RUNNING
     timeout_length = 1
 
-    instance_object = utils.get_instance_from_id(instance_id, ctx=ctx)
+    instance_object = utility.get_instance_from_id(instance_id, ctx=ctx)
 
-    if utils.validate_state(instance_object, state,
-                            timeout_length, CHECK_INTERVAL, ctx=ctx):
+    if utility.validate_state(instance_object, state,
+                              timeout_length, CHECK_INTERVAL, ctx=ctx):
         ctx.logger.debug('Instance is running.')
     else:
         raise NonRecoverableError('Instance not running.')
