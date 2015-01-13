@@ -37,3 +37,66 @@ node_types:
         creation:
           implementation: cloudify-aws-plugin.ec2.instance.creation_validation
           inputs: {}
+
+  cloudify.aws.nodes.FloatingIP:
+    derived_from: cloudify.nodes.VirtualIP
+    properties:
+      floatingip:
+        default: {}
+      use_external_resource:
+        default: false
+      resource_id:
+        default: ''
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: cloudify-aws-plugin.ec2.floatingip.create
+        delete: cloudify-aws-plugin.ec2.floatingip.delete
+      cloudify.interfaces.validation:
+        creation: cloudify-aws-plugin.ec2.floatingip.creation_validation
+
+  cloudify.aws.nodes.SecurityGroup
+    derived_from: cloudify.nodes.SecurityGroup
+    properties:
+      name:
+        default: ''
+      description:
+        default: ''
+      use_external_resource:
+        default: false
+      resource_id:
+        default: ''
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: cloudify-aws-plugin.ec2.security_group.create
+        delete: cloudify-aws-plugin.ec2.security_group.delete
+      cloudify.interfaces.validation:
+        creation: cloudify-aws-plugin.ec2.security_group.creation_validation
+
+relationships:
+  cloudify.aws.relationships.authorize_ip:
+    derived_from: cloudify.relationships.contained_in
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish:
+          implementation: cloudify-aws-plugin.ec2.securitygroup.authorize_ip
+        unlink:
+          implementation: cloudify-aws-plugin.ec2.securitygroup.deauthorize_ip
+    properties:
+      group_name: {}
+      group_id: {}
+      ip_protocol: {}
+      from_port: {}
+      to_port: {}
+      cidr: {}
+
+  cloudify.aws.nodes.relationships.authorize_group:
+    derived_from: cloudify.relationships.contained_in
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish:
+          implementation: cloudify-aws-plugin.ec2.securitygroup.authorize_group
+        unlink:
+          implementation: cloudify-aws-plugin.ec2.securitygroup.deauthorize_group
+    properties:
+      src_security_group_name: {}
+      src_security_group_owner_id: {}
