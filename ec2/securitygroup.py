@@ -26,25 +26,6 @@ from ec2 import utils
 
 
 @operation
-def creation_validation(**kwargs):
-    """ Validate that the Security Group exists
-    """
-
-    if 'group_object' in ctx.source.instance.runtime_properties:
-        group = ctx.source.instance.runtime_properties['group_object']
-    elif 'group_id' in ctx.node.properties:
-        group = ctx.source.instance.runtime_properties['group_id']
-    elif 'group_name' in ctx.node.properties:
-        group = ctx.source.instance.runtime_properties['group_name']
-
-    if (utils.validate_group(group)):
-        ctx.logger.info('Verified that group {0} was created.'.format(group))
-    else:
-        raise NonRecoverableError('Could not verify that the group {0} '
-                                  'was created.'.format(group))
-
-
-@operation
 def create(**kwargs):
     """ Creates a Security Group on the account that is
         currently signed in."
@@ -77,7 +58,7 @@ def delete(**kwargs):
 
     ec2_client = connection.EC2ConnectionClient().client()
 
-    group_name = ctx.node.properties['group_name']
+    group_name = ctx.instance.runtime_properties['group_name']
 
     ctx.logger.info('Deleting Security Group: {0}'.format(group_name))
 
@@ -91,54 +72,85 @@ def delete(**kwargs):
     ctx.logger.info('Deleted Security Group: {0}.'.format(group_name))
 
 
-def authorize(**kwargs):
+@operation
+def creation_validation(**kwargs):
+    """ Validate that the Security Group exists
+    """
+
+    if 'group_object' in ctx.instance.runtime_properties:
+        group = ctx.instance.runtime_properties['group_object']
+    elif 'group_id' in ctx.instance.runtime_properties:
+        group = ctx.instance.runtime_properties['group_id']
+    elif 'group_name' in ctx.instance.runtime_properties:
+        group = ctx.instance.runtime_properties['group_name']
+    elif 'group_id' in ctx.node.properties:
+        group = ctx.node.properties['group_id']
+    elif 'group_name' in ctx.node.properties:
+        group = ctx.node.properties['group_name']
+    else:
+        raise NonRecoverableError('No group name or group id provided.')
+
+    if (utils.validate_group(group, ctx)):
+        ctx.logger.info('Verified that group {0} was created.'.format(group))
+    else:
+        raise NonRecoverableError('Could not verify that the group {0} '
+                                  'was created.'.format(group))
+
+
+def authorize(ctx):
     """ Adds a rule to a security group using a provided protocol,
         address or address block, and port.
     """
 
     ec2_client = connection.EC2ConnectionClient().client()
 
-    rules = ctx.node.properties['rules']
+    ctx.logger.info('Adding Rule to Security Group.')
 
-    for rule in ctx.node.properties['rules']:
-
-        ctx.logger.info('Adding Rule to Security Group.')
-
-        if 'group_object' in ctx.instance.runtime_properties:
-            group = ctx.instance.runtime_properties['group_object']
-            authorize_by_id(ec2_client, group.id, rule)
-        elif 'group_id' in ctx.node.properties:
-            group = ctx.node.properties['group_id']
-            authorize_by_id(ec2_client, group, rule)
-        elif 'group_name' in ctx.node.properties:
-            group = ctx.node.properties['group_name']
-            authorize_by_name(ec2_client, group, rule)
+    if 'group_object' in ctx.instance.runtime_properties:
+        group = ctx.instance.runtime_properties['group_object']
+        authorize_by_id(ec2_client, group.id, ctx)
+    elif 'group_id' in ctx.instance.runtime_properties:
+        group = ctx.instance.runtime_properties['group_id']
+        authorize_by_id(ec2_client, group.id, ctx)
+    elif 'group_name' in ctx.instance.runtime_properties:
+        group = ctx.instance.runtime_properties['group_name']
+        authorize_by_name(ec2_client, group.id, ctx)
+    elif 'group_id' in ctx.node.properties:
+        group = ctx.node.properties['group_id']
+        authorize_by_id(ec2_client, group.id, ctx)
+    elif 'group_name' in ctx.node.properties:
+        group = ctx.node.properties['group_name']
+        authorize_by_name(ec2_client, group.id, ctx)
+    else:
+        raise NonRecoverableError('No group name or group id provided.')
 
     ctx.logger.info('Added rules to Security Group: {0}'
-                    'Rules: {1}'.format(group, rules))
+                    'Rules: {1}'.format(group, ctx.node.properties['rules']))
 
 
-def authorize_by_id(ec2_client, group, rule):
+def authorize_by_id(ec2_client, group, ctx):
 
-    try:
-        ec2_client.authorize_security_group(group_id=group,
-                                            ip_protocol=rule['ip_protocol'],
-                                            from_port=rule['from_port'],
-                                            to_port=rule['to_port'],
-                                            cidr_ip=rule['cidr_ip'])
-    except () as e:
-        raise NonRecoverableError('Unable to authorize that group: '
-                                  '{0}'.format(e))
+    for r in ctx.node.properties['rules']:
+        try:
+            ec2_client.authorize_security_group(group_id=group,
+                                                ip_protocol=r['ip_protocol'],
+                                                from_port=r['from_port'],
+                                                to_port=r['to_port'],
+                                                cidr_ip=r['cidr_ip'])
+        except (EC2ResponseError, BotoServerError) as e:
+            raise NonRecoverableError('Unable to authorize that group: '
+                                      '{0}'.format(e))
 
 
-def authorize_by_name(ec2_client, group, rule):
+def authorize_by_name(ec2_client, group, ctx):
 
-    try:
-        ec2_client.authorize_security_group(group_name=group,
-                                            ip_protocol=rule['ip_protocol'],
-                                            from_port=rule['from_port'],
-                                            to_port=rule['to_port'],
-                                            cidr_ip=rule['cidr_ip'])
-    except () as e:
-        raise NonRecoverableError('Unable to authorize that group: '
-                                  '{0}'.format(e))
+    for r in ctx.node.properties['rules']:
+        try:
+            ec2_client.authorize_security_group(group_name=group,
+                                                ip_protocol=r['ip_protocol'],
+                                                from_port=r['from_port'],
+                                                to_port=r['to_port'],
+                                                cidr_ip=r['cidr_ip'])
+        except (EC2ResponseError, BotoServerError) as e:
+            raise NonRecoverableError('Unable to authorize that group: '
+                                      '{0}'.format(e))
