@@ -120,3 +120,23 @@ def get_instance_from_id(instance_id, ctx):
     instance = reservations[0].instances[0]
 
     return instance
+
+
+def validate_group(group, ctx):
+    ec2_client = connection.EC2ConnectionClient().client()
+
+    ctx.logger.debug('Testing if group with identifier '
+                     ' {0} exists in this account.'.format(group))
+
+    try:
+        groups = ec2_client.get_all_security_groups(group)
+    except (EC2ResponseError, BotoServerError) as e:
+        raise NonRecoverableError('(Node: {0}): Error. '
+                                  'Failed to group by id: '
+                                  'API returned: {1}.'
+                                  .format(ctx.instance.id, e))
+
+    if groups is not None:
+        return True
+    else:
+        return False
