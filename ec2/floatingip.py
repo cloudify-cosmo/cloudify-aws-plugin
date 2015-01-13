@@ -29,7 +29,6 @@ def create(**kwargs):
     """ Gets a floating IP from an Amazon Elastic IP.
     """
     ec2_client = connection.EC2ConnectionClient().client()
-
     ctx.logger.debug('Getting Elastic IP from Amazon EC2.')
 
     try:
@@ -40,16 +39,13 @@ def create(**kwargs):
                                   .format(ctx.instance.id, e))
 
     ctx.logger.info('Elastic IP creation response: {0}'.format(address_object))
-
     ctx.instance.runtime_properties['floatingip'] = address_object.public_ip
 
 
 @operation
 def delete(**kwargs):
     ec2_client = connection.EC2ConnectionClient().client()
-
     ctx.logger.debug('Deleting a Floating IP.')
-
     floatingip = ctx.instance.runtime_properties['floatingip']
 
     try:
@@ -63,16 +59,13 @@ def delete(**kwargs):
 
 
 @operation
-def attach(**kwargs):
+def connect(**kwargs):
     """ Attaches a floating IP to a node.
     """
     ec2_client = connection.EC2ConnectionClient().client()
-
     ctx.logger.debug('Attaching a Floating IP to EC2 Instance.')
-
-    floatingip = ctx.source.node.properties['floatingip']
-
-    instance_id = ctx.target.instance.runtime_properties['instance_id']
+    floatingip = ctx.target.node.properties['floatingip']
+    instance_id = ctx.source.instance.runtime_properties['instance_id']
 
     try:
         ec2_client.associate_address(instance_id=instance_id,
@@ -87,12 +80,10 @@ def attach(**kwargs):
 
 
 @operation
-def detach(**kwargs):
+def disconnect(**kwargs):
     ec2_client = connection.EC2ConnectionClient().client()
-
     ctx.logger.debug('Detaching a Floating IP to EC2 Instance.')
-
-    floatingip = ctx.source.node.properties['floatingip']
+    floatingip = ctx.target.node.properties['floatingip']
 
     try:
         ec2_client.disassociate_address(public_ip=floatingip)
