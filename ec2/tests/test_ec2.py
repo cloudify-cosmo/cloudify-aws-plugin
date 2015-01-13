@@ -302,6 +302,47 @@ class TestPlugin(testtools.TestCase):
         with mock_ec2():
             securitygroup.create(ctx=ctx)
 
+    def test_good_security_group_delete(self):
+        """ There are many places that this could fail,
+            so I am first testing that everything works given
+            really good input.
+        """
+
+        test_properties = {
+            'name': 'test_security_group',
+            'description': 'This is a test.',
+        }
+
+        ctx = self.security_group_mock('test_good_security_group_delete',
+                                       test_properties)
+
+        with mock_ec2():
+            ec2_client = connection.EC2ConnectionClient().client()
+            group = ec2_client.create_security_group('test',
+                                                     'this is test')
+            ctx.instance.runtime_properties['group_name'] = group.name
+            securitygroup.delete(ctx=ctx)
+
+    def test_bad_security_group_delete(self):
+        """ There are many places that this could fail,
+            so I am first testing that everything works given
+            really good input.
+        """
+
+        test_properties = {
+            'name': 'test_security_group',
+            'description': 'This is a test.',
+        }
+
+        ctx = self.security_group_mock('test_bad_security_group_delete',
+                                       test_properties)
+
+        with mock_ec2():
+            ctx.instance.runtime_properties['group_name'] = 'no such group'
+            ex = self.assertRaises(NonRecoverableError,
+                                   securitygroup.delete, ctx=ctx)
+            self.assertIn('InvalidGroup.NotFound', ex.message)
+
     def test_no_ip_authorize_security_group(self):
         """ Tests that an error is raised when a user omits
             a description in the create operation.
@@ -323,45 +364,14 @@ class TestPlugin(testtools.TestCase):
 
         with mock_ec2():
             ec2_client = connection.EC2ConnectionClient().client()
-
             group = ec2_client.create_security_group('test',
                                                      'this is test')
             ex = self.assertRaises(KeyError, securitygroup.authorize_by_name,
                                    ec2_client, group.name,
-                                   ctx.node.properties['rules'][0])
+                                   ctx)
             self.assertIn('cidr_ip', ex.message)
 
-    def test_no_to_port_authorize_security_group(self):
-        """ Tests that an error is raised when a user omits
-            a description in the create operation.
-        """
-        test_properties = {
-            'name': 'test_security_group',
-            'description': 'This is a test.',
-            'rules': [
-                {
-                    'ip_protocol': 'tcp',
-                    'from_port': '22',
-                    'cidr_ip': '127.0.0.1/32'
-                }
-            ]
-        }
-
-        ctx = self.security_group_mock('test_no_to_port_'
-                                       'authorize_security_group',
-                                       test_properties)
-
-        with mock_ec2():
-            ec2_client = connection.EC2ConnectionClient().client()
-
-            group = ec2_client.create_security_group('test',
-                                                     'this is test')
-            ex = self.assertRaises(KeyError, securitygroup.authorize_by_name,
-                                   ec2_client, group.name,
-                                   ctx.node.properties['rules'][0])
-            self.assertIn('to_port', ex.message)
-
-    def test_no_from_port_authorize_security_group(self):
+    def test_no_port_authorize_security_group(self):
         """ Tests that an error is raised when a user omits
             a description in the create operation.
         """
@@ -377,29 +387,29 @@ class TestPlugin(testtools.TestCase):
             ]
         }
 
-        ctx = self.security_group_mock('test_no_from_port_'
-                                       'authorize_security_group',
+        ctx = self.security_group_mock('test_no_ip_authorize_security_group',
                                        test_properties)
 
         with mock_ec2():
             ec2_client = connection.EC2ConnectionClient().client()
-
             group = ec2_client.create_security_group('test',
                                                      'this is test')
             ex = self.assertRaises(KeyError, securitygroup.authorize_by_name,
-                                   ec2_client, group.name,
-                                   ctx.node.properties['rules'][0])
+                                   ec2_client, group.id,
+                                   ctx)
             self.assertIn('from_port', ex.message)
 
-    def test_no_protocol_authorize_security_group(self):
-        """ Tests that an error is raised when a user omits
-            a description in the create operation.
+    def test_no_group_creation_validation_security_group(self):
+        """ Tests that NonRecoverableError is raised when
+            an invalid group is tried for validation
         """
+
         test_properties = {
             'name': 'test_security_group',
             'description': 'This is a test.',
             'rules': [
                 {
+                    'ip_protocol': 'tcp',
                     'from_port': '22',
                     'to_port': '22',
                     'cidr_ip': '127.0.0.1/32'
@@ -407,45 +417,42 @@ class TestPlugin(testtools.TestCase):
             ]
         }
 
-        ctx = self.security_group_mock('test_no_protocol_'
-                                       'authorize_security_group',
+        ctx = self.security_group_mock('test_no_group_creation_'
+                                       'validation_security_group',
                                        test_properties)
 
         with mock_ec2():
-            ec2_client = connection.EC2ConnectionClient().client()
+            ex = self.assertRaises(NonRecoverableError,
+                                   securitygroup.creation_validation,
+                                   ctx=ctx)
+            self.assertIn('No group name or group id provided',
+                          ex.message)
 
-            group = ec2_client.create_security_group('test',
-                                                     'this is test')
-            ex = self.assertRaises(KeyError, securitygroup.authorize_by_name,
-                                   ec2_client, group.name,
-                                   ctx.node.properties['rules'][0])
-            self.assertIn('ip_protocol', ex.message)
-
-    def test_bad_port_authorize_security_group(self):
-        """ Tests that an error is raised when a user omits
-            a description in the create operation.
+    def test_no_group_authorize_security_group(self):
+        """ Tests that NonRecoverableError is raised when
+            an invalid group is tried for validation
         """
+
         test_properties = {
             'name': 'test_security_group',
             'description': 'This is a test.',
             'rules': [
                 {
-                    'ip_protocol': 22,
-                    'from_port': 22,
-                    'to_port': '22',
+                    'ip_protocol': 'tcp',
+                    'from_port': '80',
+                    'to_port': '80',
                     'cidr_ip': '127.0.0.1/32'
                 }
             ]
         }
 
-        ctx = self.security_group_mock('test_bad_port_'
+        ctx = self.security_group_mock('test_no_group_'
                                        'authorize_security_group',
                                        test_properties)
 
         with mock_ec2():
-            ec2_client = connection.EC2ConnectionClient().client()
-
-            group = ec2_client.create_security_group('test',
-                                                     'this is test')
-            securitygroup.authorize_by_name(ec2_client, group.name,
-                                            ctx.node.properties['rules'][0])
+            ex = self.assertRaises(NonRecoverableError,
+                                   securitygroup.authorize,
+                                   ctx=ctx)
+            self.assertIn('No group name or group id provided',
+                          ex.message)
