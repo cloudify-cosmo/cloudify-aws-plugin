@@ -45,48 +45,6 @@ def create(**kwargs):
 
 
 @operation
-def attach(**kwargs):
-    """ Attaches a floating IP to a node.
-    """
-    ec2_client = connection.EC2ConnectionClient().client()
-
-    ctx.logger.debug('Attaching a Floating IP to EC2 Instance.')
-
-    floatingip = ctx.instance.runtime_properties['floatingip']
-
-    instance_id = ctx.instance.runtime_properties['instance_id']
-
-    try:
-        ec2_client.associate_address(instance_id=instance_id,
-                                     public_ip=floatingip)
-    except (EC2ResponseError, BotoServerError) as e:
-        raise NonRecoverableError('(Node: {0}): Error. Failed to attach '
-                                  'floating ip, returned: {1}.'
-                                  .format(ctx.instance.id, e))
-
-    ctx.logger.info('Attached Floating IP {0} to instance {1}.'.format(
-        floatingip, instance_id))
-
-
-@operation
-def detach(**kwargs):
-    ec2_client = connection.EC2ConnectionClient().client()
-
-    ctx.logger.debug('Detaching a Floating IP to EC2 Instance.')
-
-    floatingip = ctx.instance.runtime_properties['floatingip']
-
-    try:
-        ec2_client.disassociate_address(public_ip=floatingip)
-    except (EC2ResponseError, BotoServerError) as e:
-        raise NonRecoverableError('(Node: {0}): Error. Failed to detach '
-                                  'floating ip, returned: {1}.'
-                                  .format(ctx.instance.id, e))
-
-    ctx.logger.info('detached Floating IP {0}.'.format(floatingip))
-
-
-@operation
 def delete(**kwargs):
     ec2_client = connection.EC2ConnectionClient().client()
 
@@ -102,3 +60,45 @@ def delete(**kwargs):
                                   .format(ctx.instance.id, e))
 
     ctx.logger.info('Deleted Floating IP {0}.'.format(floatingip))
+
+
+@operation
+def attach(**kwargs):
+    """ Attaches a floating IP to a node.
+    """
+    ec2_client = connection.EC2ConnectionClient().client()
+
+    ctx.logger.debug('Attaching a Floating IP to EC2 Instance.')
+
+    floatingip = ctx.source.node.properties['floatingip']
+
+    instance_id = ctx.target.instance.runtime_properties['instance_id']
+
+    try:
+        ec2_client.associate_address(instance_id=instance_id,
+                                     public_ip=floatingip)
+    except (EC2ResponseError, BotoServerError) as e:
+        raise NonRecoverableError('Error. Failed to attach '
+                                  'floating ip, returned: {0}.'
+                                  .format(e))
+
+    ctx.logger.info('Attached Floating IP {0} to instance {1}.'.format(
+        floatingip, instance_id))
+
+
+@operation
+def detach(**kwargs):
+    ec2_client = connection.EC2ConnectionClient().client()
+
+    ctx.logger.debug('Detaching a Floating IP to EC2 Instance.')
+
+    floatingip = ctx.source.node.properties['floatingip']
+
+    try:
+        ec2_client.disassociate_address(public_ip=floatingip)
+    except (EC2ResponseError, BotoServerError) as e:
+        raise NonRecoverableError('(Error. Failed to detach '
+                                  'floating ip, returned: {0}.'
+                                  .format(e))
+
+    ctx.logger.info('detached Floating IP {0}.'.format(floatingip))
