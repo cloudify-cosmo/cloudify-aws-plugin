@@ -26,6 +26,7 @@ from ec2 import instance
 from ec2 import utils
 from ec2 import floatingip
 from cloudify.mocks import MockCloudifyContext
+from cloudify.mocks import MockContext
 from cloudify.exceptions import NonRecoverableError
 
 TEST_AMI_IMAGE_ID = 'ami-e214778a'
@@ -53,6 +54,36 @@ class TestPlugin(testtools.TestCase):
         )
 
         return ctx
+
+    def mock_relationship_ctx(self, testname):
+
+        instance_ctx = MockContext({
+            'node': MockContext({
+                'properties': {}
+            }),
+            'instance': MockContext({
+                'runtime_properties': {
+                    'instance_id': 'i-abc1234'
+                }
+            })
+        })
+
+        floatingip_ctx = MockContext({
+            'node': MockContext({
+                'properties': {}
+            }),
+            'instance': MockContext({
+                'runtime_properties': {
+                    'floatingip': ''
+                }
+            })
+        })
+
+        relationship_ctx = MockCloudifyContext(node_id=testname,
+                                               source=instance_ctx,
+                                               target=floatingip_ctx)
+
+        return relationship_ctx
 
     def test_instance_create(self):
         """ this tests that the instance create function works
@@ -304,7 +335,7 @@ class TestPlugin(testtools.TestCase):
             EC2 account is provided to the attach function
         """
 
-        ctx = self.mock_ctx('test_bad_address_attach')
+        ctx = self.mock_relationship_ctx('test_bad_address_attach')
 
         with mock_ec2():
 
@@ -312,8 +343,8 @@ class TestPlugin(testtools.TestCase):
             reservation = ec2_client.run_instances(
                 TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
             id = reservation.instances[0].id
-            ctx.instance.runtime_properties['floatingip'] = '0.0.0.0'
-            ctx.instance.runtime_properties['instance_id'] = id
+            ctx.source.node.properties['floatingip'] = '0.0.0.0'
+            ctx.target.instance.runtime_properties['instance_id'] = id
             ex = self.assertRaises(NonRecoverableError,
                                    floatingip.attach, ctx=ctx)
             self.assertIn('InvalidAddress.NotFound', ex.message)
@@ -324,7 +355,7 @@ class TestPlugin(testtools.TestCase):
             no errors are raised
         """
 
-        ctx = self.mock_ctx('test_good_address_attach')
+        ctx = self.mock_relationship_ctx('test_good_address_attach')
 
         with mock_ec2():
 
@@ -333,8 +364,8 @@ class TestPlugin(testtools.TestCase):
                 TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
             id = reservation.instances[0].id
             address = ec2_client.allocate_address()
-            ctx.instance.runtime_properties['instance_id'] = id
-            ctx.instance.runtime_properties['floatingip'] = address.public_ip
+            ctx.source.node.properties['floatingip'] = address.public_ip
+            ctx.target.instance.runtime_properties['instance_id'] = id
             floatingip.attach(ctx=ctx)
 
     def test_bad_address_detach(self):
@@ -343,11 +374,11 @@ class TestPlugin(testtools.TestCase):
             EC2 account is provided to the detach function
         """
 
-        ctx = self.mock_ctx('test_bad_address_detach')
+        ctx = self.mock_relationship_ctx('test_bad_address_detach')
 
         with mock_ec2():
 
-            ctx.instance.runtime_properties['floatingip'] = '0.0.0.0'
+            ctx.source.node.properties['floatingip'] = '0.0.0.0'
             ex = self.assertRaises(NonRecoverableError,
                                    floatingip.detach, ctx=ctx)
             self.assertIn('InvalidAddress.NotFound', ex.message)
@@ -358,7 +389,7 @@ class TestPlugin(testtools.TestCase):
             no errors are raised
         """
 
-        ctx = self.mock_ctx('test_good_address_detach')
+        ctx = self.mock_relationship_ctx('test_good_address_detach')
 
         with mock_ec2():
 
@@ -367,8 +398,8 @@ class TestPlugin(testtools.TestCase):
                 TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
             id = reservation.instances[0].id
             address = ec2_client.allocate_address()
-            ctx.instance.runtime_properties['instance_id'] = id
-            ctx.instance.runtime_properties['floatingip'] = address.public_ip
+            ctx.source.node.properties['floatingip'] = address.public_ip
+            ctx.target.instance.runtime_properties['instance_id'] = id
             floatingip.detach(ctx=ctx)
 
     def test_bad_address_delete(self):
