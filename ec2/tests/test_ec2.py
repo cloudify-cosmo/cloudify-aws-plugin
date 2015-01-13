@@ -24,6 +24,7 @@ from moto import mock_ec2
 from ec2 import connection
 from ec2 import instance
 from ec2 import utils
+from ec2 import securitygroup
 from cloudify.mocks import MockCloudifyContext
 from cloudify.exceptions import NonRecoverableError
 
@@ -47,6 +48,15 @@ class TestPlugin(testtools.TestCase):
 
         ctx = MockCloudifyContext(
             node_id=test_node_id,
+            properties=test_properties
+        )
+
+        return ctx
+
+    def security_group_mock(self, test_name, test_properties):
+
+        ctx = MockCloudifyContext(
+            node_id=test_name,
             properties=test_properties
         )
 
@@ -260,3 +270,182 @@ class TestPlugin(testtools.TestCase):
                                    utils.validate_instance_id,
                                    'bad id', ctx=ctx)
             self.assertIn('InvalidInstanceID.NotFound', ex.message)
+
+    def test_good_security_group_create(self):
+        """ There are many places that this could fail,
+            so I am first testing that everything works given
+            really good input.
+        """
+
+        test_properties = {
+            'name': 'test_security_group',
+            'description': 'This is a test.',
+            'rules': [
+                {
+                    'ip_protocol': 'tcp',
+                    'from_port': '22',
+                    'to_port': '22',
+                    'cidr_ip': '127.0.0.1/32'
+                },
+                {
+                    'ip_protocol': 'tcp',
+                    'from_port': '80',
+                    'to_port': '80',
+                    'cidr_ip': '127.0.0.1/32'
+                }
+            ]
+        }
+
+        ctx = self.security_group_mock('test_good_security_group_create',
+                                       test_properties)
+
+        with mock_ec2():
+            securitygroup.create(ctx=ctx)
+
+    def test_no_ip_authorize_security_group(self):
+        """ Tests that an error is raised when a user omits
+            a description in the create operation.
+        """
+        test_properties = {
+            'name': 'test_security_group',
+            'description': 'This is a test.',
+            'rules': [
+                {
+                    'ip_protocol': 'tcp',
+                    'from_port': '22',
+                    'to_port': '22',
+                }
+            ]
+        }
+
+        ctx = self.security_group_mock('test_no_ip_authorize_security_group',
+                                       test_properties)
+
+        with mock_ec2():
+            ec2_client = connection.EC2ConnectionClient().client()
+
+            group = ec2_client.create_security_group('test',
+                                                     'this is test')
+            ex = self.assertRaises(KeyError, securitygroup.authorize_by_name,
+                                   ec2_client, group.name,
+                                   ctx.node.properties['rules'][0])
+            self.assertIn('cidr_ip', ex.message)
+
+    def test_no_to_port_authorize_security_group(self):
+        """ Tests that an error is raised when a user omits
+            a description in the create operation.
+        """
+        test_properties = {
+            'name': 'test_security_group',
+            'description': 'This is a test.',
+            'rules': [
+                {
+                    'ip_protocol': 'tcp',
+                    'from_port': '22',
+                    'cidr_ip': '127.0.0.1/32'
+                }
+            ]
+        }
+
+        ctx = self.security_group_mock('test_no_to_port_'
+                                       'authorize_security_group',
+                                       test_properties)
+
+        with mock_ec2():
+            ec2_client = connection.EC2ConnectionClient().client()
+
+            group = ec2_client.create_security_group('test',
+                                                     'this is test')
+            ex = self.assertRaises(KeyError, securitygroup.authorize_by_name,
+                                   ec2_client, group.name,
+                                   ctx.node.properties['rules'][0])
+            self.assertIn('to_port', ex.message)
+
+    def test_no_from_port_authorize_security_group(self):
+        """ Tests that an error is raised when a user omits
+            a description in the create operation.
+        """
+        test_properties = {
+            'name': 'test_security_group',
+            'description': 'This is a test.',
+            'rules': [
+                {
+                    'ip_protocol': 'tcp',
+                    'to_port': '22',
+                    'cidr_ip': '127.0.0.1/32'
+                }
+            ]
+        }
+
+        ctx = self.security_group_mock('test_no_from_port_'
+                                       'authorize_security_group',
+                                       test_properties)
+
+        with mock_ec2():
+            ec2_client = connection.EC2ConnectionClient().client()
+
+            group = ec2_client.create_security_group('test',
+                                                     'this is test')
+            ex = self.assertRaises(KeyError, securitygroup.authorize_by_name,
+                                   ec2_client, group.name,
+                                   ctx.node.properties['rules'][0])
+            self.assertIn('from_port', ex.message)
+
+    def test_no_protocol_authorize_security_group(self):
+        """ Tests that an error is raised when a user omits
+            a description in the create operation.
+        """
+        test_properties = {
+            'name': 'test_security_group',
+            'description': 'This is a test.',
+            'rules': [
+                {
+                    'from_port': '22',
+                    'to_port': '22',
+                    'cidr_ip': '127.0.0.1/32'
+                }
+            ]
+        }
+
+        ctx = self.security_group_mock('test_no_protocol_'
+                                       'authorize_security_group',
+                                       test_properties)
+
+        with mock_ec2():
+            ec2_client = connection.EC2ConnectionClient().client()
+
+            group = ec2_client.create_security_group('test',
+                                                     'this is test')
+            ex = self.assertRaises(KeyError, securitygroup.authorize_by_name,
+                                   ec2_client, group.name,
+                                   ctx.node.properties['rules'][0])
+            self.assertIn('ip_protocol', ex.message)
+
+    def test_bad_port_authorize_security_group(self):
+        """ Tests that an error is raised when a user omits
+            a description in the create operation.
+        """
+        test_properties = {
+            'name': 'test_security_group',
+            'description': 'This is a test.',
+            'rules': [
+                {
+                    'ip_protocol': 22,
+                    'from_port': 22,
+                    'to_port': '22',
+                    'cidr_ip': '127.0.0.1/32'
+                }
+            ]
+        }
+
+        ctx = self.security_group_mock('test_bad_port_'
+                                       'authorize_security_group',
+                                       test_properties)
+
+        with mock_ec2():
+            ec2_client = connection.EC2ConnectionClient().client()
+
+            group = ec2_client.create_security_group('test',
+                                                     'this is test')
+            securitygroup.authorize_by_name(ec2_client, group.name,
+                                            ctx.node.properties['rules'][0])

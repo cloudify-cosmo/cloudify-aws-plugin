@@ -65,6 +65,7 @@ node_types:
         default: false
       resource_id:
         default: ''
+      rules: {}
     interfaces:
       cloudify.interfaces.lifecycle:
         create: cloudify-aws-plugin.ec2.security_group.create
@@ -73,7 +74,7 @@ node_types:
         creation: cloudify-aws-plugin.ec2.security_group.creation_validation
 
 relationships:
-  cloudify.aws.relationships.authorize_ip:
+  cloudify.aws.relationships.instance_connected_to_security_group:
     derived_from: cloudify.relationships.contained_in
     source_interfaces:
       cloudify.interfaces.relationship_lifecycle:
@@ -81,22 +82,3 @@ relationships:
           implementation: cloudify-aws-plugin.ec2.securitygroup.authorize_ip
         unlink:
           implementation: cloudify-aws-plugin.ec2.securitygroup.deauthorize_ip
-    properties:
-      group_name: {}
-      group_id: {}
-      ip_protocol: {}
-      from_port: {}
-      to_port: {}
-      cidr: {}
-
-  cloudify.aws.nodes.relationships.authorize_group:
-    derived_from: cloudify.relationships.contained_in
-    source_interfaces:
-      cloudify.interfaces.relationship_lifecycle:
-        establish:
-          implementation: cloudify-aws-plugin.ec2.securitygroup.authorize_group
-        unlink:
-          implementation: cloudify-aws-plugin.ec2.securitygroup.deauthorize_group
-    properties:
-      src_security_group_name: {}
-      src_security_group_owner_id: {}
