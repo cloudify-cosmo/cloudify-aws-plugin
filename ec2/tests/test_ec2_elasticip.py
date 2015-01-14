@@ -194,6 +194,9 @@ class TestElasticIP(testtools.TestCase):
             self.assertIn('InvalidAddress.NotFound', ex.message)
 
     def test_get_private_dns_name(self):
+        """ tests that private_dns_name matches the regex for
+            an FQDN
+        """
 
         ctx = self.mock_ctx('test_get_private_dns_name')
 
@@ -207,6 +210,9 @@ class TestElasticIP(testtools.TestCase):
             self.assertRegexpMatches(dns_name, FQDN)
 
     def test_get_public_dns_name(self):
+        """ tests that public_dns_name matches the regex for
+            an FQDN
+        """
 
         ctx = self.mock_ctx('test_get_public_dns_name')
 
@@ -218,3 +224,13 @@ class TestElasticIP(testtools.TestCase):
             instance_object = utils.get_instance_from_id(id, ctx=ctx)
             dns_name = utils.get_public_dns_name(instance_object)
             self.assertRegexpMatches(dns_name, FQDN)
+
+    def test_validate_creation(self):
+
+        ctx = self.mock_ctx('test_validate_creation')
+
+        with mock_ec2():
+            ec2_client = connection.EC2ConnectionClient().client()
+            a = ec2_client.allocate_address()
+            ctx.instance.runtime_properties['elasticip'] = a.public_ip
+            self.assertTrue(elasticip.creation_validation(ctx=ctx))
