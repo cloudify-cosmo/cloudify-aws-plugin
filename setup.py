@@ -33,7 +33,7 @@ setup(
 
     license='LICENSE',
     install_requires=[
-        'cloudify-plugins-common==3.2a2',
+        'cloudify-plugins-common==3.2a3',
         'boto==2.34.0'
     ]
 )
