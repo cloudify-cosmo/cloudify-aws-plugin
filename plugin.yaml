@@ -37,3 +37,20 @@ node_types:
         creation:
           implementation: cloudify-aws-plugin.ec2.instance.creation_validation
           inputs: {}
+
+  cloudify.aws.nodes.KeyPair:
+    derived_from: cloudify.nodes.Root
+    properties:
+      name:
+      use_external_resource:
+      resource_id:
+      private_key_path:
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: cloudify-aws-plugin.ec2.keypair.create
+        delete:
+          implementation: cloudify-aws-plugin.ec2.keypair.delete
+      cloudify.interfaces.validation:
+        creation:
+          implementation: cloudify-aws-plugin.ec2.keypair.creation_validation
