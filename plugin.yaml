@@ -51,6 +51,10 @@ node_types:
       cloudify.interfaces.lifecycle:
         create: cloudify-aws-plugin.ec2.elasticip.create
         delete: cloudify-aws-plugin.ec2.elasticip.delete
+      cloudify.interfaces.validation:
+        creation:
+          implementation: cloudify-aws-plugin.ec2.elasticip.creation_validation
+          inputs: {}
 
 relationships:
   cloudify.aws.relationships.instance_connected_to_elastic_ip:
