@@ -37,3 +37,25 @@ node_types:
         creation:
           implementation: cloudify-aws-plugin.ec2.instance.creation_validation
           inputs: {}
+
+  cloudify.aws.nodes.ElasticIP:
+    derived_from: cloudify.nodes.VirtualIP
+    properties:
+      elasticip:
+        default: {}
+      use_external_resource:
+        default: false
+      resource_id:
+        default: ''
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: cloudify-aws-plugin.ec2.elasticip.create
+        delete: cloudify-aws-plugin.ec2.elasticip.delete
+
+relationships:
+  cloudify.aws.relationships.instance_connected_to_elastic_ip:
+    derived_from: cloudify.relationships.connected_to
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish: cloudify-aws-plugin.ec2.elasticip.connect
+        unlink: cloudify-aws-plugin.ec2.elasticip.disconnect
