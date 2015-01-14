@@ -99,3 +99,20 @@ def disconnect(**kwargs):
                                   .format(e))
 
     ctx.logger.info('Disconnected Elastic IP from instance.')
+
+
+@operation
+def creation_validation(**kwargs):
+    ec2_client = connection.EC2ConnectionClient().client()
+    ctx.logger.info('Validating Elastic IP.')
+    elasticip = ctx.instance.runtime_properties['elasticip']
+
+    try:
+        ec2_client.get_all_addresses(elasticip)
+    except (EC2ResponseError, BotoServerError) as e:
+        raise NonRecoverableError('Error. Failed to validate '
+                                  'Elastic IP, returned: {0}.'
+                                  .format(e))
+
+    ctx.logger.info('Verified that Elastic IP was created.')
+    return True
