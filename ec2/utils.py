@@ -26,7 +26,6 @@ from cloudify.exceptions import NonRecoverableError
 
 def validate_state(instance, state, timeout_length, check_interval, ctx):
     """ Check if an EC2 instance is in a particular state.
-
     :param instance: And EC2 instance.
     :param state: The state code (pending = 0, running = 16,
                   shutting down = 32, terminated = 48, stopping = 64,
@@ -37,7 +36,7 @@ def validate_state(instance, state, timeout_length, check_interval, ctx):
     :return: bool (True the desired state was reached, False, it was not.)
     """
 
-    ctx.logger.debug('(Node: {0}): Attempting state validation: '
+    ctx.logger.debug('Attempting state validation: '
                      'instance id: {0}, state: {1}, timeout length: {2}, '
                      'check interval: {3}.'.format(instance.id, state,
                                                    timeout_length,
@@ -50,63 +49,53 @@ def validate_state(instance, state, timeout_length, check_interval, ctx):
 
     while True:
         if state == get_instance_state(instance, ctx=ctx):
-            ctx.logger.info('(Node: {0}): '
-                            'Instance state validated: instance {0}.'
+            ctx.logger.info('Instance state validated: instance {0}.'
                             .format(instance.state))
             return True
         elif time.time() > timeout:
-            raise NonRecoverableError('(Node: {0}): Timed out during '
+            raise NonRecoverableError('Timed out during '
                                       'instance state validation: '
-                                      'instance: {1}, '
-                                      'timeout length: {2}, '
-                                      'check interval: {3}.'
-                                      .format(ctx.instance.id, instance.id,
+                                      'instance: {0}, '
+                                      'timeout length: {1}, '
+                                      'check interval: {2}.'
+                                      .format(instance.id,
                                               timeout_length,
                                               check_interval))
         time.sleep(check_interval)
 
 
 def get_instance_state(instance, ctx):
+    """ Gets the instance's current state
     """
 
-    :param instance:
-    :return:
-    """
-
+    ctx.logger.debug('Checking the instance state for {0}.'
+                     .format(instance.id))
     state = instance.update()
-    ctx.logger.debug('(Node: {0}): Instance state is {1}.'
-                     .format(ctx.instance.id, state))
+    ctx.logger.debug('Instance state is {0}.'
+                     .format(state))
     return instance.state_code
 
 
 def validate_instance_id(instance_id, ctx):
-    """
-
-    :param instance_id: An EC2 instance ID
-    :return: True that the instance ID is valid or
-             throws unrecoverable error
+    """ Checks to see if instance_id resolves an instance from
+        get_all_reservations
     """
     ec2_client = connection.EC2ConnectionClient().client()
 
     try:
-        reservations = ec2_client.get_all_reservations(instance_id)
+        ec2_client.get_all_reservations(instance_id)
     except (EC2ResponseError, BotoServerError) as e:
-        raise NonRecoverableError('(Node: {0}): Error. '
-                                  'Failed to validate instance id: '
-                                  'API returned: {1}.'
-                                  .format(ctx.instance.id, e))
+        raise NonRecoverableError('Error. Failed to validate instance id: '
+                                  'API returned: {0}.'
+                                  .format(e))
 
-    instance = reservations[0].instances[0]
-
-    if instance:
-        return True
-    else:
-        raise NonRecoverableError('(Node: {0}): Unable to validate '
-                                  'instance ID: {1}.'
-                                  .format(ctx.instance.id, instance_id))
+    return True
 
 
 def get_instance_from_id(instance_id, ctx):
+    """ using the instance_id retrieves the instance object
+        from the API and returns the object.
+    """
     ec2_client = connection.EC2ConnectionClient().client()
 
     try:
@@ -118,11 +107,13 @@ def get_instance_from_id(instance_id, ctx):
                                   .format(ctx.instance.id, e))
 
     instance = reservations[0].instances[0]
-
     return instance
 
 
 def get_instance_variable(instance, variable):
+    """ given the related instance object
+        the given variable can be retrieved and returned
+    """
     while instance.update() != 'running':
         time.sleep(5)
     variable = getattr(instance, variable)
@@ -130,16 +121,24 @@ def get_instance_variable(instance, variable):
 
 
 def get_private_dns_name(instance):
+    """ returns the private_dns_name variable for a given instance
+    """
     return get_instance_variable(instance, 'private_dns_name')
 
 
 def get_public_dns_name(instance):
+    """ returns the public_dns_name variable for a given instance
+    """
     return get_instance_variable(instance, 'public_dns_name')
 
 
 def get_private_ip_address(instance):
+    """ returns the private_ip_address variable for a given instance
+    """
     return get_instance_variable(instance, 'private_ip_address')
 
 
 def get_public_ip_address(instance):
+    """ returns the public_ip_address variable for a given instance
+    """
     return get_instance_variable(instance, 'public_ip_address')
