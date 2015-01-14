@@ -24,7 +24,6 @@ from ec2 import connection
 from ec2 import instance
 from ec2 import utils
 from cloudify.mocks import MockCloudifyContext
-from cloudify.mocks import MockContext
 from cloudify.exceptions import NonRecoverableError
 
 TEST_AMI_IMAGE_ID = 'ami-e214778a'
@@ -52,36 +51,6 @@ class TestUtils(testtools.TestCase):
         )
 
         return ctx
-
-    def mock_relationship_ctx(self, testname):
-
-        instance_ctx = MockContext({
-            'node': MockContext({
-                'properties': {}
-            }),
-            'instance': MockContext({
-                'runtime_properties': {
-                    'instance_id': 'i-abc1234'
-                }
-            })
-        })
-
-        elasticip_ctx = MockContext({
-            'node': MockContext({
-                'properties': {}
-            }),
-            'instance': MockContext({
-                'runtime_properties': {
-                    'elasticip': ''
-                }
-            })
-        })
-
-        relationship_ctx = MockCloudifyContext(node_id=testname,
-                                               source=instance_ctx,
-                                               target=elasticip_ctx)
-
-        return relationship_ctx
 
     def test_validate_instance_id(self):
         """ this tests that validate instance_id
