@@ -45,7 +45,7 @@ RUN_INSTANCES_UNSUPPORTED = {
 
 @operation
 def create(**kwargs):
-    """ Creates an EC2 instance from an (AMI) image_id and an instance_type.
+    """ Creates an EC2 Classic Instance.
     """
     ec2_client = connection.EC2ConnectionClient().client()
 
@@ -56,18 +56,18 @@ def create(**kwargs):
                                    RUN_INSTANCES_UNSUPPORTED)
     arguments.update(args_to_merge)
 
-    ctx.logger.info('Creating instance.')
-    ctx.logger.debug('Attempting to create instance.'
-                     '(Image id: {0}. Instance type: {1}.)'
+    ctx.logger.info('Creating EC2 Instance.')
+    ctx.logger.debug('Attempting to create EC2 Instance.'
+                     'Image id: {0}. Instance type: {1}.'
                      .format(arguments['image_id'],
                              arguments['instance_type']))
-    ctx.logger.debug('Run instance parameters: {0}.'
+    ctx.logger.debug('Sending these API parameters: {0}.'
                      .format(arguments))
 
     try:
         reservation = ec2_client.run_instances(**arguments)
     except (EC2ResponseError, BotoServerError) as e:
-        raise NonRecoverableError('Error. Failed to run instance: '
+        raise NonRecoverableError('Error. Failed to run EC2 Instance: '
                                   'API returned: {0}.'.format(e))
 
     instance_id = reservation.instances[0].id
@@ -89,14 +89,14 @@ def start(**kwargs):
 
     instance_id = ctx.instance.runtime_properties['instance_id']
 
-    ctx.logger.info('Starting instance.')
-    ctx.logger.debug('Attempting to start instance.'
+    ctx.logger.info('Starting EC2 Instance.')
+    ctx.logger.debug('Attempting to start EC2 Classic Instance.'
                      '(Instance id: {0}.)'.format(instance_id))
 
     try:
         instances = ec2_client.start_instances(instance_id)
     except (EC2ResponseError, BotoServerError) as e:
-        raise NonRecoverableError('Error. Failed to start instance: '
+        raise NonRecoverableError('Error. Failed to start EC2 Instance: '
                                   'API returned: {0}.'.format(e))
 
     if utils.validate_instance_id(instance_id, ctx=ctx):
@@ -113,14 +113,14 @@ def stop(**kwargs):
 
     instance_id = ctx.instance.runtime_properties['instance_id']
 
-    ctx.logger.info('Stopping instance.')
-    ctx.logger.debug('Attempting to stop instance.'
+    ctx.logger.info('Stopping EC2 Instance.')
+    ctx.logger.debug('Attempting to stop EC2 Instance.'
                      '(Instance id: {0}.)'.format(instance_id))
 
     try:
         instances = ec2_client.stop_instances(instance_id)
     except (EC2ResponseError, BotoServerError) as e:
-        raise NonRecoverableError('Error. Failed to stop instance: '
+        raise NonRecoverableError('Error. Failed to stop EC2 Instance: '
                                   'API returned: {0}.'.format(e))
 
     if utils.validate_instance_id(instance_id, ctx=ctx):
@@ -131,21 +131,21 @@ def stop(**kwargs):
 @operation
 def terminate(**kwargs):
     """ Terminates an existing EC2 instance.
-    If already terminated, this does nothing.
+        If already terminated, this does nothing.
     """
     ec2_client = connection.EC2ConnectionClient().client()
 
     instance_id = ctx.instance.runtime_properties['instance_id']
 
-    ctx.logger.info('Terminating instance.')
-    ctx.logger.debug('Attempting to terminate instance.'
+    ctx.logger.info('Terminating EC2 Instance.')
+    ctx.logger.debug('Attempting to terminate EC2 Instance.'
                      '(Instance id: {0}.)'.format(instance_id))
 
     try:
         instances = ec2_client.terminate_instances(instance_id)
     except (EC2ResponseError, BotoServerError) as e:
         raise NonRecoverableError('Error. Failed to terminate '
-                                  'instance: API returned: {0}.'
+                                  'EC2 Instance: API returned: {0}.'
                                   .format(e))
 
     if utils.validate_instance_id(instance_id, ctx=ctx):
@@ -163,9 +163,9 @@ def creation_validation(**kwargs):
 
     if utils.validate_state(instance_object, state,
                             timeout_length, CHECK_INTERVAL, ctx=ctx):
-        ctx.logger.info('Instance is running.')
+        ctx.logger.info('EC2 Instance is running.')
     else:
-        raise NonRecoverableError('Instance not running.')
+        raise NonRecoverableError('EC2 Instance not running.')
 
 
 def build_arg_dict(user_supplied, unsupported):
