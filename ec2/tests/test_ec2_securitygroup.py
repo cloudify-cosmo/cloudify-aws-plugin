@@ -32,26 +32,10 @@ TEST_INSTANCE_TYPE = 't1.micro'
 
 class TestSecurityGroup(testtools.TestCase):
 
-    def mock_ctx(self, test_name):
-
-        test_node_id = test_name
-        test_properties = {
-            'image_id': TEST_AMI_IMAGE_ID,
-            'instance_type': TEST_INSTANCE_TYPE,
-            'attributes': {
-                'security_groups': ['sg-73cd3f1e'],
-                'instance_initiated_shutdown_behavior': 'stop'
-            }
-        }
-
-        ctx = MockCloudifyContext(
-            node_id=test_node_id,
-            properties=test_properties
-        )
-
-        return ctx
-
     def security_group_mock(self, test_name, test_properties):
+        """ Creates a mock context for security group tests
+            with given properties
+        """
 
         ctx = MockCloudifyContext(
             node_id=test_name,
@@ -299,6 +283,10 @@ class TestSecurityGroup(testtools.TestCase):
             securitygroup.authorize(ctx=ctx)
 
     def test_validate_group(self):
+        """ Tests the validate group utililty
+            which makes sure that the group exists for
+            a given group id different from creation validation
+        """
 
         test_properties = {
             'name': 'test_security_group',

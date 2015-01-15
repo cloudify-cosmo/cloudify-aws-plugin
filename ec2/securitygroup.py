@@ -121,6 +121,9 @@ def authorize(ctx):
 
 
 def authorize_by_id(ec2_client, group, ctx):
+    """ For each rule listed in the blueprint,
+        this will add the rule to the group with the given id.
+    """
 
     for r in ctx.node.properties['rules']:
         try:
@@ -135,6 +138,9 @@ def authorize_by_id(ec2_client, group, ctx):
 
 
 def authorize_by_name(ec2_client, group, ctx):
+    """ For each rule listed in the blueprint,
+        this will add the rule to the group with the given name.
+    """
 
     for r in ctx.node.properties['rules']:
         try:
