@@ -85,6 +85,10 @@ class TestKeyPair(testtools.TestCase):
             os.remove(file)
 
     def test_key_pair_exists_error_create(self):
+        """ this tests that an error is raised if a
+            keypair already exists in the file location
+        """
+
         ctx = self.mock_ctx('test_create_adds_file')
 
         with mock_ec2():
@@ -101,6 +105,10 @@ class TestKeyPair(testtools.TestCase):
             os.remove(file)
 
     def test_delete(self):
+        """ this tests that keypair delete removes the keypair from
+            the account
+        """
+
         ctx = self.mock_ctx('test_delete')
 
         with mock_ec2():
@@ -111,6 +119,10 @@ class TestKeyPair(testtools.TestCase):
             self.assertEquals(None, ec2_client.get_key_pair(kp.name))
 
     def test_creation_validation(self):
+        """ this tests that creation validation verifies that
+            a created keypair exists in the account
+        """
+
         ctx = self.mock_ctx('test_delete')
 
         with mock_ec2():
