@@ -22,6 +22,7 @@ from moto import mock_ec2
 # Cloudify Imports is imported and used in operations
 from ec2 import connection
 from ec2 import securitygroup
+from ec2 import utils
 from cloudify.mocks import MockCloudifyContext
 from cloudify.exceptions import NonRecoverableError
 
@@ -29,7 +30,7 @@ TEST_AMI_IMAGE_ID = 'ami-e214778a'
 TEST_INSTANCE_TYPE = 't1.micro'
 
 
-class TestPlugin(testtools.TestCase):
+class TestSecurityGroup(testtools.TestCase):
 
     def mock_ctx(self, test_name):
 
@@ -59,7 +60,7 @@ class TestPlugin(testtools.TestCase):
 
         return ctx
 
-    def test_good_security_group_create(self):
+    def test_create(self):
         """ There are many places that this could fail,
             so I am first testing that everything works given
             really good input.
@@ -90,7 +91,7 @@ class TestPlugin(testtools.TestCase):
         with mock_ec2():
             securitygroup.create(ctx=ctx)
 
-    def test_good_security_group_delete(self):
+    def test_delete(self):
         """ There are many places that this could fail,
             so I am first testing that everything works given
             really good input.
@@ -111,7 +112,7 @@ class TestPlugin(testtools.TestCase):
             ctx.instance.runtime_properties['group_name'] = group.name
             securitygroup.delete(ctx=ctx)
 
-    def test_bad_security_group_delete(self):
+    def test_bad_group_delete(self):
         """ There are many places that this could fail,
             so I am first testing that everything works given
             really good input.
@@ -131,7 +132,7 @@ class TestPlugin(testtools.TestCase):
                                    securitygroup.delete, ctx=ctx)
             self.assertIn('InvalidGroup.NotFound', ex.message)
 
-    def test_no_ip_authorize_security_group(self):
+    def test_no_ip_authorize(self):
         """ Tests that an error is raised when a user omits
             a description in the create operation.
         """
@@ -159,7 +160,7 @@ class TestPlugin(testtools.TestCase):
                                    ctx)
             self.assertIn('cidr_ip', ex.message)
 
-    def test_no_port_authorize_security_group(self):
+    def test_no_port_authorize(self):
         """ Tests that an error is raised when a user omits
             a description in the create operation.
         """
@@ -187,13 +188,12 @@ class TestPlugin(testtools.TestCase):
                                    ctx)
             self.assertIn('from_port', ex.message)
 
-    def test_no_group_creation_validation_security_group(self):
+    def test_no_group_creation_validation(self):
         """ Tests that NonRecoverableError is raised when
             an invalid group is tried for validation
         """
 
         test_properties = {
-            'name': 'test_security_group',
             'description': 'This is a test.',
             'rules': [
                 {
@@ -216,13 +216,12 @@ class TestPlugin(testtools.TestCase):
             self.assertIn('No group name or group id provided',
                           ex.message)
 
-    def test_no_group_authorize_security_group(self):
+    def test_no_group_authorize(self):
         """ Tests that NonRecoverableError is raised when
             an invalid group is tried for validation
         """
 
         test_properties = {
-            'name': 'test_security_group',
             'description': 'This is a test.',
             'rules': [
                 {
@@ -244,3 +243,154 @@ class TestPlugin(testtools.TestCase):
                                    ctx=ctx)
             self.assertIn('No group name or group id provided',
                           ex.message)
+
+    def test_group_name_authorize(self):
+        """ tests that if a group name is
+            provided in the node properties that
+            everything runs smoothly
+        """
+
+        test_properties = {
+            'name': 'test_security_group',
+            'description': 'This is a test.',
+            'rules': [
+                {
+                    'ip_protocol': 'tcp',
+                    'from_port': '80',
+                    'to_port': '80',
+                    'cidr_ip': '127.0.0.1/32'
+                }
+            ]
+        }
+
+        ctx = self.security_group_mock('test_group_name_authorize',
+                                       test_properties)
+
+        with mock_ec2():
+            ec2_client = connection.EC2ConnectionClient().client()
+            name = ctx.node.properties['name']
+            desc = ctx.node.properties['description']
+            ec2_client.create_security_group(name, desc)
+            securitygroup.authorize(ctx=ctx)
+
+    def test_group_id_authorize(self):
+        """ tests that if a resource_id is
+            provided in the node properties that
+            everything runs smoothly
+        """
+
+        test_properties = {
+            'rules': [
+                {
+                    'ip_protocol': 'tcp',
+                    'from_port': '80',
+                    'to_port': '80',
+                    'cidr_ip': '127.0.0.1/32'
+                }
+            ]
+        }
+
+        with mock_ec2():
+            ec2_client = connection.EC2ConnectionClient().client()
+            group = ec2_client.create_security_group('test', 'tests')
+            ctx = self.security_group_mock('test_group_id_authorize',
+                                           test_properties)
+            ctx.node.properties['resource_id'] = group.id
+            securitygroup.authorize(ctx=ctx)
+
+    def test_validate_group(self):
+
+        test_properties = {
+            'name': 'test_security_group',
+            'description': 'This is a test.',
+            'rules': [
+                {
+                    'ip_protocol': 'tcp',
+                    'from_port': '80',
+                    'to_port': '80',
+                    'cidr_ip': '127.0.0.1/32'
+                }
+            ]
+        }
+
+        ctx = self.security_group_mock('test_validate_group',
+                                       test_properties)
+        with mock_ec2():
+            group = 'sg-73cd3f1e'
+            utils.validate_group(group, ctx=ctx)
+
+    def test_group_id_validate(self):
+        """ tests that if a resource_id is
+            provided in the node properties that
+            everything runs smoothly
+        """
+
+        test_properties = {
+            'rules': [
+                {
+                    'ip_protocol': 'tcp',
+                    'from_port': '80',
+                    'to_port': '80',
+                    'cidr_ip': '127.0.0.1/32'
+                }
+            ]
+        }
+
+        with mock_ec2():
+            ec2_client = connection.EC2ConnectionClient().client()
+            group = ec2_client.create_security_group('test', 'tests')
+            ctx = self.security_group_mock('test_group_id_authorize',
+                                           test_properties)
+            ctx.node.properties['resource_id'] = group.id
+            securitygroup.creation_validation(ctx=ctx)
+
+    def test_group_name_validate(self):
+        """ tests that if a resource_id is
+            provided in the node properties that
+            everything runs smoothly
+        """
+
+        test_properties = {
+            'rules': [
+                {
+                    'ip_protocol': 'tcp',
+                    'from_port': '80',
+                    'to_port': '80',
+                    'cidr_ip': '127.0.0.1/32'
+                }
+            ]
+        }
+
+        with mock_ec2():
+            ec2_client = connection.EC2ConnectionClient().client()
+            group = ec2_client.create_security_group('group_name_validate',
+                                                     'tests')
+            ctx = self.security_group_mock('test_group_id_authorize',
+                                           test_properties)
+            ctx.node.properties['name'] = group.name
+            securitygroup.creation_validation(ctx=ctx)
+
+    def test_group_object_validate(self):
+        """ tests that if a resource_id is
+            provided in the node properties that
+            everything runs smoothly
+        """
+
+        test_properties = {
+            'rules': [
+                {
+                    'ip_protocol': 'tcp',
+                    'from_port': '80',
+                    'to_port': '80',
+                    'cidr_ip': '127.0.0.1/32'
+                }
+            ]
+        }
+
+        with mock_ec2():
+            ec2_client = connection.EC2ConnectionClient().client()
+            group = ec2_client.create_security_group('test', 'tests')
+            ctx = self.security_group_mock('test_group_id_authorize',
+                                           test_properties)
+            ctx.instance.runtime_properties['group_object'] = group
+            securitygroup.creation_validation(ctx=ctx)
