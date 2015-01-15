@@ -77,16 +77,13 @@ def creation_validation(**kwargs):
     """ Validate that the Security Group exists
     """
 
-    if 'group_object' in ctx.instance.runtime_properties:
-        group = ctx.instance.runtime_properties['group_object']
-    elif 'group_id' in ctx.instance.runtime_properties:
-        group = ctx.instance.runtime_properties['group_id']
-    elif 'group_name' in ctx.instance.runtime_properties:
-        group = ctx.instance.runtime_properties['group_name']
-    elif 'group_id' in ctx.node.properties:
-        group = ctx.node.properties['group_id']
-    elif 'group_name' in ctx.node.properties:
-        group = ctx.node.properties['group_name']
+    if 'group_object' in ctx.instance.runtime_properties.keys():
+        group_object = ctx.instance.runtime_properties['group_object']
+        group = group_object.id
+    elif 'resource_id' in ctx.node.properties:
+        group = ctx.node.properties['resource_id']
+    elif 'name' in ctx.node.properties.keys():
+        group = ctx.node.properties['name']
     else:
         raise NonRecoverableError('No group name or group id provided.')
 
@@ -106,21 +103,16 @@ def authorize(ctx):
 
     ctx.logger.info('Adding Rule to Security Group.')
 
-    if 'group_object' in ctx.instance.runtime_properties:
-        group = ctx.instance.runtime_properties['group_object']
-        authorize_by_id(ec2_client, group.id, ctx)
-    elif 'group_id' in ctx.instance.runtime_properties:
-        group = ctx.instance.runtime_properties['group_id']
-        authorize_by_id(ec2_client, group.id, ctx)
-    elif 'group_name' in ctx.instance.runtime_properties:
-        group = ctx.instance.runtime_properties['group_name']
-        authorize_by_name(ec2_client, group.id, ctx)
-    elif 'group_id' in ctx.node.properties:
-        group = ctx.node.properties['group_id']
-        authorize_by_id(ec2_client, group.id, ctx)
-    elif 'group_name' in ctx.node.properties:
-        group = ctx.node.properties['group_name']
-        authorize_by_name(ec2_client, group.id, ctx)
+    if 'group_object' in ctx.instance.runtime_properties.keys():
+        group_object = ctx.instance.runtime_properties['group_object']
+        group = group_object.id
+        authorize_by_id(ec2_client, group, ctx)
+    elif 'resource_id' in ctx.node.properties.keys():
+        group = ctx.node.properties['resource_id']
+        authorize_by_id(ec2_client, group, ctx)
+    elif 'name' in ctx.node.properties.keys():
+        group = ctx.node.properties['name']
+        authorize_by_name(ec2_client, group, ctx)
     else:
         raise NonRecoverableError('No group name or group id provided.')
 
@@ -150,7 +142,8 @@ def authorize_by_name(ec2_client, group, ctx):
                                                 ip_protocol=r['ip_protocol'],
                                                 from_port=r['from_port'],
                                                 to_port=r['to_port'],
-                                                cidr_ip=r['cidr_ip'])
+                                                cidr_ip=r['cidr_ip']
+                                                )
         except (EC2ResponseError, BotoServerError) as e:
             raise NonRecoverableError('Unable to authorize that group: '
                                       '{0}'.format(e))
