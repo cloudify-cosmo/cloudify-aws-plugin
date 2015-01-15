@@ -16,6 +16,7 @@
 # Boto Imports
 from boto.exception import EC2ResponseError
 from boto.exception import BotoServerError
+from boto.exception import BotoClientError
 
 # Cloudify imports
 from cloudify import ctx
@@ -27,17 +28,6 @@ from ec2 import connection
 
 @operation
 def create(**kwargs):
-    """ This will create a key pair. If private_key_path is
-        given, then the import method is used.
-    """
-
-    if 'private_key_path' in ctx.node.properties:
-        upload(ctx=ctx)
-    else:
-        create(ctx=ctx)
-
-
-def create_new(ctx):
     """ This will create the key pair within the region you are currently
         connected to.
     """
@@ -47,14 +37,14 @@ def create_new(ctx):
 
     try:
         kp = ec2_client.create_key_pair(key_pair_name)
-    except (EC2ResponseError, BotoServerError) as e:
+    except (EC2ResponseError, BotoServerError, BotoClientError) as e:
         raise NonRecoverableError('Key pair not created. '
                                   'API returned: {0}'.format(e))
 
     ctx.logger.info('Created key pair.')
     ctx.instance.runtime_properties['key_pair_name'] = kp.name
 
-    utils.save_key_pair(kp)
+    utils.save_key_pair(kp, ctx=ctx)
 
 
 @operation
@@ -73,24 +63,6 @@ def delete(**kwargs):
                                   'API returned: {0}'.format(e))
 
     ctx.logger.info('Deleted key pair.')
-
-
-@operation
-def upload(ctx):
-    ec2_client = connection.EC2ConnectionClient().client()
-    key_pair_name = ctx.instance.runtime_properties['key_pair_name']
-    ctx.logger.info('Importing key pair.')
-
-    try:
-        kp = ec2_client.create_key_pair(
-            key_pair_name,
-            ctx.get_resource(ctx.node.property['public_key_material']))
-    except (EC2ResponseError, BotoServerError) as e:
-        raise NonRecoverableError('Key pair not created. '
-                                  'API returned: {0}'.format(e))
-
-    ctx.logger.info('Created key pair.')
-    utils.save_key_pair(kp)
 
 
 @operation
