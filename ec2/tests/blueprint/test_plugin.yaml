@@ -1,0 +1,4 @@
+plugins:
+    ec2:
+        executor: central_deployment_agent
+        install: false
