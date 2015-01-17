@@ -54,7 +54,7 @@ node_types:
       cloudify.interfaces.validation:
         creation: cloudify-aws-plugin.ec2.floatingip.creation_validation
 
-  cloudify.aws.nodes.SecurityGroup
+  cloudify.aws.nodes.SecurityGroup:
     derived_from: cloudify.nodes.SecurityGroup
     properties:
       name:
@@ -68,10 +68,10 @@ node_types:
       rules: {}
     interfaces:
       cloudify.interfaces.lifecycle:
-        create: cloudify-aws-plugin.ec2.security_group.create
-        delete: cloudify-aws-plugin.ec2.security_group.delete
+        create: cloudify-aws-plugin.ec2.securitygroup.create
+        delete: cloudify-aws-plugin.ec2.securitygroup.delete
       cloudify.interfaces.validation:
-        creation: cloudify-aws-plugin.ec2.security_group.creation_validation
+        creation: cloudify-aws-plugin.ec2.securitygroup.creation_validation
 
 relationships:
   cloudify.aws.relationships.instance_connected_to_security_group:
