@@ -31,7 +31,7 @@ class TestWorkflowElasticIP(unittest.TestCase):
     def setUp(self):
         # build blueprint path
         blueprint_path = os.path.join(os.path.dirname(__file__),
-                                      'blueprint', 'test_elastic_ip.yaml')
+                                      'blueprint', 'test_elasticip.yaml')
 
         # setup local workflow execution environment
         self.env = local.init_env(blueprint_path,
