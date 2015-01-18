@@ -14,7 +14,7 @@
 #    * limitations under the License.
 
 # Built-in Imports
-import testtools
+import unittest
 
 # Third Party Imports
 from moto import mock_ec2
@@ -32,7 +32,7 @@ TEST_INSTANCE_TYPE = 't1.micro'
 FQDN = '((?:[a-z][a-z\\.\\d\\-]+)\\.(?:[a-z][a-z\\-]+))(?![\\w\\.])'
 
 
-class TestElasticIP(testtools.TestCase):
+class TestElasticIP(unittest.TestCase):
 
     def mock_ctx(self, test_name):
 
