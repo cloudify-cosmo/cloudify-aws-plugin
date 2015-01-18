@@ -15,20 +15,23 @@
 
 # Built-in Imports
 import os
-import unittest
+import testtools
 
 # Third-party Imports
 from moto import mock_ec2
+from boto.exception import EC2ResponseError
 
 # Cloudify Imports
+from ec2 import connection
 from cloudify.workflows import local
 
 IP_REGEX = '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$'
 
 
-class TestWorkflowElasticIP(unittest.TestCase):
+class TestWorkflowElasticIP(testtools.TestCase):
 
     def setUp(self):
+        super(TestWorkflowElasticIP, self).setUp()
         # build blueprint path
         blueprint_path = os.path.join(os.path.dirname(__file__),
                                       'blueprint', 'test_elasticip.yaml')
@@ -38,14 +41,35 @@ class TestWorkflowElasticIP(unittest.TestCase):
                                   name=self._testMethodName)
 
     @mock_ec2
-    def test_elastic_ip(self):
+    def test_install_workflow(self):
+        ec2_client = connection.EC2ConnectionClient().client()
 
         # execute install workflow
         self.env.execute('install', task_retries=0)
 
         # extract single node instance
         instance = self.env.storage.get_node_instances()[0]
+        elasticip = instance.runtime_properties['elasticip']
 
         # assert runtime properties is properly set in node instance
-        self.assertRegexpMatches(instance.runtime_properties['elasticip'],
-                                 IP_REGEX)
+        self.assertRegexpMatches(elasticip, IP_REGEX)
+        ip = ec2_client.get_all_addresses(elasticip)
+        self.assertFalse(None, ip)
+
+    @mock_ec2
+    def test_uninstall_workflow(self):
+        ec2_client = connection.EC2ConnectionClient().client()
+
+        # execute install workflow
+        self.env.execute('install', task_retries=0)
+        # extract single node instance
+        instance = self.env.storage.get_node_instances()[0]
+        elasticip = instance.runtime_properties['elasticip']
+
+        # execute uninstall workflow
+        self.env.execute('uninstall', task_retries=0)
+
+        # assert runtime properties is properly set in node instance
+        ex = self.assertRaises(EC2ResponseError,
+                               ec2_client.get_all_addresses, elasticip)
+        self.assertIn('InvalidAddress.NotFound', ex.code)
