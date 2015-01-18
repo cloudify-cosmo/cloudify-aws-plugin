@@ -42,6 +42,10 @@ class TestWorkflowElasticIP(testtools.TestCase):
 
     @mock_ec2
     def test_install_workflow(self):
+        """ Tests the install workflow using the built in
+            workflows. Uses the get_all_addresses method from
+            boto to make sure that the address exists
+        """
         ec2_client = connection.EC2ConnectionClient().client()
 
         # execute install workflow
@@ -58,6 +62,10 @@ class TestWorkflowElasticIP(testtools.TestCase):
 
     @mock_ec2
     def test_uninstall_workflow(self):
+        """ Tests the uninstall workflow using the built in
+            workflows. Uses the get_all_addresses method from
+            boto to make sure that the address no longer exists
+        """
         ec2_client = connection.EC2ConnectionClient().client()
 
         # execute install workflow
