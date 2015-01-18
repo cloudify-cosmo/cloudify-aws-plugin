@@ -40,9 +40,9 @@ def create(**kwargs):
     try:
         group_object = ec2_client.create_security_group(name, description)
     except (EC2ResponseError, BotoServerError) as e:
-        raise NonRecoverableError('(Node: {0}): Error. Failed to create '
-                                  'security group: API returned: {1}.'
-                                  .format(ctx.instance.id, e))
+        raise NonRecoverableError('Error. Failed to create '
+                                  'security group: API returned: {0}.'
+                                  .format(e))
 
     ctx.instance.runtime_properties['group_object'] = group_object
 
@@ -65,9 +65,9 @@ def delete(**kwargs):
     try:
         ec2_client.delete_security_group(group_name)
     except (EC2ResponseError, BotoServerError) as e:
-        raise NonRecoverableError('(Node: {0}): Error. Failed to delete '
-                                  'security group: API returned: {1}.'
-                                  .format(ctx.instance.id, e))
+        raise NonRecoverableError('Error. Failed to delete '
+                                  'security group: API returned: {0}.'
+                                  .format(e))
 
     ctx.logger.info('Deleted Security Group: {0}.'.format(group_name))
 

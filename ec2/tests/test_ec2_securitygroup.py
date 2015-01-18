@@ -93,7 +93,7 @@ class TestSecurityGroup(testtools.TestCase):
             ec2_client = connection.EC2ConnectionClient().client()
             group = ec2_client.create_security_group('test',
                                                      'this is test')
-            ctx.instance.runtime_properties['group_name'] = group.name
+            ctx.node.properties['name'] = group.name
             securitygroup.delete(ctx=ctx)
 
     def test_bad_group_delete(self):
