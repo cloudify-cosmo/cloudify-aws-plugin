@@ -231,7 +231,7 @@ class TestSecurityGroup(testtools.TestCase):
     def test_group_name_authorize(self):
         """ tests that if a group name is
             provided in the node properties that
-            everything runs smoothly
+            everything runs smoothly in the validate operation
         """
 
         test_properties = {
@@ -260,7 +260,7 @@ class TestSecurityGroup(testtools.TestCase):
     def test_group_id_authorize(self):
         """ tests that if a resource_id is
             provided in the node properties that
-            everything runs smoothly
+            everything runs smoothly in the authorize operation
         """
 
         test_properties = {
@@ -310,7 +310,7 @@ class TestSecurityGroup(testtools.TestCase):
     def test_group_id_validate(self):
         """ tests that if a resource_id is
             provided in the node properties that
-            everything runs smoothly
+            everything runs smoothly in the validate operation
         """
 
         test_properties = {
@@ -327,7 +327,7 @@ class TestSecurityGroup(testtools.TestCase):
         with mock_ec2():
             ec2_client = connection.EC2ConnectionClient().client()
             group = ec2_client.create_security_group('test', 'tests')
-            ctx = self.security_group_mock('test_group_id_authorize',
+            ctx = self.security_group_mock('test_group_id_validate',
                                            test_properties)
             ctx.node.properties['resource_id'] = group.id
             securitygroup.creation_validation(ctx=ctx)
@@ -353,7 +353,7 @@ class TestSecurityGroup(testtools.TestCase):
             ec2_client = connection.EC2ConnectionClient().client()
             group = ec2_client.create_security_group('group_name_validate',
                                                      'tests')
-            ctx = self.security_group_mock('test_group_id_authorize',
+            ctx = self.security_group_mock('test_group_name_validate',
                                            test_properties)
             ctx.node.properties['name'] = group.name
             securitygroup.creation_validation(ctx=ctx)
@@ -378,7 +378,243 @@ class TestSecurityGroup(testtools.TestCase):
         with mock_ec2():
             ec2_client = connection.EC2ConnectionClient().client()
             group = ec2_client.create_security_group('test', 'tests')
-            ctx = self.security_group_mock('test_group_id_authorize',
+            ctx = self.security_group_mock('test_group_object_validate',
                                            test_properties)
-            ctx.instance.runtime_properties['group_object'] = group
+            ctx.instance.runtime_properties['group_object'] = {
+                'id': group.id,
+                'name': group.name
+            }
             securitygroup.creation_validation(ctx=ctx)
+
+    def test_no_ip_revoke(self):
+        """ Tests that an error is raised when a user omits
+            an ip in the revoke operation.
+        """
+        test_properties = {
+            'name': 'test_security_group',
+            'description': 'This is a test.',
+            'rules': [
+                {
+                    'ip_protocol': 'tcp',
+                    'from_port': '22',
+                    'to_port': '22',
+                }
+            ]
+        }
+
+        ctx = self.security_group_mock('test_no_ip_revoke',
+                                       test_properties)
+
+        with mock_ec2():
+            ec2_client = connection.EC2ConnectionClient().client()
+            group = ec2_client.create_security_group('test',
+                                                     'this is test')
+            ex = self.assertRaises(KeyError, securitygroup.revoke_by_name,
+                                   ec2_client, group.name,
+                                   ctx)
+            self.assertIn('cidr_ip', ex.message)
+
+    def test_no_port_revoke(self):
+        """ Tests that an error is raised when a user omits
+            a port in the revoke operation.
+        """
+        test_properties = {
+            'name': 'test_security_group',
+            'description': 'This is a test.',
+            'rules': [
+                {
+                    'ip_protocol': 'tcp',
+                    'to_port': '22',
+                    'cidr_ip': '127.0.0.1/32'
+                }
+            ]
+        }
+
+        ctx = self.security_group_mock('test_no_port_revoke',
+                                       test_properties)
+
+        with mock_ec2():
+            ec2_client = connection.EC2ConnectionClient().client()
+            group = ec2_client.create_security_group('test',
+                                                     'this is test')
+            ex = self.assertRaises(KeyError, securitygroup.revoke_by_name,
+                                   ec2_client, group.id,
+                                   ctx)
+            self.assertIn('from_port', ex.message)
+
+    def test_no_group_revoke(self):
+        """ Tests that NonRecoverableError is raised when
+            an invalid group is tried for revoke operation
+        """
+
+        test_properties = {
+            'description': 'This is a test.',
+            'rules': [
+                {
+                    'ip_protocol': 'tcp',
+                    'from_port': '80',
+                    'to_port': '80',
+                    'cidr_ip': '127.0.0.1/32'
+                }
+            ]
+        }
+
+        ctx = self.security_group_mock('test_no_group_'
+                                       'authorize_security_group',
+                                       test_properties)
+
+        with mock_ec2():
+            ex = self.assertRaises(NonRecoverableError,
+                                   securitygroup.revoke,
+                                   ctx=ctx)
+            self.assertIn('No group name or group id provided',
+                          ex.message)
+
+    def test_group_name_revoke(self):
+        """ tests that if a group name is
+            provided in the node properties that
+            everything runs smoothly in the revoke operation
+        """
+
+        test_properties = {
+            'name': 'test_security_group',
+            'description': 'This is a test.',
+            'rules': [
+                {
+                    'ip_protocol': 'tcp',
+                    'from_port': '80',
+                    'to_port': '80',
+                    'cidr_ip': '127.0.0.1/32'
+                }
+            ]
+        }
+
+        ctx = self.security_group_mock('test_group_name_revoke',
+                                       test_properties)
+
+        with mock_ec2():
+            ec2_client = connection.EC2ConnectionClient().client()
+            name = ctx.node.properties['name']
+            desc = ctx.node.properties['description']
+            group = ec2_client.create_security_group(name, desc)
+            r = ctx.node.properties['rules'][0]
+            ec2_client.authorize_security_group(group_name=group.name,
+                                                ip_protocol=r['ip_protocol'],
+                                                from_port=r['from_port'],
+                                                to_port=r['to_port'],
+                                                cidr_ip=r['cidr_ip'])
+            ctx.node.properties['resource_id'] = group.id
+            securitygroup.revoke(ctx=ctx)
+
+    def test_group_id_revoke(self):
+        """ tests that if a resource_id is
+            provided in the node properties that
+            everything runs smoothly in revoke operation
+        """
+
+        test_properties = {
+            'rules': [
+                {
+                    'ip_protocol': 'tcp',
+                    'from_port': '80',
+                    'to_port': '80',
+                    'cidr_ip': '127.0.0.1/32'
+                }
+            ]
+        }
+
+        with mock_ec2():
+            ec2_client = connection.EC2ConnectionClient().client()
+            group = ec2_client.create_security_group('test', 'tests')
+            ctx = self.security_group_mock('test_group_id_revoke',
+                                           test_properties)
+            r = ctx.node.properties['rules'][0]
+            ec2_client.authorize_security_group(group_id=group.id,
+                                                ip_protocol=r['ip_protocol'],
+                                                from_port=r['from_port'],
+                                                to_port=r['to_port'],
+                                                cidr_ip=r['cidr_ip'])
+            ctx.node.properties['resource_id'] = group.id
+            securitygroup.revoke(ctx=ctx)
+
+    def test_no_matching_rule_revoke_name(self):
+        """ Tests that if there is not a matching rules
+            provided then the revoke operation failes
+            tests against the 'resource_id' node
+        """
+
+        test_properties = {
+            'rules': [
+                {
+                    'ip_protocol': 'tcp',
+                    'from_port': '80',
+                    'to_port': '80',
+                    'cidr_ip': '127.0.0.1/32'
+                }
+            ]
+        }
+
+        with mock_ec2():
+            ec2_client = connection.EC2ConnectionClient().client()
+            group = ec2_client.create_security_group('test', 'tests')
+            ctx = self.security_group_mock('test_no_matching_rule_revoke_name',
+                                           test_properties)
+            ctx.node.properties['resource_id'] = group.id
+            ex = self.assertRaises(NonRecoverableError, securitygroup.revoke,
+                                   ctx=ctx)
+            self.assertIn('InvalidPermission.NotFound', ex.message)
+
+    def test_no_matching_rule_revoke_id(self):
+        """ Tests that if there is not a matching rules
+            provided then the revoke operation failes
+            tests against the 'name' node property
+        """
+
+        test_properties = {
+            'rules': [
+                {
+                    'ip_protocol': 'tcp',
+                    'from_port': '80',
+                    'to_port': '80',
+                    'cidr_ip': '127.0.0.1/32'
+                }
+            ]
+        }
+
+        with mock_ec2():
+            ec2_client = connection.EC2ConnectionClient().client()
+            group = ec2_client.create_security_group('test', 'tests')
+            ctx = self.security_group_mock('test_no_matching_rule_revoke_id',
+                                           test_properties)
+            ctx.node.properties['name'] = group.name
+            ex = self.assertRaises(NonRecoverableError, securitygroup.revoke,
+                                   ctx=ctx)
+            self.assertIn('InvalidPermission.NotFound', ex.message)
+
+    def test_no_matching_rule_revoke_object(self):
+        """ Tests that if there is not a matching rules
+            provided then the revoke operation failes
+            tests against the 'group_object' runtime property
+        """
+
+        test_properties = {
+            'rules': [
+                {
+                    'ip_protocol': 'tcp',
+                    'from_port': '80',
+                    'to_port': '80',
+                    'cidr_ip': '127.0.0.1/32'
+                }
+            ]
+        }
+
+        with mock_ec2():
+            ec2_client = connection.EC2ConnectionClient().client()
+            group = ec2_client.create_security_group('test', 'tests')
+            ctx = self.security_group_mock(
+                'test_no_matching_rule_revoke_object',
+                test_properties)
+            ctx.instance.runtime_properties['group_object'] = group
+            ex = self.assertRaises(NonRecoverableError, securitygroup.revoke,
+                                   ctx=ctx)
+            self.assertIn('InvalidPermission.NotFound', ex.message)
