@@ -129,4 +129,4 @@ class TestKeyPair(testtools.TestCase):
             ec2_client = connection.EC2ConnectionClient().client()
             kp = ec2_client.create_key_pair('test')
             ctx.instance.runtime_properties['key_pair_name'] = kp.name
-            keypair.validate_creation(ctx=ctx)
+            keypair.creation_validation(ctx=ctx)
