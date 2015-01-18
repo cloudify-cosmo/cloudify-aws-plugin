@@ -66,7 +66,7 @@ def delete(**kwargs):
 
 
 @operation
-def validate_creation(**kwargs):
+def creation_validation(**kwargs):
     ec2_client = connection.EC2ConnectionClient().client()
     ctx.logger.info('Validating that the keypair '
                     'was created in your account.')
