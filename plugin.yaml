@@ -42,9 +42,13 @@ node_types:
     derived_from: cloudify.nodes.Root
     properties:
       name:
+        default: ''
       use_external_resource:
+        default: false
       resource_id:
+        default: ''
       private_key_path:
+        default: ''
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
