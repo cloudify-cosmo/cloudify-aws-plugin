@@ -14,7 +14,7 @@
 #    * limitations under the License.
 
 # Built-in Imports
-import testtools
+import unittest
 
 # Third Party Imports
 from boto.ec2 import EC2Connection
@@ -31,7 +31,7 @@ TEST_AMI_IMAGE_ID = 'ami-e214778a'
 TEST_INSTANCE_TYPE = 't1.micro'
 
 
-class TestPlugin(testtools.TestCase):
+class TestPlugin(unittest.TestCase):
 
     def mock_ctx(self, test_name):
 

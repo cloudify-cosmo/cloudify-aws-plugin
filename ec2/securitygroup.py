@@ -125,7 +125,7 @@ def authorize_by_id(ec2_client, group, ctx):
         this will add the rule to the group with the given id.
     """
 
-    for r in ctx.node.properties['rules'].keys():
+    for r in ctx.node.properties['rules']:
         try:
             ec2_client.authorize_security_group(group_id=group,
                                                 ip_protocol=r['ip_protocol'],
@@ -142,7 +142,7 @@ def authorize_by_name(ec2_client, group, ctx):
         this will add the rule to the group with the given name.
     """
 
-    for r in ctx.node.properties['rules'].keys():
+    for r in ctx.node.properties['rules']:
         try:
             ec2_client.authorize_security_group(group_name=group,
                                                 ip_protocol=r['ip_protocol'],
