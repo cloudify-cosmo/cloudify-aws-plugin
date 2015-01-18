@@ -34,9 +34,9 @@ def create(**kwargs):
     try:
         address_object = ec2_client.allocate_address()
     except (EC2ResponseError, BotoServerError) as e:
-        raise NonRecoverableError('(Node: {0}): Error. Failed to '
-                                  'provision Elastic IP. Error: {1}.'
-                                  .format(ctx.instance.id, e))
+        raise NonRecoverableError('Error. Failed to '
+                                  'provision Elastic IP. Error: {0}.'
+                                  .format(e))
 
     ctx.logger.info('Elastic IP Provisioned: {0}'.format(
         address_object.public_ip))
@@ -55,9 +55,9 @@ def delete(**kwargs):
     try:
         ec2_client.release_address(public_ip=elasticip)
     except (EC2ResponseError, BotoServerError) as e:
-        raise NonRecoverableError('(Node: {0}): Error. Failed to '
-                                  'delete Elastic IP. Error: {1}.'
-                                  .format(ctx.instance.id, e))
+        raise NonRecoverableError('Error. Failed to '
+                                  'delete Elastic IP. Error: {0}.'
+                                  .format(e))
 
     ctx.logger.info('Deleted Elastic IP {0}.')
 
