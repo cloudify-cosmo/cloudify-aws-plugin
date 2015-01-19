@@ -56,10 +56,61 @@ node_types:
           implementation: cloudify-aws-plugin.ec2.elasticip.creation_validation
           inputs: {}
 
+  cloudify.aws.nodes.SecurityGroup:
+    derived_from: cloudify.nodes.SecurityGroup
+    properties:
+      name:
+        default: ''
+      description:
+        default: ''
+      use_external_resource:
+        default: false
+      resource_id:
+        default: ''
+      rules: {}
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: cloudify-aws-plugin.ec2.securitygroup.create
+        delete: cloudify-aws-plugin.ec2.securitygroup.delete
+      cloudify.interfaces.validation:
+        creation: cloudify-aws-plugin.ec2.securitygroup.creation_validation
+
+  cloudify.aws.nodes.KeyPair:
+    derived_from: cloudify.nodes.Root
+    properties:
+      name:
+        default: ''
+      use_external_resource:
+        default: false
+      resource_id:
+        default: ''
+      private_key_path:
+        default: ''
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: cloudify-aws-plugin.ec2.keypair.create
+        delete:
+          implementation: cloudify-aws-plugin.ec2.keypair.delete
+      cloudify.interfaces.validation:
+        creation:
+          implementation: cloudify-aws-plugin.ec2.keypair.creation_validation
+
 relationships:
+  cloudify.aws.relationships.instance_connected_to_security_group:
+    derived_from: cloudify.relationships.contained_in
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish:
+          implementation: cloudify-aws-plugin.ec2.securitygroup.authorize_ip
+        unlink:
+          implementation: cloudify-aws-plugin.ec2.securitygroup.deauthorize_ip
+
   cloudify.aws.relationships.instance_connected_to_elastic_ip:
     derived_from: cloudify.relationships.connected_to
     source_interfaces:
       cloudify.interfaces.relationship_lifecycle:
         establish: cloudify-aws-plugin.ec2.elasticip.associate
         unlink: cloudify-aws-plugin.ec2.elasticip.disassociate
+
+

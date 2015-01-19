@@ -107,6 +107,7 @@ def get_instance_from_id(instance_id, ctx):
                                   .format(ctx.instance.id, e))
 
     instance = reservations[0].instances[0]
+
     return instance
 
 
@@ -132,7 +133,6 @@ def get_private_dns_name(instance, timeout_length):
     return get_instance_attribute(instance,
                                   'private_dns_name', timeout_length)
 
-
 def get_public_dns_name(instance, timeout_length):
     """ returns the public_dns_name variable for a given instance
     """
@@ -152,3 +152,43 @@ def get_public_ip_address(instance, timeout_length):
     """
     return get_instance_attribute(instance,
                                   'public_ip_address', timeout_length)
+
+
+def validate_group(group, ctx):
+    ctx.logger.debug('Testing if group with identifier '
+                     ' {0} exists in this account.'.format(group))
+    groups = get_security_group_from_id(group, ctx)
+
+    if groups is not None:
+        return True
+    else:
+        return False
+
+
+def get_security_group_from_id(group, ctx):
+    ec2_client = connection.EC2ConnectionClient().client()
+    ctx.logger.debug('Getting Security Group by ID: {0}'.format(group))
+
+    try:
+        groups = ec2_client.get_all_security_groups(group_ids=group)
+    except (EC2ResponseError, BotoServerError) as e:
+        raise NonRecoverableError('(Node: {0}): Error. '
+                                  'Failed to group by id: '
+                                  'API returned: {1}.'
+                                  .format(ctx.instance.id, e))
+    return groups
+
+
+def save_key_pair(key_pair_object, ctx):
+    """ Saves the key pair to the file specified in the blueprint
+    """
+
+    ctx.logger.debug('Attempting to save the key_pair_object.')
+
+    try:
+        key_pair_object.save(ctx.node.properties['private_key_path'])
+    except OSError:
+        raise NonRecoverableError('Unable to save key pair to file: {0}.'
+                                  'OS Returned: {1}'.format(
+                                      ctx.node.properties['private_key_path'],
+                                      OSError))
