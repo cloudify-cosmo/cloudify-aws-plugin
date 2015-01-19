@@ -139,7 +139,7 @@ class TestUtils(testtools.TestCase):
                 TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
             id = reservation.instances[0].id
             instance_object = utils.get_instance_from_id(id, ctx=ctx)
-            dns_name = utils.get_private_dns_name(instance_object)
+            dns_name = utils.get_private_dns_name(instance_object, 6 * 30)
             self.assertRegexpMatches(dns_name, FQDN)
 
     def test_get_public_dns_name(self):
@@ -152,5 +152,5 @@ class TestUtils(testtools.TestCase):
                 TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
             id = reservation.instances[0].id
             instance_object = utils.get_instance_from_id(id, ctx=ctx)
-            dns_name = utils.get_public_dns_name(instance_object)
+            dns_name = utils.get_public_dns_name(instance_object, 6 * 30)
             self.assertRegexpMatches(dns_name, FQDN)

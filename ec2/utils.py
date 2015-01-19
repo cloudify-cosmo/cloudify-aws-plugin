@@ -110,35 +110,45 @@ def get_instance_from_id(instance_id, ctx):
     return instance
 
 
-def get_instance_variable(instance, variable):
+def get_instance_attribute(instance, attribute, timeout_length):
     """ given the related instance object
         the given variable can be retrieved and returned
     """
+    timeout = time.time() + timeout_length
+
     while instance.update() != 'running':
         time.sleep(5)
-    variable = getattr(instance, variable)
-    return variable
+        if time.time() > timeout:
+            raise NonRecoverableError('Timed out while attemting to get the '
+                                      'instance {0}. Timeout length: {1}.'
+                                      .format(attribute, timeout_length))
+    attribute = getattr(instance, attribute)
+    return attribute
 
 
-def get_private_dns_name(instance):
+def get_private_dns_name(instance, timeout_length):
     """ returns the private_dns_name variable for a given instance
     """
-    return get_instance_variable(instance, 'private_dns_name')
+    return get_instance_attribute(instance,
+                                  'private_dns_name', timeout_length)
 
 
-def get_public_dns_name(instance):
+def get_public_dns_name(instance, timeout_length):
     """ returns the public_dns_name variable for a given instance
     """
-    return get_instance_variable(instance, 'public_dns_name')
+    return get_instance_attribute(instance,
+                                  'public_dns_name', timeout_length)
 
 
-def get_private_ip_address(instance):
+def get_private_ip_address(instance, timeout_length):
     """ returns the private_ip_address variable for a given instance
     """
-    return get_instance_variable(instance, 'private_ip_address')
+    return get_instance_attribute(instance,
+                                  'private_ip_address', timeout_length)
 
 
-def get_public_ip_address(instance):
+def get_public_ip_address(instance, timeout_length):
     """ returns the public_ip_address variable for a given instance
     """
-    return get_instance_variable(instance, 'public_ip_address')
+    return get_instance_attribute(instance,
+                                  'public_ip_address', timeout_length)
