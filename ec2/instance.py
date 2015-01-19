@@ -44,7 +44,7 @@ RUN_INSTANCES_UNSUPPORTED = {
 
 
 @operation
-def create(**kwargs):
+def run_instances(**kwargs):
     """ Creates an EC2 Classic Instance.
     """
     ec2_client = connection.EC2ConnectionClient().client()
