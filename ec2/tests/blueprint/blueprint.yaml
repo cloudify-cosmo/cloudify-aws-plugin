@@ -9,6 +9,18 @@ imports:
 
 inputs:
 
+  test_security_group_name:
+    default: ''
+
+  test_security_group_desc:
+    default: ''
+
+  test_key_name:
+    default: ''
+
+  test_key_path:
+    default: ''
+
   test_ami_image_id:
     description: an input for the test
     default: ''
@@ -18,21 +30,31 @@ inputs:
     default: ''
 
 node_templates:
-    test_node_template:
+
+    test_security_group:
+      type: cloudify.aws.nodes.SecurityGroup
+      properties:
+        name: { get_input: test_security_group_name }
+        description: { get_input: test_security_group_desc }
+        rules:
+          - ip_protocol: tcp
+            from_port: 80
+            to_port: 80
+            cidr_ip: 0.0.0.0/32
+
+    test_key_pair:
+      type: cloudify.aws.nodes.KeyPair
+      properties:
+        name: { get_input: test_key_name }
+        private_key_path: { get_input: test_key_path }
+
+    test_instance:
       type: cloudify.aws.nodes.Instance
       properties:
         install_agent: false
-        ami_image_id: { get_input: test_input_a }
-        instance_type: { get_input: test_input_b }
-      interfaces:
-        cloudify.interfaces.lifecycle:
-          start:
-            implementation: cloudify-aws-plugin.ec2.instance.run
-            inputs:
-              ami_image_id: { get_input: test_ami_image_id }
-              instance_type: { get_input: test_instance_type }
+        image_id: { get_input: test_ami_image_id }
+        instance_type: { get_input: test_instance_type }
+        attributes:
+          key_name: { get_property: [ test_key_pair, name ] }
+          security_groups: { get_property: [ test_security_group, name ] }
 
-outputs:
-  reservation:
-    description: Output from run
-    value: { get_attribute: [ test_node_template, ami_image_id ] }
