@@ -38,10 +38,10 @@ node_types:
           implementation: cloudify-aws-plugin.ec2.instance.creation_validation
           inputs: {}
 
-  cloudify.aws.nodes.FloatingIP:
+  cloudify.aws.nodes.ElasticIP:
     derived_from: cloudify.nodes.VirtualIP
     properties:
-      floatingip:
+      elasticip:
         default: {}
       use_external_resource:
         default: false
@@ -49,10 +49,12 @@ node_types:
         default: ''
     interfaces:
       cloudify.interfaces.lifecycle:
-        create: cloudify-aws-plugin.ec2.floatingip.create
-        delete: cloudify-aws-plugin.ec2.floatingip.delete
+        create: cloudify-aws-plugin.ec2.elasticip.allocate
+        delete: cloudify-aws-plugin.ec2.elasticip.release
       cloudify.interfaces.validation:
-        creation: cloudify-aws-plugin.ec2.floatingip.creation_validation
+        creation:
+          implementation: cloudify-aws-plugin.ec2.elasticip.creation_validation
+          inputs: {}
 
   cloudify.aws.nodes.SecurityGroup:
     derived_from: cloudify.nodes.SecurityGroup
@@ -103,4 +105,12 @@ relationships:
           implementation: cloudify-aws-plugin.ec2.securitygroup.authorize_ip
         unlink:
           implementation: cloudify-aws-plugin.ec2.securitygroup.deauthorize_ip
+
+  cloudify.aws.relationships.instance_connected_to_elastic_ip:
+    derived_from: cloudify.relationships.connected_to
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish: cloudify-aws-plugin.ec2.elasticip.associate
+        unlink: cloudify-aws-plugin.ec2.elasticip.disassociate
+
 
