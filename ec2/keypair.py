@@ -41,7 +41,7 @@ def create(**kwargs):
         raise NonRecoverableError('Key pair not created. '
                                   'API returned: {0}'.format(e))
 
-    ctx.logger.info('Created key pair.')
+    ctx.logger.info('Created key pair: {0}.'.format(kp.name))
     ctx.instance.runtime_properties['key_pair_name'] = kp.name
 
     utils.save_key_pair(kp, ctx=ctx)
@@ -62,7 +62,7 @@ def delete(**kwargs):
         raise NonRecoverableError('Error response on key pair delete. '
                                   'API returned: {0}'.format(e))
 
-    ctx.logger.info('Deleted key pair.')
+    ctx.logger.info('Deleted key pair: {0}.'.format(key_pair_name))
 
 
 @operation

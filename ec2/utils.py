@@ -135,6 +135,3 @@ def save_key_pair(key_pair_object, ctx):
                                   'OS Returned: {1}'.format(
                                       ctx.node.properties['private_key_path'],
                                       OSError))
-
-    ctx.logger.debug('No errors were raised while saving the '
-                     ' key_pair_object.')
