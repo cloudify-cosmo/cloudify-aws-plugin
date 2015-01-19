@@ -26,10 +26,10 @@ from ec2 import connection
 
 @operation
 def allocate(**kwargs):
-    """ Provisions an Elastic IP in the connected region in the AWS account.
+    """ Allocates an Elastic IP in the connected region in the AWS account.
     """
     ec2_client = connection.EC2ConnectionClient().client()
-    ctx.logger.info('Provisioning Elastic IP.')
+    ctx.logger.info('Allocating Elastic IP.')
 
     try:
         address_object = ec2_client.allocate_address()
@@ -38,17 +38,17 @@ def allocate(**kwargs):
                                   'provision Elastic IP. Error: {0}.'
                                   .format(e))
 
-    ctx.logger.info('Elastic IP Provisioned: {0}'.format(
+    ctx.logger.info('Elastic IP allocated: {0}'.format(
         address_object.public_ip))
     ctx.instance.runtime_properties['elasticip'] = address_object.public_ip
 
 
 @operation
 def release(**kwargs):
-    """ Deletes an Elastic IP from the connected region in the AWS account.
+    """ Releases an Elastic IP from the connected region in the AWS account.
     """
     ec2_client = connection.EC2ConnectionClient().client()
-    ctx.logger.info('Deleting an Elastic IP.')
+    ctx.logger.info('Releasing an Elastic IP.')
 
     elasticip = ctx.instance.runtime_properties['elasticip']
 
@@ -59,7 +59,7 @@ def release(**kwargs):
                                   'delete Elastic IP. Error: {0}.'
                                   .format(e))
 
-    ctx.logger.info('Deleted Elastic IP {0}.'.format(elasticip))
+    ctx.logger.info('Released Elastic IP {0}.'.format(elasticip))
 
 
 @operation
