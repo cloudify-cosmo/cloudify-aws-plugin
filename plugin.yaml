@@ -13,7 +13,7 @@ node_types:
     properties:
       attributes:
         default: {}
-      ami_image_id: {}
+      image_id: {}
       instance_type: {}
       use_external_resource:
         default: false
@@ -22,7 +22,7 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
-          implementation: cloudify-aws-plugin.ec2.instance.run
+          implementation: cloudify-aws-plugin.ec2.instance.run_instances
           inputs: {}
         start:
           implementation: cloudify-aws-plugin.ec2.instance.start
