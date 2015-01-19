@@ -83,18 +83,18 @@ class TestElasticIP(testtools.TestCase):
 
         return relationship_ctx
 
-    def test_create(self):
-        """
+    def test_allocate(self):
+        """ Tests that the allocate function is 100% successful.
         """
         ctx = self.mock_ctx('test_create_address')
 
         with mock_ec2():
-            elasticip.create(ctx=ctx)
-            self.assertTrue('elasticip' in ctx.instance.runtime_properties)
+            elasticip.allocate(ctx=ctx)
+            self.assertIn('elasticip', ctx.instance.runtime_properties)
 
-    def test_good_address_delete(self):
+    def test_good_address_release(self):
         """ Tests that when an address that is in the user's
-            EC2 account is provided to the delete function
+            EC2 account is provided to the release function
             no errors are raised
         """
 
@@ -104,9 +104,9 @@ class TestElasticIP(testtools.TestCase):
             ec2_client = connection.EC2ConnectionClient().client()
             address = ec2_client.allocate_address()
             ctx.instance.runtime_properties['elasticip'] = address.public_ip
-            elasticip.delete(ctx=ctx)
+            elasticip.release(ctx=ctx)
 
-    def test_bad_address_delete(self):
+    def test_bad_address_release(self):
         """ Tests that NonRecoverableError: Invalid request is
             raised when an address that is not an elastic ip
             is provided to the release function
@@ -121,10 +121,10 @@ class TestElasticIP(testtools.TestCase):
             instance = reservation.instances[0]
             ctx.instance.runtime_properties['elasticip'] = instance.ip_address
             ex = self.assertRaises(NonRecoverableError,
-                                   elasticip.delete, ctx=ctx)
+                                   elasticip.release, ctx=ctx)
             self.assertIn('Invalid request', ex.message)
 
-    def test_good_address_connect(self):
+    def test_good_address_associate(self):
         """ Tests that when an address that is in the user's
             EC2 account is provided to the attach function
             no errors are raised
@@ -140,9 +140,9 @@ class TestElasticIP(testtools.TestCase):
             address = ec2_client.allocate_address()
             ctx.target.node.properties['elasticip'] = address.public_ip
             ctx.source.instance.runtime_properties['instance_id'] = id
-            elasticip.connect(ctx=ctx)
+            elasticip.associate(ctx=ctx)
 
-    def test_bad_address_connect(self):
+    def test_bad_address_associate(self):
         """ Tests that NonRecoverableError: Invalid Address is
             raised when an address that is not in the user's
             EC2 account is provided to the attach function
@@ -158,10 +158,10 @@ class TestElasticIP(testtools.TestCase):
             ctx.target.node.properties['elasticip'] = '0.0.0.0'
             ctx.source.instance.runtime_properties['instance_id'] = id
             ex = self.assertRaises(NonRecoverableError,
-                                   elasticip.connect, ctx=ctx)
+                                   elasticip.associate, ctx=ctx)
             self.assertIn('InvalidAddress.NotFound', ex.message)
 
-    def test_good_address_disconnect(self):
+    def test_good_address_disassociate(self):
         """ Tests that when an address that is in the user's
             EC2 account is provided to the detach function
             no errors are raised
@@ -177,9 +177,9 @@ class TestElasticIP(testtools.TestCase):
             address = ec2_client.allocate_address()
             ctx.target.node.properties['elasticip'] = address.public_ip
             ctx.source.instance.runtime_properties['instance_id'] = id
-            elasticip.disconnect(ctx=ctx)
+            elasticip.disassociate(ctx=ctx)
 
-    def test_bad_address_disconnect(self):
+    def test_bad_address_disassociate(self):
         """ Tests that NonRecoverableError: Invalid Address is
             raised when an address that is not in the user's
             EC2 account is provided to the detach function
@@ -190,7 +190,7 @@ class TestElasticIP(testtools.TestCase):
         with mock_ec2():
             ctx.target.node.properties['elasticip'] = '0.0.0.0'
             ex = self.assertRaises(NonRecoverableError,
-                                   elasticip.disconnect, ctx=ctx)
+                                   elasticip.disassociate, ctx=ctx)
             self.assertIn('InvalidAddress.NotFound', ex.message)
 
     def test_get_private_dns_name(self):
