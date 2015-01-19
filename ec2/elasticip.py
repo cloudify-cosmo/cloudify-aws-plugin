@@ -25,7 +25,7 @@ from ec2 import connection
 
 
 @operation
-def create(**kwargs):
+def allocate(**kwargs):
     """ Provisions an Elastic IP in the connected region in the AWS account.
     """
     ec2_client = connection.EC2ConnectionClient().client()
@@ -44,7 +44,7 @@ def create(**kwargs):
 
 
 @operation
-def delete(**kwargs):
+def release(**kwargs):
     """ Deletes an Elastic IP from the connected region in the AWS account.
     """
     ec2_client = connection.EC2ConnectionClient().client()
@@ -59,18 +59,19 @@ def delete(**kwargs):
                                   'delete Elastic IP. Error: {0}.'
                                   .format(e))
 
-    ctx.logger.info('Deleted Elastic IP {0}.')
+    ctx.logger.info('Deleted Elastic IP {0}.'.format(elasticip))
 
 
 @operation
-def connect(**kwargs):
-    """ Connects an Elastic IP to an EC2 Instance.
+def associate(**kwargs):
+    """ Associates an Elastic IP with an EC2 Instance.
     """
     ec2_client = connection.EC2ConnectionClient().client()
-    ctx.logger.info('Attaching an Elastic IP to an EC2 Instance.')
 
     elasticip = ctx.target.node.properties['elasticip']
     instance_id = ctx.source.instance.runtime_properties['instance_id']
+    ctx.logger.info('Associating an Elastic IP {0} '
+                    'with an EC2 Instance {1}.'.format(elasticip, instance_id))
 
     try:
         ec2_client.associate_address(instance_id=instance_id,
@@ -80,16 +81,17 @@ def connect(**kwargs):
                                   'attach Elastic IP. Error: {0}.'
                                   .format(e))
 
-    ctx.logger.info('Connected Elastic IP to instance.')
+    ctx.logger.info('Associated Elastic IP {0} with instance {1}.'.format(
+        elasticip, instance_id))
 
 
 @operation
-def disconnect(**kwargs):
-    """ Disconnects an Elastic IP from an EC2 Instance.
+def disassociate(**kwargs):
+    """ Disassociates an Elastic IP from an EC2 Instance.
     """
     ec2_client = connection.EC2ConnectionClient().client()
-    ctx.logger.info('Disconnecting Elastic IP from an EC2 Instance.')
     elasticip = ctx.target.node.properties['elasticip']
+    ctx.logger.info('Disassociating Elastic IP {0}'.format(elasticip))
 
     try:
         ec2_client.disassociate_address(public_ip=elasticip)
@@ -98,7 +100,8 @@ def disconnect(**kwargs):
                                   'Elastic IP, returned: {0}.'
                                   .format(e))
 
-    ctx.logger.info('Disconnected Elastic IP from instance.')
+    ctx.logger.info('Disassociated Elastic IP {0}.'.format(
+        elasticip))
 
 
 @operation
@@ -114,5 +117,6 @@ def creation_validation(**kwargs):
                                   'Elastic IP, returned: {0}.'
                                   .format(e))
 
-    ctx.logger.info('Verified that Elastic IP was created.')
+    ctx.logger.info('Verified that Elastic IP {0} was created.'.format(
+        elasticip))
     return True

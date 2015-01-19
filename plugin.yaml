@@ -49,8 +49,8 @@ node_types:
         default: ''
     interfaces:
       cloudify.interfaces.lifecycle:
-        create: cloudify-aws-plugin.ec2.elasticip.create
-        delete: cloudify-aws-plugin.ec2.elasticip.delete
+        create: cloudify-aws-plugin.ec2.elasticip.allocate
+        delete: cloudify-aws-plugin.ec2.elasticip.release
       cloudify.interfaces.validation:
         creation:
           implementation: cloudify-aws-plugin.ec2.elasticip.creation_validation
@@ -61,5 +61,5 @@ relationships:
     derived_from: cloudify.relationships.connected_to
     source_interfaces:
       cloudify.interfaces.relationship_lifecycle:
-        establish: cloudify-aws-plugin.ec2.elasticip.connect
-        unlink: cloudify-aws-plugin.ec2.elasticip.disconnect
+        establish: cloudify-aws-plugin.ec2.elasticip.associate
+        unlink: cloudify-aws-plugin.ec2.elasticip.disassociate
