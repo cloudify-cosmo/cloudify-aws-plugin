@@ -63,6 +63,7 @@ class TestWorkflowKP(unittest.TestCase):
         # assert runtime properties is properly set in node instance
         kp = ec2_client.get_key_pair('test_name')
         self.assertEquals(kp.name, 'test_name')
+        os.remove(file)
 
     @mock_ec2
     def test_uninstall_workflow(self):
@@ -82,3 +83,4 @@ class TestWorkflowKP(unittest.TestCase):
 
         kp = ec2_client.get_key_pair('test_name')
         self.assertEquals(None, kp)
+        os.remove(file)

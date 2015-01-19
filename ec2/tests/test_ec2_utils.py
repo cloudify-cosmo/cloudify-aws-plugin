@@ -73,7 +73,7 @@ class TestUtils(testtools.TestCase):
 
         ctx = self.mock_ctx('test_get_instance_state')
         with mock_ec2():
-            instance.create(ctx=ctx)
+            instance.run_instances(ctx=ctx)
             instance_id = ctx.instance.runtime_properties['instance_id']
             instance_object = utils.get_instance_from_id(
                 instance_id, ctx=ctx)

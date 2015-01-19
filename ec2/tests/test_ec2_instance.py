@@ -60,7 +60,7 @@ class TestInstance(testtools.TestCase):
         ctx = self.mock_ctx('test_instance_create')
 
         with mock_ec2():
-            instance.create(ctx=ctx)
+            instance.run_instances(ctx=ctx)
             self.assertIn('instance_id',
                           ctx.instance.runtime_properties.keys())
 
@@ -171,5 +171,5 @@ class TestInstance(testtools.TestCase):
         with mock_ec2():
             ctx.node.properties['attributes']['subnet_id'] = 'test'
             ex = self.assertRaises(NonRecoverableError,
-                                   instance.create, ctx=ctx)
+                                   instance.run_instances, ctx=ctx)
             self.assertIn('InvalidSubnetID.NotFound', ex.message)
