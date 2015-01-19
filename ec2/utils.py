@@ -145,3 +145,18 @@ def get_security_group_from_id(group, ctx):
                                   'API returned: {1}.'
                                   .format(ctx.instance.id, e))
     return groups
+
+
+def save_key_pair(key_pair_object, ctx):
+    """ Saves the key pair to the file specified in the blueprint
+    """
+
+    ctx.logger.debug('Attempting to save the key_pair_object.')
+
+    try:
+        key_pair_object.save(ctx.node.properties['private_key_path'])
+    except OSError:
+        raise NonRecoverableError('Unable to save key pair to file: {0}.'
+                                  'OS Returned: {1}'.format(
+                                      ctx.node.properties['private_key_path'],
+                                      OSError))
