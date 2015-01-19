@@ -133,6 +133,7 @@ def get_private_dns_name(instance, timeout_length):
     return get_instance_attribute(instance,
                                   'private_dns_name', timeout_length)
 
+
 def get_public_dns_name(instance, timeout_length):
     """ returns the public_dns_name variable for a given instance
     """
