@@ -14,8 +14,7 @@
 #    * limitations under the License.
 
 # Boto Imports
-from boto.exception import EC2ResponseError
-from boto.exception import BotoServerError
+import boto.exception
 
 # Cloudify imports
 from cloudify import ctx
@@ -26,71 +25,86 @@ from ec2 import utils
 
 
 @operation
-def create(**kwargs):
-    """ Creates a Security Group on the account that is
-        currently signed in."
+def create(**_):
+    """ Creates a Security Group on this Amazon AWS account.
+        ctx.node.properties:
+            resource_id: When use_external_resource is false this
+              is the name of the group.
+            description: This is the group description
+            rules: The rules which we want to create for the group.
+        ctx.instance.runtime_properties:
+            aws_resource_id: This is the security group ID assigned
+              by Amazon when the group is created.
     """
+
     ec2_client = connection.EC2ConnectionClient().client()
 
-    name = ctx.node.properties['name']
+    name = ctx.node.properties['resource_id']
     description = ctx.node.properties['description']
+    rules = ctx.node.properties['rules']
 
     ctx.logger.info('Creating Security Group: {0}'.format(name))
 
     try:
         group_object = ec2_client.create_security_group(name, description)
-    except (EC2ResponseError, BotoServerError) as e:
+    except (boto.exception.EC2ResponseError,
+            boto.exception.BotoServerError) as e:
         raise NonRecoverableError('Error. Failed to create '
                                   'security group: API returned: {0}.'
-                                  .format(e))
+                                  .format(str(e)))
 
-    ctx.instance.runtime_properties['group_object'] = {
-        'id': group_object.id,
-        'name': group_object.name
-    }
+    ctx.instance.runtime_properties['aws_resource_id'] = group_object.id,
 
     ctx.logger.info('Created Security Group: {0}.'.format(name))
 
-    _authorize(ctx=ctx)
+    authorize_by_id(ec2_client, group_object.id, rules)
 
 
 @operation
-def delete(**kwargs):
+def delete(**_):
     """ Deletes a security group from an account.
+        runtime_properties:
+            aws_resource_id: This is the security group ID assigned
+              by Amazon when the group is created.
     """
 
     ec2_client = connection.EC2ConnectionClient().client()
 
-    group_name = ctx.node.properties['name']
+    group_id = ctx.instance.runtime_properties['aws_resource_id']
 
-    ctx.logger.info('Deleting Security Group: {0}'.format(group_name))
+    ctx.logger.info('Deleting Security Group: {0}'.format(group_id))
 
     try:
-        ec2_client.delete_security_group(group_name)
-    except (EC2ResponseError, BotoServerError) as e:
+        ec2_client.delete_security_group(group_id=group_id)
+    except (boto.exception.EC2ResponseError,
+            boto.exception.BotoServerError) as e:
         raise NonRecoverableError('Error. Failed to delete '
                                   'security group: API returned: {0}.'
                                   .format(e))
 
-    ctx.logger.info('Deleted Security Group: {0}.'.format(group_name))
+    ctx.logger.info('Deleted Security Group: {0}.'.format(group_id))
+    ctx.instance.runtime_properties.pop('aws_resource_id', None)
 
 
 @operation
-def creation_validation(**kwargs):
-    """ Validate that the Security Group exists
+def creation_validation(**_):
+    """ Validate that the Security Group exists.
+        ctx.node.properties:
+            resource_id: When use_external_resource is false this
+              is the name of the group.
+        ctx.instance.runtime_properties:
+            aws_resource_id: This is the security group ID assigned
+              by Amazon when the group is created.
     """
 
-    if 'group_object' in ctx.instance.runtime_properties.keys():
-        group_object = ctx.instance.runtime_properties['group_object']
-        group = group_object['id']
+    if 'aws_resource_id' in ctx.instance.runtime_properties.keys():
+        group = ctx.instance.runtime_properties['aws_resource_id']
     elif 'resource_id' in ctx.node.properties:
         group = ctx.node.properties['resource_id']
-    elif 'name' in ctx.node.properties.keys():
-        group = ctx.node.properties['name']
     else:
         raise NonRecoverableError('No group name or group id provided.')
 
-    if (utils.validate_group(group, ctx)):
+    if (utils.validate_group(group, ctx=ctx)):
         ctx.logger.info('Verified that group {0} was created.'.format(group))
     else:
         raise NonRecoverableError('Could not verify that the group {0} '
@@ -98,139 +112,91 @@ def creation_validation(**kwargs):
 
 
 @operation
-def authorize(**kwargs):
-    """ basically calls _authorize method, but exposes it as a
-        lifecycle operation so that you can also add a rule in
-        a blueprint.
-    """
-    _authorize(ctx=ctx)
-
-
-def _authorize(ctx):
-    """ Adds a rule to a security group using a provided protocol,
-        address or address block, and port.
+def authorize(**_):
+    """ Creates a Security Group on this Amazon AWS account.
+        ctx.node.properties:
+            resource_id: When use_external_resource is false this
+              is the name of the group.
+            description: This is the group description
+            rules: The rules which we want to create for the group.
+        ctx.instance.runtime_properties:
+            aws_resource_id: This is the security group ID assigned
+              by Amazon when the group is created.
     """
 
     ec2_client = connection.EC2ConnectionClient().client()
 
-    ctx.logger.info('Adding Rule to Security Group.')
-
-    if 'group_object' in ctx.instance.runtime_properties.keys():
-        group_object = ctx.instance.runtime_properties['group_object']
-        group = group_object['id']
-        authorize_by_id(ec2_client, group, ctx)
-    elif 'resource_id' in ctx.node.properties.keys():
-        group = ctx.node.properties['resource_id']
-        authorize_by_id(ec2_client, group, ctx)
-    elif 'name' in ctx.node.properties.keys():
-        group = ctx.node.properties['name']
-        authorize_by_name(ec2_client, group, ctx)
+    if ctx.node.properties('use_external_resource', False):
+        group_id = ctx.node.properties['resource_id']
+        rules = ctx.node.properties['rules']
+        authorize_by_id(ec2_client, group_id, rules)
     else:
-        raise NonRecoverableError('No group name or group id provided.')
+        group_id = ctx.instance.runtime_properties['aws_resource_id']
+        rules = ctx.node.properties['rules']
+        authorize_by_id(ec2_client, group_id, rules)
 
-    ctx.logger.info('Added rules to Security Group: {0}'
-                    'Rules: {1}'.format(group, ctx.node.properties['rules']))
+
+@operation
+def revoke(**_):
+    """ Creates a Security Group on this Amazon AWS account.
+        ctx.node.properties:
+            resource_id: When use_external_resource is false this
+              is the name of the group.
+            description: This is the group description
+            rules: The rules which we want to create for the group.
+        ctx.instance.runtime_properties:
+            aws_resource_id: This is the security group ID assigned
+              by Amazon when the group is created.
+    """
+
+    ec2_client = connection.EC2ConnectionClient().client()
+
+    if ctx.node.properties.get('use_external_resource', False):
+        group_id = ctx.node.properties['resource_id']
+        rules = ctx.node.properties['rules']
+        revoke_by_id(ec2_client, group_id, rules)
+    else:
+        group_id = ctx.instance.runtime_properties['aws_resource_id']
+        rules = ctx.node.properties['rules']
+        authorize_by_id(ec2_client, group_id, rules)
 
 
-def authorize_by_id(ec2_client, group, ctx):
+def authorize_by_id(ec2_client, group, rules):
     """ For each rule listed in the blueprint,
         this will add the rule to the group with the given id.
     """
 
-    for r in ctx.node.properties['rules']:
+    for r in rules:
         try:
             ec2_client.authorize_security_group(group_id=group,
                                                 ip_protocol=r['ip_protocol'],
                                                 from_port=r['from_port'],
                                                 to_port=r['to_port'],
                                                 cidr_ip=r['cidr_ip'])
-        except (EC2ResponseError, BotoServerError) as e:
+        except boto.exception.EC2ResponseError as e:
+            if 'InvalidPermission.Duplicate' in str(e):
+                ctx.logger.debug('Rule already exists in that security group.')
+            else:
+                raise NonRecoverableError('Unable to authorize that group: '
+                                          '{0}'.format(str(e)))
+        except boto.exception.BotoServerError as e:
             raise NonRecoverableError('Unable to authorize that group: '
-                                      '{0}'.format(e))
+                                      '{0}'.format(str(e)))
 
 
-def authorize_by_name(ec2_client, group, ctx):
-    """ For each rule listed in the blueprint,
-        this will add the rule to the group with the given name.
-    """
-
-    for r in ctx.node.properties['rules']:
-        try:
-            ec2_client.authorize_security_group(group_name=group,
-                                                ip_protocol=r['ip_protocol'],
-                                                from_port=r['from_port'],
-                                                to_port=r['to_port'],
-                                                cidr_ip=r['cidr_ip']
-                                                )
-        except (EC2ResponseError, BotoServerError) as e:
-            raise NonRecoverableError('Unable to authorize that group: '
-                                      '{0}'.format(e))
-
-
-@operation
-def revoke(**kwargs):
-    """ basically calls _revoke method, but exposes it as a
-        lifecycle operation so that you can also remove a rule
-        from a blueprint.
-    """
-    _revoke(ctx=ctx)
-
-
-def _revoke(ctx):
-    """ Removes a rule from a security group using a provided protocol,
-        address or address block, and port.
-    """
-
-    ec2_client = connection.EC2ConnectionClient().client()
-
-    ctx.logger.info('Revoking Rule from Security Group.')
-
-    if 'group_object' in ctx.instance.runtime_properties.keys():
-        group_object = ctx.instance.runtime_properties['group_object']
-        group = group_object.id
-        revoke_by_id(ec2_client, group, ctx)
-    elif 'resource_id' in ctx.node.properties.keys():
-        group = ctx.node.properties['resource_id']
-        revoke_by_id(ec2_client, group, ctx)
-    elif 'name' in ctx.node.properties.keys():
-        group = ctx.node.properties['name']
-        revoke_by_name(ec2_client, group, ctx)
-    else:
-        raise NonRecoverableError('No group name or group id provided.')
-
-    ctx.logger.info('Revoked rules from Security Group: {0}'
-                    'Rules: {1}'.format(group, ctx.node.properties['rules']))
-
-
-def revoke_by_id(ec2_client, group, ctx):
+def revoke_by_id(ec2_client, group, rules):
     """ For each rule listed in the blueprint,
         this will remove the rule from the group with the given id.
     """
 
-    for r in ctx.node.properties['rules']:
+    for r in rules:
         try:
             ec2_client.revoke_security_group(group_id=group,
                                              ip_protocol=r['ip_protocol'],
                                              from_port=r['from_port'],
                                              to_port=r['to_port'],
                                              cidr_ip=r['cidr_ip'])
-        except (EC2ResponseError, BotoServerError) as e:
+        except (boto.exception.EC2ResponseError,
+                boto.exception.BotoServerError) as e:
             raise NonRecoverableError('Unable to revoke that rule: '
-                                      '{0}'.format(e))
-
-
-def revoke_by_name(ec2_client, group, ctx):
-    """ For each rule listed in the blueprint,
-        this will remove the rule from the group with the given name.
-    """
-
-    for r in ctx.node.properties['rules']:
-        try:
-            ec2_client.revoke_security_group(group_name=group,
-                                             ip_protocol=r['ip_protocol'],
-                                             from_port=r['from_port'],
-                                             to_port=r['to_port'],
-                                             cidr_ip=r['cidr_ip'])
-        except (EC2ResponseError, BotoServerError) as e:
-            raise NonRecoverableError('Unable to revoke that rule: '
-                                      '{0}'.format(e))
+                                      '{0}'.format(str(e)))

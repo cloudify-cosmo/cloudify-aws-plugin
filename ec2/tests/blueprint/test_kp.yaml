@@ -19,5 +19,5 @@ node_templates:
     test_new_kp:
       type: cloudify.aws.nodes.KeyPair
       properties:
-        name: { get_input: test_kp_name }
+        resource_id: { get_input: test_kp_name }
         private_key_path: { get_input: test_private_key_path }

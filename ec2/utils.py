@@ -13,83 +13,25 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
-# built-in imports
-import time
+# Built-in Imports
+import os
 
-# other imports
-from boto.exception import EC2ResponseError, BotoServerError
+# Third-party Imports
+import boto.exception
 
-# Cloudify imports
+# Cloudify Imports
 from ec2 import connection
-from cloudify.exceptions import NonRecoverableError
+from cloudify.exceptions import NonRecoverableError, RecoverableError
 
 
-def validate_state(instance, state, timeout_length, check_interval, ctx):
-    """ Check if an EC2 instance is in a particular state.
-    :param instance: And EC2 instance.
-    :param state: The state code (pending = 0, running = 16,
-                  shutting down = 32, terminated = 48, stopping = 64,
-                  stopped = 80
-    :param timeout_length: How long to wait for a positive answer
-           before we stop checking.
-    :param check_interval: How long to wait between checks.
-    :return: bool (True the desired state was reached, False, it was not.)
-    """
-
-    ctx.logger.debug('Attempting state validation: '
-                     'instance id: {0}, state: {1}, timeout length: {2}, '
-                     'check interval: {3}.'.format(instance.id, state,
-                                                   timeout_length,
-                                                   check_interval))
-
-    if check_interval < 1:
-        check_interval = 1
-
-    timeout = time.time() + timeout_length
-
-    while True:
-        if state == get_instance_state(instance, ctx=ctx):
-            ctx.logger.info('Instance state validated: instance {0}.'
-                            .format(instance.state))
-            return True
-        elif time.time() > timeout:
-            raise NonRecoverableError('Timed out during '
-                                      'instance state validation: '
-                                      'instance: {0}, '
-                                      'timeout length: {1}, '
-                                      'check interval: {2}.'
-                                      .format(instance.id,
-                                              timeout_length,
-                                              check_interval))
-        time.sleep(check_interval)
-
-
-def get_instance_state(instance, ctx):
-    """ Gets the instance's current state
-    """
-
+def get_instance_state(instance_id, ctx):
+    instance = get_instance_from_id(instance_id, ctx=ctx)
     ctx.logger.debug('Checking the instance state for {0}.'
                      .format(instance.id))
     state = instance.update()
     ctx.logger.debug('Instance state is {0}.'
                      .format(state))
     return instance.state_code
-
-
-def validate_instance_id(instance_id, ctx):
-    """ Checks to see if instance_id resolves an instance from
-        get_all_reservations
-    """
-    ec2_client = connection.EC2ConnectionClient().client()
-
-    try:
-        ec2_client.get_all_reservations(instance_id)
-    except (EC2ResponseError, BotoServerError) as e:
-        raise NonRecoverableError('Error. Failed to validate instance id: '
-                                  'API returned: {0}.'
-                                  .format(e))
-
-    return True
 
 
 def get_instance_from_id(instance_id, ctx):
@@ -100,59 +42,58 @@ def get_instance_from_id(instance_id, ctx):
 
     try:
         reservations = ec2_client.get_all_reservations(instance_id)
-    except (EC2ResponseError, BotoServerError) as e:
-        raise NonRecoverableError('(Node: {0}): Error. '
+    except (boto.exception.EC2ResponseError,
+            boto.exception.BotoServerError) as e:
+        raise NonRecoverableError('Error. '
                                   'Failed to get instance by id: '
                                   'API returned: {1}.'
-                                  .format(ctx.instance.id, e))
+                                  .format(ctx.instance.id, str(e)))
 
     instance = reservations[0].instances[0]
 
     return instance
 
 
-def get_instance_attribute(instance, attribute, timeout_length):
+def get_instance_attribute(instance_id, attribute, check_interval, ctx):
     """ given the related instance object
         the given variable can be retrieved and returned
     """
-    timeout = time.time() + timeout_length
 
-    while instance.update() != 'running':
-        time.sleep(5)
-        if time.time() > timeout:
-            raise NonRecoverableError('Timed out while attemting to get the '
-                                      'instance {0}. Timeout length: {1}.'
-                                      .format(attribute, timeout_length))
+    instance = get_instance_from_id(instance_id, ctx=ctx)
+    if 'running' not in instance.update():
+        raise RecoverableError('Waiting for server to be running. '
+                               'Retrying...', retry_after=check_interval)
+
     attribute = getattr(instance, attribute)
     return attribute
 
 
-def get_private_dns_name(instance, timeout_length):
+def get_private_dns_name(instance, check_interval, ctx):
     """ returns the private_dns_name variable for a given instance
     """
-    return get_instance_attribute(instance,
-                                  'private_dns_name', timeout_length)
+    return get_instance_attribute(instance, 'private_dns_name',
+                                  check_interval, ctx=ctx)
 
 
-def get_public_dns_name(instance, timeout_length):
+def get_public_dns_name(instance, check_interval, ctx):
     """ returns the public_dns_name variable for a given instance
     """
-    return get_instance_attribute(instance,
-                                  'public_dns_name', timeout_length)
+    return get_instance_attribute(instance, 'public_dns_name',
+                                  check_interval, ctx=ctx)
 
 
-def get_private_ip_address(instance, timeout_length):
+def get_private_ip_address(instance, check_interval, ctx):
     """ returns the private_ip_address variable for a given instance
     """
-    return get_instance_attribute(instance,
-                                  'private_ip_address', timeout_length)
+    return get_instance_attribute(instance, 'private_ip_address',
+                                  check_interval, ctx=ctx)
 
 
-def get_public_ip_address(instance, timeout_length):
+def get_public_ip_address(instance, check_interval, ctx):
     """ returns the public_ip_address variable for a given instance
     """
-    return get_instance_attribute(instance,
-                                  'public_ip_address', timeout_length)
+    return get_instance_attribute(instance, 'ip_address',
+                                  check_interval, ctx=ctx)
 
 
 def validate_group(group, ctx):
@@ -172,17 +113,17 @@ def get_security_group_from_id(group, ctx):
 
     try:
         groups = ec2_client.get_all_security_groups(group_ids=group)
-    except (EC2ResponseError, BotoServerError) as e:
+    except (boto.exception.EC2ResponseError,
+            boto.exception.BotoServerError) as e:
         raise NonRecoverableError('(Node: {0}): Error. '
                                   'Failed to group by id: '
                                   'API returned: {1}.'
-                                  .format(ctx.instance.id, e))
+                                  .format(ctx.instance.id, str(e)))
     return groups
 
 
 def save_key_pair(key_pair_object, ctx):
-    """ Saves the key pair to the file specified in the blueprint
-    """
+    """ Saves the key pair to the file specified in the blueprint. """
 
     ctx.logger.debug('Attempting to save the key_pair_object.')
 
@@ -193,3 +134,22 @@ def save_key_pair(key_pair_object, ctx):
                                   'OS Returned: {1}'.format(
                                       ctx.node.properties['private_key_path'],
                                       OSError))
+
+
+def delete_key_pair(key_pair_name, ctx):
+    """ Deletes the key pair in the file specified in the blueprint. """
+
+    ctx.logger.debug('Attempting to save the key_pair_object.')
+
+    path = os.path.expanduser(ctx.node.properties['private_key_path'])
+    file = os.path.join(path,
+                        '{0}{1}'.format(
+                            ctx.node.properties['resource_id'],
+                            '.pem'))
+    if os.path.exists(file):
+        try:
+            os.remove(file)
+        except OSError:
+            raise NonRecoverableError('Unable to save key pair to file: {0}.'
+                                      'OS Returned: {1}'.format(path,
+                                                                str(OSError)))

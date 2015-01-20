@@ -34,7 +34,7 @@ node_templates:
     test_security_group:
       type: cloudify.aws.nodes.SecurityGroup
       properties:
-        name: { get_input: test_security_group_name }
+        resource_id: { get_input: test_security_group_name }
         description: { get_input: test_security_group_desc }
         rules:
           - ip_protocol: tcp
@@ -45,7 +45,7 @@ node_templates:
     test_key_pair:
       type: cloudify.aws.nodes.KeyPair
       properties:
-        name: { get_input: test_key_name }
+        resource_id: { get_input: test_key_name }
         private_key_path: { get_input: test_key_path }
 
     test_instance:
@@ -54,7 +54,7 @@ node_templates:
         install_agent: false
         image_id: { get_input: test_ami_image_id }
         instance_type: { get_input: test_instance_type }
-        attributes:
-          key_name: { get_property: [ test_key_pair, name ] }
-          security_groups: { get_property: [ test_security_group, name ] }
+        parameters:
+          key_name: { get_property: [ test_key_pair, resource_id ] }
+          security_groups: { get_property: [ test_security_group, resource_id ] }
 

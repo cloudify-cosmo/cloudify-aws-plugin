@@ -21,7 +21,6 @@ from moto import mock_ec2
 
 # Cloudify Imports is imported and used in operations
 from ec2 import connection
-from ec2 import utils
 from ec2 import elasticip
 from cloudify.mocks import MockCloudifyContext
 from cloudify.mocks import MockContext
@@ -40,7 +39,7 @@ class TestElasticIP(testtools.TestCase):
         test_properties = {
             'image_id': TEST_AMI_IMAGE_ID,
             'instance_type': TEST_INSTANCE_TYPE,
-            'attributes': {
+            'parameters': {
                 'security_groups': ['sg-73cd3f1e'],
                 'instance_initiated_shutdown_behavior': 'stop'
             }
@@ -72,7 +71,7 @@ class TestElasticIP(testtools.TestCase):
             }),
             'instance': MockContext({
                 'runtime_properties': {
-                    'elasticip': ''
+                    'aws_resource_id': ''
                 }
             })
         })
@@ -90,7 +89,7 @@ class TestElasticIP(testtools.TestCase):
 
         with mock_ec2():
             elasticip.allocate(ctx=ctx)
-            self.assertIn('elasticip', ctx.instance.runtime_properties)
+            self.assertIn('aws_resource_id', ctx.instance.runtime_properties)
 
     def test_good_address_release(self):
         """ Tests that when an address that is in the user's
@@ -103,26 +102,9 @@ class TestElasticIP(testtools.TestCase):
         with mock_ec2():
             ec2_client = connection.EC2ConnectionClient().client()
             address = ec2_client.allocate_address()
-            ctx.instance.runtime_properties['elasticip'] = address.public_ip
+            ctx.instance.runtime_properties['aws_resource_id'] = \
+                address.public_ip
             elasticip.release(ctx=ctx)
-
-    def test_bad_address_release(self):
-        """ Tests that NonRecoverableError: Invalid request is
-            raised when an address that is not an elastic ip
-            is provided to the release function
-        """
-
-        ctx = self.mock_ctx('test_bad_address_delete')
-
-        with mock_ec2():
-            ec2_client = connection.EC2ConnectionClient().client()
-            reservation = ec2_client.run_instances(
-                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
-            instance = reservation.instances[0]
-            ctx.instance.runtime_properties['elasticip'] = instance.ip_address
-            ex = self.assertRaises(NonRecoverableError,
-                                   elasticip.release, ctx=ctx)
-            self.assertIn('Invalid request', ex.message)
 
     def test_good_address_associate(self):
         """ Tests that when an address that is in the user's
@@ -136,30 +118,11 @@ class TestElasticIP(testtools.TestCase):
             ec2_client = connection.EC2ConnectionClient().client()
             reservation = ec2_client.run_instances(
                 TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
-            id = reservation.instances[0].id
             address = ec2_client.allocate_address()
-            ctx.target.node.properties['elasticip'] = address.public_ip
-            ctx.source.instance.runtime_properties['instance_id'] = id
+            ctx.target.node.properties['aws_resource_id'] = address.public_ip
+            ctx.source.instance.runtime_properties['aws_resource_id'] = \
+                reservation.instances[0].id
             elasticip.associate(ctx=ctx)
-
-    def test_bad_address_associate(self):
-        """ Tests that NonRecoverableError: Invalid Address is
-            raised when an address that is not in the user's
-            EC2 account is provided to the attach function
-        """
-
-        ctx = self.mock_relationship_ctx('test_bad_address_attach')
-
-        with mock_ec2():
-            ec2_client = connection.EC2ConnectionClient().client()
-            reservation = ec2_client.run_instances(
-                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
-            id = reservation.instances[0].id
-            ctx.target.node.properties['elasticip'] = '0.0.0.0'
-            ctx.source.instance.runtime_properties['instance_id'] = id
-            ex = self.assertRaises(NonRecoverableError,
-                                   elasticip.associate, ctx=ctx)
-            self.assertIn('InvalidAddress.NotFound', ex.message)
 
     def test_good_address_disassociate(self):
         """ Tests that when an address that is in the user's
@@ -175,7 +138,7 @@ class TestElasticIP(testtools.TestCase):
                 TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
             id = reservation.instances[0].id
             address = ec2_client.allocate_address()
-            ctx.target.node.properties['elasticip'] = address.public_ip
+            ctx.target.node.properties['aws_resource_id'] = address.public_ip
             ctx.source.instance.runtime_properties['instance_id'] = id
             elasticip.disassociate(ctx=ctx)
 
@@ -188,42 +151,10 @@ class TestElasticIP(testtools.TestCase):
         ctx = self.mock_relationship_ctx('test_bad_address_detach')
 
         with mock_ec2():
-            ctx.target.node.properties['elasticip'] = '0.0.0.0'
+            ctx.target.node.properties['aws_resource_id'] = '0.0.0.0'
             ex = self.assertRaises(NonRecoverableError,
                                    elasticip.disassociate, ctx=ctx)
             self.assertIn('InvalidAddress.NotFound', ex.message)
-
-    def test_get_private_dns_name(self):
-        """ tests that private_dns_name matches the regex for
-            an FQDN
-        """
-
-        ctx = self.mock_ctx('test_get_private_dns_name')
-
-        with mock_ec2():
-            ec2_client = connection.EC2ConnectionClient().client()
-            reservation = ec2_client.run_instances(
-                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
-            id = reservation.instances[0].id
-            instance_object = utils.get_instance_from_id(id, ctx=ctx)
-            dns_name = utils.get_private_dns_name(instance_object, 6 * 30)
-            self.assertRegexpMatches(dns_name, FQDN)
-
-    def test_get_public_dns_name(self):
-        """ tests that public_dns_name matches the regex for
-            an FQDN
-        """
-
-        ctx = self.mock_ctx('test_get_public_dns_name')
-
-        with mock_ec2():
-            ec2_client = connection.EC2ConnectionClient().client()
-            reservation = ec2_client.run_instances(
-                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
-            id = reservation.instances[0].id
-            instance_object = utils.get_instance_from_id(id, ctx=ctx)
-            dns_name = utils.get_public_dns_name(instance_object, 6 * 30)
-            self.assertRegexpMatches(dns_name, FQDN)
 
     def test_validate_creation(self):
 
@@ -232,5 +163,5 @@ class TestElasticIP(testtools.TestCase):
         with mock_ec2():
             ec2_client = connection.EC2ConnectionClient().client()
             a = ec2_client.allocate_address()
-            ctx.instance.runtime_properties['elasticip'] = a.public_ip
+            ctx.instance.runtime_properties['aws_resource_id'] = a.public_ip
             self.assertTrue(elasticip.creation_validation(ctx=ctx))

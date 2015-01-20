@@ -39,7 +39,7 @@ class TestUtils(testtools.TestCase):
         test_properties = {
             'image_id': TEST_AMI_IMAGE_ID,
             'instance_type': TEST_INSTANCE_TYPE,
-            'attributes': {
+            'parameters': {
                 'security_groups': ['sg-73cd3f1e'],
                 'instance_initiated_shutdown_behavior': 'stop'
             }
@@ -52,20 +52,6 @@ class TestUtils(testtools.TestCase):
 
         return ctx
 
-    def test_validate_instance_id(self):
-        """ this tests that validate instance_id
-        is true if provided with a valid instance_id
-        """
-
-        ctx = self.mock_ctx('test_validate_instance_id')
-
-        with mock_ec2():
-            ec2_client = connection.EC2ConnectionClient().client()
-            reservation = ec2_client.run_instances(
-                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
-            id = reservation.instances[0].id
-            self.assertTrue(utils.validate_instance_id(id, ctx=ctx))
-
     def test_get_instance_state(self):
         """ this tests that get instance state returns
         running for a running instance
@@ -74,32 +60,10 @@ class TestUtils(testtools.TestCase):
         ctx = self.mock_ctx('test_get_instance_state')
         with mock_ec2():
             instance.run_instances(ctx=ctx)
-            instance_id = ctx.instance.runtime_properties['instance_id']
-            instance_object = utils.get_instance_from_id(
-                instance_id, ctx=ctx)
-            instance_state = utils.get_instance_state(instance_object,
+            instance_id = ctx.instance.runtime_properties['aws_resource_id']
+            instance_state = utils.get_instance_state(instance_id,
                                                       ctx=ctx)
             self.assertEqual(instance_state, 16)
-
-    def test_timeout_validate_state(self):
-        """ this tests that a stopped image is not in a 'pending' statement
-        """
-
-        ctx = self.mock_ctx('test_instance_running_validate_state')
-
-        with mock_ec2():
-            ec2_client = connection.EC2ConnectionClient().client()
-            shorter = TEST_INSTANCE_TYPE
-            reservation = ec2_client.run_instances(TEST_AMI_IMAGE_ID,
-                                                   instance_type=shorter)
-            id = reservation.instances[0].id
-            ctx.instance.runtime_properties['instance_id'] = id
-            instance_object = utils.get_instance_from_id(id, ctx=ctx)
-            ec2_client.stop_instances(id)
-            ex = self.assertRaises(NonRecoverableError,
-                                   utils.validate_state,
-                                   instance_object, 0, 1, .1, ctx=ctx)
-            self.assertIn('Timed out', ex.message)
 
     def test_no_instance_get_instance_from_id(self):
         """ this tests that a NonRecoverableError is thrown
@@ -116,19 +80,6 @@ class TestUtils(testtools.TestCase):
                                    utils.get_instance_from_id, id, ctx=ctx)
             self.assertIn('InvalidInstanceID.NotFound', ex.message)
 
-    def test_bad_id_validate_instance_id(self):
-        """ This tests that validate_id raises a NonRecoverableError
-        when given an invalid id
-        """
-
-        ctx = self.mock_ctx('test_bad_id_validate_instance_id')
-
-        with mock_ec2():
-            ex = self.assertRaises(NonRecoverableError,
-                                   utils.validate_instance_id,
-                                   'bad id', ctx=ctx)
-            self.assertIn('InvalidInstanceID.NotFound', ex.message)
-
     def test_get_private_dns_name(self):
 
         ctx = self.mock_ctx('test_get_private_dns_name')
@@ -137,20 +88,19 @@ class TestUtils(testtools.TestCase):
             ec2_client = connection.EC2ConnectionClient().client()
             reservation = ec2_client.run_instances(
                 TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
-            id = reservation.instances[0].id
-            instance_object = utils.get_instance_from_id(id, ctx=ctx)
-            dns_name = utils.get_private_dns_name(instance_object, 6 * 30)
+            dns_name = utils.get_private_dns_name(reservation.instances[0].id,
+                                                  5, ctx=ctx)
             self.assertRegexpMatches(dns_name, FQDN)
 
     def test_get_public_dns_name(self):
 
         ctx = self.mock_ctx('test_get_public_dns_name')
 
+        ctx
         with mock_ec2():
             ec2_client = connection.EC2ConnectionClient().client()
             reservation = ec2_client.run_instances(
                 TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
-            id = reservation.instances[0].id
-            instance_object = utils.get_instance_from_id(id, ctx=ctx)
-            dns_name = utils.get_public_dns_name(instance_object, 6 * 30)
+            dns_name = utils.get_public_dns_name(reservation.instances[0].id,
+                                                 5, ctx=ctx)
             self.assertRegexpMatches(dns_name, FQDN)

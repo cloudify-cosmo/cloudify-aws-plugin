@@ -36,7 +36,7 @@ class TestKeyPair(testtools.TestCase):
 
         test_node_id = test_name
         test_properties = {
-            'name': 'test_ec2_keypair',
+            'resource_id': 'test_ec2_keypair',
             'private_key_path': '~/.ssh'
         }
 
@@ -57,12 +57,13 @@ class TestKeyPair(testtools.TestCase):
         with mock_ec2():
             path = os.path.expanduser(ctx.node.properties['private_key_path'])
             file = os.path.join(path,
-                                '{0}{1}'.format(ctx.node.properties['name'],
-                                                '.pem'))
+                                '{0}{1}'.format(
+                                    ctx.node.properties['resource_id'],
+                                    '.pem'))
             if os.path.exists(file):
                 os.remove(file)
             keypair.create(ctx=ctx)
-            self.assertIn('key_pair_name',
+            self.assertIn('aws_resource_id',
                           ctx.instance.runtime_properties.keys())
             os.remove(file)
 
@@ -76,8 +77,9 @@ class TestKeyPair(testtools.TestCase):
         with mock_ec2():
             path = os.path.expanduser(ctx.node.properties['private_key_path'])
             file = os.path.join(path,
-                                '{0}{1}'.format(ctx.node.properties['name'],
-                                                '.pem'))
+                                '{0}{1}'.format(
+                                    ctx.node.properties['resource_id'],
+                                    '.pem'))
             if os.path.exists(file):
                 os.remove(file)
             keypair.create(ctx=ctx)
@@ -94,8 +96,9 @@ class TestKeyPair(testtools.TestCase):
         with mock_ec2():
             path = os.path.expanduser(ctx.node.properties['private_key_path'])
             file = os.path.join(path,
-                                '{0}{1}'.format(ctx.node.properties['name'],
-                                                '.pem'))
+                                '{0}{1}'.format(
+                                    ctx.node.properties['resource_id'],
+                                    '.pem'))
             if os.path.exists(file):
                 os.remove(file)
             keypair.create(ctx=ctx)
@@ -114,7 +117,7 @@ class TestKeyPair(testtools.TestCase):
         with mock_ec2():
             ec2_client = connection.EC2ConnectionClient().client()
             kp = ec2_client.create_key_pair('test')
-            ctx.instance.runtime_properties['key_pair_name'] = kp.name
+            ctx.instance.runtime_properties['aws_resource_id'] = kp.name
             keypair.delete(ctx=ctx)
             self.assertEquals(None, ec2_client.get_key_pair(kp.name))
 
@@ -128,5 +131,5 @@ class TestKeyPair(testtools.TestCase):
         with mock_ec2():
             ec2_client = connection.EC2ConnectionClient().client()
             kp = ec2_client.create_key_pair('test')
-            ctx.instance.runtime_properties['key_pair_name'] = kp.name
+            ctx.instance.runtime_properties['aws_resource_id'] = kp.name
             keypair.creation_validation(ctx=ctx)

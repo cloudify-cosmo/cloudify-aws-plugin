@@ -83,4 +83,3 @@ class TestWorkflowKP(unittest.TestCase):
 
         kp = ec2_client.get_key_pair('test_name')
         self.assertEquals(None, kp)
-        os.remove(file)

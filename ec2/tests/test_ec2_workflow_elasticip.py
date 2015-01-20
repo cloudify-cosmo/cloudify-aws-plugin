@@ -53,7 +53,7 @@ class TestWorkflowElasticIP(testtools.TestCase):
 
         # extract single node instance
         instance = self.env.storage.get_node_instances()[0]
-        elasticip = instance.runtime_properties['elasticip']
+        elasticip = instance.runtime_properties['aws_resource_id']
 
         # assert runtime properties is properly set in node instance
         self.assertRegexpMatches(elasticip, IP_REGEX)
@@ -72,7 +72,7 @@ class TestWorkflowElasticIP(testtools.TestCase):
         self.env.execute('install', task_retries=0)
         # extract single node instance
         instance = self.env.storage.get_node_instances()[0]
-        elasticip = instance.runtime_properties['elasticip']
+        elasticip = instance.runtime_properties['aws_resource_id']
 
         # execute uninstall workflow
         self.env.execute('uninstall', task_retries=0)

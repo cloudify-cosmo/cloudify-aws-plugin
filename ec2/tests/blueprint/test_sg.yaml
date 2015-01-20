@@ -18,7 +18,7 @@ node_templates:
     test_sg:
       type: cloudify.aws.nodes.SecurityGroup
       properties:
-        name: { get_input: test_name }
+        resource_id: { get_input: test_name }
         description: { get_input: test_description }
         rules:
           - ip_protocol: tcp
@@ -29,7 +29,7 @@ node_templates:
     test_sg2:
       type: cloudify.aws.nodes.SecurityGroup
       properties:
-        name: another_test
+        resource_id: another_test
         description: another test descriptions here
         rules:
           - ip_protocol: tcp

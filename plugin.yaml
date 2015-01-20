@@ -3,114 +3,188 @@
 ##################################################################################
 
 plugins:
-  cloudify-aws-plugin:
+  aws:
     executor: central_deployment_agent
-    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/master.zip
+    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/master.zip # { tag }
 
 node_types:
   cloudify.aws.nodes.Instance:
     derived_from: cloudify.nodes.Compute
     properties:
-      attributes:
-        default: {}
-      image_id: {}
-      instance_type: {}
       use_external_resource:
+        description: >
+          Indicate whether the resource exists or if Cloudify should create the resource.
+        type: boolean
         default: false
-      resource_id:
+      resource_id: # figure out the name of a vm using boto
+        description: >
+          Either the name or ID of the resource in Cloudify. If this is an existing
+          resource, you should provide the name or the ID of the resource in Amazon AWS.
+        type: string
         default: ''
+      image_id:
+        description: >
+          The ID of the AMI image in your Amazon account.
+        type: string
+      instance_type:
+        description: >
+          The instance's size.
+        type: string
+      parameters:
+        description: >
+          The key value pair parameters allowed by Amazon API to the
+          ec2.connection.EC2Connection.run_instances command. It should be mentioned that
+          althought this field is listed as optional. A non-trivial use case requires
+          that both the key_name parameter and the security_groups parameter be specified. 
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
-          implementation: cloudify-aws-plugin.ec2.instance.run_instances
-          inputs: {}
+        create: aws.ec2.instance.run_instances
         start:
-          implementation: cloudify-aws-plugin.ec2.instance.start
-          inputs: {}
+          implementation: aws.ec2.instance.start
+          inputs:
+            instance_state:
+              description: >
+                The instance state that should be reached at the end of this operation.
+              type: integer
+              default: 16
+            retry_interval:
+              description: How many seconds between state checks.
+              type: integer
+              default: 20
         stop:
-          implementation: cloudify-aws-plugin.ec2.instance.stop
-          inputs: {}
+          implementation: aws.ec2.instance.stop
+          inputs:
+            instance_state:
+              description: >
+                The instance state that should be reached at the end of this operation.
+              type: integer
+              default: 80
+            retry_interval:
+              description: How many seconds between state checks.
+              type: integer
+              default: 20
         delete:
-          implementation: cloudify-aws-plugin.ec2.instance.terminate
-          inputs: {}
+          implementation: aws.ec2.instance.terminate
+          inputs:
+            instance_state:
+              description: >
+                The instance state (numeric code) that should be reached at the end
+                of this operation (terminated).
+              type: integer
+              default: 48
+            retry_interval:
+              description: How many seconds between state checks.
+              type: integer
+              default: 20
       cloudify.interfaces.validation:
         creation:
-          implementation: cloudify-aws-plugin.ec2.instance.creation_validation
-          inputs: {}
+          implementation: aws.ec2.instance.creation_validation
+          inputs:
+            instance_state:
+              description: >
+                The instance state that should be reached at the end of this operation.
+              type: integer
+              default: 16
+            retry_interval:
+              description: How many seconds between state checks.
+              type: integer
+              default: 20
 
   cloudify.aws.nodes.ElasticIP:
     derived_from: cloudify.nodes.VirtualIP
     properties:
-      elasticip:
-        default: {}
       use_external_resource:
+        description: >
+          Indicate whether the resource exists or if Cloudify should create the resource.
+        type: boolean
         default: false
       resource_id:
+        description: >
+          Either the name or ID of the resource in Cloudify. If this is an existing
+          resource, you should provide the name or the ID of the resource in Amazon AWS.
+        type: string
         default: ''
     interfaces:
       cloudify.interfaces.lifecycle:
-        create: cloudify-aws-plugin.ec2.elasticip.allocate
-        delete: cloudify-aws-plugin.ec2.elasticip.release
+        create: aws.ec2.elasticip.allocate
+        delete: aws.ec2.elasticip.release
       cloudify.interfaces.validation:
-        creation:
-          implementation: cloudify-aws-plugin.ec2.elasticip.creation_validation
-          inputs: {}
+        creation: aws.ec2.elasticip.creation_validation
 
   cloudify.aws.nodes.SecurityGroup:
     derived_from: cloudify.nodes.SecurityGroup
     properties:
-      name:
-        default: ''
-      description:
-        default: ''
       use_external_resource:
+        description: >
+          Indicate whether the resource exists or if Cloudify should create the resource.
+        type: boolean
         default: false
       resource_id:
+        description: >
+          Either the name or ID of the resource in Cloudify. If this is an existing
+          resource, you should provide the name or the ID of the resource in Amazon AWS.
+        type: string
         default: ''
-      rules: {}
+      description:
+        description: >
+          The description field that is required for every security group that you create
+          in Amazon.
+        type: string
+        default: ''
+      rules:
+        default: []
+        description: >
+          A list of rules, which are each a dictionary of key value pairs with the required
+          keys: ip_protocol (string), from_port (integer), to_port (integer), and 
+          cidr_ip (string).
     interfaces:
       cloudify.interfaces.lifecycle:
-        create: cloudify-aws-plugin.ec2.securitygroup.create
-        delete: cloudify-aws-plugin.ec2.securitygroup.delete
+        create: aws.ec2.securitygroup.create
+        delete: aws.ec2.securitygroup.delete
       cloudify.interfaces.validation:
-        creation: cloudify-aws-plugin.ec2.securitygroup.creation_validation
+        creation: aws.ec2.securitygroup.creation_validation
+      cloudify.interfaces.authorization:
+        authorize: aws.ec2.securitygroup.authorize
+        revoke: aws.ec2.securitygroup.revoke
 
   cloudify.aws.nodes.KeyPair:
     derived_from: cloudify.nodes.Root
     properties:
-      name:
-        default: ''
       use_external_resource:
+        description: >
+          Indicate whether the resource exists or if Cloudify should create the resource.
+        type: boolean
         default: false
       resource_id:
+        description: >
+          Either the name or ID of the resource in Cloudify. If this is an existing
+          resource, you should provide the name or the ID of the resource in Amazon AWS.
+        type: string
         default: ''
       private_key_path:
+        description: >
+          The path where the key should be saved on the machine. If this is a bootstrap
+          process, this refers to the local computer. If this will run on the manager,
+          this will be saved on the manager.
+        type: string
         default: ''
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
-          implementation: cloudify-aws-plugin.ec2.keypair.create
-        delete:
-          implementation: cloudify-aws-plugin.ec2.keypair.delete
+        create: aws.ec2.keypair.create
+        delete: aws.ec2.keypair.delete
       cloudify.interfaces.validation:
-        creation:
-          implementation: cloudify-aws-plugin.ec2.keypair.creation_validation
+        creation: aws.ec2.keypair.creation_validation
 
 relationships:
-  cloudify.aws.relationships.instance_connected_to_security_group:
-    derived_from: cloudify.relationships.contained_in
-    source_interfaces:
-      cloudify.interfaces.relationship_lifecycle:
-        establish:
-          implementation: cloudify-aws-plugin.ec2.securitygroup.authorize_ip
-        unlink:
-          implementation: cloudify-aws-plugin.ec2.securitygroup.deauthorize_ip
-
   cloudify.aws.relationships.instance_connected_to_elastic_ip:
     derived_from: cloudify.relationships.connected_to
     source_interfaces:
       cloudify.interfaces.relationship_lifecycle:
-        establish: cloudify-aws-plugin.ec2.elasticip.associate
-        unlink: cloudify-aws-plugin.ec2.elasticip.disassociate
+        establish: aws.ec2.elasticip.associate
+        unlink: aws.ec2.elasticip.disassociate
 
+  cloudify.aws.relationships.instance_connected_to_keypair:
+    derived_from: cloudify.relationships.connected_to
 
+  cloudify.aws.relationships.instance_connected_to_security_group:
+    derived_from: cloudify.relationships.connected_to

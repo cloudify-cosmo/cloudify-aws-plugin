@@ -40,7 +40,7 @@ class TestInstance(testtools.TestCase):
         test_properties = {
             'image_id': TEST_AMI_IMAGE_ID,
             'instance_type': TEST_INSTANCE_TYPE,
-            'attributes': {
+            'parameters': {
                 'security_groups': ['sg-73cd3f1e'],
                 'instance_initiated_shutdown_behavior': 'stop'
             }
@@ -61,7 +61,7 @@ class TestInstance(testtools.TestCase):
 
         with mock_ec2():
             instance.run_instances(ctx=ctx)
-            self.assertIn('instance_id',
+            self.assertIn('aws_resource_id',
                           ctx.instance.runtime_properties.keys())
 
     def test_stop(self):
@@ -76,8 +76,8 @@ class TestInstance(testtools.TestCase):
             reservation = ec2_client.run_instances(
                 TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
             id = reservation.instances[0].id
-            ctx.instance.runtime_properties['instance_id'] = id
-            instance.stop(ctx=ctx)
+            ctx.instance.runtime_properties['aws_resource_id'] = id
+            instance.stop(80, 1, ctx=ctx)
             reservations = ec2_client.get_all_reservations(id)
             instance_object = reservations[0].instances[0]
             state = instance_object.update()
@@ -94,9 +94,9 @@ class TestInstance(testtools.TestCase):
             reservation = ec2_client.run_instances(
                 TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
             id = reservation.instances[0].id
-            ctx.instance.runtime_properties['instance_id'] = id
+            ctx.instance.runtime_properties['aws_resource_id'] = id
             ec2_client.stop_instances(id)
-            instance.start(ctx=ctx)
+            instance.start(16, 1, ctx=ctx)
             reservations = ec2_client.get_all_reservations(id)
             instance_object = reservations[0].instances[0]
             state = instance_object.update()
@@ -114,8 +114,8 @@ class TestInstance(testtools.TestCase):
             reservation = ec2_client.run_instances(
                 TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
             id = reservation.instances[0].id
-            ctx.instance.runtime_properties['instance_id'] = id
-            instance.terminate(ctx=ctx)
+            ctx.instance.runtime_properties['aws_resource_id'] = id
+            instance.terminate(48, 1, ctx=ctx)
             reservations = ec2_client.get_all_reservations(id)
             instance_object = reservations[0].instances[0]
             state = instance_object.update()
@@ -129,9 +129,9 @@ class TestInstance(testtools.TestCase):
         ctx = self.mock_ctx('test_bad_instance_id_start')
 
         with mock_ec2():
-            ctx.instance.runtime_properties['instance_id'] = 'bad_id'
+            ctx.instance.runtime_properties['aws_resource_id'] = 'bad_id'
             ex = self.assertRaises(NonRecoverableError,
-                                   instance.start, ctx=ctx)
+                                   instance.start, 16, 1, ctx=ctx)
             self.assertIn('InvalidInstanceID.NotFound', ex.message)
 
     def test_bad_id_stop(self):
@@ -142,9 +142,9 @@ class TestInstance(testtools.TestCase):
         ctx = self.mock_ctx('test_bad_instance_id_stop')
 
         with mock_ec2():
-            ctx.instance.runtime_properties['instance_id'] = 'bad_id'
+            ctx.instance.runtime_properties['aws_resource_id'] = 'bad_id'
             ex = self.assertRaises(NonRecoverableError,
-                                   instance.stop, ctx=ctx)
+                                   instance.stop, 80, 1, ctx=ctx)
             self.assertIn('InvalidInstanceID.NotFound', ex.message)
 
     def test_bad_id_terminate(self):
@@ -155,9 +155,9 @@ class TestInstance(testtools.TestCase):
         ctx = self.mock_ctx('test_bad_instance_id_terminate')
 
         with mock_ec2():
-            ctx.instance.runtime_properties['instance_id'] = 'bad_id'
+            ctx.instance.runtime_properties['aws_resource_id'] = 'bad_id'
             ex = self.assertRaises(NonRecoverableError,
-                                   instance.terminate, ctx=ctx)
+                                   instance.terminate, 48, 1, ctx=ctx)
             self.assertIn('InvalidInstanceID.NotFound', ex.message)
 
     def test_bad_subnet_id_create(self):
@@ -169,7 +169,7 @@ class TestInstance(testtools.TestCase):
         ctx = self.mock_ctx('test_bad_subnet_id_create')
 
         with mock_ec2():
-            ctx.node.properties['attributes']['subnet_id'] = 'test'
+            ctx.node.properties['parameters']['subnet_id'] = 'test'
             ex = self.assertRaises(NonRecoverableError,
                                    instance.run_instances, ctx=ctx)
             self.assertIn('InvalidSubnetID.NotFound', ex.message)

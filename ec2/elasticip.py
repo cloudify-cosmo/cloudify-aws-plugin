@@ -40,7 +40,8 @@ def allocate(**kwargs):
 
     ctx.logger.info('Elastic IP allocated: {0}'.format(
         address_object.public_ip))
-    ctx.instance.runtime_properties['elasticip'] = address_object.public_ip
+    ctx.instance.runtime_properties['aws_resource_id'] = \
+        address_object.public_ip
 
 
 @operation
@@ -50,7 +51,7 @@ def release(**kwargs):
     ec2_client = connection.EC2ConnectionClient().client()
     ctx.logger.info('Releasing an Elastic IP.')
 
-    elasticip = ctx.instance.runtime_properties['elasticip']
+    elasticip = ctx.instance.runtime_properties['aws_resource_id']
 
     try:
         ec2_client.release_address(public_ip=elasticip)
@@ -60,6 +61,7 @@ def release(**kwargs):
                                   .format(e))
 
     ctx.logger.info('Released Elastic IP {0}.'.format(elasticip))
+    ctx.instance.runtime_properties.pop('aws_resource_id', None)
 
 
 @operation
@@ -68,8 +70,8 @@ def associate(**kwargs):
     """
     ec2_client = connection.EC2ConnectionClient().client()
 
-    elasticip = ctx.target.node.properties['elasticip']
-    instance_id = ctx.source.instance.runtime_properties['instance_id']
+    instance_id = ctx.source.instance.runtime_properties['aws_resource_id']
+    elasticip = ctx.target.node.properties['aws_resource_id']
     ctx.logger.info('Associating an Elastic IP {0} '
                     'with an EC2 Instance {1}.'.format(elasticip, instance_id))
 
@@ -90,7 +92,7 @@ def disassociate(**kwargs):
     """ Disassociates an Elastic IP from an EC2 Instance.
     """
     ec2_client = connection.EC2ConnectionClient().client()
-    elasticip = ctx.target.node.properties['elasticip']
+    elasticip = ctx.target.node.properties['aws_resource_id']
     ctx.logger.info('Disassociating Elastic IP {0}'.format(elasticip))
 
     try:
@@ -108,7 +110,7 @@ def disassociate(**kwargs):
 def creation_validation(**kwargs):
     ec2_client = connection.EC2ConnectionClient().client()
     ctx.logger.info('Validating Elastic IP.')
-    elasticip = ctx.instance.runtime_properties['elasticip']
+    elasticip = ctx.instance.runtime_properties['aws_resource_id']
 
     try:
         ec2_client.get_all_addresses(elasticip)

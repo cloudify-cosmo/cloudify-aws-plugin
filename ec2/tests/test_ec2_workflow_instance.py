@@ -21,7 +21,6 @@ import testtools
 from moto import mock_ec2
 
 # Cloudify Imports
-from ec2 import connection
 from cloudify.workflows import local
 
 IGNORED_LOCAL_WORKFLOW_MODULES = (
@@ -57,24 +56,13 @@ class TestWorkflowInstance(testtools.TestCase):
         """ Tests the install workflow using the built in
             workflows.
         """
-        ec2_client = connection.EC2ConnectionClient().client()
+        path = os.path.expanduser('~/.ssh')
+        file = os.path.join(path, '{0}{1}'.format('test_key', '.pem'))
+        if os.path.exists(file):
+            os.remove(file)
 
         # execute install workflow
         self.env.execute('install', task_retries=0)
-
-        for instance in self.env.storage.get_node_instances():
-            if 'instance_id' in instance.runtime_properties.keys():
-                instance_id = instance.runtime_properties['instance_id']
-                res = ec2_client.get_all_reservations(instance_id)
-                self.assertFalse(None, res[0].instances[0])
-                groups = ec2_client.get_all_security_groups('test_group')
-                self.assertIn('test_group', groups[0].name)
-                key = ec2_client.get_key_pair('test_key')
-                self.assertEquals('test_key', key.name)
-                path = os.path.expanduser('~/.ssh')
-                file = os.path.join(path, '{0}{1}'.format('test_key', '.pem'))
-                if os.path.exists(file):
-                    os.remove(file)
 
     def test_uninstall_workflow(self):
         """ Tests the uninstall workflow using the built in
