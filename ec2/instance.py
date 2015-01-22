@@ -32,7 +32,18 @@ RUN_INSTANCES_UNSUPPORTED = {
 
 @operation
 def run_instances(**_):
-    """ Creates an EC2 Classic Instance. """
+    """ Creates an EC2 Classic Instance.
+        Requires:
+            ctx.node.properties['image_id']
+            ctx.node.properties['instance_type']
+        Sets:
+            ctx.instance.runtime_properties['aws_resource_id']
+    """
+
+    if ctx.node.properties.get('use_external_resource', False) is False:
+        ctx.instance.runtime_properties['aws_resource_id'] = \
+            utils.get_instance_from_id(ctx=ctx)
+        return
 
     ec2_client = connection.EC2ConnectionClient().client()
 
@@ -63,19 +74,24 @@ def run_instances(**_):
 
 
 @operation
-def start(instance_state, retry_interval, **_):
-    """ Starts an existing EC2 instance.
-        If already started, this does nothing.
-        You can run start on a started instance all you like.
-        Nothing will happen.
+def start(retry_interval, **_):
+    """ Starts an EC2 Classic Instance.
+        If start command has already run, this does nothing.
+        Requires:
+            ctx.instance.runtime_properties['aws_resource_id']
+        Sets:
+            ctx.instance.runtime_properties['ip']
+            ctx.instance.runtime_properties['private_dns_name']
+            ctx.instance.runtime_properties['public_dns_name']
+            ctx.instance.runtime_properties['public_ip_address']
     """
     ec2_client = connection.EC2ConnectionClient().client()
 
     instance_id = ctx.instance.runtime_properties['aws_resource_id']
 
-    if utils.get_instance_state(instance_id, ctx=ctx) == instance_state:
+    if utils.get_instance_state(ctx=ctx) == 16:
         ctx.logger.info('Instance {0} is running.'.format(instance_id))
-        return True
+        return
 
     ctx.logger.info('Starting EC2 Instance.')
     ctx.logger.debug('Attempting to start instance: {0}.)'.format(instance_id))
@@ -87,25 +103,29 @@ def start(instance_state, retry_interval, **_):
         raise NonRecoverableError('Error. Failed to start EC2 Instance: '
                                   'API returned: {0}.'.format(str(e)))
 
-    if utils.get_instance_state(instance_id, ctx=ctx) == instance_state:
+    if utils.get_instance_state(ctx=ctx) == 16:
         ctx.logger.info('Instance {0} is running.'.format(instance_id))
         ctx.instance.runtime_properties['private_dns_name'] = \
             utils.get_private_dns_name(instance_id, 5, ctx=ctx)
         ctx.instance.runtime_properties['public_dns_name'] = \
             utils.get_public_dns_name(instance_id, 5, ctx=ctx)
-        ctx.instance.runtime_properties['private_ip_address'] = \
+        ctx.instance.runtime_properties['ip'] = \
             utils.get_private_ip_address(instance_id, 5, ctx=ctx)
         ctx.instance.runtime_properties['public_ip_address'] = \
             utils.get_public_ip_address(instance_id, 5, ctx=ctx)
+        # ctx.instance.runtime_properties['networks']
     else:
-        raise RecoverableError('Waiting for server to be running. '
-                               'Retrying...', retry_after=retry_interval)
+        return ctx.operation.retry(message='Waiting for server to be running'
+                                           ' Retrying...',
+                                           retry_after=retry_interval)
 
 
 @operation
-def stop(instance_state, retry_interval, **_):
+def stop(retry_interval, **_):
     """ Stops an existing EC2 instance.
         If already stopped, this does nothing.
+        Requires:
+            ctx.instance.runtime_properties['aws_resource_id']
     """
     ec2_client = connection.EC2ConnectionClient().client()
 
@@ -121,16 +141,23 @@ def stop(instance_state, retry_interval, **_):
             boto.exception.BotoServerError) as e:
         raise NonRecoverableError('Error. Failed to stop EC2 Instance: '
                                   'API returned: {0}.'.format(str(e)))
+    finally:
+        ctx.instance.runtime_properties.pop('private_dns_name')
+        ctx.instance.runtime_properties.pop('public_dns_name')
+        ctx.instance.runtime_properties.pop('public_ip_address')
+        ctx.instance.runtime_properties.pop('ip')
 
-    if utils.get_instance_state(instance_id, ctx=ctx) == instance_state:
+    # get the timeout code validate state
+    if utils.get_instance_state(ctx=ctx) == 80:
         ctx.logger.info('Instance {0} is stopped.'.format(instance_id))
     else:
-        raise RecoverableError('Waiting for server to be stopped. '
-                               'Retrying...', retry_after=retry_interval)
+        return ctx.operation.retry(message='Waiting for server to be running'
+                                           ' Retrying...',
+                                           retry_after=retry_interval)
 
 
 @operation
-def terminate(instance_state, retry_interval, **_):
+def terminate(retry_interval, **_):
     """ Terminates an existing EC2 instance.
         If already terminated, this does nothing.
     """
@@ -149,23 +176,25 @@ def terminate(instance_state, retry_interval, **_):
         raise NonRecoverableError('Error. Failed to terminate '
                                   'EC2 Instance: API returned: {0}.'
                                   .format(str(e)))
-    if utils.get_instance_state(instance_id, ctx=ctx) == instance_state:
-        ctx.logger.info('Instance {0} is terminated.'.format(instance_id))
+    finally:
+        ctx.instance.runtime_properties.pop('private_dns_name')
+        ctx.instance.runtime_properties.pop('public_dns_name')
+        ctx.instance.runtime_properties.pop('public_ip_address')
+        ctx.instance.runtime_properties.pop('ip')
         ctx.instance.runtime_properties.pop('aws_resource_id', None)
+
+    # get the timeout code validate state
+    if utils.get_instance_state(ctx=ctx) == 48:
+        ctx.logger.info('Instance {0} is terminated.'.format(instance_id))
     else:
         raise RecoverableError('Waiting for server to be terminated. '
                                'Retrying...', retry_after=retry_interval)
 
 
 @operation
-def creation_validation(instance_state, retry_interval, **_):
-    instance_id = ctx.instance.runtime_properties['aws_resource_id']
-
-    if utils.get_instance_state(instance_id, ctx=ctx) == instance_state:
-        ctx.logger.info('Instance {0} is running.'.format(instance_id))
-    else:
-        raise RecoverableError('Waiting for server to be terminated. '
-                               'Retrying...', retry_after=retry_interval)
+def creation_validation(**_):
+    """ This checks that all user supplied info is valid """
+    pass
 
 
 def build_arg_dict(user_supplied, unsupported):

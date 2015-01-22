@@ -16,10 +16,10 @@ node_types:
           Indicate whether the resource exists or if Cloudify should create the resource.
         type: boolean
         default: false
-      resource_id: # figure out the name of a vm using boto
+      resource_id:
         description: >
-          Either the name or ID of the resource in Cloudify. If this is an existing
-          resource, you should provide the name or the ID of the resource in Amazon AWS.
+          If this is an existing resource, you should provide the ID of the resource in Amazon AWS.
+          If this a new
         type: string
         default: ''
       image_id:
@@ -34,7 +34,7 @@ node_types:
         description: >
           The key value pair parameters allowed by Amazon API to the
           ec2.connection.EC2Connection.run_instances command. It should be mentioned that
-          althought this field is listed as optional. A non-trivial use case requires
+          although this field is listed as optional. A non-trivial use case requires
           that both the key_name parameter and the security_groups parameter be specified. 
     interfaces:
       cloudify.interfaces.lifecycle:
@@ -42,11 +42,6 @@ node_types:
         start:
           implementation: aws.ec2.instance.start
           inputs:
-            instance_state:
-              description: >
-                The instance state that should be reached at the end of this operation.
-              type: integer
-              default: 16
             retry_interval:
               description: How many seconds between state checks.
               type: integer
@@ -54,11 +49,6 @@ node_types:
         stop:
           implementation: aws.ec2.instance.stop
           inputs:
-            instance_state:
-              description: >
-                The instance state that should be reached at the end of this operation.
-              type: integer
-              default: 80
             retry_interval:
               description: How many seconds between state checks.
               type: integer
@@ -66,12 +56,6 @@ node_types:
         delete:
           implementation: aws.ec2.instance.terminate
           inputs:
-            instance_state:
-              description: >
-                The instance state (numeric code) that should be reached at the end
-                of this operation (terminated).
-              type: integer
-              default: 48
             retry_interval:
               description: How many seconds between state checks.
               type: integer
@@ -79,16 +63,6 @@ node_types:
       cloudify.interfaces.validation:
         creation:
           implementation: aws.ec2.instance.creation_validation
-          inputs:
-            instance_state:
-              description: >
-                The instance state that should be reached at the end of this operation.
-              type: integer
-              default: 16
-            retry_interval:
-              description: How many seconds between state checks.
-              type: integer
-              default: 20
 
   cloudify.aws.nodes.ElasticIP:
     derived_from: cloudify.nodes.VirtualIP
@@ -105,9 +79,9 @@ node_types:
         type: string
         default: ''
     interfaces:
-      cloudify.interfaces.lifecycle:
-        create: aws.ec2.elasticip.allocate
-        delete: aws.ec2.elasticip.release
+      cloudify.interfaces.relationship_lifecycle:
+        establish: aws.ec2.elasticip.allocate
+        unlink: aws.ec2.elasticip.release
       cloudify.interfaces.validation:
         creation: aws.ec2.elasticip.creation_validation
 
@@ -143,9 +117,8 @@ node_types:
         delete: aws.ec2.securitygroup.delete
       cloudify.interfaces.validation:
         creation: aws.ec2.securitygroup.creation_validation
-      cloudify.interfaces.authorization:
-        authorize: aws.ec2.securitygroup.authorize
-        revoke: aws.ec2.securitygroup.revoke
+      cloudify.interfaces.securitygroup:
+        add_rule: aws.ec2.securitygroup.authorize
 
   cloudify.aws.nodes.KeyPair:
     derived_from: cloudify.nodes.Root

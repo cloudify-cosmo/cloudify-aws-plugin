@@ -51,6 +51,7 @@ class TestWorkflowInstance(testtools.TestCase):
             blueprint_path, name=self._testMethodName, inputs=inputs,
             ignored_modules=IGNORED_LOCAL_WORKFLOW_MODULES)
 
+    @testtools.skip
     @mock_ec2
     def test_install_workflow(self):
         """ Tests the install workflow using the built in
@@ -64,6 +65,7 @@ class TestWorkflowInstance(testtools.TestCase):
         # execute install workflow
         self.env.execute('install', task_retries=0)
 
+    @testtools.skip
     def test_uninstall_workflow(self):
         """ Tests the uninstall workflow using the built in
             workflows.

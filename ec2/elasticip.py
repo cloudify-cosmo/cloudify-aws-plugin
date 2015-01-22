@@ -22,6 +22,7 @@ from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
 from cloudify.decorators import operation
 from ec2 import connection
+from ec2 import utils
 
 
 @operation
@@ -31,12 +32,17 @@ def allocate(**kwargs):
     ec2_client = connection.EC2ConnectionClient().client()
     ctx.logger.info('Allocating Elastic IP.')
 
+    if ctx.node.properties.get('use_external_resource', False) is False:
+        ctx.instance.runtime_properties['aws_resource_id'] = \
+            utils.get_address_by_id(ctx.node.properties['resource_id'],
+                                    ctx=ctx)
+        return
+
     try:
         address_object = ec2_client.allocate_address()
     except (EC2ResponseError, BotoServerError) as e:
-        raise NonRecoverableError('Error. Failed to '
-                                  'provision Elastic IP. Error: {0}.'
-                                  .format(e))
+        raise NonRecoverableError('Failed to provision Elastic IP. Error: {0}.'
+                                  .format(str(e)))
 
     ctx.logger.info('Elastic IP allocated: {0}'.format(
         address_object.public_ip))
@@ -59,9 +65,10 @@ def release(**kwargs):
         raise NonRecoverableError('Error. Failed to '
                                   'delete Elastic IP. Error: {0}.'
                                   .format(e))
+    finally:
+        ctx.instance.runtime_properties.pop('aws_resource_id', None)
 
     ctx.logger.info('Released Elastic IP {0}.'.format(elasticip))
-    ctx.instance.runtime_properties.pop('aws_resource_id', None)
 
 
 @operation
@@ -71,7 +78,7 @@ def associate(**kwargs):
     ec2_client = connection.EC2ConnectionClient().client()
 
     instance_id = ctx.source.instance.runtime_properties['aws_resource_id']
-    elasticip = ctx.target.node.properties['aws_resource_id']
+    elasticip = ctx.target.instance.runtime_properties['aws_resource_id']
     ctx.logger.info('Associating an Elastic IP {0} '
                     'with an EC2 Instance {1}.'.format(elasticip, instance_id))
 
@@ -81,10 +88,11 @@ def associate(**kwargs):
     except (EC2ResponseError, BotoServerError) as e:
         raise NonRecoverableError('Error. Failed to '
                                   'attach Elastic IP. Error: {0}.'
-                                  .format(e))
+                                  .format(str(e)))
 
     ctx.logger.info('Associated Elastic IP {0} with instance {1}.'.format(
         elasticip, instance_id))
+    ctx.source.instance.runtime_properties['public_ip_address'] = elasticip
 
 
 @operation
@@ -92,7 +100,7 @@ def disassociate(**kwargs):
     """ Disassociates an Elastic IP from an EC2 Instance.
     """
     ec2_client = connection.EC2ConnectionClient().client()
-    elasticip = ctx.target.node.properties['aws_resource_id']
+    elasticip = ctx.target.instance.runtime_properties['aws_resource_id']
     ctx.logger.info('Disassociating Elastic IP {0}'.format(elasticip))
 
     try:
@@ -101,6 +109,8 @@ def disassociate(**kwargs):
         raise NonRecoverableError('Error. Failed to detach '
                                   'Elastic IP, returned: {0}.'
                                   .format(e))
+    finally:
+        ctx.source.instance.runtime_properties.pop('public_ip_address')
 
     ctx.logger.info('Disassociated Elastic IP {0}.'.format(
         elasticip))

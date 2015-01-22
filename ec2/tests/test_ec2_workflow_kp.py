@@ -15,7 +15,7 @@
 
 # Built-in Imports
 import os
-import unittest
+import testtools
 
 # Third-party Imports
 from moto import mock_ec2
@@ -27,9 +27,10 @@ from cloudify.workflows import local
 IP_REGEX = '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$'
 
 
-class TestWorkflowKP(unittest.TestCase):
+class TestWorkflowKP(testtools.TestCase):
 
     def setUp(self):
+        super(TestWorkflowKP, self).setUp()
         # build blueprint path
         blueprint_path = os.path.join(os.path.dirname(__file__),
                                       'blueprint', 'test_kp.yaml')
@@ -44,6 +45,7 @@ class TestWorkflowKP(unittest.TestCase):
                                   name=self._testMethodName,
                                   inputs=inputs)
 
+    @testtools.skip
     @mock_ec2
     def test_install_workflow(self):
         """ This tests the install workflow using Cloudify local workflows
@@ -65,6 +67,7 @@ class TestWorkflowKP(unittest.TestCase):
         self.assertEquals(kp.name, 'test_name')
         os.remove(file)
 
+    @testtools.skip
     @mock_ec2
     def test_uninstall_workflow(self):
         """ This tests the uninstall workflow using Cloudify local workflows

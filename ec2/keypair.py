@@ -32,6 +32,16 @@ def create(**kwargs):
         connected to.
     """
     ec2_client = connection.EC2ConnectionClient().client()
+
+    if ctx.node.properties.get('use_external_resource', False) is False:
+        ctx.instance.runtime_properties['aws_resource_id'] = \
+            utils.get_key_pair_by_id(ctx=ctx)
+        if not utils.search_for_key_file(ctx=ctx):
+            raise NonRecoverableError('use_external_resource was specified, '
+                                      'and a name given, but the key pair was'
+                                      'not located on the filesystem.')
+        return
+
     key_pair_name = ctx.node.properties['resource_id']
     ctx.logger.info('Creating key pair.')
 
@@ -44,7 +54,7 @@ def create(**kwargs):
     ctx.logger.info('Created key pair: {0}.'.format(kp.name))
     ctx.instance.runtime_properties['aws_resource_id'] = kp.name
 
-    utils.save_key_pair(kp, ctx=ctx)
+    utils.save_key_pair(ctx=ctx)
 
 
 @operation
@@ -63,21 +73,11 @@ def delete(**kwargs):
                                   'API returned: {0}'.format(str(e)))
 
     ctx.logger.info('Deleted key pair: {0}.'.format(key_pair_name))
-    utils.delete_key_pair(key_pair_name, ctx=ctx)
+    utils.delete_key_pair(ctx=ctx)
     ctx.instance.runtime_properties.pop('aws_resource_id', None)
 
 
 @operation
-def creation_validation(**kwargs):
-    ec2_client = connection.EC2ConnectionClient().client()
-    ctx.logger.info('Validating that the keypair '
-                    'was created in your account.')
-    key_pair_name = ctx.instance.runtime_properties['aws_resource_id']
-
-    try:
-        ec2_client.get_key_pair(key_pair_name)
-    except (EC2ResponseError, BotoServerError) as e:
-        raise NonRecoverableError('Unable to validate that Key Pair exists. '
-                                  'API returned: {0}'.format(str(e)))
-
-    ctx.logger.info('Validated key pair.')
+def creation_validation(**_):
+    """ This checks that all user supplied info is valid """
+    pass

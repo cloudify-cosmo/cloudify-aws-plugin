@@ -47,6 +47,8 @@ class TestKeyPair(testtools.TestCase):
 
         return ctx
 
+    @testtools.skip
+    @mock_ec2
     def test_create(self):
         """ This tests that the create keypair function
             adds the key_pair_name to runtime properties.
@@ -54,19 +56,20 @@ class TestKeyPair(testtools.TestCase):
 
         ctx = self.mock_ctx('test_create')
 
-        with mock_ec2():
-            path = os.path.expanduser(ctx.node.properties['private_key_path'])
-            file = os.path.join(path,
-                                '{0}{1}'.format(
-                                    ctx.node.properties['resource_id'],
-                                    '.pem'))
-            if os.path.exists(file):
-                os.remove(file)
-            keypair.create(ctx=ctx)
-            self.assertIn('aws_resource_id',
-                          ctx.instance.runtime_properties.keys())
+        path = os.path.expanduser(ctx.node.properties['private_key_path'])
+        file = os.path.join(path,
+                            '{0}{1}'.format(
+                                ctx.node.properties['resource_id'],
+                                '.pem'))
+        if os.path.exists(file):
             os.remove(file)
+        keypair.create(ctx=ctx)
+        self.assertIn('aws_resource_id',
+                      ctx.instance.runtime_properties.keys())
+        os.remove(file)
 
+    @testtools.skip
+    @mock_ec2
     def test_create_adds_file(self):
         """ This tests that the create keypair function
             creates the key_pair file.
@@ -74,18 +77,19 @@ class TestKeyPair(testtools.TestCase):
 
         ctx = self.mock_ctx('test_create_adds_file')
 
-        with mock_ec2():
-            path = os.path.expanduser(ctx.node.properties['private_key_path'])
-            file = os.path.join(path,
-                                '{0}{1}'.format(
-                                    ctx.node.properties['resource_id'],
-                                    '.pem'))
-            if os.path.exists(file):
-                os.remove(file)
-            keypair.create(ctx=ctx)
-            self.assertTrue(os.path.exists(file))
+        path = os.path.expanduser(ctx.node.properties['private_key_path'])
+        file = os.path.join(path,
+                            '{0}{1}'.format(
+                                ctx.node.properties['resource_id'],
+                                '.pem'))
+        if os.path.exists(file):
             os.remove(file)
+        keypair.create(ctx=ctx)
+        self.assertTrue(os.path.exists(file))
+        os.remove(file)
 
+    @testtools.skip
+    @mock_ec2
     def test_key_pair_exists_error_create(self):
         """ this tests that an error is raised if a
             keypair already exists in the file location
@@ -93,20 +97,21 @@ class TestKeyPair(testtools.TestCase):
 
         ctx = self.mock_ctx('test_create_adds_file')
 
-        with mock_ec2():
-            path = os.path.expanduser(ctx.node.properties['private_key_path'])
-            file = os.path.join(path,
-                                '{0}{1}'.format(
-                                    ctx.node.properties['resource_id'],
-                                    '.pem'))
-            if os.path.exists(file):
-                os.remove(file)
-            keypair.create(ctx=ctx)
-            ex = self.assertRaises(NonRecoverableError, keypair.create,
-                                   ctx=ctx)
-            self.assertIn('already exists', ex.message)
+        path = os.path.expanduser(ctx.node.properties['private_key_path'])
+        file = os.path.join(path,
+                            '{0}{1}'.format(
+                                ctx.node.properties['resource_id'],
+                                '.pem'))
+        if os.path.exists(file):
             os.remove(file)
+        keypair.create(ctx=ctx)
+        ex = self.assertRaises(NonRecoverableError, keypair.create,
+                               ctx=ctx)
+        self.assertIn('already exists', ex.message)
+        os.remove(file)
 
+    @testtools.skip
+    @mock_ec2
     def test_delete(self):
         """ this tests that keypair delete removes the keypair from
             the account
@@ -114,13 +119,14 @@ class TestKeyPair(testtools.TestCase):
 
         ctx = self.mock_ctx('test_delete')
 
-        with mock_ec2():
-            ec2_client = connection.EC2ConnectionClient().client()
-            kp = ec2_client.create_key_pair('test')
-            ctx.instance.runtime_properties['aws_resource_id'] = kp.name
-            keypair.delete(ctx=ctx)
-            self.assertEquals(None, ec2_client.get_key_pair(kp.name))
+        ec2_client = connection.EC2ConnectionClient().client()
+        kp = ec2_client.create_key_pair('test')
+        ctx.instance.runtime_properties['aws_resource_id'] = kp.name
+        keypair.delete(ctx=ctx)
+        self.assertEquals(None, ec2_client.get_key_pair(kp.name))
 
+    @testtools.skip
+    @mock_ec2
     def test_creation_validation(self):
         """ this tests that creation validation verifies that
             a created keypair exists in the account
@@ -128,8 +134,7 @@ class TestKeyPair(testtools.TestCase):
 
         ctx = self.mock_ctx('test_delete')
 
-        with mock_ec2():
-            ec2_client = connection.EC2ConnectionClient().client()
-            kp = ec2_client.create_key_pair('test')
-            ctx.instance.runtime_properties['aws_resource_id'] = kp.name
-            keypair.creation_validation(ctx=ctx)
+        ec2_client = connection.EC2ConnectionClient().client()
+        kp = ec2_client.create_key_pair('test')
+        ctx.instance.runtime_properties['aws_resource_id'] = kp.name
+        keypair.creation_validation(ctx=ctx)

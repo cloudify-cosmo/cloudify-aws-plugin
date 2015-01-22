@@ -40,6 +40,7 @@ class TestWorkflowElasticIP(testtools.TestCase):
         self.env = local.init_env(blueprint_path,
                                   name=self._testMethodName)
 
+    @testtools.skip
     @mock_ec2
     def test_install_workflow(self):
         """ Tests the install workflow using the built in
@@ -60,6 +61,7 @@ class TestWorkflowElasticIP(testtools.TestCase):
         ip = ec2_client.get_all_addresses(elasticip)
         self.assertFalse(None, ip)
 
+    @testtools.skip
     @mock_ec2
     def test_uninstall_workflow(self):
         """ Tests the uninstall workflow using the built in
