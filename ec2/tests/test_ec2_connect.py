@@ -29,7 +29,6 @@ TEST_INSTANCE_TYPE = 't1.micro'
 
 class TestConnection(testtools.TestCase):
 
-    @testtools.skip
     @mock_ec2
     def test_connect(self):
         """ this tests that a the correct region endpoint

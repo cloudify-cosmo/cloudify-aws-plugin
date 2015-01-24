@@ -47,7 +47,6 @@ class TestKeyPair(testtools.TestCase):
 
         return ctx
 
-    @testtools.skip
     @mock_ec2
     def test_create(self):
         """ This tests that the create keypair function
@@ -68,7 +67,6 @@ class TestKeyPair(testtools.TestCase):
                       ctx.instance.runtime_properties.keys())
         os.remove(file)
 
-    @testtools.skip
     @mock_ec2
     def test_create_adds_file(self):
         """ This tests that the create keypair function
@@ -88,7 +86,6 @@ class TestKeyPair(testtools.TestCase):
         self.assertTrue(os.path.exists(file))
         os.remove(file)
 
-    @testtools.skip
     @mock_ec2
     def test_key_pair_exists_error_create(self):
         """ this tests that an error is raised if a
@@ -110,7 +107,6 @@ class TestKeyPair(testtools.TestCase):
         self.assertIn('already exists', ex.message)
         os.remove(file)
 
-    @testtools.skip
     @mock_ec2
     def test_delete(self):
         """ this tests that keypair delete removes the keypair from
@@ -124,17 +120,3 @@ class TestKeyPair(testtools.TestCase):
         ctx.instance.runtime_properties['aws_resource_id'] = kp.name
         keypair.delete(ctx=ctx)
         self.assertEquals(None, ec2_client.get_key_pair(kp.name))
-
-    @testtools.skip
-    @mock_ec2
-    def test_creation_validation(self):
-        """ this tests that creation validation verifies that
-            a created keypair exists in the account
-        """
-
-        ctx = self.mock_ctx('test_delete')
-
-        ec2_client = connection.EC2ConnectionClient().client()
-        kp = ec2_client.create_key_pair('test')
-        ctx.instance.runtime_properties['aws_resource_id'] = kp.name
-        keypair.creation_validation(ctx=ctx)

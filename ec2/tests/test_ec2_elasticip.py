@@ -82,7 +82,6 @@ class TestElasticIP(testtools.TestCase):
 
         return relationship_ctx
 
-    @testtools.skip
     @mock_ec2
     def test_allocate(self):
         """ Tests that the allocate function is 100% successful.
@@ -92,7 +91,6 @@ class TestElasticIP(testtools.TestCase):
         elasticip.allocate(ctx=ctx)
         self.assertIn('aws_resource_id', ctx.instance.runtime_properties)
 
-    @testtools.skip
     @mock_ec2
     def test_good_address_release(self):
         """ Tests that when an address that is in the user's
@@ -110,7 +108,6 @@ class TestElasticIP(testtools.TestCase):
         self.assertNotIn('aws_resource_id',
                          ctx.instance.runtime_properties.keys())
 
-    @testtools.skip
     @mock_ec2
     def test_bad_address_release(self):
         """ Tests that when an address that is in the user's
@@ -125,7 +122,6 @@ class TestElasticIP(testtools.TestCase):
         ex = self.assertRaises(NonRecoverableError, elasticip.release, ctx=ctx)
         self.assertIn('InvalidAddress.NotFound', ex.message)
 
-    @testtools.skip
     @mock_ec2
     def test_good_address_associate(self):
         """ Tests that when an address that is in the user's
@@ -145,7 +141,6 @@ class TestElasticIP(testtools.TestCase):
             reservation.instances[0].id
         elasticip.associate(ctx=ctx)
 
-    @testtools.skip
     @mock_ec2
     def test_good_address_disassociate(self):
         """ Tests that when an address that is in the user's
@@ -158,14 +153,14 @@ class TestElasticIP(testtools.TestCase):
         ec2_client = connection.EC2ConnectionClient().client()
         reservation = ec2_client.run_instances(
             TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
-        id = reservation.instances[0].id
+        instance_id = reservation.instances[0].id
         address = ec2_client.allocate_address()
         ctx.target.instance.runtime_properties['aws_resource_id'] = \
             address.public_ip
-        ctx.source.instance.runtime_properties['instance_id'] = id
+        ctx.source.instance.runtime_properties['instance_id'] = instance_id
+        ctx.source.instance.runtime_properties['ip'] = address.public_ip
         elasticip.disassociate(ctx=ctx)
 
-    @testtools.skip
     @mock_ec2
     def test_bad_address_associate(self):
         """ Tests that when an address that is in the user's
@@ -183,9 +178,9 @@ class TestElasticIP(testtools.TestCase):
             reservation.instances[0].id
         ex = self.assertRaises(NonRecoverableError, elasticip.associate,
                                ctx=ctx)
+        ctx.source.instance.runtime_properties['ip'] = '127.0.0.1'
         self.assertIn('InvalidAddress.NotFound', ex.message)
 
-    @testtools.skip
     @mock_ec2
     def test_bad_address_disassociate(self):
         """ Tests that NonRecoverableError: Invalid Address is
@@ -196,17 +191,7 @@ class TestElasticIP(testtools.TestCase):
         ctx = self.mock_relationship_ctx('test_bad_address_detach')
 
         ctx.target.instance.runtime_properties['aws_resource_id'] = '0.0.0.0'
+        ctx.source.instance.runtime_properties['ip'] = '0.0.0.0'
         ex = self.assertRaises(NonRecoverableError,
                                elasticip.disassociate, ctx=ctx)
         self.assertIn('InvalidAddress.NotFound', ex.message)
-
-    @testtools.skip
-    @mock_ec2
-    def test_validate_creation(self):
-
-        ctx = self.mock_ctx('test_validate_creation')
-
-        ec2_client = connection.EC2ConnectionClient().client()
-        a = ec2_client.allocate_address()
-        ctx.instance.runtime_properties['aws_resource_id'] = a.public_ip
-        self.assertTrue(elasticip.creation_validation(ctx=ctx))

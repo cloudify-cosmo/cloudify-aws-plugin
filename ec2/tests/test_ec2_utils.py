@@ -52,7 +52,6 @@ class TestUtils(testtools.TestCase):
 
         return ctx
 
-    @testtools.skip
     def test_get_instance_state(self):
         """ this tests that get instance state returns
         running for a running instance
@@ -61,12 +60,9 @@ class TestUtils(testtools.TestCase):
         ctx = self.mock_ctx('test_get_instance_state')
         with mock_ec2():
             instance.run_instances(ctx=ctx)
-            instance_id = ctx.instance.runtime_properties['aws_resource_id']
-            instance_state = utils.get_instance_state(instance_id,
-                                                      ctx=ctx)
+            instance_state = utils.get_instance_state(ctx=ctx)
             self.assertEqual(instance_state, 16)
 
-    @testtools.skip
     def test_no_instance_get_instance_from_id(self):
         """ this tests that a NonRecoverableError is thrown
         when a nonexisting instance_id is provided to the
@@ -77,12 +73,12 @@ class TestUtils(testtools.TestCase):
 
         with mock_ec2():
 
-            id = 'bad_id'
+            instance_id = 'bad_id'
             ex = self.assertRaises(NonRecoverableError,
-                                   utils.get_instance_from_id, id, ctx=ctx)
+                                   utils.get_instance_from_id,
+                                   instance_id, ctx=ctx)
             self.assertIn('InvalidInstanceID.NotFound', ex.message)
 
-    @testtools.skip
     def test_get_private_dns_name(self):
 
         ctx = self.mock_ctx('test_get_private_dns_name')
@@ -91,11 +87,11 @@ class TestUtils(testtools.TestCase):
             ec2_client = connection.EC2ConnectionClient().client()
             reservation = ec2_client.run_instances(
                 TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
-            dns_name = utils.get_private_dns_name(reservation.instances[0].id,
-                                                  5, ctx=ctx)
+            ctx.instance.runtime_properties['aws_resource_id'] = \
+                reservation.instances[0].id
+            dns_name = utils.get_private_dns_name(5, ctx=ctx)
             self.assertRegexpMatches(dns_name, FQDN)
 
-    @testtools.skip
     def test_get_public_dns_name(self):
 
         ctx = self.mock_ctx('test_get_public_dns_name')
@@ -105,6 +101,7 @@ class TestUtils(testtools.TestCase):
             ec2_client = connection.EC2ConnectionClient().client()
             reservation = ec2_client.run_instances(
                 TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
-            dns_name = utils.get_public_dns_name(reservation.instances[0].id,
-                                                 5, ctx=ctx)
+            ctx.instance.runtime_properties['aws_resource_id'] = \
+                reservation.instances[0].id
+            dns_name = utils.get_public_dns_name(5, ctx=ctx)
             self.assertRegexpMatches(dns_name, FQDN)
