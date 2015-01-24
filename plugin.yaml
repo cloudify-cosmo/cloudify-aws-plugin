@@ -79,9 +79,9 @@ node_types:
         type: string
         default: ''
     interfaces:
-      cloudify.interfaces.relationship_lifecycle:
-        establish: aws.ec2.elasticip.allocate
-        unlink: aws.ec2.elasticip.release
+      cloudify.interfaces.lifecycle:
+        create: aws.ec2.elasticip.allocate
+        delete: aws.ec2.elasticip.release
       cloudify.interfaces.validation:
         creation: aws.ec2.elasticip.creation_validation
 
