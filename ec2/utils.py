@@ -24,6 +24,19 @@ from ec2 import connection
 from cloudify.exceptions import NonRecoverableError, RecoverableError
 
 
+def build_arg_dict(user_supplied, unsupported):
+
+    arguments = {}
+    for key in user_supplied.keys():
+        if 'security_groups' in key and \
+                type(user_supplied.get(key)) is not list:
+            arguments['{0}'.format(key)] = user_supplied.get(key, None).split()
+        arguments['{0}'.format(key)] = user_supplied.get(key, None)
+    for key in unsupported.keys():
+        arguments['{0}'.format(key)] = unsupported[key]
+    return arguments
+
+
 def validate_node_property(property_key, ctx):
     """ checks if the node property exists in the blueprint
         if not, raises unrecoverable Error
@@ -166,7 +179,6 @@ def get_security_group_from_id(group_id, ctx):
         group = ec2_client.get_all_security_groups(group_ids=group_id)
     except boto.exception.EC2ResponseError as e:
         group = get_security_group_from_name(group_id, ctx=ctx)
-        report_all_security_groups(ctx=ctx)
         raise NonRecoverableError('Error. '
                                   'Failed to group by id: '
                                   'API returned: {0}.'
@@ -176,7 +188,16 @@ def get_security_group_from_id(group_id, ctx):
                                   'Failed to group by id: '
                                   'API returned: {0}.'
                                   .format(str(e)))
-    return group.id
+
+    if len(group) < 1:
+        group = get_security_group_from_name(group_id, ctx=ctx)
+    elif len(group) > 1:
+        report_all_security_groups(ctx=ctx)
+        raise NonRecoverableError('Error. '
+                                  'Failed to group by id or name: '
+                                  'Too many groups returned.')
+
+    return group
 
 
 def get_security_group_from_name(group_name, ctx):
@@ -194,6 +215,12 @@ def get_security_group_from_name(group_name, ctx):
                                   'Failed to group by id: '
                                   'API returned: {0}.'
                                   .format(str(e)))
+    if len(group) is not 1:
+        report_all_security_groups(ctx=ctx)
+        raise NonRecoverableError('Error. '
+                                  'Failed to group by id or name: '
+                                  'Too many groups returned.')
+
     return group
 
 
