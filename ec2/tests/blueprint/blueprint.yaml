@@ -4,57 +4,89 @@ tosca_definitions_version: cloudify_dsl_1_0
 
 imports:
     - http://www.getcloudify.org/spec/cloudify/3.2m1/types.yaml
-    - ./test_plugin.yaml
     - ../../../plugin.yaml
 
 inputs:
 
-  test_security_group_name:
+  agent_server_name:
+    type: string
     default: ''
 
-  test_security_group_desc:
+  image_id:
+    type: string
     default: ''
 
-  test_key_name:
+  flavor_id:
+    type: string
     default: ''
 
-  test_key_path:
+  use_existing_agent_group:
+    type: boolean
+    default: false
+
+  agent_security_group_name:
+    type: string
     default: ''
 
-  test_ami_image_id:
-    description: an input for the test
+  use_existing_agent_keypair:
+    type: boolean
+    default: false
+
+  agent_keypair_name:
+    type: string
     default: ''
 
-  test_instance_type:
-    description: an input for the test
-    default: ''
+  where_to_save_keys:
+    type: string
+    default: ~/.ssh
 
 node_templates:
 
-    test_security_group:
-      type: cloudify.aws.nodes.SecurityGroup
-      properties:
-        resource_id: { get_input: test_security_group_name }
-        description: { get_input: test_security_group_desc }
-        rules:
-          - ip_protocol: tcp
-            from_port: 80
-            to_port: 80
-            cidr_ip: 0.0.0.0/32
+  agent_server:
+    type: cloudify.aws.nodes.Instance
+    properties:
+      resource_id: { get_input: agent_server_name }
+      install_agent: false
+      image_id: { get_input: image_id }
+      instance_type: { get_input: flavor_id }
+      parameters:
+        key_name: { get_property: [ agent_keypair, resource_id ]}
+        security_groups: { get_property: [ agent_security_group, resource_id ] }
+    relationships:
+      - target: agent_ip
+        type: cloudify.aws.relationships.instance_connected_to_elastic_ip
+      - target: agent_security_group
+        type: cloudify.aws.relationships.instance_connected_to_keypair
+      - target: agent_keypair
+        type: cloudify.aws.relationships.instance_connected_to_security_group
 
-    test_key_pair:
-      type: cloudify.aws.nodes.KeyPair
-      properties:
-        resource_id: { get_input: test_key_name }
-        private_key_path: { get_input: test_key_path }
+  agent_ip:
+    type: cloudify.aws.nodes.ElasticIP
 
-    test_instance:
-      type: cloudify.aws.nodes.Instance
-      properties:
-        install_agent: false
-        image_id: { get_input: test_ami_image_id }
-        instance_type: { get_input: test_instance_type }
-        parameters:
-          key_name: { get_property: [ test_key_pair, resource_id ] }
-          security_groups: { get_property: [ test_security_group, resource_id ] }
+  agent_security_group:
+    type: cloudify.aws.nodes.SecurityGroup
+    properties:
+      resource_id: { get_input: agent_security_group_name }
+      use_external_resource: { get_input: use_existing_agent_group }
+      description: Security group for Cloudify agent VMs
+      rules:
+        - ip_protocol: tcp
+          from_port: 22
+          to_port: 22
+          cidr_ip: 0.0.0.0/32
+        - ip_protocol: tcp
+          from_port: 5985
+          to_port: 5985
+          cidr_ip: 0.0.0.0/32
 
+  agent_keypair:
+    type: cloudify.aws.nodes.KeyPair
+    properties:
+      use_external_resource: { get_input: use_existing_agent_keypair }
+      resource_id: { get_input: agent_keypair_name }
+      private_key_path: { get_input: where_to_save_keys }
+
+plugins:
+    ec2:
+        executor: central_deployment_agent
+        install: false
