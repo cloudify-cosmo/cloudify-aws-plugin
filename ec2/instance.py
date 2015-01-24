@@ -18,7 +18,7 @@ import boto.exception
 
 # Cloudify imports
 from cloudify import ctx
-from cloudify.exceptions import NonRecoverableError
+from cloudify.exceptions import NonRecoverableError, RecoverableError
 from cloudify.decorators import operation
 from ec2 import utils
 from ec2 import connection
@@ -54,17 +54,17 @@ def run_instances(**_):
     arguments = dict()
     arguments['image_id'] = ctx.node.properties.get('image_id')
     arguments['instance_type'] = ctx.node.properties.get('instance_type')
-    args_to_merge = build_arg_dict(ctx.node.properties['parameters'].copy(),
-                                   RUN_INSTANCES_UNSUPPORTED)
+    args_to_merge = utils.build_arg_dict(
+        ctx.node.properties['parameters'].copy(), RUN_INSTANCES_UNSUPPORTED)
     arguments.update(args_to_merge)
 
     ctx.logger.info('Creating EC2 Instance.')
-    ctx.logger.debug('Attempting to create EC2 Instance.'
-                     'Image id: {0}. Instance type: {1}.'
-                     .format(arguments['image_id'],
-                             arguments['instance_type']))
-    ctx.logger.debug('Sending these API parameters: {0}.'
-                     .format(arguments))
+    ctx.logger.info('Attempting to create EC2 Instance.'
+                    'Image id: {0}. Instance type: {1}.'
+                    .format(arguments['image_id'],
+                            arguments['instance_type']))
+    ctx.logger.info('Sending these API parameters: {0}.'
+                    .format(arguments))
 
     try:
         reservation = ec2_client.run_instances(**arguments)
@@ -117,9 +117,9 @@ def start(retry_interval, **_):
         ctx.instance.runtime_properties['public_ip_address'] = \
             utils.get_public_ip_address(retry_interval, ctx=ctx)
     else:
-        return ctx.operation.retry(message='Waiting for server to be running'
-                                           ' Retrying...',
-                                           retry_after=retry_interval)
+        raise RecoverableError('Waiting for server to be running'
+                               ' Retrying...',
+                               retry_after=retry_interval)
 
 
 @operation
@@ -153,9 +153,9 @@ def stop(retry_interval, **_):
     if utils.get_instance_state(ctx=ctx) == 80:
         ctx.logger.info('Instance {0} is stopped.'.format(instance_id))
     else:
-        return ctx.operation.retry(message='Waiting for server to be running'
-                                           ' Retrying...',
-                                           retry_after=retry_interval)
+        raise RecoverableError('Waiting for server to stop'
+                               'Retrying...',
+                               retry_after=retry_interval)
 
 
 @operation
@@ -196,13 +196,3 @@ def creation_validation(**_):
 
     for property_key in required_properties:
         utils.validate_node_properties(property_key, ctx=ctx)
-
-
-def build_arg_dict(user_supplied, unsupported):
-
-    arguments = {}
-    for pair in user_supplied.items():
-        arguments['{0}'.format(pair[0])] = pair[1]
-    for pair in unsupported.items():
-        arguments['{0}'.format(pair[0])] = pair[1]
-    return arguments

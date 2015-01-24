@@ -41,8 +41,8 @@ def create(**_):
     if ctx.node.properties.get('use_external_resource', False) is True:
         group_id = ctx.node.properties.get('resource_id')
         group = utils.get_security_group_from_id(group_id, ctx=ctx)
-        ctx.instance.runtime_properties['aws_resource_id'] = group.id
-        ctx.logger.info('Using external resource: {0}'.format(group.id))
+        ctx.instance.runtime_properties['aws_resource_id'] = group[0].id
+        ctx.logger.info('Using external resource: {0}'.format(group[0].id))
         return
 
     name = ctx.node.properties.get('resource_id')
