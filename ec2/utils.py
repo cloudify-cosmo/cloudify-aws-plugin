@@ -24,6 +24,16 @@ from ec2 import connection
 from cloudify.exceptions import NonRecoverableError, RecoverableError
 
 
+def validate_node_property(property_key, ctx):
+    """ checks if the node property exists in the blueprint
+        if not, raises unrecoverable Error
+    """
+
+    if ctx.node.properties.get(property_key, False) is False:
+        raise NonRecoverableError('{0} is a required input .'
+                                  'Unable to create.'.format(property_key))
+
+
 def save_key_pair(key_pair_object, ctx):
     """ Saves the key pair to the file specified in the blueprint. """
 
@@ -71,11 +81,12 @@ def search_for_key_file(ctx):
         return False
 
 
-def get_instance_attribute(instance_id, attribute, check_interval, ctx):
+def get_instance_attribute(attribute, check_interval, ctx):
     """ given the related instance object
         the given variable can be retrieved and returned
     """
 
+    instance_id = ctx.instance.runtime_properties['aws_resource_id']
     instance = get_instance_from_id(instance_id, ctx=ctx)
     if 'running' not in instance.update():
         raise RecoverableError('Waiting for server to be running. '
@@ -85,36 +96,34 @@ def get_instance_attribute(instance_id, attribute, check_interval, ctx):
     return attribute
 
 
-def get_private_dns_name(instance, check_interval, ctx):
+def get_private_dns_name(check_interval, ctx):
     """ returns the private_dns_name variable for a given instance
     """
-    return get_instance_attribute(instance, 'private_dns_name',
-                                  check_interval, ctx=ctx)
+    return get_instance_attribute('private_dns_name', check_interval, ctx=ctx)
 
 
-def get_public_dns_name(instance, check_interval, ctx):
+def get_public_dns_name(check_interval, ctx):
     """ returns the public_dns_name variable for a given instance
     """
-    return get_instance_attribute(instance, 'public_dns_name',
-                                  check_interval, ctx=ctx)
+    return get_instance_attribute('public_dns_name', check_interval, ctx=ctx)
 
 
-def get_private_ip_address(instance, check_interval, ctx):
+def get_private_ip_address(check_interval, ctx):
     """ returns the private_ip_address variable for a given instance
     """
-    return get_instance_attribute(instance, 'private_ip_address',
+    return get_instance_attribute('private_ip_address',
                                   check_interval, ctx=ctx)
 
 
-def get_public_ip_address(instance, check_interval, ctx):
+def get_public_ip_address(check_interval, ctx):
     """ returns the public_ip_address variable for a given instance
     """
-    return get_instance_attribute(instance, 'ip_address',
-                                  check_interval, ctx=ctx)
+    return get_instance_attribute('ip_address', check_interval, ctx=ctx)
 
 
 def get_instance_state(ctx):
-    instance = get_instance_from_id(ctx=ctx)
+    instance_id = ctx.instance.runtime_properties['aws_resource_id']
+    instance = get_instance_from_id(instance_id, ctx=ctx)
     ctx.logger.debug('Checking the instance state for {0}.'
                      .format(instance.id))
     state = instance.update()
@@ -123,12 +132,12 @@ def get_instance_state(ctx):
     return instance.state_code
 
 
-def get_instance_from_id(ctx):
+def get_instance_from_id(instance_id, ctx):
     """ using the instance_id retrieves the instance object
         from the API and returns the object.
     """
-    instance_id = ctx.node.properties['resource_id']
     ec2_client = connection.EC2ConnectionClient().client()
+    ctx.logger.debug('Getting Instance by ID: {0}'.format(instance_id))
 
     try:
         reservations = ec2_client.get_all_reservations(instance_id)
@@ -137,26 +146,26 @@ def get_instance_from_id(ctx):
         raise NonRecoverableError('Error. '
                                   'Failed to get instance by id: '
                                   'API returned: {0}.'
-                                  .format(ctx.instance.id, str(e)))
+                                  .format(str(e)))
     except boto.exception.BotoServerError as e:
         raise NonRecoverableError('Error. '
                                   'Failed to get instance by id: '
                                   'API returned: {0}.'
-                                  .format(ctx.instance.id, str(e)))
+                                  .format(str(e)))
 
     instance = reservations[0].instances[0]
 
     return instance
 
 
-def get_security_group_from_id(ctx):
+def get_security_group_from_id(group_id, ctx):
     ec2_client = connection.EC2ConnectionClient().client()
-    group = ctx.node.properties['resource_id']
-    ctx.logger.debug('Getting Security Group by ID: {0}'.format(group))
+    ctx.logger.debug('Getting Security Group by ID: {0}'.format(group_id))
 
     try:
-        group = ec2_client.get_all_security_groups(group_ids=group)
+        group = ec2_client.get_all_security_groups(group_ids=group_id)
     except boto.exception.EC2ResponseError as e:
+        group = get_security_group_from_name(group_id, ctx=ctx)
         report_all_security_groups(ctx=ctx)
         raise NonRecoverableError('Error. '
                                   'Failed to group by id: '
@@ -170,6 +179,57 @@ def get_security_group_from_id(ctx):
     return group.id
 
 
+def get_security_group_from_name(group_name, ctx):
+    ec2_client = connection.EC2ConnectionClient().client()
+    try:
+        group = ec2_client.get_all_security_groups(groupnames=group_name)
+    except boto.exception.EC2ResponseError as e:
+        report_all_security_groups(ctx=ctx)
+        raise NonRecoverableError('Error. '
+                                  'Failed to group by id: '
+                                  'API returned: {0}.'
+                                  .format(str(e)))
+    except boto.exception.BotoServerError as e:
+        raise NonRecoverableError('Error. '
+                                  'Failed to group by id: '
+                                  'API returned: {0}.'
+                                  .format(str(e)))
+    return group
+
+
+def get_key_pair_by_id(ctx):
+    ec2_client = connection.EC2ConnectionClient().client()
+
+    try:
+        key = ec2_client.get_key_pair(ctx.node.properties['resource_id'])
+    except (boto.exception.EC2ResponseError,
+            boto.exception.BotoServerError) as e:
+        raise NonRecoverableError('Error. '
+                                  'Failed to get key pair: '
+                                  'API returned: {0}.'
+                                  .format(str(e)))
+
+    return key.name
+
+
+def get_address_by_id(address_id, ctx):
+    ec2_client = connection.EC2ConnectionClient().client()
+    try:
+        address = ec2_client.get_all_addresses(address_id)
+    except boto.exception.EC2ResponseError as e:
+        report_all_addresses(ctx=ctx)
+        raise NonRecoverableError('Error. '
+                                  'Failed to get address by id: '
+                                  'API returned: {0}.'
+                                  .format(str(e)))
+    except (boto.exception.BotoServerError) as e:
+        raise NonRecoverableError('Error. '
+                                  'Failed to get address by id: '
+                                  'API returned: {0}.'
+                                  .format(str(e)))
+    return address.public_ip
+
+
 def report_all_instances(ctx):
     ec2_client = connection.EC2ConnectionClient().client()
 
@@ -178,9 +238,9 @@ def report_all_instances(ctx):
     except (boto.exception.EC2ResponseError,
             boto.exception.BotoServerError) as e:
         raise NonRecoverableError('Error. '
-                                  'Failed to get instances: '
-                                  'API returned: {1}.'
-                                  .format(ctx.instance.id, str(e)))
+                                  'Failed to report all instances: '
+                                  'API returned: {0}.'
+                                  .format(str(e)))
 
     instances = [instance for res in reservations
                  for instance in res.instances]
@@ -200,7 +260,7 @@ def report_all_security_groups(ctx):
     except (boto.exception.EC2ResponseError,
             boto.exception.BotoServerError) as e:
         raise NonRecoverableError('Error. '
-                                  'Failed to get security groups: '
+                                  'Failed to report security groups: '
                                   'API returned: {0}.'
                                   .format(str(e)))
     message = []
@@ -210,39 +270,6 @@ def report_all_security_groups(ctx):
     ctx.logger.info('Available groups: {0}'.format(message))
 
 
-def get_key_pair_by_id(ctx):
-    ec2_client = connection.EC2ConnectionClient().client()
-
-    try:
-        key = ec2_client.get_key_pair(ctx.node.properties['resource_id'])
-    except (boto.exception.EC2ResponseError,
-            boto.exception.BotoServerError) as e:
-        raise NonRecoverableError('Error. '
-                                  'Failed to get key pair: '
-                                  'API returned: {0}.'
-                                  .format(str(e)))
-
-    return key.name
-
-
-def get_address_by_id(id, ctx):
-    ec2_client = connection.EC2ConnectionClient().client()
-    try:
-        address = ec2_client.get_all_addresses(id)
-    except boto.exception.EC2ResponseError as e:
-        report_all_addresses(ctx=ctx)
-        raise NonRecoverableError('Error. '
-                                  'Failed to get instances: '
-                                  'API returned: {1}.'
-                                  .format(ctx.instance.id, str(e)))
-    except (boto.exception.BotoServerError) as e:
-        raise NonRecoverableError('Error. '
-                                  'Failed to get instances: '
-                                  'API returned: {1}.'
-                                  .format(ctx.instance.id, str(e)))
-    return address.public_ip
-
-
 def report_all_addresses(ctx):
     ec2_client = connection.EC2ConnectionClient().client()
     try:
@@ -250,7 +277,7 @@ def report_all_addresses(ctx):
     except (boto.exception.EC2ResponseError,
             boto.exception.BotoServerError) as e:
         raise NonRecoverableError('Error. '
-                                  'Failed to get key pair: '
+                                  'Failed to report all addresses: '
                                   'API returned: {0}.'
                                   .format(str(e)))
     message = []
