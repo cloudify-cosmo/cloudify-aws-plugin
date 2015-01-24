@@ -36,16 +36,18 @@ def create(**_):
             aws_resource_id: This is the security group ID assigned
               by Amazon when the group is created.
     """
-    if ctx.node.properties.get('use_external_resource', False) is False:
-        ctx.instance.runtime_properties['aws_resource_id'] = \
-            utils.get_security_group_from_id(ctx=ctx)
-        return
-
     ec2_client = connection.EC2ConnectionClient().client()
 
-    name = ctx.node.properties['resource_id']
-    description = ctx.node.properties['description']
-    rules = ctx.node.properties['rules']
+    if ctx.node.properties.get('use_external_resource', False) is True:
+        group_id = ctx.node.properties.get('resource_id')
+        group = utils.get_security_group_from_id(group_id, ctx=ctx)
+        ctx.instance.runtime_properties['aws_resource_id'] = group.id
+        ctx.logger.info('Using external resource: {0}'.format(group.id))
+        return
+
+    name = ctx.node.properties.get('resource_id')
+    description = ctx.node.properties.get('description')
+    rules = ctx.node.properties.get('rules')
 
     ctx.logger.info('Creating Security Group: {0}'.format(name))
 
@@ -58,9 +60,7 @@ def create(**_):
                                   .format(str(e)))
 
     ctx.instance.runtime_properties['aws_resource_id'] = group_object.id
-
     ctx.logger.info('Created Security Group: {0}.'.format(name))
-
     authorize_by_id(ec2_client, group_object.id, rules)
 
 
@@ -73,9 +73,7 @@ def delete(**_):
     """
 
     ec2_client = connection.EC2ConnectionClient().client()
-
-    group_id = ctx.instance.runtime_properties['aws_resource_id']
-
+    group_id = ctx.instance.runtime_properties.get('aws_resource_id')
     ctx.logger.info('Deleting Security Group: {0}'.format(group_id))
 
     try:
@@ -85,15 +83,26 @@ def delete(**_):
         raise NonRecoverableError('Error. Failed to delete '
                                   'security group: API returned: {0}.'
                                   .format(e))
+    finally:
+        ctx.instance.runtime_properties.pop('aws_resource_id', None)
+        ctx.logger.debug('Attempted to delete the group from account.')
 
     ctx.logger.info('Deleted Security Group: {0}.'.format(group_id))
-    ctx.instance.runtime_properties.pop('aws_resource_id', None)
 
 
 @operation
 def creation_validation(**_):
     """ This checks that all user supplied info is valid """
-    pass
+    required_properties = ['resource_id', 'use_external_resource',
+                           'rules']
+
+    for property_key in required_properties:
+        utils.validate_node_properties(property_key, ctx=ctx)
+
+    for required_rule in ['ip_protocol', 'from_port', 'to_port', 'cidr_ip']:
+        if ctx.node.properties['rules'].get(required_rule, False) is False:
+            raise NonRecoverableError('Required rule key not provided: '
+                                      '{0}'.format(required_rule))
 
 
 @operation
@@ -111,13 +120,13 @@ def authorize(**_):
 
     ec2_client = connection.EC2ConnectionClient().client()
 
-    if ctx.node.properties.get('use_external_resource', False):
-        group_id = ctx.node.properties['resource_id']
-        rules = ctx.node.properties['rules']
+    if ctx.node.properties.get('use_external_resource', False) is True:
+        group_id = ctx.node.properties.get('resource_id')
+        rules = ctx.node.properties.get('rules')
         authorize_by_id(ec2_client, group_id, rules)
     else:
-        group_id = ctx.instance.runtime_properties['aws_resource_id']
-        rules = ctx.node.properties['rules']
+        group_id = ctx.instance.runtime_properties.get('aws_resource_id')
+        rules = ctx.node.properties.get('rules')
         authorize_by_id(ec2_client, group_id, rules)
 
 

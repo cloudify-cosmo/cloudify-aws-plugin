@@ -33,7 +33,7 @@ def create(**kwargs):
     """
     ec2_client = connection.EC2ConnectionClient().client()
 
-    if ctx.node.properties.get('use_external_resource', False) is False:
+    if ctx.node.properties.get('use_external_resource', False) is True:
         ctx.instance.runtime_properties['aws_resource_id'] = \
             utils.get_key_pair_by_id(ctx=ctx)
         if not utils.search_for_key_file(ctx=ctx):
@@ -54,7 +54,7 @@ def create(**kwargs):
     ctx.logger.info('Created key pair: {0}.'.format(kp.name))
     ctx.instance.runtime_properties['aws_resource_id'] = kp.name
 
-    utils.save_key_pair(ctx=ctx)
+    utils.save_key_pair(kp, ctx=ctx)
 
 
 @operation
@@ -71,13 +71,17 @@ def delete(**kwargs):
     except (EC2ResponseError, BotoServerError) as e:
         raise NonRecoverableError('Error response on key pair delete. '
                                   'API returned: {0}'.format(str(e)))
+    finally:
+        ctx.instance.runtime_properties.pop('aws_resource_id', None)
+        ctx.logger.debug('Attempted to delete key pair from account.')
 
+    utils.delete_key_pair(key_pair_name, ctx=ctx)
     ctx.logger.info('Deleted key pair: {0}.'.format(key_pair_name))
-    utils.delete_key_pair(ctx=ctx)
-    ctx.instance.runtime_properties.pop('aws_resource_id', None)
 
 
 @operation
 def creation_validation(**_):
     """ This checks that all user supplied info is valid """
-    pass
+    required_properties = ['resource_id', 'use_external_resource']
+    for property_key in required_properties:
+        utils.validate_node_properties(property_key, ctx=ctx)

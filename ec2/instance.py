@@ -18,12 +18,14 @@ import boto.exception
 
 # Cloudify imports
 from cloudify import ctx
-from cloudify.exceptions import NonRecoverableError, RecoverableError
+from cloudify.exceptions import NonRecoverableError
 from cloudify.decorators import operation
 from ec2 import utils
 from ec2 import connection
 
-# EC2 Method Arguments
+# run_instances should not allow more than one instance
+# to be created this should be specified in the node_template
+# instances, deploy = n
 RUN_INSTANCES_UNSUPPORTED = {
     'min_count': 1,
     'max_count': 1
@@ -40,16 +42,18 @@ def run_instances(**_):
             ctx.instance.runtime_properties['aws_resource_id']
     """
 
-    if ctx.node.properties.get('use_external_resource', False) is False:
-        ctx.instance.runtime_properties['aws_resource_id'] = \
-            utils.get_instance_from_id(ctx=ctx)
-        return
-
     ec2_client = connection.EC2ConnectionClient().client()
 
+    if ctx.node.properties.get('use_external_resource', False) is True:
+        instance_id = ctx.node.properties.get('resource_id')
+        instance = utils.get_instance_from_id(instance_id, ctx=ctx)
+        ctx.instance.runtime_properties['aws_resource_id'] = instance.id
+        ctx.logger.info('Using existing resource: {0}.'.format(instance.id))
+        return
+
     arguments = dict()
-    arguments['image_id'] = ctx.node.properties['image_id']
-    arguments['instance_type'] = ctx.node.properties['instance_type']
+    arguments['image_id'] = ctx.node.properties.get('image_id')
+    arguments['instance_type'] = ctx.node.properties.get('instance_type')
     args_to_merge = build_arg_dict(ctx.node.properties['parameters'].copy(),
                                    RUN_INSTANCES_UNSUPPORTED)
     arguments.update(args_to_merge)
@@ -86,8 +90,7 @@ def start(retry_interval, **_):
             ctx.instance.runtime_properties['public_ip_address']
     """
     ec2_client = connection.EC2ConnectionClient().client()
-
-    instance_id = ctx.instance.runtime_properties['aws_resource_id']
+    instance_id = ctx.instance.runtime_properties.get('aws_resource_id')
 
     if utils.get_instance_state(ctx=ctx) == 16:
         ctx.logger.info('Instance {0} is running.'.format(instance_id))
@@ -106,14 +109,13 @@ def start(retry_interval, **_):
     if utils.get_instance_state(ctx=ctx) == 16:
         ctx.logger.info('Instance {0} is running.'.format(instance_id))
         ctx.instance.runtime_properties['private_dns_name'] = \
-            utils.get_private_dns_name(instance_id, 5, ctx=ctx)
+            utils.get_private_dns_name(retry_interval, ctx=ctx)
         ctx.instance.runtime_properties['public_dns_name'] = \
-            utils.get_public_dns_name(instance_id, 5, ctx=ctx)
+            utils.get_public_dns_name(retry_interval, ctx=ctx)
         ctx.instance.runtime_properties['ip'] = \
-            utils.get_private_ip_address(instance_id, 5, ctx=ctx)
+            utils.get_private_ip_address(retry_interval, ctx=ctx)
         ctx.instance.runtime_properties['public_ip_address'] = \
-            utils.get_public_ip_address(instance_id, 5, ctx=ctx)
-        # ctx.instance.runtime_properties['networks']
+            utils.get_public_ip_address(retry_interval, ctx=ctx)
     else:
         return ctx.operation.retry(message='Waiting for server to be running'
                                            ' Retrying...',
@@ -129,7 +131,7 @@ def stop(retry_interval, **_):
     """
     ec2_client = connection.EC2ConnectionClient().client()
 
-    instance_id = ctx.instance.runtime_properties['aws_resource_id']
+    instance_id = ctx.instance.runtime_properties.get('aws_resource_id')
 
     ctx.logger.info('Stopping EC2 Instance.')
     ctx.logger.debug('Attempting to stop EC2 Instance.'
@@ -163,7 +165,7 @@ def terminate(retry_interval, **_):
     """
     ec2_client = connection.EC2ConnectionClient().client()
 
-    instance_id = ctx.instance.runtime_properties['aws_resource_id']
+    instance_id = ctx.instance.runtime_properties.get('aws_resource_id')
 
     ctx.logger.info('Terminating EC2 Instance.')
     ctx.logger.debug('Attempting to terminate EC2 Instance.'
@@ -177,24 +179,23 @@ def terminate(retry_interval, **_):
                                   'EC2 Instance: API returned: {0}.'
                                   .format(str(e)))
     finally:
-        ctx.instance.runtime_properties.pop('private_dns_name')
-        ctx.instance.runtime_properties.pop('public_dns_name')
-        ctx.instance.runtime_properties.pop('public_ip_address')
-        ctx.instance.runtime_properties.pop('ip')
+        ctx.instance.runtime_properties.pop('private_dns_name', None)
+        ctx.instance.runtime_properties.pop('public_dns_name', None)
+        ctx.instance.runtime_properties.pop('public_ip_address', None)
+        ctx.instance.runtime_properties.pop('ip', None)
         ctx.instance.runtime_properties.pop('aws_resource_id', None)
-
-    # get the timeout code validate state
-    if utils.get_instance_state(ctx=ctx) == 48:
-        ctx.logger.info('Instance {0} is terminated.'.format(instance_id))
-    else:
-        raise RecoverableError('Waiting for server to be terminated. '
-                               'Retrying...', retry_after=retry_interval)
+        ctx.logger.debug('Attemped to delete the instance and its '
+                         'runtime properties')
 
 
 @operation
 def creation_validation(**_):
     """ This checks that all user supplied info is valid """
-    pass
+    required_properties = ['resource_id', 'use_external_resource',
+                           'image_id', 'instance_type']
+
+    for property_key in required_properties:
+        utils.validate_node_properties(property_key, ctx=ctx)
 
 
 def build_arg_dict(user_supplied, unsupported):

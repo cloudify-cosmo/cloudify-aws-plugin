@@ -32,10 +32,11 @@ def allocate(**kwargs):
     ec2_client = connection.EC2ConnectionClient().client()
     ctx.logger.info('Allocating Elastic IP.')
 
-    if ctx.node.properties.get('use_external_resource', False) is False:
-        ctx.instance.runtime_properties['aws_resource_id'] = \
-            utils.get_address_by_id(ctx.node.properties['resource_id'],
-                                    ctx=ctx)
+    if ctx.node.properties.get('use_external_resource', False) is True:
+        address = utils.get_address_by_id(
+            ctx.node.properties.get('resource_id'), ctx=ctx)
+        ctx.instance.runtime_properties['aws_resource_id'] = address
+        ctx.logger.info('Using existing resource: {0}'.format(address))
         return
 
     try:
@@ -77,8 +78,8 @@ def associate(**kwargs):
     """
     ec2_client = connection.EC2ConnectionClient().client()
 
-    instance_id = ctx.source.instance.runtime_properties['aws_resource_id']
-    elasticip = ctx.target.instance.runtime_properties['aws_resource_id']
+    instance_id = ctx.source.instance.runtime_properties.get('aws_resource_id')
+    elasticip = ctx.target.instance.runtime_properties.get('aws_resource_id')
     ctx.logger.info('Associating an Elastic IP {0} '
                     'with an EC2 Instance {1}.'.format(elasticip, instance_id))
 
@@ -92,7 +93,7 @@ def associate(**kwargs):
 
     ctx.logger.info('Associated Elastic IP {0} with instance {1}.'.format(
         elasticip, instance_id))
-    ctx.source.instance.runtime_properties['public_ip_address'] = elasticip
+    ctx.source.instance.runtime_properties['ip'] = elasticip
 
 
 @operation
@@ -110,25 +111,15 @@ def disassociate(**kwargs):
                                   'Elastic IP, returned: {0}.'
                                   .format(e))
     finally:
-        ctx.source.instance.runtime_properties.pop('public_ip_address')
+        ctx.source.instance.runtime_properties.pop('ip')
 
     ctx.logger.info('Disassociated Elastic IP {0}.'.format(
         elasticip))
 
 
 @operation
-def creation_validation(**kwargs):
-    ec2_client = connection.EC2ConnectionClient().client()
-    ctx.logger.info('Validating Elastic IP.')
-    elasticip = ctx.instance.runtime_properties['aws_resource_id']
-
-    try:
-        ec2_client.get_all_addresses(elasticip)
-    except (EC2ResponseError, BotoServerError) as e:
-        raise NonRecoverableError('Error. Failed to validate '
-                                  'Elastic IP, returned: {0}.'
-                                  .format(e))
-
-    ctx.logger.info('Verified that Elastic IP {0} was created.'.format(
-        elasticip))
-    return True
+def creation_validation(**_):
+    """ This checks that all user supplied info is valid """
+    required_properties = ['resource_id']
+    for property_key in required_properties:
+        utils.validate_node_properties(property_key, ctx=ctx)
