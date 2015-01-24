@@ -49,8 +49,6 @@ def allocate(**_):
         address_object.public_ip))
     ctx.instance.runtime_properties['aws_resource_id'] = \
         address_object.public_ip
-    ctx.instance.runtime_properties['allocation_id'] = \
-        address_object.allocation_id
 
 
 @operation
@@ -60,9 +58,6 @@ def release(**_):
     ctx.logger.info('Releasing an Elastic IP.')
 
     elasticip = ctx.instance.runtime_properties.get('aws_resource_id')
-    allocation_id = ctx.instance.runtime_properties.get('allocation_id')
-
-    ctx.logger.info('{}{}'.format(elasticip, allocation_id))
 
     address_object = utils.get_address_object_by_id(elasticip, ctx=ctx)
 
@@ -72,6 +67,9 @@ def release(**_):
         raise NonRecoverableError('Error. Failed to '
                                   'delete Elastic IP. Error: {0}.'
                                   .format(e))
+    except AttributeError:
+        ctx.logger.debug('Attribute error raised on address_object.release.')
+        pass
     finally:
         ctx.instance.runtime_properties.pop('aws_resource_id', None)
         ctx.instance.runtime_properties.pop('allocation_id', None)
