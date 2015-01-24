@@ -49,6 +49,8 @@ def allocate(**kwargs):
         address_object.public_ip))
     ctx.instance.runtime_properties['aws_resource_id'] = \
         address_object.public_ip
+    ctx.instance.runtime_properties['allocation_id'] = \
+        address_object.allocation_id
 
 
 @operation
@@ -58,10 +60,12 @@ def release(**kwargs):
     ec2_client = connection.EC2ConnectionClient().client()
     ctx.logger.info('Releasing an Elastic IP.')
 
-    elasticip = ctx.instance.runtime_properties['aws_resource_id']
+    elasticip = ctx.instance.runtime_properties.get('aws_resource_id', None)
+    allocation_id = ctx.instance.runtime_properties.get('allocation_id', None)
 
     try:
-        ec2_client.release_address(public_ip=elasticip)
+        ec2_client.release_address(public_ip=elasticip,
+                                   allocation_id=allocation_id)
     except (EC2ResponseError, BotoServerError) as e:
         raise NonRecoverableError('Error. Failed to '
                                   'delete Elastic IP. Error: {0}.'
