@@ -38,12 +38,14 @@ class TestWorkflowInstance(testtools.TestCase):
                                       'blueprint', 'blueprint.yaml')
 
         inputs = {
-            'test_security_group_name': 'test_group',
-            'test_security_group_desc': 'testing group desc',
-            'test_key_name': 'test_key',
-            'test_key_path': '~/.ssh',
-            'test_ami_image_id': 'ami-e214778a',
-            'test_instance_type': 't1.micro'
+            'agent_server_name': 'test_instance',
+            'image_id': 'ami-e214778a',
+            'flavor_id': 't1.micro',
+            'use_existing_agent_group': False,
+            'agent_security_group_name': 'Cloudify Agent Security Group',
+            'use_existing_agent_keypair': False,
+            'agent_keypair_name': 'test_key',
+            'where_to_save_keys': '~/.ssh',
         }
 
         # setup local workflow execution environment
@@ -51,7 +53,6 @@ class TestWorkflowInstance(testtools.TestCase):
             blueprint_path, name=self._testMethodName, inputs=inputs,
             ignored_modules=IGNORED_LOCAL_WORKFLOW_MODULES)
 
-    @testtools.skip
     @mock_ec2
     def test_install_workflow(self):
         """ Tests the install workflow using the built in
