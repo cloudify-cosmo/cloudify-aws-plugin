@@ -54,11 +54,11 @@ def save_key_pair(key_pair_object, ctx):
 
     try:
         key_pair_object.save(ctx.node.properties['private_key_path'])
-    except OSError:
+    except (boto.exception.BotoClientError, OSError) as e:
         raise NonRecoverableError('Unable to save key pair to file: {0}.'
                                   'OS Returned: {1}'.format(
                                       ctx.node.properties['private_key_path'],
-                                      OSError))
+                                      str(e)))
 
 
 def delete_key_pair(key_pair_name, ctx):
