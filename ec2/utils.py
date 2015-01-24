@@ -257,6 +257,24 @@ def get_address_by_id(address_id, ctx):
     return address.public_ip
 
 
+def get_address_object_by_id(address_id, ctx):
+    ec2_client = connection.EC2ConnectionClient().client()
+    try:
+        address = ec2_client.get_all_addresses(address_id)
+    except boto.exception.EC2ResponseError as e:
+        report_all_addresses(ctx=ctx)
+        raise NonRecoverableError('Error. '
+                                  'Failed to get address by id: '
+                                  'API returned: {0}.'
+                                  .format(str(e)))
+    except (boto.exception.BotoServerError) as e:
+        raise NonRecoverableError('Error. '
+                                  'Failed to get address by id: '
+                                  'API returned: {0}.'
+                                  .format(str(e)))
+    return address
+
+
 def report_all_instances(ctx):
     ec2_client = connection.EC2ConnectionClient().client()
 

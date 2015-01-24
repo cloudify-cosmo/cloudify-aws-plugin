@@ -26,7 +26,7 @@ from ec2 import utils
 
 
 @operation
-def allocate(**kwargs):
+def allocate(**_):
     """ Allocates an Elastic IP in the connected region in the AWS account.
     """
     ec2_client = connection.EC2ConnectionClient().client()
@@ -40,7 +40,7 @@ def allocate(**kwargs):
         return
 
     try:
-        address_object = ec2_client.allocate_address()
+        address_object = ec2_client.allocate_address(domain=None)
     except (EC2ResponseError, BotoServerError) as e:
         raise NonRecoverableError('Failed to provision Elastic IP. Error: {0}.'
                                   .format(str(e)))
@@ -54,30 +54,33 @@ def allocate(**kwargs):
 
 
 @operation
-def release(**kwargs):
+def release(**_):
     """ Releases an Elastic IP from the connected region in the AWS account.
     """
-    ec2_client = connection.EC2ConnectionClient().client()
     ctx.logger.info('Releasing an Elastic IP.')
 
-    elasticip = ctx.instance.runtime_properties.get('aws_resource_id', None)
-    allocation_id = ctx.instance.runtime_properties.get('allocation_id', None)
+    elasticip = ctx.instance.runtime_properties.get('aws_resource_id')
+    allocation_id = ctx.instance.runtime_properties.get('allocation_id')
+
+    ctx.logger.info('{}{}'.format(elasticip, allocation_id))
+
+    address_object = utils.get_address_object_by_id(elasticip, ctx=ctx)
 
     try:
-        ec2_client.release_address(public_ip=elasticip,
-                                   allocation_id=allocation_id)
+        address_object.release()
     except (EC2ResponseError, BotoServerError) as e:
         raise NonRecoverableError('Error. Failed to '
                                   'delete Elastic IP. Error: {0}.'
                                   .format(e))
     finally:
         ctx.instance.runtime_properties.pop('aws_resource_id', None)
+        ctx.instance.runtime_properties.pop('allocation_id', None)
 
     ctx.logger.info('Released Elastic IP {0}.'.format(elasticip))
 
 
 @operation
-def associate(**kwargs):
+def associate(**_):
     """ Associates an Elastic IP with an EC2 Instance.
     """
     ec2_client = connection.EC2ConnectionClient().client()
@@ -101,7 +104,7 @@ def associate(**kwargs):
 
 
 @operation
-def disassociate(**kwargs):
+def disassociate(**_):
     """ Disassociates an Elastic IP from an EC2 Instance.
     """
     ec2_client = connection.EC2ConnectionClient().client()
