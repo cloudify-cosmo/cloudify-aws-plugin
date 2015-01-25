@@ -15,6 +15,7 @@
 
 # Built-in Imports
 import os
+import time
 
 # Third-party Imports
 import boto.exception
@@ -331,3 +332,46 @@ def report_all_addresses(ctx):
         message.append('{}\n'.format(address))
 
     ctx.logger.info('Available addresses: {0}'.format(message))
+
+
+def validate_state(instance_id, state, timeout_length, check_interval, ctx):
+    """ Check if an EC2 instance is in a particular state.
+    :param instance: And EC2 instance.
+    :param state: The state code (pending = 0, running = 16,
+                  shutting down = 32, terminated = 48, stopping = 64,
+                  stopped = 80
+    :param timeout_length: How long to wait for a positive answer
+           before we stop checking.
+    :param check_interval: How long to wait between checks.
+    :return: bool (True the desired state was reached, False, it was not.)
+    """
+
+    ctx.logger.debug('Attempting state validation: '
+                     'instance id: {0}, state: {1}, timeout length: {2}, '
+                     'check interval: {3}.'.format(instance_id, state,
+                                                   timeout_length,
+                                                   check_interval))
+
+    instance = get_instance_from_id(instance_id, ctx=ctx)
+
+    if check_interval < 1:
+        check_interval = 1
+
+    timeout = time.time() + timeout_length
+
+    while True:
+        instance.update()
+        if state == int(instance.state_code):
+            ctx.logger.info('Instance state validated: instance {0}.'
+                            .format(instance.state))
+            return True
+        elif time.time() > timeout:
+            raise NonRecoverableError('Timed out during '
+                                      'instance state validation: '
+                                      'instance: {0}, '
+                                      'timeout length: {1}, '
+                                      'check interval: {2}.'
+                                      .format(instance.id,
+                                              timeout_length,
+                                              check_interval))
+        time.sleep(check_interval)

@@ -187,6 +187,8 @@ def terminate(retry_interval, **_):
         ctx.logger.debug('Attemped to delete the instance and its '
                          'runtime properties')
 
+    utils.validate_state(instance_id, 48, 240, retry_interval, ctx=ctx)
+
 
 @operation
 def creation_validation(**_):
