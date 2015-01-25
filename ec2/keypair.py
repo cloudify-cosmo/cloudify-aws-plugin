@@ -33,6 +33,11 @@ from ec2 import connection
 def create(**kwargs):
     """ This will create the key pair within the region you are currently
         connected to.
+        Requires:
+            ctx.node.properties['resource_id']
+        Sets:
+            ctx.instance.runtime_properties['aws_resource_id']
+            ctx.instance.runtime_properties['key_path']
     """
     ec2_client = connection.EC2ConnectionClient().client()
 

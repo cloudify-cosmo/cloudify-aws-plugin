@@ -67,7 +67,6 @@ def save_key_pair(key_pair_object, ctx):
                                 ctx.node.properties['resource_id'],
                                 '.pem'))
     os.chmod(key_path, 0400)
-    ctx.logger.info('wrote file: {}'.format(key_path))
 
 
 def delete_key_pair(key_pair_name, ctx):
