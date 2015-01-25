@@ -58,10 +58,10 @@ def create(**kwargs):
     ctx.instance.runtime_properties['aws_resource_id'] = kp.name
 
     utils.save_key_pair(kp, ctx=ctx)
-    path = os.path.expanduser(ctx.node.properties['private_key_path'])
     ctx.instance.runtime_properties['key_path'] = \
-        os.path.join(path, '{0}{1}'.format(
-            ctx.node.properties['resource_id'], '.pem'))
+        os.path.join(ctx.node.properties['private_key_path'],
+                     '{0}{1}'.format(ctx.node.properties['resource_id'],
+                                     '.pem'))
 
 
 @operation

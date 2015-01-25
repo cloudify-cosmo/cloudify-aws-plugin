@@ -61,6 +61,12 @@ def save_key_pair(key_pair_object, ctx):
                                   'OS Returned: {1}'.format(
                                       ctx.node.properties['private_key_path'],
                                       str(e)))
+    path = os.path.expanduser(ctx.node.properties['private_key_path'])
+    key_path = os.path.join(path,
+                            '{0}{1}'.format(
+                                ctx.node.properties['resource_id'],
+                                '.pem'))
+    os.chmod(key_path, 0400)
 
 
 def delete_key_pair(key_pair_name, ctx):
