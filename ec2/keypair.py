@@ -13,6 +13,9 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
+# Built-in Imports
+import os
+
 # Boto Imports
 from boto.exception import EC2ResponseError
 from boto.exception import BotoServerError
@@ -55,6 +58,10 @@ def create(**kwargs):
     ctx.instance.runtime_properties['aws_resource_id'] = kp.name
 
     utils.save_key_pair(kp, ctx=ctx)
+    path = os.path.expanduser(ctx.node.properties['private_key_path'])
+    ctx.instance.runtime_properties['key_path'] = \
+        os.path.join(path, '{0}{1}'.format(
+            ctx.node.properties['resource_id'], '.pem'))
 
 
 @operation
@@ -73,6 +80,7 @@ def delete(**kwargs):
                                   'API returned: {0}'.format(str(e)))
     finally:
         ctx.instance.runtime_properties.pop('aws_resource_id', None)
+        ctx.instance.runtime_properties.pop('key_path', None)
         ctx.logger.debug('Attempted to delete key pair from account.')
 
     utils.delete_key_pair(key_pair_name, ctx=ctx)
