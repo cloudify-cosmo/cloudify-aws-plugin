@@ -195,4 +195,4 @@ def creation_validation(**_):
                            'image_id', 'instance_type']
 
     for property_key in required_properties:
-        utils.validate_node_properties(property_key, ctx=ctx)
+        utils.validate_node_property(property_key, ctx=ctx)

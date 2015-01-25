@@ -127,4 +127,4 @@ def creation_validation(**_):
     """ This checks that all user supplied info is valid """
     required_properties = ['resource_id']
     for property_key in required_properties:
-        utils.validate_node_properties(property_key, ctx=ctx)
+        utils.validate_node_property(property_key, ctx=ctx)

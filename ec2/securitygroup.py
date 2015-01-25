@@ -97,7 +97,7 @@ def creation_validation(**_):
                            'rules']
 
     for property_key in required_properties:
-        utils.validate_node_properties(property_key, ctx=ctx)
+        utils.validate_node_property(property_key, ctx=ctx)
 
     for required_rule in ['ip_protocol', 'from_port', 'to_port', 'cidr_ip']:
         if ctx.node.properties['rules'].get(required_rule, False) is False:
