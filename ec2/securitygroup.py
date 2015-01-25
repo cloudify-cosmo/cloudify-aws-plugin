@@ -99,6 +99,13 @@ def creation_validation(**_):
     for property_key in required_properties:
         utils.validate_node_property(property_key, ctx=ctx)
 
+    if ctx.node.properties.get('use_external_resource', False) is True \
+            and utils.get_security_group_from_id(
+                ctx.node.properties.get('resource_id', None)) is None:
+        raise NonRecoverableError('Use external resource is True, '
+                                  'but no such security group exists in '
+                                  'this account.')
+
 
 @operation
 def authorize(**_):

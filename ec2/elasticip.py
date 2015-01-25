@@ -14,8 +14,7 @@
 #    * limitations under the License.
 
 # Boto Imports
-from boto.exception import EC2ResponseError
-from boto.exception import BotoServerError
+import boto.exception
 
 # Cloudify imports
 from cloudify import ctx
@@ -41,7 +40,8 @@ def allocate(**_):
 
     try:
         address_object = ec2_client.allocate_address(domain=None)
-    except (EC2ResponseError, BotoServerError) as e:
+    except (boto.exception.EC2ResponseError,
+            boto.exception.BotoServerError) as e:
         raise NonRecoverableError('Failed to provision Elastic IP. Error: {0}.'
                                   .format(str(e)))
 
@@ -63,7 +63,8 @@ def release(**_):
 
     try:
         address_object.release()
-    except (EC2ResponseError, BotoServerError) as e:
+    except (boto.exception.EC2ResponseError,
+            boto.exception.BotoServerError) as e:
         raise NonRecoverableError('Error. Failed to '
                                   'delete Elastic IP. Error: {0}.'
                                   .format(e))
@@ -91,7 +92,8 @@ def associate(**_):
     try:
         ec2_client.associate_address(instance_id=instance_id,
                                      public_ip=elasticip)
-    except (EC2ResponseError, BotoServerError) as e:
+    except (boto.exception.EC2ResponseError,
+            boto.exception.BotoServerError) as e:
         raise NonRecoverableError('Error. Failed to '
                                   'attach Elastic IP. Error: {0}.'
                                   .format(str(e)))
@@ -111,7 +113,8 @@ def disassociate(**_):
 
     try:
         ec2_client.disassociate_address(public_ip=elasticip)
-    except (EC2ResponseError, BotoServerError) as e:
+    except (boto.exception.EC2ResponseError,
+            boto.exception.BotoServerError) as e:
         raise NonRecoverableError('Error. Failed to detach '
                                   'Elastic IP, returned: {0}.'
                                   .format(e))
@@ -125,6 +128,13 @@ def disassociate(**_):
 @operation
 def creation_validation(**_):
     """ This checks that all user supplied info is valid """
-    required_properties = ['resource_id']
+    required_properties = ['resource_id', 'use_external_resource']
     for property_key in required_properties:
         utils.validate_node_property(property_key, ctx=ctx)
+
+    if ctx.node.properties.get('use_external_resource', False) is True \
+            and utils.get_address_by_id(ctx.node.properties.get(
+                'resource_id', None)) is None:
+        raise NonRecoverableError('Use external resource is true, '
+                                  'but no such Elastic IP exists '
+                                  'in this account.')

@@ -42,7 +42,8 @@ def validate_node_property(property_key, ctx):
         if not, raises unrecoverable Error
     """
 
-    if property_key not in ctx.node.properties.keys():
+    if property_key not in ctx.node.properties.keys() \
+            or ctx.node.properties.get(property_key) is None:
         raise NonRecoverableError('{0} is a required input .'
                                   'Unable to create.'.format(property_key))
 

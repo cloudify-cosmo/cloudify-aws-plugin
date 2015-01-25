@@ -93,3 +93,8 @@ def creation_validation(**_):
     required_properties = ['resource_id', 'use_external_resource']
     for property_key in required_properties:
         utils.validate_node_property(property_key, ctx=ctx)
+
+    if ctx.node.properties.get('use_external_resource', False) is True \
+            and utils.search_for_key_file(ctx=ctx) is not True:
+        raise NonRecoverableError('Use external resource is true, but the '
+                                  'key file does not exist.')
