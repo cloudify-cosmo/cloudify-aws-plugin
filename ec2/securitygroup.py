@@ -99,11 +99,6 @@ def creation_validation(**_):
     for property_key in required_properties:
         utils.validate_node_property(property_key, ctx=ctx)
 
-    for required_rule in ['ip_protocol', 'from_port', 'to_port', 'cidr_ip']:
-        if ctx.node.properties['rules'].get(required_rule, False) is False:
-            raise NonRecoverableError('Required rule key not provided: '
-                                      '{0}'.format(required_rule))
-
 
 @operation
 def authorize(**_):
