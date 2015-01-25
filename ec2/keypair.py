@@ -62,6 +62,8 @@ def create(**kwargs):
         os.path.join(ctx.node.properties['private_key_path'],
                      '{0}{1}'.format(ctx.node.properties['resource_id'],
                                      '.pem'))
+    ctx.logger.info('Assigned key_path runtime p: {}'.format(
+        ctx.instance.runtime_properties['key_path']))
 
 
 @operation
