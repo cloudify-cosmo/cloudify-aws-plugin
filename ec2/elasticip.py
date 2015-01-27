@@ -100,7 +100,7 @@ def associate(**_):
 
     ctx.logger.info('Associated Elastic IP {0} with instance {1}.'.format(
         elasticip, instance_id))
-    ctx.source.instance.runtime_properties['ip'] = elasticip
+    ctx.source.instance.runtime_properties['public_ip_address'] = elasticip
 
 
 @operation
@@ -119,7 +119,7 @@ def disassociate(**_):
                                   'Elastic IP, returned: {0}.'
                                   .format(e))
     finally:
-        ctx.source.instance.runtime_properties.pop('ip')
+        ctx.source.instance.runtime_properties.pop('public_ip_address')
 
     ctx.logger.info('Disassociated Elastic IP {0}.'.format(
         elasticip))
