@@ -393,8 +393,11 @@ def assign_runtime_properties_to_instance(retry_interval, ctx):
             get_public_ip_address(retry_interval, ctx=ctx)
         ctx.instance.runtime_properties['ip'] = \
             get_private_ip_address(retry_interval, ctx=ctx)
-        ctx.logger.info('IP: {}{}{}{}.'.format(
-            ctx.instance.runtime_properties['private_dns_name'],
-            ctx.instance.runtime_properties['public_dns_name'],
-            ctx.instance.runtime_properties['public_ip_address'],
+        ctx.logger.info('Public DNS: {}.'.format(
+            ctx.instance.runtime_properties['public_dns_name']))
+        ctx.logger.info('Public IP: {}.'.format(
+            ctx.instance.runtime_properties['public_ip_address']))
+        ctx.logger.info('Private DNS: {}.'.format(
+            ctx.instance.runtime_properties['private_dns_name']))
+        ctx.logger.info('Private IP (the ip): {}.'.format(
             ctx.instance.runtime_properties['ip']))
