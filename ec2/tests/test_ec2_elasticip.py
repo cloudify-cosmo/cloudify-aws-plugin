@@ -40,8 +40,7 @@ class TestElasticIP(testtools.TestCase):
             'image_id': TEST_AMI_IMAGE_ID,
             'instance_type': TEST_INSTANCE_TYPE,
             'parameters': {
-                'security_groups': ['sg-73cd3f1e'],
-                'instance_initiated_shutdown_behavior': 'stop'
+                'security_groups': ['sg-73cd3f1e']
             }
         }
 
@@ -60,7 +59,8 @@ class TestElasticIP(testtools.TestCase):
             }),
             'instance': MockContext({
                 'runtime_properties': {
-                    'instance_id': 'i-abc1234'
+                    'instance_id': 'i-abc1234',
+                    'public_ip_address': '127.0.0.1'
                 }
             })
         })
@@ -178,7 +178,8 @@ class TestElasticIP(testtools.TestCase):
             reservation.instances[0].id
         ex = self.assertRaises(NonRecoverableError, elasticip.associate,
                                ctx=ctx)
-        ctx.source.instance.runtime_properties['ip'] = '127.0.0.1'
+        ctx.source.instance.runtime_properties['public_ip_address'] = \
+            '127.0.0.1'
         self.assertIn('InvalidAddress.NotFound', ex.message)
 
     @mock_ec2
@@ -191,7 +192,7 @@ class TestElasticIP(testtools.TestCase):
         ctx = self.mock_relationship_ctx('test_bad_address_detach')
 
         ctx.target.instance.runtime_properties['aws_resource_id'] = '0.0.0.0'
-        ctx.source.instance.runtime_properties['ip'] = '0.0.0.0'
+        ctx.source.instance.runtime_properties['public_ip_address'] = '0.0.0.0'
         ex = self.assertRaises(NonRecoverableError,
                                elasticip.disassociate, ctx=ctx)
         self.assertIn('InvalidAddress.NotFound', ex.message)
