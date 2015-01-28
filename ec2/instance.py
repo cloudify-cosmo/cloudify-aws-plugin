@@ -107,15 +107,20 @@ def start(retry_interval, **_):
                                   'API returned: {0}.'.format(str(e)))
 
     if utils.get_instance_state(ctx=ctx) == 16:
-        ctx.logger.info('Instance {0} is running.'.format(instance_id))
         ctx.instance.runtime_properties['private_dns_name'] = \
             utils.get_private_dns_name(retry_interval, ctx=ctx)
         ctx.instance.runtime_properties['public_dns_name'] = \
             utils.get_public_dns_name(retry_interval, ctx=ctx)
-        ctx.instance.runtime_properties['ip'] = \
-            utils.get_private_ip_address(retry_interval, ctx=ctx)
         ctx.instance.runtime_properties['public_ip_address'] = \
             utils.get_public_ip_address(retry_interval, ctx=ctx)
+        ctx.instance.runtime_properties['ip'] = \
+            utils.get_private_ip_address(retry_interval, ctx=ctx)
+        ctx.logger.info('Instance {0} is running.'.format(instance_id))
+        ctx.logger.info('IP: {}{}{}{}.'.format(
+            ctx.instance.runtime_properties['private_dns_name'],
+            ctx.instance.runtime_properties['public_dns_name'],
+            ctx.instance.runtime_properties['public_ip_address'],
+            ctx.instance.runtime_properties['ip']))
     else:
         raise RecoverableError('Waiting for server to be running'
                                ' Retrying...',
