@@ -381,3 +381,20 @@ def validate_state(instance_id, state, timeout_length, check_interval, ctx):
                                               timeout_length,
                                               check_interval))
         time.sleep(check_interval)
+
+
+def assign_runtime_properties_to_instance(retry_interval, ctx):
+
+        ctx.instance.runtime_properties['private_dns_name'] = \
+            get_private_dns_name(retry_interval, ctx=ctx)
+        ctx.instance.runtime_properties['public_dns_name'] = \
+            get_public_dns_name(retry_interval, ctx=ctx)
+        ctx.instance.runtime_properties['public_ip_address'] = \
+            get_public_ip_address(retry_interval, ctx=ctx)
+        ctx.instance.runtime_properties['ip'] = \
+            get_private_ip_address(retry_interval, ctx=ctx)
+        ctx.logger.info('IP: {}{}{}{}.'.format(
+            ctx.instance.runtime_properties['private_dns_name'],
+            ctx.instance.runtime_properties['public_dns_name'],
+            ctx.instance.runtime_properties['public_ip_address'],
+            ctx.instance.runtime_properties['ip']))
