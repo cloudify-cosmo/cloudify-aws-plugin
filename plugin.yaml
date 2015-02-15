@@ -5,7 +5,7 @@
 plugins:
   aws:
     executor: central_deployment_agent
-    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/example.zip # { tag }
+    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/example.zip
 
 node_types:
   cloudify.aws.nodes.Instance:
@@ -19,23 +19,26 @@ node_types:
       resource_id:
         description: >
           If this is an existing resource, you should provide the ID of the resource in Amazon AWS.
-          If this a new
+          If this a new resource, make this the name.
         type: string
         default: ''
       image_id:
         description: >
           The ID of the AMI image in your Amazon account.
         type: string
+        default: ''
       instance_type:
         description: >
           The instance's size.
         type: string
+        default: m1.small
       parameters:
         description: >
           The key value pair parameters allowed by Amazon API to the
           ec2.connection.EC2Connection.run_instances command. It should be mentioned that
           although this field is listed as optional. A non-trivial use case requires
-          that both the key_name parameter and the security_groups parameter be specified. 
+          that both the key_name parameter and the security_groups parameter be specified.
+        default: {}
     interfaces:
       cloudify.interfaces.lifecycle:
         create: aws.ec2.instance.run_instances
@@ -45,21 +48,21 @@ node_types:
             retry_interval:
               description: How many seconds between state checks.
               type: integer
-              default: 20
+              default: 5
         stop:
           implementation: aws.ec2.instance.stop
           inputs:
             retry_interval:
               description: How many seconds between state checks.
               type: integer
-              default: 20
+              default: 5
         delete:
           implementation: aws.ec2.instance.terminate
           inputs:
             retry_interval:
               description: How many seconds between state checks.
               type: integer
-              default: 20
+              default: 5
       cloudify.interfaces.validation:
         creation:
           implementation: aws.ec2.instance.creation_validation
