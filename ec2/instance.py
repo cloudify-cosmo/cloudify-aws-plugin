@@ -23,51 +23,43 @@ from cloudify.decorators import operation
 from ec2 import utils
 from ec2 import connection
 
-# run_instances should not allow more than one instance
-# to be created this should be specified in the node_template
-# instances, deploy = n
-RUN_INSTANCES_UNSUPPORTED = {
-    'min_count': 1,
-    'max_count': 1
-}
-
 
 @operation
 def run_instances(**_):
-    """ Creates an EC2 Classic Instance.
-        Requires:
-            ctx.node.properties['image_id']
-            ctx.node.properties['instance_type']
-        Sets:
-            ctx.instance.runtime_properties['aws_resource_id']
+    """ Creates an instance in EC2. If use_external_resource is true,
+        this will assign accept the provided resource_id and validate
+        retrieve the descriptive instance object from AWS. It then
+        the instance's id from the instance object and assigns it to
+        a runtime property.
+        If use_external_resource is false or not given, the image_id
+        and instance_type properties are taken from the node properties
+        and inserted into the run_instances boto function arguments.
+        Then the rest of the parameters are added to the arguments,
+        overriding image_id and instance_type, if given.
+        Except min_count and max_count, which are always set to 1.
+        The run_instance function is sent to EC2. If no error is raised,
+        the output of that function is returned and the instance id is
+        assigned to the runtime properties.
     """
 
     ec2_client = connection.EC2ConnectionClient().client()
 
-    if ctx.node.properties.get('use_external_resource', False) is True:
-        instance_id = ctx.node.properties.get('resource_id')
+    if ctx.node.properties['use_external_resource']:
+        instance_id = ctx.node.properties['resource_id']
         instance = utils.get_instance_from_id(instance_id, ctx=ctx)
         ctx.instance.runtime_properties['aws_resource_id'] = instance.id
         ctx.logger.info('Using existing resource: {0}.'.format(instance.id))
         return
 
-    arguments = dict()
-    arguments['image_id'] = ctx.node.properties.get('image_id')
-    arguments['instance_type'] = ctx.node.properties.get('instance_type')
-    args_to_merge = utils.build_arg_dict(
-        ctx.node.properties['parameters'].copy(), RUN_INSTANCES_UNSUPPORTED)
-    arguments.update(args_to_merge)
+    parameters = utils.get_parameters(ctx=ctx)
 
     ctx.logger.info('Creating EC2 Instance.')
     ctx.logger.info('Attempting to create EC2 Instance.'
-                    'Image id: {0}. Instance type: {1}.'
-                    .format(arguments['image_id'],
-                            arguments['instance_type']))
-    ctx.logger.info('Sending these API parameters: {0}.'
-                    .format(arguments))
+                    'Sending these API parameters: {0}.'
+                    .format(parameters))
 
     try:
-        reservation = ec2_client.run_instances(**arguments)
+        reservation = ec2_client.run_instances(**parameters)
     except (boto.exception.EC2ResponseError,
             boto.exception.BotoServerError) as e:
         raise NonRecoverableError('Error. Failed to run EC2 Instance: '
@@ -90,7 +82,8 @@ def start(retry_interval, **_):
             ctx.instance.runtime_properties['public_ip_address']
     """
     ec2_client = connection.EC2ConnectionClient().client()
-    instance_id = ctx.instance.runtime_properties.get('aws_resource_id')
+
+    instance_id = ctx.instance.runtime_properties['aws_resource_id']
 
     if utils.get_instance_state(ctx=ctx) == 16:
         utils.assign_runtime_properties_to_instance(retry_interval, ctx=ctx)

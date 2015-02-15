@@ -25,28 +25,51 @@ from ec2 import connection
 from cloudify.exceptions import NonRecoverableError, RecoverableError
 
 
-def build_arg_dict(user_supplied, unsupported):
+def get_parameters(ctx):
+    """ These are the list of supported arguments to the run_instances
+        function and their default values. Essentially, this checks to see
+        if the user provided a value and takes the user's value. If the
+        user did not provide a value, the key is deleted from the
+        dictionary.
+      :param ctx:  The Cloudify ctx context. This function uses the
+                   node.properties attribute.
+      :returns parameters dictionary
+    """
 
-    arguments = {}
-    for key in user_supplied.keys():
-        if 'security_groups' in key and \
-                type(user_supplied.get(key)) is not list:
-            arguments['{0}'.format(key)] = user_supplied.get(key, None).split()
-        arguments['{0}'.format(key)] = user_supplied.get(key, None)
-    for key in unsupported.keys():
-        arguments['{0}'.format(key)] = unsupported[key]
-    return arguments
+    parameters = {
+        'image_id': None, 'key_name': None, 'security_groups': None,
+        'user_data': None, 'addressing_type': None,
+        'instance_type': 'm1.small', 'placement': None, 'kernel_id': None,
+        'ramdisk_id': None, 'monitoring_enabled': False, 'subnet_id': None,
+        'block_device_map': None, 'disable_api_termination': False,
+        'instance_initiated_shutdown_behavior': None,
+        'private_ip_address': None, 'placement_group': None,
+        'client_token': None, 'security_group_ids': None,
+        'additional_info': None, 'instance_profile_name': None,
+        'instance_profile_arn': None, 'tenancy': None, 'ebs_optimized': False,
+        'network_interfaces': None, 'dry_run': False
+    }
+
+    for key in parameters.keys():
+        if key in ctx.node.properties['parameters'].keys():
+            parameters[key] = ctx.node.properties['parameters'][key]
+        elif key is 'image_id' or key is 'instance_type':
+            parameters[key] = ctx.node.properties[key]
+        else:
+            del(parameters[key])
+
+    return parameters
 
 
-def validate_node_property(property_key, ctx):
+def validate_node_property(key, ctx):
     """ checks if the node property exists in the blueprint
         if not, raises unrecoverable Error
     """
 
-    if property_key not in ctx.node.properties.keys() \
-            or ctx.node.properties.get(property_key) is None:
+    if key not in ctx.node.properties.keys() \
+            or ctx.node.properties.get(key) is None:
         raise NonRecoverableError('{0} is a required input .'
-                                  'Unable to create.'.format(property_key))
+                                  'Unable to create.'.format(key))
 
 
 def save_key_pair(key_pair_object, ctx):
@@ -61,12 +84,14 @@ def save_key_pair(key_pair_object, ctx):
                                   'OS Returned: {1}'.format(
                                       ctx.node.properties['private_key_path'],
                                       str(e)))
+
     path = os.path.expanduser(ctx.node.properties['private_key_path'])
     key_path = os.path.join(path,
                             '{0}{1}'.format(
                                 ctx.node.properties['resource_id'],
                                 '.pem'))
-    os.chmod(key_path, 0400)
+
+    os.chmod(key_path, 0600)
 
 
 def delete_key_pair(key_pair_name, ctx):
@@ -140,6 +165,26 @@ def get_public_ip_address(check_interval, ctx):
     """ returns the public_ip_address variable for a given instance
     """
     return get_instance_attribute('ip_address', check_interval, ctx=ctx)
+
+
+def assign_runtime_properties_to_instance(retry_interval, ctx):
+
+        ctx.instance.runtime_properties['private_dns_name'] = \
+            get_private_dns_name(retry_interval, ctx=ctx)
+        ctx.instance.runtime_properties['public_dns_name'] = \
+            get_public_dns_name(retry_interval, ctx=ctx)
+        ctx.instance.runtime_properties['public_ip_address'] = \
+            get_public_ip_address(retry_interval, ctx=ctx)
+        ctx.instance.runtime_properties['ip'] = \
+            get_private_ip_address(retry_interval, ctx=ctx)
+        ctx.logger.info('Public DNS: {}.'.format(
+            ctx.instance.runtime_properties['public_dns_name']))
+        ctx.logger.info('Public IP: {}.'.format(
+            ctx.instance.runtime_properties['public_ip_address']))
+        ctx.logger.info('Private DNS: {}.'.format(
+            ctx.instance.runtime_properties['private_dns_name']))
+        ctx.logger.info('Private IP (the ip): {}.'.format(
+            ctx.instance.runtime_properties['ip']))
 
 
 def get_instance_state(ctx):
@@ -381,23 +426,3 @@ def validate_state(instance_id, state, timeout_length, check_interval, ctx):
                                               timeout_length,
                                               check_interval))
         time.sleep(check_interval)
-
-
-def assign_runtime_properties_to_instance(retry_interval, ctx):
-
-        ctx.instance.runtime_properties['private_dns_name'] = \
-            get_private_dns_name(retry_interval, ctx=ctx)
-        ctx.instance.runtime_properties['public_dns_name'] = \
-            get_public_dns_name(retry_interval, ctx=ctx)
-        ctx.instance.runtime_properties['public_ip_address'] = \
-            get_public_ip_address(retry_interval, ctx=ctx)
-        ctx.instance.runtime_properties['ip'] = \
-            get_private_ip_address(retry_interval, ctx=ctx)
-        ctx.logger.info('Public DNS: {}.'.format(
-            ctx.instance.runtime_properties['public_dns_name']))
-        ctx.logger.info('Public IP: {}.'.format(
-            ctx.instance.runtime_properties['public_ip_address']))
-        ctx.logger.info('Private DNS: {}.'.format(
-            ctx.instance.runtime_properties['private_dns_name']))
-        ctx.logger.info('Private IP (the ip): {}.'.format(
-            ctx.instance.runtime_properties['ip']))
