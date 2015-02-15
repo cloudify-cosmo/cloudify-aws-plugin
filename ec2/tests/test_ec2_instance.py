@@ -38,10 +38,11 @@ class TestInstance(testtools.TestCase):
 
         test_node_id = test_name
         test_properties = {
+            'use_external_resource': False,
             'image_id': TEST_AMI_IMAGE_ID,
             'instance_type': TEST_INSTANCE_TYPE,
             'parameters': {
-                'security_groups': ['sg-73cd3f1e'],
+                'security_group_ids': ['sg-73cd3f1e'],
                 'instance_initiated_shutdown_behavior': 'stop'
             }
         }

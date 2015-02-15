@@ -36,6 +36,7 @@ class TestKeyPair(testtools.TestCase):
 
         test_node_id = test_name
         test_properties = {
+            'use_external_resource': False,
             'resource_id': 'test_ec2_keypair',
             'private_key_path': '~/.ssh'
         }
