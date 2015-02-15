@@ -50,8 +50,9 @@ node_templates:
       image_id: { get_input: image_id }
       instance_type: { get_input: flavor_id }
       parameters:
-        security_groups: { get_property: [ agent_security_group, resource_id ] }
-        key_name: { get_property: [ agent_keypair, resource_id ] }
+        security_group_ids:
+          - sg-73cd3f1e
+        key_name: { get_input: agent_keypair_name }
     relationships:
       - target: agent_ip
         type: cloudify.aws.relationships.instance_connected_to_elastic_ip
