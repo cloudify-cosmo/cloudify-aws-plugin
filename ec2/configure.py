@@ -23,7 +23,7 @@ from boto import config
 
 class BotoConfig(object):
 
-    def get_temp_config(self):
+    def get_temp_file(self):
         temp_config = tempfile.mktemp()
         config = self._get_config()
         with open(temp_config, 'w') as temp_config_file:
@@ -36,7 +36,7 @@ class BotoConfig(object):
                  'aws_secret_access_key = {}'.format(
                      self._get_aws_credentials_name(),
                      self._get_aws_access_key_id(),
-                     self._get_aws_secret_access_key)
+                     self._get_aws_secret_access_key())
         return config
 
     def _get_aws_credentials_name(self):
