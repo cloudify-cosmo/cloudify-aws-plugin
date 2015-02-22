@@ -52,23 +52,26 @@ def get_parameters(ctx):
         'network_interfaces': None, 'dry_run': False
     }
 
+    node_parameter_keys = ctx.node.properties['parameters'].keys()
+
     for key in parameters.keys():
-        if key in ctx.node.properties['parameters'].keys():
-            parameters[key] = ctx.node.properties['parameters'][key]
-        elif key is 'image_id' or key is 'instance_type':
-            parameters[key] = ctx.node.properties[key]
-        elif key is 'security_group_ids':
-            if ctx.node.properties[key] is not None:
+        if key is 'security_group_ids':
+            if key in node_parameter_keys:
                 parameters[key] = list(
-                    set(attached_group_ids) | set(ctx.node.properties[key])
+                    set(attached_group_ids) | set(
+                        ctx.node.properties['parameters'][key])
                 )
             else:
                 parameters[key] = attached_group_ids
         elif key is 'key_name':
-            if ctx.node.properties['parameters'][key] is not None:
+            if key in node_parameter_keys:
                 parameters[key] = ctx.node.properties['parameters'][key]
             else:
                 parameters[key] = get_attached_keypair_id(ctx)
+        elif key in node_parameter_keys:
+            parameters[key] = ctx.node.properties['parameters'][key]
+        elif key is 'image_id' or key is 'instance_type':
+            parameters[key] = ctx.node.properties[key]
         else:
             del(parameters[key])
 
@@ -256,16 +259,21 @@ def get_target_aws_resource_id(relationship_type, ctx):
     """ This loops through the relationships of type and returns
         targets of those relationships.
     """
-    group_ids = []
+    ids = []
+
+    if not hasattr(ctx.instance, 'relationships'):
+        ctx.logger.info('Skipping attaching relationships, '
+                        'because none are attached.')
+        return ids
 
     for relationship in ctx.instance.relationships:
         ctx.logger.info('The type is: {}'.format(relationship.type))
         if relationship.type is type:
-            group_ids.append(
+            ids.append(
                 relationship.target.
                 instance.runtime_properties['aws_resource_id'])
 
-    return group_ids
+    return ids
 
 
 def get_security_group_from_id(group_id, ctx):
