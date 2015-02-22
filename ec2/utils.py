@@ -247,6 +247,7 @@ def get_target_aws_resource_id(relationship_type, ctx):
     group_ids = []
 
     for relationship in ctx.instance.relationships:
+        ctx.logger.info('The type is: {}'.format(relationship.type))
         if relationship.type is type:
             group_ids.append(
                 relationship.target.
