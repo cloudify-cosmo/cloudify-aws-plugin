@@ -242,10 +242,10 @@ def get_instance_from_id(instance_id, ctx):
 
 
 def get_attached_keypair_id(ctx):
-    relationship_type = 'cloudify.aws.relationships.' \
-                        'instance_connected_to_keypair'
+    relationship_type = 'instance_connected_to_keypair'
 
-    return get_target_aws_resource_id(relationship_type, ctx=ctx)
+    kplist = get_target_aws_resource_id(relationship_type, ctx=ctx)
+    return kplist[0]
 
 
 def get_attached_security_group_ids(ctx):
