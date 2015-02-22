@@ -58,6 +58,15 @@ def get_parameters(ctx):
         else:
             del(parameters[key])
 
+    attached_group_ids = get_attached_security_group_ids(ctx=ctx)
+
+    if 'security_group_ids' in parameters.keys():
+        for sg in attached_group_ids:
+            if sg not in parameters['security_group_ids']:
+                parameters['security_group_ids'].append(sg)
+    else:
+        parameters['security_group_ids'] = attached_group_ids
+
     return parameters
 
 
@@ -222,6 +231,28 @@ def get_instance_from_id(instance_id, ctx):
     instance = reservations[0].instances[0]
 
     return instance
+
+
+def get_attached_security_group_ids(ctx):
+    relationship_type = 'cloudify.aws.relationships.' \
+                        'instance_connected_to_security_group'
+
+    return get_target_aws_resource_id(relationship_type, ctx=ctx)
+
+
+def get_target_aws_resource_id(relationship_type, ctx):
+    """ This loops through the relationships of type and returns
+        targets of those relationships.
+    """
+    group_ids = []
+
+    for relationship in ctx.instance.relationships:
+        if relationship.type is type:
+            group_ids.append(
+                relationship.target.
+                instance.runtime_properties['aws_resource_id'])
+
+    return group_ids
 
 
 def get_security_group_from_id(group_id, ctx):
