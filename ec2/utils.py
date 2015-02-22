@@ -36,6 +36,8 @@ def get_parameters(ctx):
       :returns parameters dictionary
     """
 
+    attached_group_ids = get_attached_security_group_ids(ctx=ctx)
+
     parameters = {
         'image_id': None, 'key_name': None, 'security_groups': None,
         'user_data': None, 'addressing_type': None,
@@ -55,17 +57,20 @@ def get_parameters(ctx):
             parameters[key] = ctx.node.properties['parameters'][key]
         elif key is 'image_id' or key is 'instance_type':
             parameters[key] = ctx.node.properties[key]
+        elif key is 'security_group_ids':
+            if ctx.node.properties[key] is not None:
+                parameters[key] = list(
+                    set(attached_group_ids) | set(ctx.node.properties[key])
+                )
+            else:
+                parameters[key] = attached_group_ids
+        elif key is 'key_name':
+            if ctx.node.properties['parameters'][key] is not None:
+                parameters[key] = ctx.node.properties['parameters'][key]
+            else:
+                parameters[key] = get_attached_keypair_id(ctx)
         else:
             del(parameters[key])
-
-    attached_group_ids = get_attached_security_group_ids(ctx=ctx)
-
-    if 'security_group_ids' in parameters.keys():
-        for sg in attached_group_ids:
-            if sg not in parameters['security_group_ids']:
-                parameters['security_group_ids'].append(sg)
-    else:
-        parameters['security_group_ids'] = attached_group_ids
 
     return parameters
 
@@ -231,6 +236,13 @@ def get_instance_from_id(instance_id, ctx):
     instance = reservations[0].instances[0]
 
     return instance
+
+
+def get_attached_keypair_id(ctx):
+    relationship_type = 'cloudify.aws.relationships.' \
+                        'instance_connected_to_keypair'
+
+    return get_target_aws_resource_id(relationship_type, ctx=ctx)
 
 
 def get_attached_security_group_ids(ctx):
