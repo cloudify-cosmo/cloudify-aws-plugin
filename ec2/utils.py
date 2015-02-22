@@ -249,8 +249,7 @@ def get_attached_keypair_id(ctx):
 
 
 def get_attached_security_group_ids(ctx):
-    relationship_type = 'cloudify.aws.relationships.' \
-                        'instance_connected_to_security_group'
+    relationship_type = 'instance_connected_to_security_group'
 
     return get_target_aws_resource_id(relationship_type, ctx=ctx)
 
@@ -259,6 +258,7 @@ def get_target_aws_resource_id(relationship_type, ctx):
     """ This loops through the relationships of type and returns
         targets of those relationships.
     """
+
     ids = []
 
     if not hasattr(ctx.instance, 'relationships'):
@@ -266,11 +266,10 @@ def get_target_aws_resource_id(relationship_type, ctx):
                         'because none are attached.')
         return ids
 
-    for relationship in ctx.instance.relationships:
-        if relationship.type is relationship_type:
+    for r in ctx.instance.relationships:
+        if relationship_type in r.type:
             ids.append(
-                relationship.target.
-                instance.runtime_properties['aws_resource_id'])
+                r.target.instance.runtime_properties['aws_resource_id'])
 
     return ids
 
