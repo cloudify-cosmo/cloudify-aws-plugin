@@ -97,8 +97,13 @@ def start(retry_interval, **_):
         ec2_client.start_instances(instance_id)
     except (boto.exception.EC2ResponseError,
             boto.exception.BotoServerError) as e:
-        raise NonRecoverableError('Error. Failed to start EC2 Instance: '
-                                  'API returned: {0}.'.format(str(e)))
+        if 'does not exist' in e:
+            raise RecoverableError('Waiting for server to be running'
+                                   ' Retrying...',
+                                   retry_after=retry_interval)
+        else:
+            raise NonRecoverableError('Error. Failed to start EC2 Instance: '
+                                      'API returned: {0}.'.format(str(e)))
 
     if utils.get_instance_state(ctx=ctx) == 16:
         utils.assign_runtime_properties_to_instance(retry_interval, ctx=ctx)
