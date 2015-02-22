@@ -267,8 +267,7 @@ def get_target_aws_resource_id(relationship_type, ctx):
         return ids
 
     for relationship in ctx.instance.relationships:
-        ctx.logger.info('The type is: {}'.format(relationship.type))
-        if relationship.type is type:
+        if relationship.type is relationship_type:
             ids.append(
                 relationship.target.
                 instance.runtime_properties['aws_resource_id'])
