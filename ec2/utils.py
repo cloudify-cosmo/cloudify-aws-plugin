@@ -245,7 +245,10 @@ def get_attached_keypair_id(ctx):
     relationship_type = 'instance_connected_to_keypair'
 
     kplist = get_target_aws_resource_id(relationship_type, ctx=ctx)
-    return kplist[0]
+    if kplist:
+        return kplist[0]
+    else:
+        return kplist
 
 
 def get_attached_security_group_ids(ctx):
