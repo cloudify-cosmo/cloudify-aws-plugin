@@ -92,6 +92,7 @@ class TestElasticIP(testtools.TestCase):
             elasticip.allocate(ctx=ctx)
             self.assertIn('elasticip', ctx.instance.runtime_properties)
 
+
     def test_good_address_release(self):
         """ Tests that when an address that is in the user's
             EC2 account is provided to the release function
