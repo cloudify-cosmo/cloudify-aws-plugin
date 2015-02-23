@@ -62,7 +62,7 @@ def release(**_):
     address_object = utils.get_address_object_by_id(elasticip, ctx=ctx)
 
     try:
-        address_object.release()
+        address_object.delete()
     except (boto.exception.EC2ResponseError,
             boto.exception.BotoServerError) as e:
         raise NonRecoverableError('Error. Failed to '
