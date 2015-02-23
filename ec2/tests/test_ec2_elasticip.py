@@ -106,23 +106,6 @@ class TestElasticIP(testtools.TestCase):
             ctx.instance.runtime_properties['elasticip'] = address.public_ip
             elasticip.release(ctx=ctx)
 
-    def test_bad_address_release(self):
-        """ Tests that NonRecoverableError: Invalid request is
-            raised when an address that is not an elastic ip
-            is provided to the release function
-        """
-
-        ctx = self.mock_ctx('test_bad_address_delete')
-
-        with mock_ec2():
-            ec2_client = connection.EC2ConnectionClient().client()
-            reservation = ec2_client.run_instances(
-                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
-            instance = reservation.instances[0]
-            ctx.instance.runtime_properties['elasticip'] = instance.ip_address
-            ex = self.assertRaises(NonRecoverableError,
-                                   elasticip.release, ctx=ctx)
-            self.assertIn('Invalid request', ex.message)
 
     def test_good_address_associate(self):
         """ Tests that when an address that is in the user's
