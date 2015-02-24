@@ -17,9 +17,7 @@
 import os
 
 # Boto Imports
-from boto.exception import EC2ResponseError
-from boto.exception import BotoServerError
-from boto.exception import BotoClientError
+import boto.exception
 
 # Cloudify imports
 from cloudify import ctx
@@ -39,36 +37,37 @@ def create(**kwargs):
             ctx.instance.runtime_properties['aws_resource_id']
             ctx.instance.runtime_properties['key_path']
     """
+
     ec2_client = connection.EC2ConnectionClient().client()
 
-    if ctx.node.properties.get('use_external_resource', False) is True:
-        ctx.instance.runtime_properties['aws_resource_id'] = \
-            utils.get_key_pair_by_id(ctx=ctx)
-        if not utils.search_for_key_file(ctx=ctx):
+    if ctx.node.properties['use_external_resource']:
+        key_pair_id = ctx.node.properties['resource_id']
+        key_pair = utils.get_key_pair_by_id(key_pair_id)
+        ctx.instance.runtime_properties['aws_resource_id'] = key_pair.name
+        if not search_for_key_file(ctx=ctx):
             raise NonRecoverableError('use_external_resource was specified, '
                                       'and a name given, but the key pair was'
                                       'not located on the filesystem.')
         return
 
     key_pair_name = ctx.node.properties['resource_id']
+
     ctx.logger.info('Creating key pair.')
 
     try:
         kp = ec2_client.create_key_pair(key_pair_name)
-    except (EC2ResponseError, BotoServerError, BotoClientError) as e:
-        raise NonRecoverableError('Key pair not created. '
-                                  'API returned: {0}'.format(str(e)))
+    except (boto.exception.EC2ResponseError,
+            boto.exception.BotoServerError,
+            boto.exception.BotoClientError) as e:
+        raise NonRecoverableError('Key pair not created. {0}'.format(str(e)))
 
     ctx.logger.info('Created key pair: {0}.'.format(kp.name))
+
     ctx.instance.runtime_properties['aws_resource_id'] = kp.name
 
-    utils.save_key_pair(kp, ctx=ctx)
-    ctx.instance.runtime_properties['key_path'] = \
-        os.path.join(ctx.node.properties['private_key_path'],
-                     '{0}{1}'.format(ctx.node.properties['resource_id'],
-                                     '.pem'))
-    ctx.logger.info('Assigned key_path runtime p: {}'.format(
-        ctx.instance.runtime_properties['key_path']))
+    save_key_pair(kp, ctx=ctx)
+
+    ctx.instance.runtime_properties['key_path'] = get_key_file_path(ctx=ctx)
 
 
 @operation
@@ -82,7 +81,8 @@ def delete(**kwargs):
 
     try:
         ec2_client.delete_key_pair(key_pair_name)
-    except (EC2ResponseError, BotoServerError) as e:
+    except (boto.exception.EC2ResponseError,
+            boto.exception.BotoServerError) as e:
         raise NonRecoverableError('Error response on key pair delete. '
                                   'API returned: {0}'.format(str(e)))
     finally:
@@ -90,7 +90,7 @@ def delete(**kwargs):
         ctx.instance.runtime_properties.pop('key_path', None)
         ctx.logger.debug('Attempted to delete key pair from account.')
 
-    utils.delete_key_pair(key_pair_name, ctx=ctx)
+    delete_key_file(key_pair_name)
     ctx.logger.info('Deleted key pair: {0}.'.format(key_pair_name))
 
 
@@ -102,6 +102,60 @@ def creation_validation(**_):
         utils.validate_node_property(property_key, ctx=ctx)
 
     if ctx.node.properties.get('use_external_resource', False) is True \
-            and utils.search_for_key_file(ctx=ctx) is not True:
+            and search_for_key_file(ctx=ctx) is not True:
         raise NonRecoverableError('Use external resource is true, but the '
                                   'key file does not exist.')
+
+
+def save_key_pair(key_pair_object, ctx):
+    """ Saves the key pair to the file specified in the blueprint. """
+
+    ctx.logger.debug('Attempting to save the key_pair_object.')
+
+    try:
+        key_pair_object.save(ctx.node.properties['private_key_path'])
+    except (boto.exception.boto.exception.BotoClientError, OSError) as e:
+        raise NonRecoverableError('Unable to save key pair to file: {0}.'
+                                  'OS Returned: {1}'.format(
+                                      ctx.node.properties['private_key_path'],
+                                      str(e)))
+
+    key_path = get_key_file_path(ctx=ctx)
+
+    os.chmod(key_path, 0600)
+
+
+def get_key_file_path(ctx):
+    """The key_path is an attribute that gives the full path to the key file.
+    This function creates the path as a string for use by various functions in
+    this module. It doesn't verify whether the path points to anything.
+    """
+
+    path = os.path.expanduser(ctx.node.properties['private_key_path'])
+    key_path = os.path.join(path,
+                            '{0}{1}'.format(
+                                ctx.node.properties['resource_id'],
+                                '.pem'))
+    return key_path
+
+
+def delete_key_file(key_pair_name):
+    """ Deletes the key pair in the file specified in the blueprint. """
+
+    key_path = get_key_file_path(ctx=ctx)
+
+    if search_for_key_file(key_path):
+        try:
+            os.remove(key_path)
+        except IOError as e:
+            raise NonRecoverableError(
+                'Unable to delete key pair: {0}.'.format(e))
+
+
+def search_for_key_file(key_path):
+    """ Indicates whether the file exists locally. """
+
+    if os.path.exists(key_path):
+        return True
+    else:
+        return False

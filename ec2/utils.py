@@ -14,7 +14,6 @@
 #    * limitations under the License.
 
 # Built-in Imports
-import os
 import time
 
 # Third-party Imports
@@ -87,61 +86,6 @@ def validate_node_property(key, ctx):
             or ctx.node.properties.get(key) is None:
         raise NonRecoverableError('{0} is a required input .'
                                   'Unable to create.'.format(key))
-
-
-def save_key_pair(key_pair_object, ctx):
-    """ Saves the key pair to the file specified in the blueprint. """
-
-    ctx.logger.debug('Attempting to save the key_pair_object.')
-
-    try:
-        key_pair_object.save(ctx.node.properties['private_key_path'])
-    except (boto.exception.BotoClientError, OSError) as e:
-        raise NonRecoverableError('Unable to save key pair to file: {0}.'
-                                  'OS Returned: {1}'.format(
-                                      ctx.node.properties['private_key_path'],
-                                      str(e)))
-
-    path = os.path.expanduser(ctx.node.properties['private_key_path'])
-    key_path = os.path.join(path,
-                            '{0}{1}'.format(
-                                ctx.node.properties['resource_id'],
-                                '.pem'))
-
-    os.chmod(key_path, 0600)
-
-
-def delete_key_pair(key_pair_name, ctx):
-    """ Deletes the key pair in the file specified in the blueprint. """
-
-    ctx.logger.debug('Attempting to save the key_pair_object.')
-
-    path = os.path.expanduser(ctx.node.properties['private_key_path'])
-    file = os.path.join(path,
-                        '{0}{1}'.format(
-                            ctx.node.properties['resource_id'],
-                            '.pem'))
-    if os.path.exists(file):
-        try:
-            os.remove(file)
-        except OSError:
-            raise NonRecoverableError('Unable to save key pair to file: {0}.'
-                                      'OS Returned: {1}'.format(path,
-                                                                str(OSError)))
-
-
-def search_for_key_file(ctx):
-    """ Indicates whether the file exists locally. """
-
-    path = os.path.expanduser(ctx.node.properties['private_key_path'])
-    file = os.path.join(path,
-                        '{0}{1}'.format(
-                            ctx.node.properties['resource_id'],
-                            '.pem'))
-    if os.path.exists(file):
-        return True
-    else:
-        return False
 
 
 def get_instance_attribute(attribute, check_interval, ctx):
@@ -219,24 +163,9 @@ def get_instance_from_id(instance_id, ctx):
     """ using the instance_id retrieves the instance object
         from the API and returns the object.
     """
-    ec2_client = connection.EC2ConnectionClient().client()
     ctx.logger.debug('Getting Instance by ID: {0}'.format(instance_id))
 
-    try:
-        reservations = ec2_client.get_all_reservations(instance_id)
-    except boto.exception.EC2ResponseError as e:
-        report_all_instances(ctx=ctx)
-        raise NonRecoverableError('Error. '
-                                  'Failed to get instance by id: '
-                                  'API returned: {0}.'
-                                  .format(str(e)))
-    except boto.exception.BotoServerError as e:
-        raise NonRecoverableError('Error. '
-                                  'Failed to get instance by id: '
-                                  'API returned: {0}.'
-                                  .format(str(e)))
-
-    instance = reservations[0].instances[0]
+    instance = get_all_instances(ctx=ctx, list_of_instance_ids=instance_id)
 
     return instance
 
@@ -277,165 +206,121 @@ def get_target_aws_resource_id(relationship_type, ctx):
     return ids
 
 
-def get_security_group_from_id(group_id, ctx):
+def get_key_pair_by_id(key_pair_id):
     ec2_client = connection.EC2ConnectionClient().client()
-    ctx.logger.debug('Getting Security Group by ID: {0}'.format(group_id))
 
     try:
-        group = ec2_client.get_all_security_groups(group_ids=group_id)
-    except boto.exception.EC2ResponseError as e:
-        group = get_security_group_from_name(group_id, ctx=ctx)
-        raise NonRecoverableError('Error. '
-                                  'Failed to group by id: '
-                                  'API returned: {0}.'
-                                  .format(str(e)))
-    except boto.exception.BotoServerError as e:
-        raise NonRecoverableError('Error. '
-                                  'Failed to group by id: '
-                                  'API returned: {0}.'
+        key_pair = ec2_client.get_key_pair(key_pair_id)
+    except (boto.exception.EC2ResponseError,
+            boto.exception.BotoServerError) as e:
+        raise NonRecoverableError('Failed to get key pair: {0}.'
                                   .format(str(e)))
 
-    if len(group) < 1:
-        group = get_security_group_from_name(group_id, ctx=ctx)
-    elif len(group) > 1:
-        report_all_security_groups(ctx=ctx)
-        raise NonRecoverableError('Error. '
-                                  'Failed to group by id or name: '
-                                  'Too many groups returned.')
+    return key_pair
+
+
+def get_security_group_from_id(group_id, ctx):
+
+    group = get_all_security_groups(ctx=ctx, list_of_group_names=group_id)
 
     return group
 
 
 def get_security_group_from_name(group_name, ctx):
-    ec2_client = connection.EC2ConnectionClient().client()
-    try:
-        group = ec2_client.get_all_security_groups(groupnames=group_name)
-    except boto.exception.EC2ResponseError as e:
-        report_all_security_groups(ctx=ctx)
-        raise NonRecoverableError('Error. '
-                                  'Failed to group by id: '
-                                  'API returned: {0}.'
-                                  .format(str(e)))
-    except boto.exception.BotoServerError as e:
-        raise NonRecoverableError('Error. '
-                                  'Failed to group by id: '
-                                  'API returned: {0}.'
-                                  .format(str(e)))
-    if len(group) is not 1:
-        report_all_security_groups(ctx=ctx)
-        raise NonRecoverableError('Error. '
-                                  'Failed to group by id or name: '
-                                  'Too many groups returned.')
+
+    group = get_all_security_groups(ctx=ctx, list_of_group_names=group_name)
 
     return group
 
 
-def get_key_pair_by_id(ctx):
-    ec2_client = connection.EC2ConnectionClient().client()
-
-    try:
-        key = ec2_client.get_key_pair(ctx.node.properties['resource_id'])
-    except (boto.exception.EC2ResponseError,
-            boto.exception.BotoServerError) as e:
-        raise NonRecoverableError('Error. '
-                                  'Failed to get key pair: '
-                                  'API returned: {0}.'
-                                  .format(str(e)))
-
-    return key.name
-
-
 def get_address_by_id(address_id, ctx):
-    ec2_client = connection.EC2ConnectionClient().client()
-    try:
-        address = ec2_client.get_all_addresses(address_id)
-    except boto.exception.EC2ResponseError as e:
-        report_all_addresses(ctx=ctx)
-        raise NonRecoverableError('Error. '
-                                  'Failed to get address by id: '
-                                  'API returned: {0}.'
-                                  .format(str(e)))
-    except (boto.exception.BotoServerError) as e:
-        raise NonRecoverableError('Error. '
-                                  'Failed to get address by id: '
-                                  'API returned: {0}.'
-                                  .format(str(e)))
+
+    address = get_address_object_by_id(address_id)
+
     return address.public_ip
 
 
 def get_address_object_by_id(address_id, ctx):
-    ec2_client = connection.EC2ConnectionClient().client()
-    try:
-        address = ec2_client.get_all_addresses(address_id)
-    except boto.exception.EC2ResponseError as e:
-        report_all_addresses(ctx=ctx)
-        raise NonRecoverableError('Error. '
-                                  'Failed to get address by id: '
-                                  'API returned: {0}.'
-                                  .format(str(e)))
-    except (boto.exception.BotoServerError) as e:
-        raise NonRecoverableError('Error. '
-                                  'Failed to get address by id: '
-                                  'API returned: {0}.'
-                                  .format(str(e)))
+
+    address = get_all_addresses(address_id, ctx=ctx)
+
     return address
 
 
-def report_all_instances(ctx):
+def get_all_instances(ctx, list_of_instance_ids=None):
     ec2_client = connection.EC2ConnectionClient().client()
 
     try:
-        reservations = ec2_client.get_all_reservations()
-    except (boto.exception.EC2ResponseError,
-            boto.exception.BotoServerError) as e:
-        raise NonRecoverableError('Error. '
-                                  'Failed to report all instances: '
-                                  'API returned: {0}.'
+        reservations = ec2_client.get_all_reservations(list_of_instance_ids)
+    except boto.exception.BotoServerError as e:
+        raise NonRecoverableError('Failed to report all instances: '
+                                  .format(str(e)))
+    except boto.exception.EC2ResponseError as e:
+        if 'InvalidInstanceID' in e:
+            instances = [instance for res in ec2_client.get_all_reservations()
+                         for instance in res.instances]
+            log_available_resources(instances, ctx=ctx)
+        raise NonRecoverableError('Failed to get requested instance: {0}'
                                   .format(str(e)))
 
     instances = [instance for res in reservations
                  for instance in res.instances]
 
-    message = []
-    for instance in instances:
-        message.append('{}\n'.format(instance))
-
-    ctx.logger.info('Available instances: {0}'.format(message))
+    return instances
 
 
-def report_all_security_groups(ctx):
+def get_all_security_groups(ctx,
+                            list_of_group_names=None,
+                            list_of_group_ids=None):
+
     ec2_client = connection.EC2ConnectionClient().client()
 
     try:
-        groups = ec2_client.get_all_security_groups()
-    except (boto.exception.EC2ResponseError,
-            boto.exception.BotoServerError) as e:
-        raise NonRecoverableError('Error. '
-                                  'Failed to report security groups: '
-                                  'API returned: {0}.'
+        groups = ec2_client.get_all_security_groups(
+            groupnames=list_of_group_names,
+            group_ids=list_of_group_ids)
+    except boto.exception.BotoServerError as e:
+        raise NonRecoverableError('Failed to report security groups: '
                                   .format(str(e)))
-    message = []
-    for group in groups:
-        message.append('{}\n'.format(group))
+    except boto.exception.EC2ResponseError as e:
+        if 'InvalidGroupId' in e:
+            groups = ec2_client.get_all_security_groups()
+            log_available_resources(groups, ctx=ctx)
+        raise NonRecoverableError('Failed to get requested group: {0}.'
+                                  .format(str(e)))
 
-    ctx.logger.info('Available groups: {0}'.format(message))
+    return groups
 
 
-def report_all_addresses(ctx):
+def get_all_addresses(address, ctx):
+
     ec2_client = connection.EC2ConnectionClient().client()
-    try:
-        addresses = ec2_client.get_all_addresses()
-    except (boto.exception.EC2ResponseError,
-            boto.exception.BotoServerError) as e:
-        raise NonRecoverableError('Error. '
-                                  'Failed to report all addresses: '
-                                  'API returned: {0}.'
-                                  .format(str(e)))
-    message = []
-    for address in addresses:
-        message.append('{}\n'.format(address))
 
-    ctx.logger.info('Available addresses: {0}'.format(message))
+    try:
+        addresses = ec2_client.get_all_addresses(address)
+    except (boto.exception.BotoServerError) as e:
+        raise NonRecoverableError('Failed to get all addresses: {0}.'
+                                  .format(str(e)))
+    except (boto.exception.EC2ResponseError) as e:
+        if 'InvalidAddress' in e:
+            addresses = ec2_client.get_all_addresses()
+            log_available_resources(addresses, ctx=ctx)
+        raise NonRecoverableError('Failed to get requested addresse: {0}.'
+                                  .format(str(e)))
+
+    return addresses
+
+
+def log_available_resources(list_of_resources, ctx):
+    """This logs a list of resources.
+    """
+
+    message = []
+
+    for resource in list_of_resources:
+        message.append('{0}\n'.format(resource))
+
+    ctx.logger.info('Available resources: {0}'.format(list_of_resources))
 
 
 def validate_state(instance_id, state, timeout_length, check_interval, ctx):
