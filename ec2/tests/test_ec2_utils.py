@@ -78,7 +78,7 @@ class TestUtils(testtools.TestCase):
             ex = self.assertRaises(NonRecoverableError,
                                    utils.get_instance_from_id,
                                    instance_id, ctx=ctx)
-            self.assertIn('InvalidInstanceID.NotFound', ex.message)
+            self.assertIn('Failed', ex.message)
 
     def test_get_private_dns_name(self):
 
@@ -90,7 +90,7 @@ class TestUtils(testtools.TestCase):
                 TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
             ctx.instance.runtime_properties['aws_resource_id'] = \
                 reservation.instances[0].id
-            dns_name = utils.get_private_dns_name(5, ctx=ctx)
+            dns_name = utils.get_private_dns_name(ctx=ctx)
             self.assertRegexpMatches(dns_name, FQDN)
 
     def test_get_public_dns_name(self):
@@ -104,5 +104,5 @@ class TestUtils(testtools.TestCase):
                 TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
             ctx.instance.runtime_properties['aws_resource_id'] = \
                 reservation.instances[0].id
-            dns_name = utils.get_public_dns_name(5, ctx=ctx)
+            dns_name = utils.get_public_dns_name(ctx=ctx)
             self.assertRegexpMatches(dns_name, FQDN)

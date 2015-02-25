@@ -137,7 +137,7 @@ class TestInstance(testtools.TestCase):
         ctx.instance.runtime_properties['aws_resource_id'] = 'bad_id'
         ex = self.assertRaises(NonRecoverableError,
                                instance.start, 1, ctx=ctx)
-        self.assertIn('InvalidInstanceID.NotFound', ex.message)
+        self.assertIn('Failed', ex.message)
 
     @mock_ec2
     def test_stop_bad_id(self):
@@ -154,7 +154,7 @@ class TestInstance(testtools.TestCase):
         ctx.instance.runtime_properties['ip'] = '0.0.0.0'
         ex = self.assertRaises(NonRecoverableError,
                                instance.stop, 1, ctx=ctx)
-        self.assertIn('InvalidInstanceID.NotFound', ex.message)
+        self.assertIn('Failed', ex.message)
 
     @mock_ec2
     def test_terminate_bad_id(self):

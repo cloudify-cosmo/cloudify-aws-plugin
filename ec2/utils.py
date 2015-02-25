@@ -15,13 +15,14 @@
 
 # Built-in Imports
 import time
+import re
 
 # Third-party Imports
 import boto.exception
 
 # Cloudify Imports
 from ec2 import connection
-from cloudify.exceptions import NonRecoverableError, RecoverableError
+from cloudify.exceptions import NonRecoverableError
 
 
 def get_parameters(ctx):
@@ -88,75 +89,45 @@ def validate_node_property(key, ctx):
                                   'Unable to create.'.format(key))
 
 
-def get_instance_attribute(attribute, check_interval, ctx):
+def get_instance_attribute(attribute, ctx):
     """ given the related instance object
         the given variable can be retrieved and returned
     """
 
     instance_id = ctx.instance.runtime_properties['aws_resource_id']
     instance = get_instance_from_id(instance_id, ctx=ctx)
-    if 'running' not in instance.update():
-        raise RecoverableError('Waiting for server to be running. '
-                               'Retrying...', retry_after=check_interval)
 
     attribute = getattr(instance, attribute)
     return attribute
 
 
-def get_private_dns_name(check_interval, ctx):
+def get_instance_state(ctx):
+    state = get_instance_attribute('state_code', ctx=ctx)
+    return state
+
+
+def get_private_dns_name(ctx):
     """ returns the private_dns_name variable for a given instance
     """
-    return get_instance_attribute('private_dns_name', check_interval, ctx=ctx)
+    return get_instance_attribute('private_dns_name', ctx=ctx)
 
 
-def get_public_dns_name(check_interval, ctx):
+def get_public_dns_name(ctx):
     """ returns the public_dns_name variable for a given instance
     """
-    return get_instance_attribute('public_dns_name', check_interval, ctx=ctx)
+    return get_instance_attribute('public_dns_name', ctx=ctx)
 
 
-def get_private_ip_address(check_interval, ctx):
+def get_private_ip_address(ctx):
     """ returns the private_ip_address variable for a given instance
     """
-    return get_instance_attribute('private_ip_address',
-                                  check_interval, ctx=ctx)
+    return get_instance_attribute('private_ip_address', ctx=ctx)
 
 
-def get_public_ip_address(check_interval, ctx):
+def get_public_ip_address(ctx):
     """ returns the public_ip_address variable for a given instance
     """
-    return get_instance_attribute('ip_address', check_interval, ctx=ctx)
-
-
-def assign_runtime_properties_to_instance(retry_interval, ctx):
-
-        ctx.instance.runtime_properties['private_dns_name'] = \
-            get_private_dns_name(retry_interval, ctx=ctx)
-        ctx.instance.runtime_properties['public_dns_name'] = \
-            get_public_dns_name(retry_interval, ctx=ctx)
-        ctx.instance.runtime_properties['public_ip_address'] = \
-            get_public_ip_address(retry_interval, ctx=ctx)
-        ctx.instance.runtime_properties['ip'] = \
-            get_private_ip_address(retry_interval, ctx=ctx)
-        ctx.logger.info('Public DNS: {}.'.format(
-            ctx.instance.runtime_properties['public_dns_name']))
-        ctx.logger.info('Public IP: {}.'.format(
-            ctx.instance.runtime_properties['public_ip_address']))
-        ctx.logger.info('Private DNS: {}.'.format(
-            ctx.instance.runtime_properties['private_dns_name']))
-        ctx.logger.info('Private IP (the ip): {}.'.format(
-            ctx.instance.runtime_properties['ip']))
-
-
-def get_instance_state(ctx):
-    instance_id = ctx.instance.runtime_properties['aws_resource_id']
-    instance = get_instance_from_id(instance_id, ctx=ctx)
-    ctx.logger.debug('Checking the instance state for {0}.'
-                     .format(instance.id))
-    state = instance.update()
-    ctx.logger.debug('Instance state is {0}.'
-                     .format(state))
-    return instance.state_code
+    return get_instance_attribute('ip_address', ctx=ctx)
 
 
 def get_instance_from_id(instance_id, ctx):
@@ -167,35 +138,39 @@ def get_instance_from_id(instance_id, ctx):
 
     instance = get_all_instances(ctx=ctx, list_of_instance_ids=instance_id)
 
-    return instance
+    return instance[0] if instance else instance
 
 
 def get_attached_keypair_id(ctx):
+    """ returns a list of provided keypairs
+    """
+
     relationship_type = 'instance_connected_to_keypair'
 
-    kplist = get_target_aws_resource_id(relationship_type, ctx=ctx)
-    if kplist:
-        return kplist[0]
-    else:
-        return kplist
+    kplist = get_target_aws_resource_ids(relationship_type, ctx=ctx)
+
+    return kplist[0] if kplist else kplist
 
 
 def get_attached_security_group_ids(ctx):
+    """ returns a list of attached security groups
+    """
+
     relationship_type = 'instance_connected_to_security_group'
 
-    return get_target_aws_resource_id(relationship_type, ctx=ctx)
+    return get_target_aws_resource_ids(relationship_type, ctx=ctx)
 
 
-def get_target_aws_resource_id(relationship_type, ctx):
+def get_target_aws_resource_ids(relationship_type, ctx):
     """ This loops through the relationships of type and returns
         targets of those relationships.
     """
 
     ids = []
 
-    if not hasattr(ctx.instance, 'relationships'):
+    if not getattr(ctx.instance, 'relationships', []):
         ctx.logger.info('Skipping attaching relationships, '
-                        'because none are attached.')
+                        'because none are attached to this node.')
         return ids
 
     for r in ctx.instance.relationships:
@@ -207,6 +182,9 @@ def get_target_aws_resource_id(relationship_type, ctx):
 
 
 def get_key_pair_by_id(key_pair_id):
+    """Returns the key pair object for a given key pair id
+    """
+
     ec2_client = connection.EC2ConnectionClient().client()
 
     try:
@@ -220,20 +198,34 @@ def get_key_pair_by_id(key_pair_id):
 
 
 def get_security_group_from_id(group_id, ctx):
+    """ returns the group object for a given group id.
+    """
 
-    group = get_all_security_groups(ctx=ctx, list_of_group_names=group_id)
+    if not re.match('^sg\-[0-9a-z]{8}$', group_id):
+        group = get_security_group_from_name(group_id, ctx)
+        return group
 
-    return group
+    group = get_all_security_groups(ctx=ctx, list_of_group_ids=group_id)
+
+    return group[0] if group else group
 
 
 def get_security_group_from_name(group_name, ctx):
+    """Returns the group object for a given group name.
+    """
+
+    if re.match('^sg\-[0-9a-z]{8}$', group_name):
+        group = get_security_group_from_id(group_name, ctx)
+        return group
 
     group = get_all_security_groups(ctx=ctx, list_of_group_names=group_name)
 
-    return group
+    return group[0] if group else group
 
 
 def get_address_by_id(address_id, ctx):
+    """returns the address for a given address_id
+    """
 
     address = get_address_object_by_id(address_id)
 
@@ -241,13 +233,19 @@ def get_address_by_id(address_id, ctx):
 
 
 def get_address_object_by_id(address_id, ctx):
+    """returns the address object for a given address_id
+    """
 
-    address = get_all_addresses(address_id, ctx=ctx)
+    address = get_all_addresses(address=address_id, ctx=ctx)
 
-    return address
+    return address[0] if address else address
 
 
 def get_all_instances(ctx, list_of_instance_ids=None):
+    """returns a list of instances. If an InvalidInstanceID is raised
+    then all of the instances are logged.
+    """
+
     ec2_client = connection.EC2ConnectionClient().client()
 
     try:
@@ -272,6 +270,9 @@ def get_all_instances(ctx, list_of_instance_ids=None):
 def get_all_security_groups(ctx,
                             list_of_group_names=None,
                             list_of_group_ids=None):
+    """Returns a list of security groups. If an InvalidGroupId error is raised
+    then it all of the security groups are logged.
+    """
 
     ec2_client = connection.EC2ConnectionClient().client()
 
@@ -292,7 +293,10 @@ def get_all_security_groups(ctx,
     return groups
 
 
-def get_all_addresses(address, ctx):
+def get_all_addresses(ctx, address=None):
+    """Returns a list of addresses. If InvalidAddress is raised all
+    addresses get logged.
+    """
 
     ec2_client = connection.EC2ConnectionClient().client()
 
@@ -312,15 +316,15 @@ def get_all_addresses(address, ctx):
 
 
 def log_available_resources(list_of_resources, ctx):
-    """This logs a list of resources.
+    """This logs a list of available resources.
     """
 
-    message = []
+    message = 'Available resources: \n'
 
     for resource in list_of_resources:
-        message.append('{0}\n'.format(resource))
+        message = '{0}{1}\n'.format(message, resource)
 
-    ctx.logger.info('Available resources: {0}'.format(list_of_resources))
+    ctx.logger.info(message)
 
 
 def validate_state(instance_id, state, timeout_length, check_interval, ctx):
@@ -342,6 +346,10 @@ def validate_state(instance_id, state, timeout_length, check_interval, ctx):
                                                    check_interval))
 
     instance = get_instance_from_id(instance_id, ctx=ctx)
+
+    if type(instance) is list:
+        ctx.logger.info('Instance no longer exists: {0}.'.format(instance_id))
+        return True
 
     if check_interval < 1:
         check_interval = 1

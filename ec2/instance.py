@@ -86,7 +86,7 @@ def start(retry_interval, **_):
     instance_id = ctx.instance.runtime_properties['aws_resource_id']
 
     if utils.get_instance_state(ctx=ctx) == 16:
-        utils.assign_runtime_properties_to_instance(retry_interval, ctx=ctx)
+        assign_runtime_properties_to_instance(ctx=ctx)
         ctx.logger.info('Instance {0} is running.'.format(instance_id))
         return
 
@@ -106,7 +106,7 @@ def start(retry_interval, **_):
                                       'API returned: {0}.'.format(str(e)))
 
     if utils.get_instance_state(ctx=ctx) == 16:
-        utils.assign_runtime_properties_to_instance(retry_interval, ctx=ctx)
+        assign_runtime_properties_to_instance(ctx=ctx)
         ctx.logger.info('Instance {0} is running.'.format(instance_id))
     else:
         raise RecoverableError('Waiting for server to be running'
@@ -196,3 +196,23 @@ def creation_validation(**_):
                 ctx.node.properties.get('resource_id'), None) is None:
         raise NonRecoverableError('Use external resource is true, but '
                                   'there is no such instance in this account.')
+
+
+def assign_runtime_properties_to_instance(ctx):
+
+        ctx.instance.runtime_properties['private_dns_name'] = \
+            utils.get_private_dns_name(ctx=ctx)
+        ctx.instance.runtime_properties['public_dns_name'] = \
+            utils.get_public_dns_name(ctx=ctx)
+        ctx.instance.runtime_properties['public_ip_address'] = \
+            utils.get_public_ip_address(ctx=ctx)
+        ctx.instance.runtime_properties['ip'] = \
+            utils.get_private_ip_address(ctx=ctx)
+        ctx.logger.info('Public DNS: {}.'.format(
+            ctx.instance.runtime_properties['public_dns_name']))
+        ctx.logger.info('Public IP: {}.'.format(
+            ctx.instance.runtime_properties['public_ip_address']))
+        ctx.logger.info('Private DNS: {}.'.format(
+            ctx.instance.runtime_properties['private_dns_name']))
+        ctx.logger.info('Private IP (the ip): {}.'.format(
+            ctx.instance.runtime_properties['ip']))

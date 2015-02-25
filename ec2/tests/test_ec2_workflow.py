@@ -23,6 +23,7 @@ from moto import mock_ec2
 # Cloudify Imports
 from cloudify.workflows import local
 from ec2 import connection
+import test_utils
 
 IGNORED_LOCAL_WORKFLOW_MODULES = (
     'worker_installer.tasks',
@@ -66,6 +67,15 @@ class TestWorkflowClean(testtools.TestCase):
 
         # execute install workflow
         self.env.execute('install', task_retries=0)
+        self.assertEquals(4, len(test_utils.get_instances(self.env.storage)))
+        self.assertIsNotNone(
+            test_utils.get_instance_node_id('agent_security_group', self.env.storage))
+        self.assertIsNotNone(
+            test_utils.get_instance_node_id('agent_keypair', self.env.storage))
+        self.assertIsNotNone(
+            test_utils.get_instance_node_id('agent_server', self.env.storage))
+        self.assertIsNotNone(
+            test_utils.get_instance_node_id('agent_ip', self.env.storage))
 
     @mock_ec2
     def test_uninstall_workflow(self):
