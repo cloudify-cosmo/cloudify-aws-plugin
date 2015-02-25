@@ -22,4 +22,3 @@ def get_instance_node_id(node_name, storage):
     for instance in get_instances(storage):
         if node_name in instance.node_id:
             return node_name
-    return

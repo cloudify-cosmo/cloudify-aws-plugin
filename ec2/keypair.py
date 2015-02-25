@@ -91,7 +91,7 @@ def delete(**kwargs):
         ctx.instance.runtime_properties.pop('key_path', None)
         ctx.logger.debug('Attempted to delete key pair from account.')
 
-    delete_key_file(key_pair_name)
+    delete_key_file(ctx=ctx)
     ctx.logger.info('Deleted key pair: {0}.'.format(key_pair_name))
 
 
@@ -104,7 +104,7 @@ def creation_validation(**_):
 
     key_path = get_key_file_path(ctx=ctx)
 
-    if ctx.node.properties.get('use_external_resource', False) is True \
+    if ctx.node.properties['use_external_resource'] \
             and search_for_key_file(key_path) is not True:
         raise NonRecoverableError('Use external resource is true, but the '
                                   'key file does not exist.')
@@ -142,7 +142,7 @@ def get_key_file_path(ctx):
     return key_path
 
 
-def delete_key_file(key_pair_name):
+def delete_key_file(ctx):
     """ Deletes the key pair in the file specified in the blueprint. """
 
     key_path = get_key_file_path(ctx=ctx)
@@ -150,9 +150,9 @@ def delete_key_file(key_pair_name):
     if search_for_key_file(key_path):
         try:
             os.remove(key_path)
-        except IOError as e:
+        except OSError as e:
             raise NonRecoverableError(
-                'Unable to delete key pair: {0}.'.format(e))
+                'Unable to delete key pair: {0}.'.format(str(e)))
 
 
 def search_for_key_file(key_path):

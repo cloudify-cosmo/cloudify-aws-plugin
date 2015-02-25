@@ -52,9 +52,24 @@ class TestElasticIP(testtools.TestCase):
 
         return ctx
 
-    def mock_relationship_ctx(self, testname):
+    def mock_elastic_ip_node(self, test_name):
 
-        instance_ctx = MockContext({
+        test_node_id = test_name
+        test_properties = {
+            'use_external_resource': False,
+            'resource_id': ''
+        }
+
+        ctx = MockCloudifyContext(
+            node_id=test_node_id,
+            properties=test_properties
+        )
+
+        return ctx
+
+    def mock_relationship_context(self, testname):
+
+        instance_context = MockContext({
             'node': MockContext({
                 'properties': {}
             }),
@@ -66,9 +81,12 @@ class TestElasticIP(testtools.TestCase):
             })
         })
 
-        elasticip_ctx = MockContext({
+        elasticip_context = MockContext({
             'node': MockContext({
-                'properties': {}
+                'properties': {
+                    'use_external_resource': False,
+                    'resourece_id': '',
+                }
             }),
             'instance': MockContext({
                 'runtime_properties': {
@@ -77,17 +95,31 @@ class TestElasticIP(testtools.TestCase):
             })
         })
 
-        relationship_ctx = MockCloudifyContext(node_id=testname,
-                                               source=instance_ctx,
-                                               target=elasticip_ctx)
+        relationship_context = MockCloudifyContext(
+            node_id=testname, source=instance_context,
+            target=elasticip_context)
 
-        return relationship_ctx
+        return relationship_context
 
     @mock_ec2
     def test_allocate(self):
-        """ Tests that the allocate function is 100% successful.
+        """ Tests that the allocate function assigns the aws_resource_id.
         """
-        ctx = self.mock_ctx('test_create_address')
+        ctx = self.mock_ctx('test_allocate')
+
+        elasticip.allocate(ctx=ctx)
+        self.assertIn('aws_resource_id', ctx.instance.runtime_properties)
+
+    @mock_ec2
+    def test_external_resource(self):
+        """ Tests that the allocate function assigns the aws_resource_id.
+        """
+
+        ec2_client = connection.EC2ConnectionClient().client()
+        address = ec2_client.allocate_address(domain=None)
+        ctx = self.mock_elastic_ip_node('test_allocate')
+        ctx.node.properties['use_external_resource'] = True
+        ctx.node.properties['resource_id'] = address.public_ip
 
         elasticip.allocate(ctx=ctx)
         self.assertIn('aws_resource_id', ctx.instance.runtime_properties)
@@ -130,7 +162,7 @@ class TestElasticIP(testtools.TestCase):
             no errors are raised
         """
 
-        ctx = self.mock_relationship_ctx('test_good_address_attach')
+        ctx = self.mock_relationship_context('test_good_address_attach')
 
         ec2_client = connection.EC2ConnectionClient().client()
         reservation = ec2_client.run_instances(
@@ -149,7 +181,7 @@ class TestElasticIP(testtools.TestCase):
             no errors are raised
         """
 
-        ctx = self.mock_relationship_ctx('test_good_address_detach')
+        ctx = self.mock_relationship_context('test_good_address_detach')
 
         ec2_client = connection.EC2ConnectionClient().client()
         reservation = ec2_client.run_instances(
@@ -169,7 +201,7 @@ class TestElasticIP(testtools.TestCase):
             no errors are raised
         """
 
-        ctx = self.mock_relationship_ctx('test_bad_address_associate')
+        ctx = self.mock_relationship_context('test_bad_address_associate')
 
         ec2_client = connection.EC2ConnectionClient().client()
         reservation = ec2_client.run_instances(
@@ -190,10 +222,23 @@ class TestElasticIP(testtools.TestCase):
             EC2 account is provided to the detach function
         """
 
-        ctx = self.mock_relationship_ctx('test_bad_address_detach')
+        ctx = self.mock_relationship_context('test_bad_address_detach')
 
         ctx.target.instance.runtime_properties['aws_resource_id'] = '0.0.0.0'
         ctx.source.instance.runtime_properties['public_ip_address'] = '0.0.0.0'
         ex = self.assertRaises(NonRecoverableError,
                                elasticip.disassociate, ctx=ctx)
+        self.assertIn('InvalidAddress.NotFound', ex.message)
+
+    @mock_ec2
+    def test_validation(self):
+        """ Tests that the allocate function assigns the aws_resource_id.
+        """
+
+        ctx = self.mock_elastic_ip_node('test_allocate')
+        ctx.node.properties['use_external_resource'] = True
+        ctx.node.properties['resource_id'] = '127.0.0.1'
+
+        ex = self.assertRaises(
+            NonRecoverableError, elasticip.creation_validation, ctx=ctx)
         self.assertIn('InvalidAddress.NotFound', ex.message)

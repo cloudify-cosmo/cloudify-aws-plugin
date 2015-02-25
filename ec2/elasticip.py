@@ -31,7 +31,7 @@ def allocate(**_):
     ec2_client = connection.EC2ConnectionClient().client()
     ctx.logger.info('Allocating Elastic IP.')
 
-    if ctx.node.properties.get('use_external_resource', False) is True:
+    if ctx.node.properties['use_external_resource']:
         address = utils.get_address_by_id(
             ctx.node.properties.get('resource_id'), ctx=ctx)
         ctx.instance.runtime_properties['aws_resource_id'] = address
@@ -72,10 +72,10 @@ def release(**_):
         ctx.logger.debug('Attribute error raised on address_object.release.')
         pass
     finally:
-        ctx.instance.runtime_properties.pop('aws_resource_id', None)
+        elasticip = \
+            ctx.instance.runtime_properties.pop('aws_resource_id', None)
         ctx.instance.runtime_properties.pop('allocation_id', None)
-
-    ctx.logger.info('Released Elastic IP {0}.'.format(elasticip))
+        ctx.logger.info('Released Elastic IP {0}.'.format(elasticip))
 
 
 @operation
@@ -132,9 +132,5 @@ def creation_validation(**_):
     for property_key in required_properties:
         utils.validate_node_property(property_key, ctx=ctx)
 
-    if ctx.node.properties.get('use_external_resource', False) is True \
-            and utils.get_address_by_id(ctx.node.properties.get(
-                'resource_id', None)) is None:
-        raise NonRecoverableError('Use external resource is true, '
-                                  'but no such Elastic IP exists '
-                                  'in this account.')
+    if ctx.node.properties['use_external_resource']:
+        utils.get_address_by_id(ctx.node.properties['resource_id'], ctx=ctx)

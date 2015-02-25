@@ -186,3 +186,30 @@ class TestInstance(testtools.TestCase):
         ex = self.assertRaises(NonRecoverableError,
                                instance.run_instances, ctx=ctx)
         self.assertIn('InvalidSubnetID.NotFound', ex.message)
+
+    @mock_ec2
+    def test_run_instances_external_resource(self):
+        """ this tests that the instance create function works
+        """
+        ec2_client = connection.EC2ConnectionClient().client()
+        reservation = ec2_client.run_instances(
+            TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
+        instance_id = reservation.instances[0].id
+        ctx = self.mock_ctx('test_run_instances_external_resource')
+        ctx.node.properties['use_external_resource'] = True
+        ctx.node.properties['resource_id'] = instance_id
+
+        instance.run_instances(ctx=ctx)
+        self.assertIn('aws_resource_id',
+                      ctx.instance.runtime_properties.keys())
+
+    @mock_ec2
+    def test_validation_external_resource(self):
+        """ this tests that the instance create function works
+        """
+        ctx = self.mock_ctx('test_validation_external_resource')
+        ctx.node.properties['use_external_resource'] = True
+        ctx.node.properties['resource_id'] = 'bad_id'
+        ex = self.assertRaises(
+            NonRecoverableError, instance.creation_validation, ctx=ctx)
+        self.assertIn('InvalidInstanceID.NotFound', ex.message)

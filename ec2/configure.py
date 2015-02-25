@@ -14,7 +14,6 @@
 #    * limitations under the License.
 
 # Built-in Imports:
-import os
 import tempfile
 
 # Third Party Imports
@@ -25,12 +24,12 @@ class BotoConfig(object):
 
     def get_temp_file(self):
         temp_config = tempfile.mktemp()
-        config = self._get_config()
+        config = self._get_basic_config()
         with open(temp_config, 'w') as temp_config_file:
             temp_config_file.write(config)
         return temp_config
 
-    def _get_config(self):
+    def _get_basic_config(self):
         config = '[{}]\n' \
                  'aws_access_key_id = {}\n' \
                  'aws_secret_access_key = {}'.format(
@@ -47,8 +46,3 @@ class BotoConfig(object):
 
     def _get_aws_secret_access_key(self):
         return config.get('Credentials', 'aws_secret_access_key')
-
-    def _get_path_to_boto_configuration(self):
-        home = os.path.expanduser('~')
-        path_to_boto_configuration = os.path.join(home, '.boto')
-        return path_to_boto_configuration

@@ -191,11 +191,9 @@ def creation_validation(**_):
     for property_key in required_properties:
         utils.validate_node_property(property_key, ctx=ctx)
 
-    if ctx.node.properties.get('use_external_resource', False) is True \
-            and utils.get_instance_from_id(
-                ctx.node.properties.get('resource_id'), None) is None:
-        raise NonRecoverableError('Use external resource is true, but '
-                                  'there is no such instance in this account.')
+    if ctx.node.properties['use_external_resource']:
+        utils.get_instance_from_id(
+            ctx.node.properties['resource_id'], ctx=ctx)
 
 
 def assign_runtime_properties_to_instance(ctx):

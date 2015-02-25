@@ -60,16 +60,13 @@ class TestWorkflowClean(testtools.TestCase):
         """ Tests the install workflow using the built in
             workflows.
         """
-        path = os.path.expanduser('~/.ssh')
-        file = os.path.join(path, '{0}{1}'.format('test_key', '.pem'))
-        if os.path.exists(file):
-            os.remove(file)
 
         # execute install workflow
         self.env.execute('install', task_retries=0)
         self.assertEquals(4, len(test_utils.get_instances(self.env.storage)))
         self.assertIsNotNone(
-            test_utils.get_instance_node_id('agent_security_group', self.env.storage))
+            test_utils.get_instance_node_id(
+                'agent_security_group', self.env.storage))
         self.assertIsNotNone(
             test_utils.get_instance_node_id('agent_keypair', self.env.storage))
         self.assertIsNotNone(
@@ -124,12 +121,6 @@ class TestWorkflowExternalResources(testtools.TestCase):
         ec2_client.create_security_group('test_group2',
                                          'so hard to describe')
 
-        path = os.path.expanduser('~/.ssh')
-        files = ['test_key', 'test_key2']
-        for names in files:
-            file = os.path.join(path, '{0}{1}'.format(names, '.pem'))
-            if os.path.exists(file):
-                os.remove(file)
         kp = ec2_client.create_key_pair('test_key2')
         kp.save('~/.ssh')
 

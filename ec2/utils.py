@@ -227,7 +227,7 @@ def get_address_by_id(address_id, ctx):
     """returns the address for a given address_id
     """
 
-    address = get_address_object_by_id(address_id)
+    address = get_address_object_by_id(address_id, ctx=ctx)
 
     return address.public_ip
 
@@ -251,7 +251,7 @@ def get_all_instances(ctx, list_of_instance_ids=None):
     try:
         reservations = ec2_client.get_all_reservations(list_of_instance_ids)
     except boto.exception.BotoServerError as e:
-        raise NonRecoverableError('Failed to report all instances: '
+        raise NonRecoverableError('Failed to report all instances: {0}'
                                   .format(str(e)))
     except boto.exception.EC2ResponseError as e:
         if 'InvalidInstanceID' in e:
@@ -281,7 +281,7 @@ def get_all_security_groups(ctx,
             groupnames=list_of_group_names,
             group_ids=list_of_group_ids)
     except boto.exception.BotoServerError as e:
-        raise NonRecoverableError('Failed to report security groups: '
+        raise NonRecoverableError('Failed to report security groups: {0}'
                                   .format(str(e)))
     except boto.exception.EC2ResponseError as e:
         if 'InvalidGroupId' in e:

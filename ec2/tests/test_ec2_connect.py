@@ -23,9 +23,6 @@ from moto import mock_ec2
 # Cloudify Imports is imported and used in operations
 from ec2 import connection
 
-TEST_AMI_IMAGE_ID = 'ami-e214778a'
-TEST_INSTANCE_TYPE = 't1.micro'
-
 
 class TestConnection(testtools.TestCase):
 
