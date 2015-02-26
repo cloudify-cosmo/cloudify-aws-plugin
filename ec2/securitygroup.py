@@ -41,6 +41,9 @@ def create(**_):
     if ctx.node.properties.get('use_external_resource', False) is True:
         group_id = ctx.node.properties.get('resource_id')
         group = utils.get_security_group_from_id(group_id, ctx=ctx)
+        if not group:
+            raise NonRecoverableError('use_external_resource was specified, '
+                                      'but the security group does not exist.')
         ctx.instance.runtime_properties['aws_resource_id'] = group.id
         ctx.logger.info('Using external resource: {0}'.format(group.id))
         return
@@ -99,12 +102,11 @@ def creation_validation(**_):
     for property_key in required_properties:
         utils.validate_node_property(property_key, ctx=ctx)
 
-    if ctx.node.properties.get('use_external_resource', False) is True \
-            and utils.get_security_group_from_id(
-                ctx.node.properties.get('resource_id', None)) is None:
-        raise NonRecoverableError('Use external resource is True, '
-                                  'but no such security group exists in '
-                                  'this account.')
+    if ctx.node.properties['use_external_resource']:
+        if not utils.get_security_group_from_id(
+                ctx.node.properties['resource_id'], ctx=ctx):
+            raise NonRecoverableError('use_external_resource was specified, '
+                                      'but the security group does not exist.')
 
 
 @operation
@@ -122,8 +124,8 @@ def authorize(**_):
 
     ec2_client = connection.EC2ConnectionClient().client()
 
-    if ctx.node.properties.get('use_external_resource', False) is True:
-        group_id = ctx.node.properties.get('resource_id')
+    if ctx.node.properties['use_external_resource']:
+        group_id = ctx.node.properties['resource_id']
         rules = ctx.node.properties.get('rules')
         authorize_by_id(ec2_client, group_id, rules)
     else:
@@ -139,17 +141,12 @@ def authorize_by_id(ec2_client, group, rules):
 
     for r in rules:
         try:
-            ec2_client.authorize_security_group(group_id=group,
-                                                ip_protocol=r['ip_protocol'],
-                                                from_port=r['from_port'],
-                                                to_port=r['to_port'],
-                                                cidr_ip=r['cidr_ip'])
-        except boto.exception.EC2ResponseError as e:
-            if 'InvalidPermission.Duplicate' in str(e):
-                ctx.logger.debug('Rule already exists in that security group.')
-            else:
-                raise NonRecoverableError('Unable to authorize that group: '
-                                          '{0}'.format(str(e)))
-        except boto.exception.BotoServerError as e:
-            raise NonRecoverableError('Unable to authorize that group: '
-                                      '{0}'.format(str(e)))
+            ec2_client.authorize_security_group(
+                group_id=group,
+                ip_protocol=r['ip_protocol'],
+                from_port=r['from_port'],
+                to_port=r['to_port'],
+                cidr_ip=r['cidr_ip'])
+        except (boto.exception.EC2ResponseError,
+                boto.exception.BotoServerError) as e:
+            raise NonRecoverableError('{0}'.format(str(e)))

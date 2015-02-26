@@ -191,8 +191,7 @@ def get_key_pair_by_id(key_pair_id):
         key_pair = ec2_client.get_key_pair(key_pair_id)
     except (boto.exception.EC2ResponseError,
             boto.exception.BotoServerError) as e:
-        raise NonRecoverableError('Failed to get key pair: {0}.'
-                                  .format(str(e)))
+        raise NonRecoverableError('{0}.'.format(str(e)))
 
     return key_pair
 
@@ -251,15 +250,13 @@ def get_all_instances(ctx, list_of_instance_ids=None):
     try:
         reservations = ec2_client.get_all_reservations(list_of_instance_ids)
     except boto.exception.BotoServerError as e:
-        raise NonRecoverableError('Failed to report all instances: {0}'
-                                  .format(str(e)))
+        raise NonRecoverableError('{0}'.format(str(e)))
     except boto.exception.EC2ResponseError as e:
         if 'InvalidInstanceID' in e:
             instances = [instance for res in ec2_client.get_all_reservations()
                          for instance in res.instances]
             log_available_resources(instances, ctx=ctx)
-        raise NonRecoverableError('Failed to get requested instance: {0}'
-                                  .format(str(e)))
+        raise NonRecoverableError('{0}'.format(str(e)))
 
     instances = [instance for res in reservations
                  for instance in res.instances]
@@ -281,14 +278,12 @@ def get_all_security_groups(ctx,
             groupnames=list_of_group_names,
             group_ids=list_of_group_ids)
     except boto.exception.BotoServerError as e:
-        raise NonRecoverableError('Failed to report security groups: {0}'
-                                  .format(str(e)))
+        raise NonRecoverableError('{0}'.format(str(e)))
     except boto.exception.EC2ResponseError as e:
-        if 'InvalidGroupId' in e:
+        if 'InvalidGroup' in e:
             groups = ec2_client.get_all_security_groups()
             log_available_resources(groups, ctx=ctx)
-        raise NonRecoverableError('Failed to get requested group: {0}.'
-                                  .format(str(e)))
+        raise NonRecoverableError('{0}'.format(str(e)))
 
     return groups
 
@@ -303,14 +298,12 @@ def get_all_addresses(ctx, address=None):
     try:
         addresses = ec2_client.get_all_addresses(address)
     except (boto.exception.BotoServerError) as e:
-        raise NonRecoverableError('Failed to get all addresses: {0}.'
-                                  .format(str(e)))
-    except (boto.exception.EC2ResponseError) as e:
+        raise NonRecoverableError('{0}'.format(str(e)))
+    except boto.exception.EC2ResponseError as e:
         if 'InvalidAddress' in e:
             addresses = ec2_client.get_all_addresses()
             log_available_resources(addresses, ctx=ctx)
-        raise NonRecoverableError('Failed to get requested addresse: {0}.'
-                                  .format(str(e)))
+        raise NonRecoverableError('{0}'.format(str(e)))
 
     return addresses
 

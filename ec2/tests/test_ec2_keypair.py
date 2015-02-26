@@ -29,12 +29,21 @@ from cloudify.exceptions import NonRecoverableError
 
 class TestKeyPair(testtools.TestCase):
 
+    def setUp(self):
+        super(TestKeyPair, self).setUp()
+        ctx = self.mock_ctx('setUp')
+        key_path = self.create_dummy_key_path(ctx=ctx)
+        try:
+            os.remove(key_path)
+        except:
+            pass
+
     def mock_ctx(self, test_name):
 
         test_node_id = test_name
         test_properties = {
             'use_external_resource': False,
-            'resource_id': 'test_ec2_keypair',
+            'resource_id': '{0}_keypair'.format(test_name),
             'private_key_path': '~/.ssh'
         }
 
@@ -45,6 +54,12 @@ class TestKeyPair(testtools.TestCase):
 
         return ctx
 
+    def create_dummy_key_path(self, ctx):
+        key_path = os.path.join(
+            os.path.expanduser(ctx.node.properties['private_key_path']),
+            '{0}{1}'.format(ctx.node.properties['resource_id'], '.pem'))
+        return key_path
+
     @mock_ec2
     def test_create(self):
         """ This tests that the create keypair function
@@ -52,12 +67,7 @@ class TestKeyPair(testtools.TestCase):
         """
 
         ctx = self.mock_ctx('test_create')
-
-        path = os.path.expanduser(ctx.node.properties['private_key_path'])
-        key_path = os.path.join(path,
-                                '{0}{1}'.format(
-                                    ctx.node.properties['resource_id'],
-                                    '.pem'))
+        key_path = self.create_dummy_key_path(ctx=ctx)
         keypair.create(ctx=ctx)
         self.assertIn('aws_resource_id',
                       ctx.instance.runtime_properties.keys())
@@ -70,12 +80,7 @@ class TestKeyPair(testtools.TestCase):
         """
 
         ctx = self.mock_ctx('test_create_adds_file')
-
-        path = os.path.expanduser(ctx.node.properties['private_key_path'])
-        key_path = os.path.join(path,
-                                '{0}{1}'.format(
-                                    ctx.node.properties['resource_id'],
-                                    '.pem'))
+        key_path = self.create_dummy_key_path(ctx=ctx)
         keypair.create(ctx=ctx)
         self.assertTrue(os.path.exists(key_path))
         os.remove(key_path)
@@ -86,13 +91,8 @@ class TestKeyPair(testtools.TestCase):
             keypair already exists in the file location
         """
 
-        ctx = self.mock_ctx('test_create_adds_file')
-
-        path = os.path.expanduser(ctx.node.properties['private_key_path'])
-        key_path = os.path.join(path,
-                                '{0}{1}'.format(
-                                    ctx.node.properties['resource_id'],
-                                    '.pem'))
+        ctx = self.mock_ctx('test_key_pair_exists_error_create')
+        key_path = self.create_dummy_key_path(ctx=ctx)
         keypair.create(ctx=ctx)
         ex = self.assertRaises(NonRecoverableError, keypair.create,
                                ctx=ctx)
@@ -106,12 +106,54 @@ class TestKeyPair(testtools.TestCase):
         """
 
         ctx = self.mock_ctx('test_delete')
-
         ec2_client = connection.EC2ConnectionClient().client()
-        kp = ec2_client.create_key_pair('test')
+        kp = ec2_client.create_key_pair('test_delete')
         ctx.instance.runtime_properties['aws_resource_id'] = kp.name
         keypair.delete(ctx=ctx)
         self.assertEquals(None, ec2_client.get_key_pair(kp.name))
+
+    @mock_ec2
+    def test_delete_deleted(self):
+
+        ec2_client = connection.EC2ConnectionClient().client()
+        ctx = self.mock_ctx('test_delete_deleted')
+        kp = ec2_client.create_key_pair('test_delete_deleted')
+        ctx.instance.runtime_properties['aws_resource_id'] = kp.name
+        kp = ec2_client.delete_key_pair('test_delete_deleted')
+        keypair.delete(ctx=ctx)
+
+    @mock_ec2
+    def test_validation_use_external(self):
+
+        ec2_client = connection.EC2ConnectionClient().client()
+        ctx = self.mock_ctx('test_validation_use_external')
+        kp = ec2_client.create_key_pair('test_validation_use_external')
+        ctx.node.properties['use_external_resource'] = True
+        ctx.node.properties['resource_id'] = kp.name
+        ex = self.assertRaises(
+            NonRecoverableError, keypair.creation_validation, ctx=ctx)
+        self.assertIn(
+            'Use external resource is true, but the key file does not exist',
+            ex.message)
+
+    @mock_ec2
+    def test_save_keypair(self):
+        """ This tests that the create keypair function
+            adds the key_pair_name to runtime properties.
+        """
+
+        ec2_client = connection.EC2ConnectionClient().client()
+        ctx = self.mock_ctx('test_save_keypair')
+        kp = ec2_client.create_key_pair('test_save_keypair')
+        ctx.node.properties['resource_id'] = kp.name
+        key_path = self.create_dummy_key_path(ctx=ctx)
+        with open(key_path, 'w') as out:
+            out.write('test_save_keypair')
+        ex = self.assertRaises(NonRecoverableError,
+                               keypair.save_key_pair, kp, ctx=ctx)
+        self.assertIn(
+            'already exists, it will not be overwritten', ex.message)
+        os.remove(key_path)
 
     @mock_ec2
     def test_create_use_external(self):
@@ -120,31 +162,10 @@ class TestKeyPair(testtools.TestCase):
         """
 
         ec2_client = connection.EC2ConnectionClient().client()
-        ctx = self.mock_ctx('test_create')
-        kp = ec2_client.create_key_pair('test')
+        ctx = self.mock_ctx('test_create_use_external')
+        kp = ec2_client.create_key_pair('test_create_use_external')
         ctx.node.properties['use_external_resource'] = True
         ctx.node.properties['resource_id'] = kp.name
         ex = self.assertRaises(NonRecoverableError, keypair.create, ctx=ctx)
-        self.assertIn('not located on the filesystem', ex.message)
-
-    @mock_ec2
-    def test_delete_deleted(self):
-
-        ec2_client = connection.EC2ConnectionClient().client()
-        ctx = self.mock_ctx('test_delete_deleted')
-        kp = ec2_client.create_key_pair('test')
-        ctx.instance.runtime_properties['aws_resource_id'] = kp.name
-        kp = ec2_client.delete_key_pair('test')
-        keypair.delete(ctx=ctx)
-
-    @mock_ec2
-    def test_validation_use_external(self):
-
-        ec2_client = connection.EC2ConnectionClient().client()
-        ctx = self.mock_ctx('test_create')
-        kp = ec2_client.create_key_pair('test')
-        ctx.node.properties['use_external_resource'] = True
-        ctx.node.properties['resource_id'] = kp.name
-        ex = self.assertRaises(
-            NonRecoverableError, keypair.creation_validation, ctx=ctx)
-        self.assertIn('key file does not exist', ex.message)
+        self.assertIn(
+            'the key pair was not located on the filesystem', ex.message)

@@ -45,9 +45,10 @@ def create(**kwargs):
         key_pair = utils.get_key_pair_by_id(key_pair_id)
         ctx.instance.runtime_properties['aws_resource_id'] = key_pair.name
         key_path = get_key_file_path(ctx=ctx)
+        ctx.logger.info(key_path)
         if not search_for_key_file(key_path):
             raise NonRecoverableError('use_external_resource was specified, '
-                                      'and a name given, but the key pair was'
+                                      'and a name given, but the key pair was '
                                       'not located on the filesystem.')
         return
 
@@ -104,10 +105,10 @@ def creation_validation(**_):
 
     key_path = get_key_file_path(ctx=ctx)
 
-    if ctx.node.properties['use_external_resource'] \
-            and search_for_key_file(key_path) is not True:
-        raise NonRecoverableError('Use external resource is true, but the '
-                                  'key file does not exist.')
+    if ctx.node.properties['use_external_resource']:
+        if not search_for_key_file(key_path):
+            raise NonRecoverableError('Use external resource is true, but the '
+                                      'key file does not exist.')
 
 
 def save_key_pair(key_pair_object, ctx):
@@ -117,11 +118,9 @@ def save_key_pair(key_pair_object, ctx):
 
     try:
         key_pair_object.save(ctx.node.properties['private_key_path'])
-    except (boto.exception.boto.exception.BotoClientError, OSError) as e:
-        raise NonRecoverableError('Unable to save key pair to file: {0}.'
-                                  'OS Returned: {1}'.format(
-                                      ctx.node.properties['private_key_path'],
-                                      str(e)))
+    except (boto.exception.BotoClientError,
+            OSError) as e:
+        raise NonRecoverableError(str(e))
 
     key_path = get_key_file_path(ctx=ctx)
 
