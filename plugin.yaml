@@ -82,7 +82,13 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create: aws.ec2.elasticip.allocate
-        delete: aws.ec2.elasticip.release
+        delete:
+          implementation: aws.ec2.elasticip.release
+          inputs:
+            retry_interval:
+              description: How many seconds between checking if the elastic ip was deleted.
+              type: integer
+              default: 5
       cloudify.interfaces.validation:
         creation: aws.ec2.elasticip.creation_validation
 

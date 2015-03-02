@@ -18,7 +18,7 @@ import boto.exception
 
 # Cloudify imports
 from cloudify import ctx
-from cloudify.exceptions import NonRecoverableError
+from cloudify.exceptions import RecoverableError, NonRecoverableError
 from cloudify.decorators import operation
 from ec2 import connection
 from ec2 import utils
@@ -33,7 +33,7 @@ def allocate(**_):
 
     if ctx.node.properties['use_external_resource']:
         address = utils.get_address_by_id(
-            ctx.node.properties.get('resource_id'), ctx=ctx)
+            ctx.node.properties['resource_id'], ctx=ctx)
         ctx.instance.runtime_properties['aws_resource_id'] = address
         ctx.logger.info('Using existing resource: {0}'.format(address))
         return
@@ -52,12 +52,17 @@ def allocate(**_):
 
 
 @operation
-def release(**_):
+def release(retry_interval, **_):
     """ Releases an Elastic IP from the connected region in the AWS account.
     """
     ctx.logger.info('Releasing an Elastic IP.')
 
-    elasticip = ctx.instance.runtime_properties.get('aws_resource_id')
+    try:
+        elasticip = ctx.instance.runtime_properties['aws_resource_id']
+    except KeyError as e:
+        raise NonRecoverableError(
+            'Attempted to get elastic ip in elasticip.release, '
+            'however aws_resource_id was not set.')
 
     address_object = utils.get_address_object_by_id(elasticip, ctx=ctx)
 
@@ -65,17 +70,31 @@ def release(**_):
         address_object.delete()
     except (boto.exception.EC2ResponseError,
             boto.exception.BotoServerError) as e:
-        raise NonRecoverableError('Error. Failed to '
-                                  'delete Elastic IP. Error: {0}.'
-                                  .format(e))
-    except AttributeError:
-        ctx.logger.debug('Attribute error raised on address_object.release.')
-        pass
-    finally:
+        raise NonRecoverableError(
+            'Error. Failed to delete Elastic IP. Error: {0}.'.format(str(e)))
+    except AttributeError as e:
+        NonRecoverableError(
+            'Attribute error raised on address_object.delete(). '
+            'This indicates that a VPC elastic IP was used instead of EC2 '
+            'classic: {0}'.format(str(e)))
+
+    try:
+        utils.get_address_object_by_id(address_object.public_ip, ctx=ctx)
+    except NonRecoverableError:
+        ctx.logger.debug(
+            'Generally NonRecoverableError indicates that an operation failed.'
+            'In this case, everything worked correctly.')
         elasticip = \
             ctx.instance.runtime_properties.pop('aws_resource_id', None)
-        ctx.instance.runtime_properties.pop('allocation_id', None)
-        ctx.logger.info('Released Elastic IP {0}.'.format(elasticip))
+        if 'allocation_id' in ctx.instance.runtime_properties:
+            del(ctx.instance.runtime_properties['allocation_id'])
+        ctx.logger.info(
+            'Released elastic ip {0}. '
+            'Removed runtime properties.'.format(elasticip))
+    else:
+        raise RecoverableError(
+            'Elastic IP not provisioned. Retrying...',
+            retry_after=retry_interval)
 
 
 @operation
@@ -84,8 +103,18 @@ def associate(**_):
     """
     ec2_client = connection.EC2ConnectionClient().client()
 
-    instance_id = ctx.source.instance.runtime_properties.get('aws_resource_id')
-    elasticip = ctx.target.instance.runtime_properties.get('aws_resource_id')
+    if 'aws_resource_id' not in ctx.source.instance.runtime_properties:
+        raise NonRecoverableError(
+            'Unable to associate elastic ip address, '
+            'instance_id runtime property not set.')
+    elif 'aws_resource_id' not in ctx.target.instance.runtime_properties:
+        raise NonRecoverableError(
+            'Unable to associate elastic ip address, '
+            'aws_resource_id runtime property not set.')
+    else:
+        instance_id = ctx.source.instance.runtime_properties['aws_resource_id']
+        elasticip = ctx.target.instance.runtime_properties['aws_resource_id']
+
     ctx.logger.info('Associating an Elastic IP {0} '
                     'with an EC2 Instance {1}.'.format(elasticip, instance_id))
 
@@ -108,7 +137,14 @@ def disassociate(**_):
     """ Disassociates an Elastic IP from an EC2 Instance.
     """
     ec2_client = connection.EC2ConnectionClient().client()
+
+    if 'aws_resource_id' not in ctx.target.instance.runtime_properties:
+        raise NonRecoverableError(
+            'Failed to disossiate elastic ip, '
+            'aws_resource_id runtime property not set.')
+
     elasticip = ctx.target.instance.runtime_properties['aws_resource_id']
+
     ctx.logger.info('Disassociating Elastic IP {0}'.format(elasticip))
 
     try:
@@ -118,11 +154,10 @@ def disassociate(**_):
         raise NonRecoverableError('Error. Failed to detach '
                                   'Elastic IP, returned: {0}.'
                                   .format(e))
-    finally:
-        ctx.source.instance.runtime_properties.pop('public_ip_address')
 
-    ctx.logger.info('Disassociated Elastic IP {0}.'.format(
-        elasticip))
+    del(ctx.source.instance.runtime_properties['public_ip_address'])
+
+    ctx.logger.info('Disassociated Elastic IP {0}.'.format(elasticip))
 
 
 @operation

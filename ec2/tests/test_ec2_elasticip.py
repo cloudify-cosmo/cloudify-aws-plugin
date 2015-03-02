@@ -75,7 +75,7 @@ class TestElasticIP(testtools.TestCase):
             }),
             'instance': MockContext({
                 'runtime_properties': {
-                    'instance_id': 'i-abc1234',
+                    'aws_resource_id': 'i-abc1234',
                     'public_ip_address': '127.0.0.1'
                 }
             })
@@ -137,7 +137,8 @@ class TestElasticIP(testtools.TestCase):
         address = ec2_client.allocate_address()
         ctx.instance.runtime_properties['aws_resource_id'] = \
             address.public_ip
-        elasticip.release(ctx=ctx)
+        ctx.instance.runtime_properties['allocation_id'] = 'bad'
+        elasticip.release(1, ctx=ctx)
         self.assertNotIn('aws_resource_id',
                          ctx.instance.runtime_properties.keys())
 
@@ -152,7 +153,8 @@ class TestElasticIP(testtools.TestCase):
 
         ctx.instance.runtime_properties['aws_resource_id'] = \
             '127.0.0.1'
-        ex = self.assertRaises(NonRecoverableError, elasticip.release, ctx=ctx)
+        ex = self.assertRaises(
+            NonRecoverableError, elasticip.release, 1, ctx=ctx)
         self.assertIn('InvalidAddress.NotFound', ex.message)
 
     @mock_ec2
@@ -162,7 +164,7 @@ class TestElasticIP(testtools.TestCase):
             no errors are raised
         """
 
-        ctx = self.mock_relationship_context('test_good_address_attach')
+        ctx = self.mock_relationship_context('test_good_address_associate')
 
         ec2_client = connection.EC2ConnectionClient().client()
         reservation = ec2_client.run_instances(
@@ -242,3 +244,21 @@ class TestElasticIP(testtools.TestCase):
         ex = self.assertRaises(
             NonRecoverableError, elasticip.creation_validation, ctx=ctx)
         self.assertIn('InvalidAddress.NotFound', ex.message)
+
+    @mock_ec2
+    def test_associate_no_instance_id(self):
+
+        ctx = self.mock_relationship_context('test_associate_no_instance_id')
+        del(ctx.source.instance.runtime_properties['aws_resource_id'])
+        ex = self.assertRaises(
+            NonRecoverableError, elasticip.associate, ctx=ctx)
+        self.assertIn('instance_id runtime property not set', ex.message)
+
+    @mock_ec2
+    def test_associate_no_elasticip_id(self):
+
+        ctx = self.mock_relationship_context('test_associate_no_elasticip_id')
+        del(ctx.target.instance.runtime_properties['aws_resource_id'])
+        ex = self.assertRaises(
+            NonRecoverableError, elasticip.associate, ctx=ctx)
+        self.assertIn('aws_resource_id runtime property not set', ex.message)

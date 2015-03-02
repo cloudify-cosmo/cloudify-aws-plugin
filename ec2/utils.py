@@ -25,7 +25,7 @@ from ec2 import connection
 from cloudify.exceptions import NonRecoverableError
 
 
-def get_parameters(ctx):
+def get_instance_parameters(ctx):
     """ These are the list of supported arguments to the run_instances
         function and their default values. Essentially, this checks to see
         if the user provided a value and takes the user's value. If the

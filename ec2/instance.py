@@ -51,15 +51,15 @@ def run_instances(**_):
         ctx.logger.info('Using existing resource: {0}.'.format(instance.id))
         return
 
-    parameters = utils.get_parameters(ctx=ctx)
+    instance_parameters = utils.get_instance_parameters(ctx=ctx)
 
     ctx.logger.info('Creating EC2 Instance.')
     ctx.logger.info('Attempting to create EC2 Instance.'
                     'Sending these API parameters: {0}.'
-                    .format(parameters))
+                    .format(instance_parameters))
 
     try:
-        reservation = ec2_client.run_instances(**parameters)
+        reservation = ec2_client.run_instances(**instance_parameters)
     except (boto.exception.EC2ResponseError,
             boto.exception.BotoServerError) as e:
         raise NonRecoverableError('Error. Failed to run EC2 Instance: '
