@@ -48,25 +48,24 @@ def run_instances(**_):
         instance_id = ctx.node.properties['resource_id']
         instance = utils.get_instance_from_id(instance_id, ctx=ctx)
         ctx.instance.runtime_properties['aws_resource_id'] = instance.id
-        ctx.logger.info('Using existing resource: {0}.'.format(instance.id))
+        ctx.logger.info('Using existing instance: {0}.'.format(instance.id))
         return
 
     instance_parameters = utils.get_instance_parameters(ctx=ctx)
 
-    ctx.logger.info('Creating EC2 Instance.')
-    ctx.logger.info('Attempting to create EC2 Instance.'
-                    'Sending these API parameters: {0}.'
-                    .format(instance_parameters))
+    ctx.logger.debug(
+        'Attempting to create EC2 Instance. Sending these API parameters: {0}.'
+        .format(instance_parameters))
 
     try:
         reservation = ec2_client.run_instances(**instance_parameters)
     except (boto.exception.EC2ResponseError,
             boto.exception.BotoServerError) as e:
-        raise NonRecoverableError('Error. Failed to run EC2 Instance: '
-                                  'API returned: {0}.'.format(str(str(e))))
+        raise NonRecoverableError('{0}'.format(str(e)))
 
     instance_id = reservation.instances[0].id
     ctx.instance.runtime_properties['aws_resource_id'] = instance_id
+    ctx.logger.info('Created instance: {0}.'.format(instance_id))
 
 
 @operation
@@ -83,6 +82,10 @@ def start(retry_interval, **_):
     """
     ec2_client = connection.EC2ConnectionClient().client()
 
+    if 'aws_resource_id' not in ctx.instance.runtime_properties:
+        raise NonRecoverableError(
+            'Cannot start instance because aws_resource_id is not assigned.')
+
     instance_id = ctx.instance.runtime_properties['aws_resource_id']
 
     if utils.get_instance_state(ctx=ctx) == 16:
@@ -90,7 +93,6 @@ def start(retry_interval, **_):
         ctx.logger.info('Instance {0} is running.'.format(instance_id))
         return
 
-    ctx.logger.info('Starting EC2 Instance.')
     ctx.logger.debug('Attempting to start instance: {0}.)'.format(instance_id))
 
     try:
@@ -98,20 +100,19 @@ def start(retry_interval, **_):
     except (boto.exception.EC2ResponseError,
             boto.exception.BotoServerError) as e:
         if 'does not exist' in e:
-            raise RecoverableError('Waiting for server to be running'
-                                   ' Retrying...',
-                                   retry_after=retry_interval)
+            raise RecoverableError(
+                'Waiting for server to be running. Retrying...',
+                retry_after=retry_interval)
         else:
-            raise NonRecoverableError('Error. Failed to start EC2 Instance: '
-                                      'API returned: {0}.'.format(str(e)))
+            raise NonRecoverableError('{0}'.format(str(e)))
 
     if utils.get_instance_state(ctx=ctx) == 16:
         assign_runtime_properties_to_instance(ctx=ctx)
         ctx.logger.info('Instance {0} is running.'.format(instance_id))
     else:
-        raise RecoverableError('Waiting for server to be running'
-                               ' Retrying...',
-                               retry_after=retry_interval)
+        raise RecoverableError(
+            'Waiting for server to be running. Retrying...',
+            retry_after=retry_interval)
 
 
 @operation
@@ -123,31 +124,28 @@ def stop(retry_interval, **_):
     """
     ec2_client = connection.EC2ConnectionClient().client()
 
-    instance_id = ctx.instance.runtime_properties.get('aws_resource_id')
+    if 'aws_resource_id' not in ctx.instance.runtime_properties:
+        raise NonRecoverableError(
+            'Cannot stop instance because aws_resource_id is not assigned.')
 
-    ctx.logger.info('Stopping EC2 Instance.')
-    ctx.logger.debug('Attempting to stop EC2 Instance.'
-                     '(Instance id: {0}.)'.format(instance_id))
+    instance_id = ctx.instance.runtime_properties['aws_resource_id']
+
+    ctx.logger.debug(
+        'Attempting to stop EC2 Instance. {0}.)'.format(instance_id))
 
     try:
         ec2_client.stop_instances(instance_id)
     except (boto.exception.EC2ResponseError,
             boto.exception.BotoServerError) as e:
-        raise NonRecoverableError('Error. Failed to stop EC2 Instance: '
-                                  'API returned: {0}.'.format(str(e)))
-    finally:
-        ctx.instance.runtime_properties.pop('private_dns_name')
-        ctx.instance.runtime_properties.pop('public_dns_name')
-        ctx.instance.runtime_properties.pop('public_ip_address')
-        ctx.instance.runtime_properties.pop('ip')
+        raise NonRecoverableError('{0}'.format(str(e)))
 
-    # get the timeout code validate state
     if utils.get_instance_state(ctx=ctx) == 80:
-        ctx.logger.info('Instance {0} is stopped.'.format(instance_id))
+        ctx.logger.info('Stopped instance {0}.'.format(instance_id))
+        unassign_runtime_properties(ctx=ctx)
     else:
-        raise RecoverableError('Waiting for server to stop'
-                               'Retrying...',
-                               retry_after=retry_interval)
+        raise RecoverableError(
+            'Waiting for server to stop. Retrying...',
+            retry_after=retry_interval)
 
 
 @operation
@@ -157,29 +155,27 @@ def terminate(retry_interval, **_):
     """
     ec2_client = connection.EC2ConnectionClient().client()
 
-    instance_id = ctx.instance.runtime_properties.get('aws_resource_id')
+    if 'aws_resource_id' not in ctx.instance.runtime_properties:
+        raise NonRecoverableError(
+            'Cannot terminate instance because aws_resource_id not assigned.')
 
-    ctx.logger.info('Terminating EC2 Instance.')
-    ctx.logger.debug('Attempting to terminate EC2 Instance.'
-                     '(Instance id: {0}.)'.format(instance_id))
+    instance_id = ctx.instance.runtime_properties['aws_resource_id']
+
+    ctx.logger.debug(
+        'Attempting to terminate EC2 Instance. {0}.)'.format(instance_id))
 
     try:
         ec2_client.terminate_instances(instance_id)
     except (boto.exception.EC2ResponseError,
             boto.exception.BotoServerError) as e:
-        raise NonRecoverableError('Error. Failed to terminate '
-                                  'EC2 Instance: API returned: {0}.'
-                                  .format(str(e)))
-    finally:
-        ctx.instance.runtime_properties.pop('private_dns_name', None)
-        ctx.instance.runtime_properties.pop('public_dns_name', None)
-        ctx.instance.runtime_properties.pop('public_ip_address', None)
-        ctx.instance.runtime_properties.pop('ip', None)
-        ctx.instance.runtime_properties.pop('aws_resource_id', None)
-        ctx.logger.debug('Attemped to delete the instance and its '
-                         'runtime properties')
+        raise NonRecoverableError('{0}'.format(str(e)))
 
-    utils.validate_state(instance_id, 48, 240, retry_interval, ctx=ctx)
+    ctx.logger.debug(
+        'Attemped to terminate instance {0}'.format(instance_id))
+
+    if utils.get_instance_state(ctx=ctx) == 48:
+        ctx.logger.info('Terminated instance: {0}.'.format(instance_id))
+        del(ctx.instance.runtime_properties['aws_resource_id'])
 
 
 @operation
@@ -196,21 +192,26 @@ def creation_validation(**_):
             ctx.node.properties['resource_id'], ctx=ctx)
 
 
-def assign_runtime_properties_to_instance(ctx):
+def assign_runtime_properties_to_instance(
+        ctx, runtime_properties=['private_dns_name', 'public_dns_name',
+                                 'public_ip_address', 'ip']):
 
-        ctx.instance.runtime_properties['private_dns_name'] = \
-            utils.get_private_dns_name(ctx=ctx)
-        ctx.instance.runtime_properties['public_dns_name'] = \
-            utils.get_public_dns_name(ctx=ctx)
-        ctx.instance.runtime_properties['public_ip_address'] = \
-            utils.get_public_ip_address(ctx=ctx)
-        ctx.instance.runtime_properties['ip'] = \
-            utils.get_private_ip_address(ctx=ctx)
-        ctx.logger.info('Public DNS: {}.'.format(
-            ctx.instance.runtime_properties['public_dns_name']))
-        ctx.logger.info('Public IP: {}.'.format(
-            ctx.instance.runtime_properties['public_ip_address']))
-        ctx.logger.info('Private DNS: {}.'.format(
-            ctx.instance.runtime_properties['private_dns_name']))
-        ctx.logger.info('Private IP (the ip): {}.'.format(
-            ctx.instance.runtime_properties['ip']))
+    for property_name in runtime_properties:
+        if 'ip' is property_name:
+            ctx.instance.runtime_properties[property_name] = \
+                utils.get_instance_attribute('private_ip_address', ctx=ctx)
+        elif 'public_ip_address' is property_name:
+            ctx.instance.runtime_properties[property_name] = \
+                utils.get_instance_attribute('ip_address', ctx=ctx)
+        else:
+            attribute = utils.get_instance_attribute(property_name, ctx=ctx)
+
+        ctx.logger.debug('Set {0}: {1}.'.format(property_name, attribute))
+
+
+def unassign_runtime_properties(
+        ctx, runtime_properties=['private_dns_name', 'public_dns_name',
+                                 'public_ip_address', 'ip']):
+    for property_name in runtime_properties:
+        del(ctx.instance.runtime_properties[property_name])
+        ctx.logger.debug('Deleted {0} runtime property.')

@@ -23,7 +23,7 @@ from moto import mock_ec2
 from ec2 import connection
 from ec2 import securitygroup
 from cloudify.mocks import MockCloudifyContext
-from cloudify.exceptions import NonRecoverableError
+from cloudify.exceptions import NonRecoverableError, RecoverableError
 
 
 class TestSecurityGroup(testtools.TestCase):
@@ -80,7 +80,9 @@ class TestSecurityGroup(testtools.TestCase):
         group = ec2_client.create_security_group('test',
                                                  'this is test')
         ctx.instance.runtime_properties['aws_resource_id'] = group.id
-        securitygroup.delete(ctx=ctx)
+        ex = self.assertRaises(
+            RecoverableError, securitygroup.delete, 1, ctx=ctx)
+        self.assertIn('Retrying', ex.message)
 
     @mock_ec2
     def test_create_duplicate(self):
@@ -108,7 +110,7 @@ class TestSecurityGroup(testtools.TestCase):
         ctx.instance.runtime_properties['aws_resource_id'] = group.id
         ec2_client.delete_security_group(group_id=group.id)
         ex = self.assertRaises(
-            NonRecoverableError, securitygroup.delete, ctx=ctx)
+            NonRecoverableError, securitygroup.delete, 1, ctx=ctx)
         self.assertIn('InvalidGroup.NotFound', ex.message)
 
     @mock_ec2
@@ -121,7 +123,8 @@ class TestSecurityGroup(testtools.TestCase):
         ctx.node.properties['resource_id'] = 'sg-73cd3f1e'
         ex = self.assertRaises(
             NonRecoverableError, securitygroup.create, ctx=ctx)
-        self.assertIn('the security group does not exist.', ex.message)
+        self.assertIn(
+            'but the given security group or Name does not exist', ex.message)
 
     @mock_ec2
     def test_creation_validation_not_existing(self):

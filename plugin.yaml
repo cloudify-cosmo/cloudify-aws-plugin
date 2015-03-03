@@ -121,7 +121,13 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create: aws.ec2.securitygroup.create
-        delete: aws.ec2.securitygroup.delete
+        delete: 
+          implementation: aws.ec2.securitygroup.delete
+          inputs:
+            retry_interval:
+              description: How many seconds between state checks.
+              type: integer
+              default: 5
       cloudify.interfaces.validation:
         creation: aws.ec2.securitygroup.creation_validation
       cloudify.interfaces.securitygroup:

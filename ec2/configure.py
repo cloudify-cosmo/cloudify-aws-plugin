@@ -30,9 +30,9 @@ class BotoConfig(object):
         return temp_config
 
     def _get_basic_config(self):
-        config = '[{}]\n' \
-                 'aws_access_key_id = {}\n' \
-                 'aws_secret_access_key = {}'.format(
+        config = '[{0}]\n' \
+                 'aws_access_key_id = {1}\n' \
+                 'aws_secret_access_key = {2}'.format(
                      self._get_aws_credentials_name(),
                      self._get_aws_access_key_id(),
                      self._get_aws_secret_access_key())

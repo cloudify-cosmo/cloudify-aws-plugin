@@ -45,16 +45,17 @@ def create(**kwargs):
         key_pair = utils.get_key_pair_by_id(key_pair_id)
         ctx.instance.runtime_properties['aws_resource_id'] = key_pair.name
         key_path = get_key_file_path(ctx=ctx)
-        ctx.logger.info(key_path)
+        ctx.logger.debug('Path to key file: {0}.'.format(key_path))
         if not search_for_key_file(key_path):
             raise NonRecoverableError('use_external_resource was specified, '
                                       'and a name given, but the key pair was '
                                       'not located on the filesystem.')
+        ctx.logger.info('Using existing key pair: {0}.'.format(key_pair.name))
         return
 
     key_pair_name = ctx.node.properties['resource_id']
 
-    ctx.logger.info('Creating key pair.')
+    ctx.logger.debug('Creating key pair.')
 
     try:
         kp = ec2_client.create_key_pair(key_pair_name)
@@ -63,13 +64,10 @@ def create(**kwargs):
             boto.exception.BotoClientError) as e:
         raise NonRecoverableError('Key pair not created. {0}'.format(str(e)))
 
+    ctx.instance.runtime_properties['aws_resource_id'] = kp.name
     ctx.logger.info('Created key pair: {0}.'.format(kp.name))
 
-    ctx.instance.runtime_properties['aws_resource_id'] = kp.name
-
     save_key_pair(kp, ctx=ctx)
-
-    ctx.instance.runtime_properties['key_path'] = get_key_file_path(ctx=ctx)
 
 
 @operation
@@ -78,22 +76,34 @@ def delete(**kwargs):
         when this lifecycle operation is called.
     """
     ec2_client = connection.EC2ConnectionClient().client()
+
+    if 'aws_resource_id' not in ctx.instance.runtime_properties:
+        raise NonRecoverableError(
+            'Cannot delete key pair because aws_resource_id is not assigned.')
+
     key_pair_name = ctx.instance.runtime_properties['aws_resource_id']
-    ctx.logger.info('Deleting the keypair.')
+
+    ctx.logger.debug('Attempting to delete key pair from account.')
 
     try:
         ec2_client.delete_key_pair(key_pair_name)
     except (boto.exception.EC2ResponseError,
             boto.exception.BotoServerError) as e:
-        raise NonRecoverableError('Error response on key pair delete. '
-                                  'API returned: {0}'.format(str(e)))
-    finally:
-        ctx.instance.runtime_properties.pop('aws_resource_id', None)
-        ctx.instance.runtime_properties.pop('key_path', None)
-        ctx.logger.debug('Attempted to delete key pair from account.')
+        raise NonRecoverableError('{0}'.format(str(e)))
 
-    delete_key_file(ctx=ctx)
-    ctx.logger.info('Deleted key pair: {0}.'.format(key_pair_name))
+    try:
+        utils.get_key_pair_by_id(key_pair_name)
+    except NonRecoverableError:
+        ctx.logger.debug(
+            'Generally NonRecoverableError indicates that an operation failed.'
+            'In this case, everything worked correctly.')
+        del(ctx.instance.runtime_properties['aws_resource_id'])
+        del(ctx.instance.runtime_properties['key_path'])
+        ctx.logger.info('Deleted key pair: {0}.'.format(key_pair_name))
+        delete_key_file(ctx=ctx)
+    else:
+        ctx.logger.error(
+            'Could not delete key pair. Try deleting manually.')
 
 
 @operation
@@ -116,15 +126,27 @@ def save_key_pair(key_pair_object, ctx):
 
     ctx.logger.debug('Attempting to save the key_pair_object.')
 
+    if 'private_key_path' not in ctx.node.properties:
+        raise NonRecoverableError(
+            'Unable to save key pair, private_key_path not set.')
+
     try:
         key_pair_object.save(ctx.node.properties['private_key_path'])
     except (boto.exception.BotoClientError,
             OSError) as e:
-        raise NonRecoverableError(str(e))
+        raise NonRecoverableError(
+            'Unable to save key pair: {0}'.format(str(e)))
 
     key_path = get_key_file_path(ctx=ctx)
 
-    os.chmod(key_path, 0600)
+    if os.access(key_path, os.W_OK):
+        os.chmod(key_path, 0600)
+    else:
+        raise NonRecoverableError(
+            'Unable to save file: {0}, insufficient permissions.'
+            .format(key_path))
+
+    ctx.instance.runtime_properties['key_path'] = key_path
 
 
 def get_key_file_path(ctx):
@@ -133,11 +155,14 @@ def get_key_file_path(ctx):
     this module. It doesn't verify whether the path points to anything.
     """
 
+    if 'private_key_path' not in ctx.node.properties:
+        raise NonRecoverableError(
+            'Unable to get key file path, private_key_path not set.')
+
     path = os.path.expanduser(ctx.node.properties['private_key_path'])
-    key_path = os.path.join(path,
-                            '{0}{1}'.format(
-                                ctx.node.properties['resource_id'],
-                                '.pem'))
+
+    key_path = os.path.join(
+        path, '{0}.pem'.format(ctx.node.properties['resource_id']))
     return key_path
 
 
@@ -157,7 +182,4 @@ def delete_key_file(ctx):
 def search_for_key_file(key_path):
     """ Indicates whether the file exists locally. """
 
-    if os.path.exists(key_path):
-        return True
-    else:
-        return False
+    return True if os.path.exists(key_path) else False

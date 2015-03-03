@@ -152,9 +152,9 @@ class TestInstance(testtools.TestCase):
         ctx.instance.runtime_properties['public_dns_name'] = '0.0.0.0'
         ctx.instance.runtime_properties['public_ip_address'] = '0.0.0.0'
         ctx.instance.runtime_properties['ip'] = '0.0.0.0'
-        ex = self.assertRaises(NonRecoverableError,
-                               instance.stop, 1, ctx=ctx)
-        self.assertIn('Failed', ex.message)
+        ex = self.assertRaises(
+            NonRecoverableError, instance.stop, 1, ctx=ctx)
+        self.assertIn('InvalidInstanceID', ex.message)
 
     @mock_ec2
     def test_terminate_bad_id(self):
