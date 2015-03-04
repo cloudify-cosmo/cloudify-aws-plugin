@@ -38,15 +38,16 @@ def allocate(**_):
         ctx.logger.info('Using existing resource: {0}'.format(address))
         return
 
+    ctx.logger.debug('Attepting to allocate elasticip.')
+
     try:
         address_object = ec2_client.allocate_address(domain=None)
     except (boto.exception.EC2ResponseError,
             boto.exception.BotoServerError) as e:
-        raise NonRecoverableError('Failed to provision Elastic IP. Error: {0}.'
-                                  .format(str(e)))
+        raise NonRecoverableError('{0}.'.format(str(e)))
 
-    ctx.logger.info('Elastic IP allocated: {0}'.format(
-        address_object.public_ip))
+    ctx.logger.info(
+        'Elastic IP allocated: {0}'.format(address_object.public_ip))
     ctx.instance.runtime_properties['aws_resource_id'] = \
         address_object.public_ip
 
@@ -55,23 +56,21 @@ def allocate(**_):
 def release(retry_interval, **_):
     """ Releases an Elastic IP from the connected region in the AWS account.
     """
-    ctx.logger.info('Releasing an Elastic IP.')
 
-    try:
-        elasticip = ctx.instance.runtime_properties['aws_resource_id']
-    except KeyError as e:
+    ctx.logger.debug('Attempting to release an Elastic IP.')
+
+    if 'aws_resource_id' not in ctx.instance.runtime_properties:
         raise NonRecoverableError(
-            'Attempted to get elastic ip in elasticip.release, '
-            'however aws_resource_id was not set.')
+            'Unable to release elasticip, because aws_resource_id is not set.')
 
+    elasticip = ctx.instance.runtime_properties['aws_resource_id']
     address_object = utils.get_address_object_by_id(elasticip, ctx=ctx)
 
     try:
         address_object.delete()
     except (boto.exception.EC2ResponseError,
             boto.exception.BotoServerError) as e:
-        raise NonRecoverableError(
-            'Error. Failed to delete Elastic IP. Error: {0}.'.format(str(e)))
+        raise NonRecoverableError('{0}.'.format(str(e)))
     except AttributeError as e:
         NonRecoverableError(
             'Attribute error raised on address_object.delete(). '
@@ -101,31 +100,33 @@ def release(retry_interval, **_):
 def associate(**_):
     """ Associates an Elastic IP with an EC2 Instance.
     """
+
+    ctx.logger.debug('Attempting to associate elasticip with instance.')
+
     ec2_client = connection.EC2ConnectionClient().client()
 
     if 'aws_resource_id' not in ctx.source.instance.runtime_properties:
         raise NonRecoverableError(
             'Unable to associate elastic ip address, '
             'instance_id runtime property not set.')
-    elif 'aws_resource_id' not in ctx.target.instance.runtime_properties:
+
+    if 'aws_resource_id' not in ctx.target.instance.runtime_properties:
         raise NonRecoverableError(
             'Unable to associate elastic ip address, '
             'aws_resource_id runtime property not set.')
-    else:
-        instance_id = ctx.source.instance.runtime_properties['aws_resource_id']
-        elasticip = ctx.target.instance.runtime_properties['aws_resource_id']
 
-    ctx.logger.info('Associating an Elastic IP {0} '
-                    'with an EC2 Instance {1}.'.format(elasticip, instance_id))
+    elasticip = ctx.target.instance.runtime_properties['aws_resource_id']
+    instance_id = ctx.source.instance.runtime_properties['aws_resource_id']
+
+    ctx.logger.debug('associate using elasticip {0} and instance {1}.'
+                     .format(elasticip, instance_id))
 
     try:
         ec2_client.associate_address(instance_id=instance_id,
                                      public_ip=elasticip)
     except (boto.exception.EC2ResponseError,
             boto.exception.BotoServerError) as e:
-        raise NonRecoverableError('Error. Failed to '
-                                  'attach Elastic IP. Error: {0}.'
-                                  .format(str(e)))
+        raise NonRecoverableError('{0}.'.format(str(e)))
 
     ctx.logger.info('Associated Elastic IP {0} with instance {1}.'.format(
         elasticip, instance_id))
@@ -151,9 +152,7 @@ def disassociate(**_):
         ec2_client.disassociate_address(public_ip=elasticip)
     except (boto.exception.EC2ResponseError,
             boto.exception.BotoServerError) as e:
-        raise NonRecoverableError('Error. Failed to detach '
-                                  'Elastic IP, returned: {0}.'
-                                  .format(e))
+        raise NonRecoverableError('{0}'.format(str(e)))
 
     del(ctx.source.instance.runtime_properties['public_ip_address'])
 

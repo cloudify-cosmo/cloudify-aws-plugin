@@ -106,30 +106,6 @@ def get_instance_state(ctx):
     return state
 
 
-def get_private_dns_name(ctx):
-    """ returns the private_dns_name variable for a given instance
-    """
-    return get_instance_attribute('private_dns_name', ctx=ctx)
-
-
-def get_public_dns_name(ctx):
-    """ returns the public_dns_name variable for a given instance
-    """
-    return get_instance_attribute('public_dns_name', ctx=ctx)
-
-
-def get_private_ip_address(ctx):
-    """ returns the private_ip_address variable for a given instance
-    """
-    return get_instance_attribute('private_ip_address', ctx=ctx)
-
-
-def get_public_ip_address(ctx):
-    """ returns the public_ip_address variable for a given instance
-    """
-    return get_instance_attribute('ip_address', ctx=ctx)
-
-
 def get_instance_from_id(instance_id, ctx):
     """ using the instance_id retrieves the instance object
         from the API and returns the object.

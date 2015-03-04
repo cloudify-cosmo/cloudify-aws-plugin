@@ -90,21 +90,8 @@ class TestUtils(testtools.TestCase):
                 TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
             ctx.instance.runtime_properties['aws_resource_id'] = \
                 reservation.instances[0].id
-            dns_name = utils.get_private_dns_name(ctx=ctx)
-            self.assertRegexpMatches(dns_name, FQDN)
-
-    def test_get_public_dns_name(self):
-
-        ctx = self.mock_ctx('test_get_public_dns_name')
-
-        ctx
-        with mock_ec2():
-            ec2_client = connection.EC2ConnectionClient().client()
-            reservation = ec2_client.run_instances(
-                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
-            ctx.instance.runtime_properties['aws_resource_id'] = \
-                reservation.instances[0].id
-            dns_name = utils.get_public_dns_name(ctx=ctx)
+            property_name = 'private_dns_name'
+            dns_name = utils.get_instance_attribute(property_name, ctx=ctx)
             self.assertRegexpMatches(dns_name, FQDN)
 
     def test_get_key_pair_by_id(self):

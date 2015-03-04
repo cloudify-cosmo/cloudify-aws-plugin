@@ -132,8 +132,8 @@ def save_key_pair(key_pair_object, ctx):
 
     try:
         key_pair_object.save(ctx.node.properties['private_key_path'])
-    except (boto.exception.BotoClientError,
-            OSError) as e:
+    except (
+            boto.exception.BotoClientError, OSError) as e:
         raise NonRecoverableError(
             'Unable to save key pair: {0}'.format(str(e)))
 

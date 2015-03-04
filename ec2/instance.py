@@ -106,6 +106,8 @@ def start(retry_interval, **_):
         else:
             raise NonRecoverableError('{0}'.format(str(e)))
 
+    ctx.logger.debug('Attempted to start instance {0}.'.format(instance_id))
+
     if utils.get_instance_state(ctx=ctx) == 16:
         assign_runtime_properties_to_instance(ctx=ctx)
         ctx.logger.info('Instance {0} is running.'.format(instance_id))
@@ -138,6 +140,8 @@ def stop(retry_interval, **_):
     except (boto.exception.EC2ResponseError,
             boto.exception.BotoServerError) as e:
         raise NonRecoverableError('{0}'.format(str(e)))
+
+    ctx.logger.debug('Attempted to stop instance {0}.'.format(instance_id))
 
     if utils.get_instance_state(ctx=ctx) == 80:
         ctx.logger.info('Stopped instance {0}.'.format(instance_id))

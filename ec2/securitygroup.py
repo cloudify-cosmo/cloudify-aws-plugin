@@ -45,7 +45,6 @@ def create(**_):
             raise NonRecoverableError(
                 'External security group was indicated, but the given '
                 'security group or Name does not exist.')
-        ctx.logger.info('{0}'.format(group))
         ctx.instance.runtime_properties['aws_resource_id'] = group.id
         ctx.logger.info('Using external security group: {0}'.format(group.id))
         return
@@ -149,8 +148,8 @@ def authorize(**_):
     if not ctx.node.properties['use_external_resource'] and \
             'aws_resource_id' not in ctx.instance.runtime_properties:
         raise NonRecoverableError(
-            'Unable to authorize security group, aws_resource_id '
-            'has not been set in Cloudify.')
+            'Unable to authorize security group, '
+            'neither aws_resource_id nor use_external_resource are true.')
 
     ctx.logger.debug('Attempting to authorize security group.')
 

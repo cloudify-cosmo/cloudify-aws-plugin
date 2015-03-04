@@ -19,30 +19,48 @@ import tempfile
 # Third Party Imports
 from boto import config
 
+# Cloudify Imports
+
 
 class BotoConfig(object):
 
     def get_temp_file(self):
         temp_config = tempfile.mktemp()
-        config = self._get_basic_config()
+        config = self.get_config()
         with open(temp_config, 'w') as temp_config_file:
             temp_config_file.write(config)
         return temp_config
 
-    def _get_basic_config(self):
-        config = '[{0}]\n' \
-                 'aws_access_key_id = {1}\n' \
-                 'aws_secret_access_key = {2}'.format(
-                     self._get_aws_credentials_name(),
-                     self._get_aws_access_key_id(),
-                     self._get_aws_secret_access_key())
-        return config
+    def get_config(self, path=None, profile_name='Credentials'):
+        credentials = self.load_credentials_from_path(path, profile_name)
+        return self._get_config(credentials)
 
-    def _get_aws_credentials_name(self):
-        return config.get_value('Credentials', '__name__')
+    def _get_config(self, credentials):
+        return '[{0}]\n' \
+               'aws_access_key_id = {1}\n' \
+               'aws_secret_access_key = {2}'.format(
+                   credentials['profile_name'],
+                   credentials['aws_access_key_id'],
+                   credentials['aws_secret_access_key'])
 
-    def _get_aws_access_key_id(self):
-        return config.get('Credentials', 'aws_access_key_id')
+    def _get_aws_credentials_name(self, credentials='Credentials'):
+        return config.get_value(credentials, '__name__')
 
-    def _get_aws_secret_access_key(self):
-        return config.get('Credentials', 'aws_secret_access_key')
+    def _get_aws_access_key_id(self, credentials='Credentials'):
+        return config.get(credentials, 'aws_access_key_id')
+
+    def _get_aws_secret_access_key(self, credentials='Credentials'):
+        return config.get(credentials, 'aws_secret_access_key')
+
+    def load_credentials_from_path(self, path, profile_name):
+        if path:
+            config.load_from_path(path)
+
+        return {
+            'profile_name': self._get_aws_credentials_name(
+                credentials=profile_name),
+            'aws_access_key_id': self._get_aws_access_key_id(
+                credentials=profile_name),
+            'aws_secret_access_key': self._get_aws_secret_access_key(
+                credentials=profile_name)
+        }
