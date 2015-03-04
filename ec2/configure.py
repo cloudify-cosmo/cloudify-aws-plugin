@@ -32,10 +32,7 @@ class BotoConfig(object):
         return temp_config
 
     def get_config(self, path=None, profile_name='Credentials'):
-        credentials = self.load_credentials_from_path(path, profile_name)
-        return self._get_config(credentials)
-
-    def _get_config(self, credentials):
+        credentials = self._load_credentials_from_path(path, profile_name)
         return '[{0}]\n' \
                'aws_access_key_id = {1}\n' \
                'aws_secret_access_key = {2}'.format(
@@ -52,7 +49,7 @@ class BotoConfig(object):
     def _get_aws_secret_access_key(self, credentials='Credentials'):
         return config.get(credentials, 'aws_secret_access_key')
 
-    def load_credentials_from_path(self, path, profile_name):
+    def _load_credentials_from_path(self, path, profile_name):
         if path:
             config.load_from_path(path)
 

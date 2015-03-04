@@ -75,10 +75,8 @@ class TestUtils(testtools.TestCase):
         with mock_ec2():
 
             instance_id = 'bad_id'
-            ex = self.assertRaises(NonRecoverableError,
-                                   utils.get_instance_from_id,
-                                   instance_id, ctx=ctx)
-            self.assertIn('InvalidInstanceID.NotFound', ex.message)
+            output = utils.get_instance_from_id(instance_id, ctx=ctx)
+            self.assertIsNone(output)
 
     def test_get_private_dns_name(self):
 
@@ -129,10 +127,9 @@ class TestUtils(testtools.TestCase):
     def test_get_all_addresses_bad(self):
 
         ctx = self.mock_ctx('test_get_all_addresses_bad')
-        ex = self.assertRaises(
-            NonRecoverableError, utils.get_all_addresses,
+        output = utils.get_all_addresses(
             address='127.0.0.1', ctx=ctx)
-        self.assertIn('InvalidAddress', ex.message)
+        self.assertIsNone(output)
 
     @mock_ec2
     def test_log_available_resources(self):
@@ -170,7 +167,6 @@ class TestUtils(testtools.TestCase):
     def test_get_all_instances_bad_id(self):
 
         ctx = self.mock_ctx('test_get_all_instances_bad_id')
-        ex = self.assertRaises(
-            NonRecoverableError, utils.get_all_instances,
+        output = utils.get_all_instances(
             list_of_instance_ids='test_get_all_instances_bad_id', ctx=ctx)
-        self.assertIn('InvalidInstanceID', ex.message)
+        self.assertIsNone(output)

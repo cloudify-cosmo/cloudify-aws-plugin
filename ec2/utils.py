@@ -94,8 +94,18 @@ def get_instance_attribute(attribute, ctx):
         the given variable can be retrieved and returned
     """
 
+    if 'aws_resource_id' not in ctx.instance.runtime_properties:
+        raise NonRecoverableError(
+            'Unable to get instance attibute {0}, because aws_resource_id '
+            'has not been set.'.format(attribute))
+
     instance_id = ctx.instance.runtime_properties['aws_resource_id']
     instance = get_instance_from_id(instance_id, ctx=ctx)
+
+    if instance is None:
+        raise NonRecoverableError(
+            'Unable to get instance attibute {0}, because no instance with id '
+            '{1} exists in this account.'.format(attribute, instance_id))
 
     attribute = getattr(instance, attribute)
     return attribute
@@ -204,6 +214,11 @@ def get_address_by_id(address_id, ctx):
 
     address = get_address_object_by_id(address_id, ctx=ctx)
 
+    if not address:
+        raise NonRecoverableError(
+            'Unable to retrieve address object for address: {0}.'
+            .format(address_id))
+
     return address.public_ip
 
 
@@ -211,7 +226,7 @@ def get_address_object_by_id(address_id, ctx):
     """returns the address object for a given address_id
     """
 
-    address = get_all_addresses(address=address_id, ctx=ctx)
+    address = get_all_addresses(ctx, address=address_id)
 
     return address[0] if address else address
 
@@ -225,13 +240,13 @@ def get_all_instances(ctx, list_of_instance_ids=None):
 
     try:
         reservations = ec2_client.get_all_reservations(list_of_instance_ids)
-    except boto.exception.BotoServerError as e:
-        raise NonRecoverableError('{0}'.format(str(e)))
     except boto.exception.EC2ResponseError as e:
-        if 'InvalidInstanceID' in e:
+        if 'InvalidInstanceID.NotFound' in e:
             instances = [instance for res in ec2_client.get_all_reservations()
                          for instance in res.instances]
             log_available_resources(instances, ctx=ctx)
+        return None
+    except boto.exception.BotoServerError as e:
         raise NonRecoverableError('{0}'.format(str(e)))
 
     instances = [instance for res in reservations
@@ -253,12 +268,12 @@ def get_all_security_groups(ctx,
         groups = ec2_client.get_all_security_groups(
             groupnames=list_of_group_names,
             group_ids=list_of_group_ids)
-    except boto.exception.BotoServerError as e:
-        raise NonRecoverableError('{0}'.format(str(e)))
     except boto.exception.EC2ResponseError as e:
-        if 'InvalidGroup' in e:
+        if 'InvalidGroup.NotFound' in e:
             groups = ec2_client.get_all_security_groups()
             log_available_resources(groups, ctx=ctx)
+        return None
+    except boto.exception.BotoServerError as e:
         raise NonRecoverableError('{0}'.format(str(e)))
 
     return groups
@@ -273,12 +288,12 @@ def get_all_addresses(ctx, address=None):
 
     try:
         addresses = ec2_client.get_all_addresses(address)
-    except (boto.exception.BotoServerError) as e:
-        raise NonRecoverableError('{0}'.format(str(e)))
     except boto.exception.EC2ResponseError as e:
-        if 'InvalidAddress' in e:
+        if 'InvalidAddress.NotFound' in e:
             addresses = ec2_client.get_all_addresses()
             log_available_resources(addresses, ctx=ctx)
+        return None
+    except boto.exception.BotoServerError as e:
         raise NonRecoverableError('{0}'.format(str(e)))
 
     return addresses
@@ -293,7 +308,7 @@ def log_available_resources(list_of_resources, ctx):
     for resource in list_of_resources:
         message = '{0}{1}\n'.format(message, resource)
 
-    ctx.logger.info(message)
+    ctx.logger.debug(message)
 
 
 def validate_state(instance_id, state, timeout_length, check_interval, ctx):

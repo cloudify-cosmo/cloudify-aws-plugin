@@ -155,7 +155,9 @@ class TestElasticIP(testtools.TestCase):
             '127.0.0.1'
         ex = self.assertRaises(
             NonRecoverableError, elasticip.release, 1, ctx=ctx)
-        self.assertIn('InvalidAddress.NotFound', ex.message)
+        self.assertIn(
+            'Unable to release elasticip. Elasticip not in account.',
+            ex.message)
 
     @mock_ec2
     def test_good_address_associate(self):
@@ -243,7 +245,8 @@ class TestElasticIP(testtools.TestCase):
 
         ex = self.assertRaises(
             NonRecoverableError, elasticip.creation_validation, ctx=ctx)
-        self.assertIn('InvalidAddress.NotFound', ex.message)
+        self.assertIn(
+            'Unable to retrieve address object for address', ex.message)
 
     @mock_ec2
     def test_associate_no_instance_id(self):

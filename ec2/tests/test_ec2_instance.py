@@ -137,7 +137,8 @@ class TestInstance(testtools.TestCase):
         ctx.instance.runtime_properties['aws_resource_id'] = 'bad_id'
         ex = self.assertRaises(NonRecoverableError,
                                instance.start, 1, ctx=ctx)
-        self.assertIn('InvalidInstanceID.NotFound', ex.message)
+        self.assertIn('no instance with id bad_id exists in this account',
+                      ex.message)
 
     @mock_ec2
     def test_stop_bad_id(self):
@@ -210,6 +211,5 @@ class TestInstance(testtools.TestCase):
         ctx = self.mock_ctx('test_validation_external_resource')
         ctx.node.properties['use_external_resource'] = True
         ctx.node.properties['resource_id'] = 'bad_id'
-        ex = self.assertRaises(
-            NonRecoverableError, instance.creation_validation, ctx=ctx)
-        self.assertIn('InvalidInstanceID.NotFound', ex.message)
+        output = instance.creation_validation(ctx=ctx)
+        self.assertIsNone(output)

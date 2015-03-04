@@ -34,6 +34,10 @@ def allocate(**_):
     if ctx.node.properties['use_external_resource']:
         address = utils.get_address_by_id(
             ctx.node.properties['resource_id'], ctx=ctx)
+        if not address:
+            raise NonRecoverableError(
+                'External elasticip was indicated, but the given '
+                'elasticip does not exist.')
         ctx.instance.runtime_properties['aws_resource_id'] = address
         ctx.logger.info('Using existing resource: {0}'.format(address))
         return
@@ -66,6 +70,10 @@ def release(retry_interval, **_):
     elasticip = ctx.instance.runtime_properties['aws_resource_id']
     address_object = utils.get_address_object_by_id(elasticip, ctx=ctx)
 
+    if not address_object:
+            raise NonRecoverableError(
+                'Unable to release elasticip. Elasticip not in account.')
+
     try:
         address_object.delete()
     except (boto.exception.EC2ResponseError,
@@ -77,12 +85,9 @@ def release(retry_interval, **_):
             'This indicates that a VPC elastic IP was used instead of EC2 '
             'classic: {0}'.format(str(e)))
 
-    try:
-        utils.get_address_object_by_id(address_object.public_ip, ctx=ctx)
-    except NonRecoverableError:
-        ctx.logger.debug(
-            'Generally NonRecoverableError indicates that an operation failed.'
-            'In this case, everything worked correctly.')
+    address = utils.get_address_object_by_id(address_object.public_ip, ctx=ctx)
+
+    if not address:
         elasticip = \
             ctx.instance.runtime_properties.pop('aws_resource_id', None)
         if 'allocation_id' in ctx.instance.runtime_properties:
@@ -167,4 +172,10 @@ def creation_validation(**_):
         utils.validate_node_property(property_key, ctx=ctx)
 
     if ctx.node.properties['use_external_resource']:
-        utils.get_address_by_id(ctx.node.properties['resource_id'], ctx=ctx)
+        address = utils.get_address_by_id(
+            ctx.node.properties['resource_id'], ctx=ctx)
+
+    if not address:
+        raise NonRecoverableError(
+            'External elasticip was indicated, but the given '
+            'elasticip does not exist.')
