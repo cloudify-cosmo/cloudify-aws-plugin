@@ -18,10 +18,11 @@ import boto.exception
 
 # Cloudify imports
 from cloudify import ctx
-from cloudify.exceptions import NonRecoverableError, RecoverableError
+from cloudify.exceptions import NonRecoverableError
 from cloudify.decorators import operation
 from ec2 import utils
 from ec2 import connection
+from ec2 import constants
 
 
 @operation
@@ -47,7 +48,12 @@ def run_instances(**_):
     if ctx.node.properties['use_external_resource']:
         instance_id = ctx.node.properties['resource_id']
         instance = utils.get_instance_from_id(instance_id, ctx=ctx)
-        ctx.instance.runtime_properties['aws_resource_id'] = instance.id
+        if instance is None:
+            raise NonRecoverableError(
+                'Cannot use_external_resource because instance_id {0} '
+                'is not in this account.'.format(instance_id))
+        ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID] = \
+            instance.id
         ctx.logger.info('Using existing instance: {0}.'.format(instance.id))
         return
 
@@ -57,19 +63,36 @@ def run_instances(**_):
         'Attempting to create EC2 Instance. Sending these API parameters: {0}.'
         .format(instance_parameters))
 
-    try:
-        reservation = ec2_client.run_instances(**instance_parameters)
-    except (boto.exception.EC2ResponseError,
-            boto.exception.BotoServerError) as e:
-        raise NonRecoverableError('{0}'.format(str(e)))
+    if ctx.operation.retry_number == 0:
+        try:
+            reservation = ec2_client.run_instances(**instance_parameters)
+        except (boto.exception.EC2ResponseError,
+                boto.exception.BotoServerError) as e:
+            raise NonRecoverableError('{0}'.format(str(e)))
+        else:
+            instance_id = reservation.instances[0].id
+            ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID] = \
+                instance_id
+    elif constants.EXTERNAL_RESOURCE_ID in ctx.instance.runtime_properties:
+        instance_id = \
+            ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
+    else:
+        raise NonRecoverableError(
+            'First try to create instance failed or {0} is not set.'
+            .format(constants.EXTERNAL_RESOURCE_ID))
 
-    instance_id = reservation.instances[0].id
-    ctx.instance.runtime_properties['aws_resource_id'] = instance_id
+    instance = utils.get_instance_from_id(instance_id, ctx=ctx)
+
+    if instance is None:
+        return ctx.operation.retry(
+            message='Waiting to verify that instance {0} '
+            'has been added to your account.'.format(instance_id))
+
     ctx.logger.info('Created instance: {0}.'.format(instance_id))
 
 
 @operation
-def start(retry_interval, **_):
+def start(**_):
     """ Starts an EC2 Classic Instance.
         If start command has already run, this does nothing.
         Requires:
@@ -82,13 +105,15 @@ def start(retry_interval, **_):
     """
     ec2_client = connection.EC2ConnectionClient().client()
 
-    if 'aws_resource_id' not in ctx.instance.runtime_properties:
+    if constants.EXTERNAL_RESOURCE_ID not in ctx.instance.runtime_properties:
         raise NonRecoverableError(
-            'Cannot start instance because aws_resource_id is not assigned.')
+            'Cannot start instance because {0} is not assigned.'
+            .format(constants.EXTERNAL_RESOURCE_ID))
 
-    instance_id = ctx.instance.runtime_properties['aws_resource_id']
+    instance_id = \
+        ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
 
-    if utils.get_instance_state(ctx=ctx) == 16:
+    if utils.get_instance_state(ctx=ctx) == constants.INSTANCE_STATE_STARTED:
         assign_runtime_properties_to_instance(ctx=ctx)
         ctx.logger.info('Instance {0} is running.'.format(instance_id))
         return
@@ -99,26 +124,20 @@ def start(retry_interval, **_):
         ec2_client.start_instances(instance_id)
     except (boto.exception.EC2ResponseError,
             boto.exception.BotoServerError) as e:
-        if 'does not exist' in e:
-            raise RecoverableError(
-                'Waiting for server to be running. Retrying...',
-                retry_after=retry_interval)
-        else:
-            raise NonRecoverableError('{0}'.format(str(e)))
+        raise NonRecoverableError('{0}'.format(str(e)))
 
     ctx.logger.debug('Attempted to start instance {0}.'.format(instance_id))
 
-    if utils.get_instance_state(ctx=ctx) == 16:
+    if utils.get_instance_state(ctx=ctx) == constants.INSTANCE_STATE_STARTED:
         assign_runtime_properties_to_instance(ctx=ctx)
         ctx.logger.info('Instance {0} is running.'.format(instance_id))
     else:
-        raise RecoverableError(
-            'Waiting for server to be running. Retrying...',
-            retry_after=retry_interval)
+        return ctx.operation.retry(
+            message='Waiting server to be running. Retrying...')
 
 
 @operation
-def stop(retry_interval, **_):
+def stop(**_):
     """ Stops an existing EC2 instance.
         If already stopped, this does nothing.
         Requires:
@@ -126,11 +145,13 @@ def stop(retry_interval, **_):
     """
     ec2_client = connection.EC2ConnectionClient().client()
 
-    if 'aws_resource_id' not in ctx.instance.runtime_properties:
+    if constants.EXTERNAL_RESOURCE_ID not in ctx.instance.runtime_properties:
         raise NonRecoverableError(
-            'Cannot stop instance because aws_resource_id is not assigned.')
+            'Cannot stop instance because {0} is not assigned.'
+            .format(constants.EXTERNAL_RESOURCE_ID))
 
-    instance_id = ctx.instance.runtime_properties['aws_resource_id']
+    instance_id = \
+        ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
 
     ctx.logger.debug(
         'Attempting to stop EC2 Instance. {0}.)'.format(instance_id))
@@ -143,27 +164,28 @@ def stop(retry_interval, **_):
 
     ctx.logger.debug('Attempted to stop instance {0}.'.format(instance_id))
 
-    if utils.get_instance_state(ctx=ctx) == 80:
+    if utils.get_instance_state(ctx=ctx) == constants.INSTANCE_STATE_STOPPED:
         ctx.logger.info('Stopped instance {0}.'.format(instance_id))
         unassign_runtime_properties(ctx=ctx)
     else:
-        raise RecoverableError(
-            'Waiting for server to stop. Retrying...',
-            retry_after=retry_interval)
+        return ctx.operation.retry(
+            message='Waiting server to stop. Retrying...')
 
 
 @operation
-def terminate(retry_interval, **_):
+def terminate(**_):
     """ Terminates an existing EC2 instance.
         If already terminated, this does nothing.
     """
     ec2_client = connection.EC2ConnectionClient().client()
 
-    if 'aws_resource_id' not in ctx.instance.runtime_properties:
+    if constants.EXTERNAL_RESOURCE_ID not in ctx.instance.runtime_properties:
         raise NonRecoverableError(
-            'Cannot terminate instance because aws_resource_id not assigned.')
+            'Cannot terminate instance because {0} not assigned.'
+            .format(constants.EXTERNAL_RESOURCE_ID))
 
-    instance_id = ctx.instance.runtime_properties['aws_resource_id']
+    instance_id = \
+        ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
 
     ctx.logger.debug(
         'Attempting to terminate EC2 Instance. {0}.)'.format(instance_id))
@@ -177,9 +199,10 @@ def terminate(retry_interval, **_):
     ctx.logger.debug(
         'Attemped to terminate instance {0}'.format(instance_id))
 
-    if utils.get_instance_state(ctx=ctx) == 48:
+    if utils.get_instance_state(ctx=ctx) == \
+            constants.INSTANCE_STATE_TERMINATED:
         ctx.logger.info('Terminated instance: {0}.'.format(instance_id))
-        del(ctx.instance.runtime_properties['aws_resource_id'])
+        del(ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID])
 
 
 @operation
@@ -192,8 +215,33 @@ def creation_validation(**_):
         utils.validate_node_property(property_key, ctx=ctx)
 
     if ctx.node.properties['use_external_resource']:
-        utils.get_instance_from_id(
+        instance = utils.get_instance_from_id(
             ctx.node.properties['resource_id'], ctx=ctx)
+
+    if not instance:
+        raise NonRecoverableError(
+            'Instance ID {0} does not exist in this account.'
+            .format(ctx.node.properties['resource_id']))
+
+    if 'image_id' not in ctx.node.properties['parameters']:
+        raise NonRecoverableError(
+            'Required parameter image_id not provided.')
+
+    if 'instance_type' not in ctx.node.properties['parameters']:
+        raise NonRecoverableError(
+            'Required parameter instance_type not provided.')
+
+    image_id = ctx.node.properties['parameters']['image_id']
+    image_object = utils.get_image(image_id)
+
+    if 'available' not in image_object.state:
+        raise NonRecoverableError(
+            'image_id {0} not available to this account.'.format(image_id))
+
+    if 'ebs' not in image_object.root_device_type:
+        raise NonRecoverableError(
+            'image_id {0} not ebs-backed. Image must be of type \'ebs\'.'
+            .format(image_id))
 
 
 def assign_runtime_properties_to_instance(

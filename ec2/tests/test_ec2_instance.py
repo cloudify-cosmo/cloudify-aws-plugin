@@ -47,9 +47,14 @@ class TestInstance(testtools.TestCase):
             }
         }
 
+        operation = {
+            'retry_number': 0
+        }
+
         ctx = MockCloudifyContext(
             node_id=test_node_id,
-            properties=test_properties
+            properties=test_properties,
+            operation=operation
         )
 
         return ctx
@@ -82,7 +87,7 @@ class TestInstance(testtools.TestCase):
         ctx.instance.runtime_properties['public_dns_name'] = '0.0.0.0'
         ctx.instance.runtime_properties['public_ip_address'] = '0.0.0.0'
         ctx.instance.runtime_properties['ip'] = '0.0.0.0'
-        instance.stop(1, ctx=ctx)
+        instance.stop(ctx=ctx)
         reservations = ec2_client.get_all_reservations(instance_id)
         instance_object = reservations[0].instances[0]
         state = instance_object.update()
@@ -101,7 +106,7 @@ class TestInstance(testtools.TestCase):
         instance_id = reservation.instances[0].id
         ctx.instance.runtime_properties['aws_resource_id'] = instance_id
         ec2_client.stop_instances(instance_id)
-        instance.start(1, ctx=ctx)
+        instance.start(ctx=ctx)
         reservations = ec2_client.get_all_reservations(instance_id)
         instance_object = reservations[0].instances[0]
         state = instance_object.update()
@@ -120,7 +125,7 @@ class TestInstance(testtools.TestCase):
             TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
         instance_id = reservation.instances[0].id
         ctx.instance.runtime_properties['aws_resource_id'] = instance_id
-        instance.terminate(1, ctx=ctx)
+        instance.terminate(ctx=ctx)
         reservations = ec2_client.get_all_reservations(instance_id)
         instance_object = reservations[0].instances[0]
         state = instance_object.update()
@@ -136,7 +141,7 @@ class TestInstance(testtools.TestCase):
 
         ctx.instance.runtime_properties['aws_resource_id'] = 'bad_id'
         ex = self.assertRaises(NonRecoverableError,
-                               instance.start, 1, ctx=ctx)
+                               instance.start, ctx=ctx)
         self.assertIn('no instance with id bad_id exists in this account',
                       ex.message)
 
@@ -154,7 +159,7 @@ class TestInstance(testtools.TestCase):
         ctx.instance.runtime_properties['public_ip_address'] = '0.0.0.0'
         ctx.instance.runtime_properties['ip'] = '0.0.0.0'
         ex = self.assertRaises(
-            NonRecoverableError, instance.stop, 1, ctx=ctx)
+            NonRecoverableError, instance.stop, ctx=ctx)
         self.assertIn('InvalidInstanceID', ex.message)
 
     @mock_ec2
@@ -171,7 +176,7 @@ class TestInstance(testtools.TestCase):
         ctx.instance.runtime_properties['public_ip_address'] = '0.0.0.0'
         ctx.instance.runtime_properties['ip'] = '0.0.0.0'
         ex = self.assertRaises(NonRecoverableError,
-                               instance.terminate, 1, ctx=ctx)
+                               instance.terminate, ctx=ctx)
         self.assertIn('InvalidInstanceID.NotFound', ex.message)
 
     @mock_ec2
@@ -182,7 +187,6 @@ class TestInstance(testtools.TestCase):
         """
 
         ctx = self.mock_ctx('test_run_instances_bad_subnet_id')
-
         ctx.node.properties['parameters']['subnet_id'] = 'test'
         ex = self.assertRaises(NonRecoverableError,
                                instance.run_instances, ctx=ctx)
@@ -211,5 +215,7 @@ class TestInstance(testtools.TestCase):
         ctx = self.mock_ctx('test_validation_external_resource')
         ctx.node.properties['use_external_resource'] = True
         ctx.node.properties['resource_id'] = 'bad_id'
-        output = instance.creation_validation(ctx=ctx)
-        self.assertIsNone(output)
+        ex = self.assertRaises(
+            NonRecoverableError, instance.creation_validation, ctx=ctx)
+        self.assertIn('Instance ID bad_id does not exist in this account',
+                      ex.message)

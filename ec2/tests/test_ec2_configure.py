@@ -15,8 +15,10 @@
 
 # Built-in Imports
 import testtools
+import tempfile
 
 # Third Party Imports
+from moto import mock_ec2
 
 # Cloudify Imports is imported and used in operations
 from ec2 import configure
@@ -24,6 +26,29 @@ from ec2 import configure
 
 class TestConfigure(testtools.TestCase):
 
+    def mock_profile_string(self):
+
+        return \
+            '[mock]\n' \
+            'aws_access_key_id = AKIAZ0ZZZZ0ZZZOZZZ0Z\n' \
+            'aws_secret_access_key = ' \
+            'zzZ/Z0Zzz00ZZzzZzZZZzzZ0ZZ/z+ZzZZZZZ+ZzZ'
+
+    @mock_ec2
+    def test_configure_provide_path(self):
+
+        mock_config = self.mock_profile_string()
+
+        temp_config = tempfile.mktemp()
+        with open(temp_config, 'w') as temp_config_file:
+            temp_config_file.write(mock_config)
+
+        configure_file = \
+            configure.BotoConfig().get_config(
+                path=temp_config, profile_name='mock')
+        self.assertEqual(configure_file, mock_config)
+
+    @mock_ec2
     def test_configure_file_contents(self):
 
         configure_file = configure.BotoConfig().get_temp_file()

@@ -89,6 +89,23 @@ def validate_node_property(key, ctx):
                                   'Unable to create.'.format(key))
 
 
+def get_image(image_id, ctx):
+
+    ec2_client = connection.EC2ConnectionClient().client()
+
+    if not image_id:
+        raise NonRecoverableError(
+            'No image_id was provided.')
+
+    try:
+        image = ec2_client.get_image(image_id)
+    except (boto.exception.EC2ResponseError,
+            boto.exception.BotoServerError) as e:
+        raise NonRecoverableError('{0}.'.format(str(e)))
+
+    return image
+
+
 def get_instance_attribute(attribute, ctx):
     """ given the related instance object
         the given variable can be retrieved and returned

@@ -21,7 +21,6 @@ from moto import mock_ec2
 
 # Cloudify Imports is imported and used in operations
 from ec2 import connection
-from ec2 import instance
 from ec2 import utils
 from cloudify.mocks import MockCloudifyContext
 from cloudify.exceptions import NonRecoverableError
@@ -60,7 +59,11 @@ class TestUtils(testtools.TestCase):
 
         ctx = self.mock_ctx('test_get_instance_state')
         with mock_ec2():
-            instance.run_instances(ctx=ctx)
+            ec2_client = connection.EC2ConnectionClient().client()
+            reservation = ec2_client.run_instances(
+                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
+            ctx.instance.runtime_properties['aws_resource_id'] = \
+                reservation.instances[0].id
             instance_state = utils.get_instance_state(ctx=ctx)
             self.assertEqual(instance_state, 16)
 

@@ -1,3 +1,4 @@
+tosca_definitions_version: cloudify_dsl_1_1
 ##################################################################################
 # Cloudify AWS EC2 built in types and plugins definitions.
 ##################################################################################
@@ -39,28 +40,22 @@ node_types:
         default: {}
     interfaces:
       cloudify.interfaces.lifecycle:
-        create: aws.ec2.instance.run_instances
+        create:
+          implementation: aws.ec2.instance.run_instances
+          retry_interval: 5
+          max_retries: 10
         start:
           implementation: aws.ec2.instance.start
-          inputs:
-            retry_interval:
-              description: How many seconds between state checks.
-              type: integer
-              default: 5
+          retry_interval: 5
+          max_retries: 10
         stop:
           implementation: aws.ec2.instance.stop
-          inputs:
-            retry_interval:
-              description: How many seconds between state checks.
-              type: integer
-              default: 5
+          retry_interval: 5
+          max_retries: 10
         delete:
           implementation: aws.ec2.instance.terminate
-          inputs:
-            retry_interval:
-              description: How many seconds between state checks.
-              type: integer
-              default: 5
+          retry_interval: 5
+          max_retries: 10
       cloudify.interfaces.validation:
         creation:
           implementation: aws.ec2.instance.creation_validation
