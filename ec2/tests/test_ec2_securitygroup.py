@@ -23,7 +23,7 @@ from moto import mock_ec2
 from ec2 import connection
 from ec2 import securitygroup
 from cloudify.mocks import MockCloudifyContext
-from cloudify.exceptions import NonRecoverableError, RecoverableError
+from cloudify.exceptions import NonRecoverableError
 
 
 class TestSecurityGroup(testtools.TestCase):
@@ -80,9 +80,8 @@ class TestSecurityGroup(testtools.TestCase):
         group = ec2_client.create_security_group('test',
                                                  'this is test')
         ctx.instance.runtime_properties['aws_resource_id'] = group.id
-        ex = self.assertRaises(
-            RecoverableError, securitygroup.delete, 1, ctx=ctx)
-        self.assertIn('Retrying', ex.message)
+        securitygroup.delete(ctx=ctx)
+        self.assertNotIn('aws_resource_id', ctx.instance.runtime_properties)
 
     @mock_ec2
     def test_create_duplicate(self):
@@ -110,7 +109,7 @@ class TestSecurityGroup(testtools.TestCase):
         ctx.instance.runtime_properties['aws_resource_id'] = group.id
         ec2_client.delete_security_group(group_id=group.id)
         ex = self.assertRaises(
-            NonRecoverableError, securitygroup.delete, 1, ctx=ctx)
+            NonRecoverableError, securitygroup.delete, ctx=ctx)
         self.assertIn('InvalidGroup.NotFound', ex.message)
 
     @mock_ec2
@@ -164,7 +163,8 @@ class TestSecurityGroup(testtools.TestCase):
             'test_authorize_external', test_properties)
         ctx.node.properties['use_external_resource'] = True
         ctx.node.properties['resource_id'] = group.id
-        securitygroup.authorize(ctx=ctx)
+        ctx.instance.runtime_properties['aws_resource_id'] = group.id
+        self.assertIsNone(securitygroup.authorize(ctx=ctx))
 
     @mock_ec2
     def test_authorize_not_external(self):

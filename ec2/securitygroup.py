@@ -18,35 +18,18 @@ import boto.exception
 
 # Cloudify imports
 from cloudify import ctx
-from cloudify.exceptions import NonRecoverableError, RecoverableError
+from cloudify.exceptions import NonRecoverableError
 from cloudify.decorators import operation
 from ec2 import connection
 from ec2 import utils
+from ec2 import constants
 
 
 @operation
 def create(**_):
-    """ Creates a Security Group on this Amazon AWS account.
-        ctx.node.properties:
-            resource_id: When use_external_resource is false this
-              is the name of the group.
-            description: This is the group description
-            rules: The rules which we want to create for the group.
-        ctx.instance.runtime_properties:
-            aws_resource_id: This is the security group ID assigned
-              by Amazon when the group is created.
-    """
     ec2_client = connection.EC2ConnectionClient().client()
 
-    if ctx.node.properties['use_external_resource']:
-        group_id = ctx.node.properties['resource_id']
-        group = utils.get_security_group_from_id(group_id, ctx=ctx)
-        if not group:
-            raise NonRecoverableError(
-                'External security group was indicated, but the given '
-                'security group or Name does not exist.')
-        ctx.instance.runtime_properties['aws_resource_id'] = group.id
-        ctx.logger.info('Using external security group: {0}'.format(group.id))
+    if create_external_securitygroup(ctx=ctx):
         return
 
     if 'description' not in ctx.node.properties:
@@ -69,27 +52,18 @@ def create(**_):
             boto.exception.BotoServerError) as e:
         raise NonRecoverableError('{0}.'.format(str(e)))
 
-    ctx.instance.runtime_properties['aws_resource_id'] = group_object.id
-    ctx.logger.info('Created Security Group: {0}.'.format(name))
+    utils.set_external_resource_id(
+        group_object.id, external=False, ctx=ctx)
     authorize_by_id(ec2_client, group_object.id, rules)
 
 
 @operation
-def delete(retry_interval, **_):
-    """ Deletes a security group from an account.
-        runtime_properties:
-            aws_resource_id: This is the security group ID assigned
-              by Amazon when the group is created.
-    """
-
+def delete(**_):
     ec2_client = connection.EC2ConnectionClient().client()
 
-    if 'aws_resource_id' not in ctx.instance.runtime_properties:
-        raise NonRecoverableError(
-            'Cannot delete security group because aws_resource_id'
-            ' is not assigned.')
+    group_id = utils.get_external_resource_id_or_raise(
+        'delete security group', ctx=ctx)
 
-    group_id = ctx.instance.runtime_properties.get('aws_resource_id')
     ctx.logger.debug('Deleting Security Group: {0}'.format(group_id))
 
     try:
@@ -98,18 +72,15 @@ def delete(retry_interval, **_):
             boto.exception.BotoServerError) as e:
         raise NonRecoverableError('{0}'.format(str(e)))
 
-    try:
-        utils.get_security_group_from_id(group_id, ctx=ctx)
-    except NonRecoverableError:
-        ctx.logger.debug(
-            'Generally NonRecoverableError indicates that an operation failed.'
-            'In this case, everything worked correctly.')
-        del(ctx.instance.runtime_properties['aws_resource_id'])
+    securitygroup = utils.get_security_group_from_id(group_id, ctx=ctx)
+
+    if not securitygroup:
+        del(ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID])
         ctx.logger.info('Deleted Security Group: {0}.'.format(group_id))
     else:
-        raise RecoverableError(
-            'Security group not deleted. Retrying...',
-            retry_after=retry_interval)
+        return ctx.operation.retry(
+            message='Verifying that Security Group {0} '
+            'has been deleted from your account.'.format(securitygroup.id))
 
 
 @operation
@@ -130,39 +101,25 @@ def creation_validation(**_):
 
 @operation
 def authorize(**_):
-    """ Creates a Security Group on this Amazon AWS account.
-        ctx.node.properties:
-            resource_id: When use_external_resource is false this
-              is the name of the group.
-            description: This is the group description
-            rules: The rules which we want to create for the group.
-        ctx.instance.runtime_properties:
-            aws_resource_id: This is the security group ID assigned
-              by Amazon when the group is created.
-    """
+    ec2_client = connection.EC2ConnectionClient().client()
+
+    group_id = utils.get_external_resource_id_or_raise(
+        'authorize security group', ctx=ctx)
 
     if 'rules' not in ctx.node.properties:
         raise NonRecoverableError(
             'No rules provided. Unable to authorize security group.')
 
-    if not ctx.node.properties['use_external_resource'] and \
-            'aws_resource_id' not in ctx.instance.runtime_properties:
-        raise NonRecoverableError(
-            'Unable to authorize security group, '
-            'neither aws_resource_id nor use_external_resource are true.')
+    if ctx.node.properties['use_external_resource']:
+        ctx.logger.info(
+            'Not authorizing security group, '
+            'because use_external_resource is true.')
+        return
 
     ctx.logger.debug('Attempting to authorize security group.')
 
-    ec2_client = connection.EC2ConnectionClient().client()
-
-    if ctx.node.properties['use_external_resource']:
-        group_id = ctx.node.properties['resource_id']
-        rules = ctx.node.properties['rules']
-        authorize_by_id(ec2_client, group_id, rules)
-    else:
-        group_id = ctx.instance.runtime_properties.get('aws_resource_id')
-        rules = ctx.node.properties['rules']
-        authorize_by_id(ec2_client, group_id, rules)
+    rules = ctx.node.properties['rules']
+    authorize_by_id(ec2_client, group_id, rules)
 
 
 def authorize_by_id(ec2_client, group, rules):
@@ -181,3 +138,18 @@ def authorize_by_id(ec2_client, group, rules):
         except (boto.exception.EC2ResponseError,
                 boto.exception.BotoServerError) as e:
             raise NonRecoverableError('{0}'.format(str(e)))
+
+
+def create_external_securitygroup(ctx):
+
+    if not ctx.node.properties['use_external_resource']:
+        return False
+    else:
+        group_id = ctx.node.properties['resource_id']
+        group = utils.get_security_group_from_id(group_id, ctx=ctx)
+        if not group:
+            raise NonRecoverableError(
+                'External security group was indicated, but the given '
+                'security group or Name does not exist.')
+        utils.set_external_resource_id(group.id, ctx=ctx)
+        return True

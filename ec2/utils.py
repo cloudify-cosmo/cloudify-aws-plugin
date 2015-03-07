@@ -14,7 +14,6 @@
 #    * limitations under the License.
 
 # Built-in Imports
-import time
 import re
 
 # Third-party Imports
@@ -22,6 +21,7 @@ import boto.exception
 
 # Cloudify Imports
 from ec2 import connection
+from ec2 import constants
 from cloudify.exceptions import NonRecoverableError
 
 
@@ -231,12 +231,7 @@ def get_address_by_id(address_id, ctx):
 
     address = get_address_object_by_id(address_id, ctx=ctx)
 
-    if not address:
-        raise NonRecoverableError(
-            'Unable to retrieve address object for address: {0}.'
-            .format(address_id))
-
-    return address.public_ip
+    return address.public_ip if address else address
 
 
 def get_address_object_by_id(address_id, ctx):
@@ -328,48 +323,28 @@ def log_available_resources(list_of_resources, ctx):
     ctx.logger.debug(message)
 
 
-def validate_state(instance_id, state, timeout_length, check_interval, ctx):
-    """ Check if an EC2 instance is in a particular state.
-    :param instance: And EC2 instance.
-    :param state: The state code (pending = 0, running = 16,
-                  shutting down = 32, terminated = 48, stopping = 64,
-                  stopped = 80
-    :param timeout_length: How long to wait for a positive answer
-           before we stop checking.
-    :param check_interval: How long to wait between checks.
-    :return: bool (True the desired state was reached, False, it was not.)
-    """
+def get_external_resource_id_or_raise(operation, ctx):
 
-    ctx.logger.debug('Attempting state validation: '
-                     'instance id: {0}, state: {1}, timeout length: {2}, '
-                     'check interval: {3}.'.format(instance_id, state,
-                                                   timeout_length,
-                                                   check_interval))
+    ctx.logger.debug(
+        'Checking if {0} in instance runtime_properties, for {0} operation.'
+        .format(constants.EXTERNAL_RESOURCE_ID, operation))
 
-    instance = get_instance_from_id(instance_id, ctx=ctx)
+    if constants.EXTERNAL_RESOURCE_ID not in ctx.instance.runtime_properties:
+        raise NonRecoverableError(
+            'Cannot {0} because {1} is not assigned.'
+            .format(operation, constants.EXTERNAL_RESOURCE_ID))
 
-    if type(instance) is list:
-        ctx.logger.info('Instance no longer exists: {0}.'.format(instance_id))
-        return True
+    return ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
 
-    if check_interval < 1:
-        check_interval = 1
 
-    timeout = time.time() + timeout_length
+def set_external_resource_id(value, ctx, external=True):
 
-    while True:
-        instance.update()
-        if state == int(instance.state_code):
-            ctx.logger.info('Instance state validated: instance {0}.'
-                            .format(instance.state))
-            return True
-        elif time.time() > timeout:
-            raise NonRecoverableError('Timed out during '
-                                      'instance state validation: '
-                                      'instance: {0}, '
-                                      'timeout length: {1}, '
-                                      'check interval: {2}.'
-                                      .format(instance.id,
-                                              timeout_length,
-                                              check_interval))
-        time.sleep(check_interval)
+    if not external:
+        resource_type = 'Cloudify'
+    else:
+        resource_type = 'external'
+
+    ctx.logger.info(
+        'Using {0} resource: {1}'.format(
+            resource_type, value))
+    ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID] = value

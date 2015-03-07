@@ -25,32 +25,15 @@ from cloudify.exceptions import NonRecoverableError
 from cloudify.decorators import operation
 from ec2 import utils
 from ec2 import connection
+from ec2 import constants
 
 
 @operation
 def create(**kwargs):
-    """ This will create the key pair within the region you are currently
-        connected to.
-        Requires:
-            ctx.node.properties['resource_id']
-        Sets:
-            ctx.instance.runtime_properties['aws_resource_id']
-            ctx.instance.runtime_properties['key_path']
-    """
 
     ec2_client = connection.EC2ConnectionClient().client()
 
-    if ctx.node.properties['use_external_resource']:
-        key_pair_id = ctx.node.properties['resource_id']
-        key_pair = utils.get_key_pair_by_id(key_pair_id)
-        ctx.instance.runtime_properties['aws_resource_id'] = key_pair.name
-        key_path = get_key_file_path(ctx=ctx)
-        ctx.logger.debug('Path to key file: {0}.'.format(key_path))
-        if not search_for_key_file(key_path):
-            raise NonRecoverableError('use_external_resource was specified, '
-                                      'and a name given, but the key pair was '
-                                      'not located on the filesystem.')
-        ctx.logger.info('Using existing key pair: {0}.'.format(key_pair.name))
+    if create_external_keypair(ctx=ctx):
         return
 
     key_pair_name = ctx.node.properties['resource_id']
@@ -64,24 +47,16 @@ def create(**kwargs):
             boto.exception.BotoClientError) as e:
         raise NonRecoverableError('Key pair not created. {0}'.format(str(e)))
 
-    ctx.instance.runtime_properties['aws_resource_id'] = kp.name
-    ctx.logger.info('Created key pair: {0}.'.format(kp.name))
-
+    utils.set_external_resource_id(kp.name, external=False, ctx=ctx)
     save_key_pair(kp, ctx=ctx)
 
 
 @operation
 def delete(**kwargs):
-    """ This will delete the key pair that you specified in the blueprint
-        when this lifecycle operation is called.
-    """
     ec2_client = connection.EC2ConnectionClient().client()
 
-    if 'aws_resource_id' not in ctx.instance.runtime_properties:
-        raise NonRecoverableError(
-            'Cannot delete key pair because aws_resource_id is not assigned.')
-
-    key_pair_name = ctx.instance.runtime_properties['aws_resource_id']
+    key_pair_name = \
+        utils.get_external_resource_id_or_raise('delete key pair', ctx=ctx)
 
     ctx.logger.debug('Attempting to delete key pair from account.')
 
@@ -97,7 +72,7 @@ def delete(**kwargs):
         ctx.logger.debug(
             'Generally NonRecoverableError indicates that an operation failed.'
             'In this case, everything worked correctly.')
-        del(ctx.instance.runtime_properties['aws_resource_id'])
+        del(ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID])
         del(ctx.instance.runtime_properties['key_path'])
         ctx.logger.info('Deleted key pair: {0}.'.format(key_pair_name))
         delete_key_file(ctx=ctx)
@@ -108,7 +83,7 @@ def delete(**kwargs):
 
 @operation
 def creation_validation(**_):
-    """ This checks that all user supplied info is valid """
+
     required_properties = ['resource_id', 'use_external_resource']
     for property_key in required_properties:
         utils.validate_node_property(property_key, ctx=ctx)
@@ -122,7 +97,6 @@ def creation_validation(**_):
 
 
 def save_key_pair(key_pair_object, ctx):
-    """ Saves the key pair to the file specified in the blueprint. """
 
     ctx.logger.debug('Attempting to save the key_pair_object.')
 
@@ -183,3 +157,23 @@ def search_for_key_file(key_path):
     """ Indicates whether the file exists locally. """
 
     return True if os.path.exists(key_path) else False
+
+
+def create_external_keypair(ctx):
+    if not ctx.node.properties['use_external_resource']:
+        return False
+    else:
+        key_pair_id = ctx.node.properties['resource_id']
+        key_pair = utils.get_key_pair_by_id(key_pair_id)
+        ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID] = \
+            key_pair.name
+        key_path = get_key_file_path(ctx=ctx)
+        ctx.logger.debug('Path to key file: {0}.'.format(key_path))
+        if not search_for_key_file(key_path):
+            del(ctx.instance.runtime_properties
+                [constants.EXTERNAL_RESOURCE_ID])
+            raise NonRecoverableError('use_external_resource was specified, '
+                                      'and a name given, but the key pair was '
+                                      'not located on the filesystem.')
+        utils.set_external_resource_id(key_pair.name, ctx=ctx)
+        return True

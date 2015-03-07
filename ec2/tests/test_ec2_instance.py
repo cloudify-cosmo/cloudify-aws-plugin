@@ -188,8 +188,8 @@ class TestInstance(testtools.TestCase):
 
         ctx = self.mock_ctx('test_run_instances_bad_subnet_id')
         ctx.node.properties['parameters']['subnet_id'] = 'test'
-        ex = self.assertRaises(NonRecoverableError,
-                               instance.run_instances, ctx=ctx)
+        ex = self.assertRaises(
+            NonRecoverableError, instance.run_instances, ctx=ctx)
         self.assertIn('InvalidSubnetID.NotFound', ex.message)
 
     @mock_ec2

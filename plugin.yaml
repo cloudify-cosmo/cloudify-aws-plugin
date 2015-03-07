@@ -125,8 +125,6 @@ node_types:
               default: 5
       cloudify.interfaces.validation:
         creation: aws.ec2.securitygroup.creation_validation
-      cloudify.interfaces.securitygroup:
-        add_rule: aws.ec2.securitygroup.authorize
 
   cloudify.aws.nodes.KeyPair:
     derived_from: cloudify.nodes.Root

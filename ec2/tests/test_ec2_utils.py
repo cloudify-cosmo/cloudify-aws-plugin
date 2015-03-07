@@ -141,22 +141,6 @@ class TestUtils(testtools.TestCase):
         utils.log_available_resources(groups, ctx=ctx)
 
     @mock_ec2
-    def test_validate_state(self):
-        ctx = self.mock_ctx('test_validate_state')
-        ec2_client = connection.EC2ConnectionClient().client()
-        reservation = ec2_client.run_instances(
-            'ami-e214778a', instance_type='t1.micro')
-        instance_id = reservation.instances[0].id
-        check_interval = -1
-        timeout_length = 1
-        state = 48
-        ex = self.assertRaises(
-            NonRecoverableError, utils.validate_state,
-            instance_id, state, timeout_length, check_interval, ctx=ctx)
-        self.assertIn(
-            'Timed out during instance state validation', ex.message)
-
-    @mock_ec2
     def test_validate_no_ami(self):
         ctx = self.mock_ctx('test_validate_no_ami')
         ctx.node.properties.pop('image_id')

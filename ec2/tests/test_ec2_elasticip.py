@@ -138,7 +138,7 @@ class TestElasticIP(testtools.TestCase):
         ctx.instance.runtime_properties['aws_resource_id'] = \
             address.public_ip
         ctx.instance.runtime_properties['allocation_id'] = 'bad'
-        elasticip.release(1, ctx=ctx)
+        elasticip.release(ctx=ctx)
         self.assertNotIn('aws_resource_id',
                          ctx.instance.runtime_properties.keys())
 
@@ -154,7 +154,7 @@ class TestElasticIP(testtools.TestCase):
         ctx.instance.runtime_properties['aws_resource_id'] = \
             '127.0.0.1'
         ex = self.assertRaises(
-            NonRecoverableError, elasticip.release, 1, ctx=ctx)
+            NonRecoverableError, elasticip.release, ctx=ctx)
         self.assertIn(
             'Unable to release elasticip. Elasticip not in account.',
             ex.message)
@@ -245,8 +245,7 @@ class TestElasticIP(testtools.TestCase):
 
         ex = self.assertRaises(
             NonRecoverableError, elasticip.creation_validation, ctx=ctx)
-        self.assertIn(
-            'Unable to retrieve address object for address', ex.message)
+        self.assertIn('elasticip does not exist', ex.message)
 
     @mock_ec2
     def test_associate_no_instance_id(self):
@@ -264,4 +263,31 @@ class TestElasticIP(testtools.TestCase):
         del(ctx.target.instance.runtime_properties['aws_resource_id'])
         ex = self.assertRaises(
             NonRecoverableError, elasticip.associate, ctx=ctx)
-        self.assertIn('aws_resource_id runtime property not set', ex.message)
+        self.assertIn(' aws_resource_id is not set', ex.message)
+
+    @mock_ec2
+    def test_bad_address_external_resource(self):
+
+        ctx = self.mock_ctx('test_bad_address_external_resource')
+
+        ctx.node.properties['use_external_resource'] = True
+        ctx.node.properties['resource_id'] = '127.0.0.1'
+        ex = self.assertRaises(
+            NonRecoverableError, elasticip.allocate, ctx=ctx)
+        self.assertIn('elasticip does not exist.', ex.message)
+
+    @mock_ec2
+    def test_release_existing(self):
+
+        ctx = self.mock_ctx('test_release_existing')
+
+        ec2_client = connection.EC2ConnectionClient().client()
+        address = ec2_client.allocate_address()
+        ctx.instance.runtime_properties['aws_resource_id'] = \
+            address.public_ip
+        ctx.instance.runtime_properties['allocation_id'] = 'bad'
+        ctx.node.properties['use_external_resource'] = True
+        elasticip.release(ctx=ctx)
+        self.assertNotIn(
+            'aws_resource_id', ctx.instance.runtime_properties.keys())
+        self.assertIsNotNone(ec2_client.get_all_addresses(address.public_ip))
