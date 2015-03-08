@@ -135,7 +135,8 @@ class TestSecurityGroup(testtools.TestCase):
         ctx.node.properties['resource_id'] = 'sg-73cd3f1e'
         ex = self.assertRaises(
             NonRecoverableError, securitygroup.creation_validation, ctx=ctx)
-        self.assertIn('the security group does not exist.', ex.message)
+        self.assertIn(
+            'External resource, but the supplied security group', ex.message)
 
     @mock_ec2
     def test_authorize_by_id(self):
@@ -152,3 +153,32 @@ class TestSecurityGroup(testtools.TestCase):
             group.rules,
             ec2_client.get_all_security_groups(
                 groupnames='test_authorize_by_id')[0].rules)
+
+    def test_get_security_group_from_name(self):
+
+        test_properties = self.get_mock_properties()
+        ctx = self.security_group_mock(
+            'test_get_security_group_from_name', test_properties)
+
+        with mock_ec2():
+            ec2_client = connection.EC2ConnectionClient().client()
+            group = \
+                ec2_client.create_security_group('test_get_'
+                                                 'security_group_from_name',
+                                                 'this is test')
+            output = securitygroup._get_security_group_from_name(
+                group.id, ctx=ctx)
+            self.assertEqual(group.id, output.id)
+
+    @mock_ec2
+    def test_get_all_groups_deleted(self):
+
+        test_properties = self.get_mock_properties()
+        ctx = self.security_group_mock(
+            'test_get_all_groups_deleted', test_properties)
+        ec2_client = connection.EC2ConnectionClient().client()
+        group = ec2_client.create_security_group('test_get_all_groups_deleted',
+                                                 'this is test')
+        output = securitygroup._get_all_security_groups(
+            list_of_group_ids=group.id, ctx=ctx)
+        self.assertEqual(output[0].id, group.id)

@@ -133,7 +133,7 @@ class TestKeyPair(testtools.TestCase):
         ex = self.assertRaises(
             NonRecoverableError, keypair.creation_validation, ctx=ctx)
         self.assertIn(
-            'External resource, but the key file does not exist.',
+            'External resource, but the key file does not exist locally.',
             ex.message)
 
     @mock_ec2
@@ -169,3 +169,10 @@ class TestKeyPair(testtools.TestCase):
         ex = self.assertRaises(NonRecoverableError, keypair.create, ctx=ctx)
         self.assertIn(
             'External resource, but the key file does not exist', ex.message)
+
+    def test_get_key_pair_by_id(self):
+        with mock_ec2():
+            ec2_client = connection.EC2ConnectionClient().client()
+            kp = ec2_client.create_key_pair('test_get_key_pair_by_id_bad_id')
+            output = keypair._get_key_pair_by_id(kp.name)
+            self.assertEqual(output.name, kp.name)

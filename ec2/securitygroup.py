@@ -13,6 +13,9 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
+# Built-in Imports
+import re
+
 # Third-party Imports
 import boto.exception
 
@@ -23,6 +26,30 @@ from ec2 import connection
 from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
 from cloudify.decorators import operation
+
+
+@operation
+def creation_validation(**_):
+    """ This validates all Security Group Nodes before bootstrap.
+    """
+
+    for property_key in constants.SECURITY_GROUP_REQUIRED_PROPERTIES:
+        utils.validate_node_property(property_key, ctx=ctx)
+
+    security_group = _get_security_group_from_id(
+        ctx.node.properties['resource_id'], ctx=ctx)
+
+    if ctx.node.properties['use_external_resource']:
+        if not security_group:
+            raise NonRecoverableError(
+                'External resource, but the supplied '
+                'security group does not exist in the account.')
+
+    if not ctx.node.properties['use_external_resource']:
+        if security_group:
+            raise NonRecoverableError(
+                'Not external resource, but the supplied '
+                'security group exists in the account.')
 
 
 @operation
@@ -71,7 +98,7 @@ def delete(**_):
 
     _delete_security_group(group_id, ec2_client)
 
-    securitygroup = utils.get_security_group_from_id(group_id, ctx=ctx)
+    securitygroup = _get_security_group_from_id(group_id, ctx=ctx)
 
     if not securitygroup:
         utils.unassign_runtime_property_from_resource(
@@ -133,7 +160,7 @@ def _create_external_securitygroup(ctx):
         return False
     else:
         group_id = ctx.node.properties['resource_id']
-        group = utils.get_security_group_from_id(group_id, ctx=ctx)
+        group = _get_security_group_from_id(group_id, ctx=ctx)
         if not group:
             raise NonRecoverableError(
                 'External security group was indicated, but the given '
@@ -160,24 +187,65 @@ def _delete_external_securitygroup(ctx):
         return True
 
 
-@operation
-def creation_validation(**_):
-    """ This validates all nodes before bootstrap.
+def _get_security_group_from_id(group_id, ctx):
+    """Returns the security group object for a given security group id.
+
+    :param ctx:  The Cloudify ctx context.
+    :param group_id: The ID of a security group.
+    :returns The boto security group object.
+    :raises NonRecoverableError: If EC2 finds no matching groups.
     """
 
-    for property_key in constants.SECURITY_GROUP_REQUIRED_PROPERTIES:
-        utils.validate_node_property(property_key, ctx=ctx)
+    if not re.match('^sg\-[0-9a-z]{8}$', group_id):
+        group = _get_security_group_from_name(group_id, ctx)
+        return group
 
-    security_group = utils.get_security_group_from_id(
-        ctx.node.properties['resource_id'], ctx=ctx)
+    group = _get_all_security_groups(ctx=ctx, list_of_group_ids=group_id)
 
-    if ctx.node.properties['use_external_resource']:
-        if not security_group:
-            raise NonRecoverableError('use_external_resource was specified, '
-                                      'but the security group does not exist.')
+    return group[0] if group else group
 
-    if not ctx.node.properties['use_external_resource']:
-        if security_group:
-            raise NonRecoverableError(
-                'use_external_resource was not specified, '
-                'but the security group does exist.')
+
+def _get_security_group_from_name(group_name, ctx):
+    """Returns the security group object for a given group name.
+
+    :param ctx:  The Cloudify ctx context.
+    :param group_name: The name of a security group.
+    :returns The boto security group object.
+    """
+
+    if re.match('^sg\-[0-9a-z]{8}$', group_name):
+        group = _get_security_group_from_id(group_name, ctx)
+        return group
+
+    group = _get_all_security_groups(ctx=ctx, list_of_group_names=group_name)
+
+    return group[0] if group else group
+
+
+def _get_all_security_groups(ctx,
+                             list_of_group_names=None,
+                             list_of_group_ids=None):
+    """Returns a list of security groups for a given list of group names and IDs.
+
+    :param ctx:  The Cloudify ctx context.
+    :param list_of_group_names: A list of security group names.
+    :param list_of_group_ids: A list of security group IDs.
+    :returns A list of security group objects.
+    :raises NonRecoverableError: If Boto errors.
+    """
+
+    ec2_client = connection.EC2ConnectionClient().client()
+
+    try:
+        groups = ec2_client.get_all_security_groups(
+            groupnames=list_of_group_names,
+            group_ids=list_of_group_ids)
+    except boto.exception.EC2ResponseError as e:
+        if 'InvalidGroup.NotFound' in e:
+            groups = ec2_client.get_all_security_groups()
+            utils.log_available_resources(groups, ctx=ctx)
+        return None
+    except boto.exception.BotoServerError as e:
+        raise NonRecoverableError('{0}'.format(str(e)))
+
+    return groups

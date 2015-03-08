@@ -29,6 +29,35 @@ from cloudify.decorators import operation
 
 
 @operation
+def creation_validation(**_):
+    """ This validates all nodes before bootstrap.
+    """
+
+    key_path = _get_key_file_path(ctx=ctx)
+    key_file_exists = _search_for_key_file(key_path)
+    key_pair = _get_key_pair_by_id(ctx.node.properties['resource_id'])
+
+    if ctx.node.properties['use_external_resource']:
+        if not key_file_exists:
+            raise NonRecoverableError(
+                'External resource, but the key file does not exist locally.')
+        if not key_pair:
+            raise NonRecoverableError(
+                'External resource, '
+                'but the key pair does not exist in the account.')
+
+    if not ctx.node.properties['use_external_resource']:
+        if key_file_exists:
+            raise NonRecoverableError(
+                'Not external resource, '
+                'but the key file exists locally.')
+        if key_pair:
+            raise NonRecoverableError(
+                'Not external resource, '
+                'but the key pair exists in the account.')
+
+
+@operation
 def create(**kwargs):
     """Creates a keypair
     """
@@ -75,7 +104,7 @@ def delete(**kwargs):
             boto.exception.BotoServerError) as e:
         raise NonRecoverableError('{0}'.format(str(e)))
 
-    key_pair = utils.get_key_pair_by_id(key_pair_name)
+    key_pair = _get_key_pair_by_id(key_pair_name)
 
     if not key_pair:
         ctx.logger.error(
@@ -182,7 +211,7 @@ def _create_external_keypair(ctx):
         return False
     else:
         key_pair_id = ctx.node.properties['resource_id']
-        key_pair = utils.get_key_pair_by_id(key_pair_id)
+        key_pair = _get_key_pair_by_id(key_pair_id)
         key_path = _get_key_file_path(ctx=ctx)
         ctx.logger.debug('Path to key file: {0}.'.format(key_path))
         if not _search_for_key_file(key_path):
@@ -211,27 +240,20 @@ def _delete_external_keypair(ctx):
         return True
 
 
-@operation
-def creation_validation(**_):
-    """ This validates all nodes before bootstrap.
+def _get_key_pair_by_id(key_pair_id):
+    """Returns the key pair object for a given key pair id.
+
+    :param key_pair_id: The ID of a keypair.
+    :returns The boto keypair object.
+    :raises NonRecoverableError: If EC2 finds no matching key pairs.
     """
 
-    key_path = _get_key_file_path(ctx=ctx)
-    key_file_exists = _search_for_key_file(key_path)
-    key_pair = utils.get_key_pair_by_id(ctx.node.properties['resource_id'])
+    ec2_client = connection.EC2ConnectionClient().client()
 
-    if ctx.node.properties['use_external_resource']:
-        if not key_file_exists:
-            raise NonRecoverableError(
-                'External resource, but the key file does not exist.')
-        if not key_pair:
-            raise NonRecoverableError(
-                'External resource, but the key pair is not in the account.')
+    try:
+        key_pair = ec2_client.get_key_pair(key_pair_id)
+    except (boto.exception.EC2ResponseError,
+            boto.exception.BotoServerError) as e:
+        raise NonRecoverableError('{0}.'.format(str(e)))
 
-    if not ctx.node.properties['use_external_resource']:
-        if key_file_exists:
-            raise NonRecoverableError(
-                'External resource, but the key file does exist.')
-        if key_pair:
-            raise NonRecoverableError(
-                'External resource, but the key pair is in the account.')
+    return key_pair

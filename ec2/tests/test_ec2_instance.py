@@ -27,6 +27,7 @@ from cloudify.exceptions import NonRecoverableError
 
 TEST_AMI_IMAGE_ID = 'ami-e214778a'
 TEST_INSTANCE_TYPE = 't1.micro'
+FQDN = '((?:[a-z][a-z\\.\\d\\-]+)\\.(?:[a-z][a-z\\-]+))(?![\\w\\.])'
 
 
 class TestInstance(testtools.TestCase):
@@ -219,5 +220,56 @@ class TestInstance(testtools.TestCase):
         ex = self.assertRaises(
             NonRecoverableError, instance.creation_validation, ctx=ctx)
         self.assertIn(
-            'External instance was indicated, but the given instance id ',
+            'External resource, but the supplied instance id',
             ex.message)
+
+    def test_get_instance_state(self):
+        """ this tests that get instance state returns
+        running for a running instance
+        """
+
+        ctx = self.mock_ctx('test_get_instance_state')
+        with mock_ec2():
+            ec2_client = connection.EC2ConnectionClient().client()
+            reservation = ec2_client.run_instances(
+                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
+            ctx.instance.runtime_properties['aws_resource_id'] = \
+                reservation.instances[0].id
+            instance_state = instance._get_instance_state(ctx=ctx)
+            self.assertEqual(instance_state, 16)
+
+    def test_no_instance_get_instance_from_id(self):
+        """ this tests that a NonRecoverableError is thrown
+        when a nonexisting instance_id is provided to the
+        get_instance_from_id function
+        """
+
+        ctx = self.mock_ctx('test_no_instance_get_instance_from_id')
+
+        with mock_ec2():
+
+            instance_id = 'bad_id'
+            output = instance._get_instance_from_id(instance_id, ctx=ctx)
+            self.assertIsNone(output)
+
+    def test_get_private_dns_name(self):
+
+        ctx = self.mock_ctx('test_get_private_dns_name')
+
+        with mock_ec2():
+            ec2_client = connection.EC2ConnectionClient().client()
+            reservation = ec2_client.run_instances(
+                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
+            ctx.instance.runtime_properties['aws_resource_id'] = \
+                reservation.instances[0].id
+            property_name = 'private_dns_name'
+            dns_name = instance._get_instance_attribute(property_name, ctx=ctx)
+            self.assertRegexpMatches(dns_name, FQDN)
+
+    @mock_ec2
+    def test_get_all_instances_bad_id(self):
+
+        ctx = self.mock_ctx('test_get_all_instances_bad_id')
+        output = instance._get_all_instances(
+            list_of_instance_ids='test_get_all_instances_bad_id', ctx=ctx)
+        self.assertIsNone(output)

@@ -26,6 +26,26 @@ from cloudify.decorators import operation
 
 
 @operation
+def creation_validation(**_):
+    """ This checks that all user supplied info is valid """
+
+    address = _get_address_by_id(
+        ctx.node.properties['resource_id'], ctx=ctx)
+
+    if ctx.node.properties['use_external_resource']:
+        if not address:
+            raise NonRecoverableError(
+                'External resource, but the supplied '
+                'elasticip does not exist in the account.')
+
+    if not ctx.node.properties['use_external_resource']:
+        if address:
+            raise NonRecoverableError(
+                'External resource, but the supplied '
+                'elasticip exists.')
+
+
+@operation
 def allocate(**_):
     ec2_client = connection.EC2ConnectionClient().client()
 
@@ -56,7 +76,7 @@ def release(**_):
     if _release_external_elasticip(ctx=ctx):
         return
 
-    address_object = utils.get_address_object_by_id(elasticip, ctx=ctx)
+    address_object = _get_address_object_by_id(elasticip, ctx=ctx)
 
     if not address_object:
         raise NonRecoverableError(
@@ -75,7 +95,7 @@ def release(**_):
             'This indicates that a VPC elastic IP was used instead of EC2 '
             'classic: {0}'.format(str(e)))
 
-    address = utils.get_address_object_by_id(address_object.public_ip, ctx=ctx)
+    address = _get_address_object_by_id(address_object.public_ip, ctx=ctx)
 
     if not address:
         utils.unassign_runtime_property_from_resource(
@@ -156,7 +176,7 @@ def _allocate_external_elasticip(ctx):
     if not utils.use_external_resource(ctx.node.properties, ctx=ctx):
         return False
     else:
-        address_ip = utils.get_address_by_id(
+        address_ip = _get_address_by_id(
             ctx.node.properties['resource_id'], ctx=ctx)
         if not address_ip:
             raise NonRecoverableError(
@@ -206,21 +226,53 @@ def _disassociate_external_elasticip_or_instance(ctx):
         return True
 
 
-@operation
-def creation_validation(**_):
-    """ This checks that all user supplied info is valid """
+def _get_address_by_id(address_id, ctx):
+    """Returns the elastip ip for a given address elastip.
 
-    address = utils.get_address_by_id(
-        ctx.node.properties['resource_id'], ctx=ctx)
+    :param ctx:  The Cloudify ctx context.
+    :param address_id: The ID of a elastip.
+    :returns The boto elastip ip.
+    :raises NonRecoverableError: If EC2 finds no matching elastips.
+    """
 
-    if ctx.node.properties['use_external_resource']:
-        if not address:
-            raise NonRecoverableError(
-                'External elasticip was indicated, but the given '
-                'elasticip does not exist.')
+    address = _get_address_object_by_id(address_id, ctx=ctx)
 
-    if not ctx.node.properties['use_external_resource']:
-        if address:
-            raise NonRecoverableError(
-                'External elasticip was not indicated, but the given '
-                'elasticip exists.')
+    return address.public_ip if address else address
+
+
+def _get_address_object_by_id(address_id, ctx):
+    """Returns the elastip object for a given address elastip.
+
+    :param ctx:  The Cloudify ctx context.
+    :param address_id: The ID of a elastip.
+    :returns The boto elastip object.
+    :raises NonRecoverableError: If EC2 finds no matching elastips.
+    """
+
+    address = _get_all_addresses(ctx, address=address_id)
+
+    return address[0] if address else address
+
+
+def _get_all_addresses(ctx, address=None):
+    """Returns a list of elastip objects for a given address elastip.
+
+    :param ctx:  The Cloudify ctx context.
+    :param address: The ID of a elastip.
+    :returns A list of elasticip objects.
+    :raises NonRecoverableError: If Boto errors.
+    """
+
+    ec2_client = connection.EC2ConnectionClient().client()
+
+    try:
+        addresses = ec2_client.get_all_addresses(address)
+    except boto.exception.EC2ResponseError as e:
+        if 'InvalidAddress.NotFound' in e:
+            addresses = ec2_client.get_all_addresses()
+            utils.log_available_resources(addresses, ctx=ctx)
+        return None
+    except boto.exception.BotoServerError as e:
+        raise NonRecoverableError('{0}'.format(str(e)))
+
+    return addresses

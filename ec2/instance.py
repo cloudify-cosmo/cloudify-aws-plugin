@@ -26,6 +26,49 @@ from cloudify.decorators import operation
 
 
 @operation
+def creation_validation(**_):
+    """ This checks that all user supplied info is valid """
+
+    for property_key in constants.INSTANCE_REQUIRED_PROPERTIES:
+        utils.validate_node_property(property_key, ctx=ctx)
+
+    instance = _get_instance_from_id(
+        ctx.node.properties['resource_id'], ctx=ctx)
+
+    if ctx.node.properties['use_external_resource']:
+        if not instance:
+            raise NonRecoverableError(
+                'External resource, but the supplied '
+                'instance id is not in the account.')
+
+    if not ctx.node.properties['resource_id']:
+        if instance:
+            raise NonRecoverableError(
+                'Not external resource, but the supplied '
+                'but the instance already exists.')
+
+    if 'image_id' not in ctx.node.properties:
+        raise NonRecoverableError(
+            'Required parameter image_id not provided.')
+
+    if 'instance_type' not in ctx.node.properties:
+        raise NonRecoverableError(
+            'Required parameter instance_type not provided.')
+
+    image_id = ctx.node.properties['image_id']
+    image_object = _get_image(image_id)
+
+    if 'available' not in image_object.state:
+        raise NonRecoverableError(
+            'image_id {0} not available to this account.'.format(image_id))
+
+    if 'ebs' not in image_object.root_device_type:
+        raise NonRecoverableError(
+            'image_id {0} not ebs-backed. Image must be of type \'ebs\'.'
+            .format(image_id))
+
+
+@operation
 def run_instances(**_):
     ec2_client = connection.EC2ConnectionClient().client()
 
@@ -35,7 +78,7 @@ def run_instances(**_):
     if _create_external_instance(ctx=ctx):
         return
 
-    instance_parameters = utils.get_instance_parameters(ctx=ctx)
+    instance_parameters = _get_instance_parameters(ctx=ctx)
 
     ctx.logger.debug(
         'Attempting to create EC2 Instance with these API parameters: {0}.'
@@ -50,7 +93,7 @@ def run_instances(**_):
 
     instance_id = reservation.instances[0].id
 
-    instance = utils.get_instance_from_id(instance_id, ctx=ctx)
+    instance = _get_instance_from_id(instance_id, ctx=ctx)
 
     if instance is None:
         return ctx.operation.retry(
@@ -71,7 +114,7 @@ def start(**_):
     if _start_external_instance(instance_id, ctx=ctx):
         return
 
-    if utils.get_instance_state(ctx=ctx) == constants.INSTANCE_STATE_STARTED:
+    if _get_instance_state(ctx=ctx) == constants.INSTANCE_STATE_STARTED:
         _instance_started_assign_runtime_properties(instance_id, ctx=ctx)
         return
 
@@ -85,7 +128,7 @@ def start(**_):
 
     ctx.logger.debug('Attempted to start instance {0}.'.format(instance_id))
 
-    if utils.get_instance_state(ctx=ctx) == constants.INSTANCE_STATE_STARTED:
+    if _get_instance_state(ctx=ctx) == constants.INSTANCE_STATE_STARTED:
         _instance_started_assign_runtime_properties(instance_id, ctx=ctx)
     else:
         return ctx.operation.retry(
@@ -114,7 +157,7 @@ def stop(**_):
 
     ctx.logger.debug('Attempted to stop instance {0}.'.format(instance_id))
 
-    if utils.get_instance_state(ctx=ctx) == constants.INSTANCE_STATE_STOPPED:
+    if _get_instance_state(ctx=ctx) == constants.INSTANCE_STATE_STOPPED:
         _unassign_runtime_properties(
             runtime_properties=constants.INSTANCE_INTERNAL_ATTRIBUTES, ctx=ctx)
         ctx.logger.info('Stopped instance {0}.'.format(instance_id))
@@ -146,7 +189,7 @@ def terminate(**_):
     ctx.logger.debug(
         'Attemped to terminate instance {0}'.format(instance_id))
 
-    if utils.get_instance_state(ctx=ctx) == \
+    if _get_instance_state(ctx=ctx) == \
             constants.INSTANCE_STATE_TERMINATED:
         ctx.logger.info('Terminated instance: {0}.'.format(instance_id))
         _unassign_runtime_properties(
@@ -158,12 +201,12 @@ def _assign_runtime_properties_to_instance(runtime_properties, ctx):
     for property_name in runtime_properties:
         if 'ip' is property_name:
             ctx.instance.runtime_properties[property_name] = \
-                utils.get_instance_attribute('private_ip_address', ctx=ctx)
+                _get_instance_attribute('private_ip_address', ctx=ctx)
         elif 'public_ip_address' is property_name:
             ctx.instance.runtime_properties[property_name] = \
-                utils.get_instance_attribute('ip_address', ctx=ctx)
+                _get_instance_attribute('ip_address', ctx=ctx)
         else:
-            attribute = utils.get_instance_attribute(property_name, ctx=ctx)
+            attribute = _get_instance_attribute(property_name, ctx=ctx)
 
         ctx.logger.debug('Set {0}: {1}.'.format(property_name, attribute))
 
@@ -186,7 +229,7 @@ def _create_external_instance(ctx):
         return False
     else:
         instance_id = ctx.node.properties['resource_id']
-        instance = utils.get_instance_from_id(instance_id, ctx=ctx)
+        instance = _get_instance_from_id(instance_id, ctx=ctx)
         if instance is None:
             raise NonRecoverableError(
                 'Cannot use_external_resource because instance_id {0} '
@@ -233,44 +276,190 @@ def _terminate_external_instance(instance_id, ctx):
         return True
 
 
-@operation
-def creation_validation(**_):
-    """ This checks that all user supplied info is valid """
+def _get_all_instances(ctx, list_of_instance_ids=None):
+    """Returns a list of instance objects for a list of instance IDs.
 
-    for property_key in constants.INSTANCE_REQUIRED_PROPERTIES:
-        utils.validate_node_property(property_key, ctx=ctx)
+    :param ctx:  The Cloudify ctx context.
+    :param address_id: The ID of an EC2 Instance.
+    :returns a list of instance objects.
+    :raises NonRecoverableError: If Boto errors.
+    """
 
-    instance = utils.get_instance_from_id(
-        ctx.node.properties['resource_id'], ctx=ctx)
+    ec2_client = connection.EC2ConnectionClient().client()
 
-    if ctx.node.properties['use_external_resource']:
-        if not instance:
-            raise NonRecoverableError(
-                'External instance was indicated, but the given instance id '
-                'is not in the account.')
+    try:
+        reservations = ec2_client.get_all_reservations(list_of_instance_ids)
+    except boto.exception.EC2ResponseError as e:
+        if 'InvalidInstanceID.NotFound' in e:
+            instances = [instance for res in ec2_client.get_all_reservations()
+                         for instance in res.instances]
+            utils.log_available_resources(instances, ctx=ctx)
+        return None
+    except boto.exception.BotoServerError as e:
+        raise NonRecoverableError('{0}'.format(str(e)))
 
-    if not ctx.node.properties['resource_id']:
-        if instance:
-            raise NonRecoverableError(
-                'External instance was not indicated, '
-                'but the instance already exists.')
+    instances = [instance for res in reservations
+                 for instance in res.instances]
 
-    if 'image_id' not in ctx.node.properties:
+    return instances
+
+
+def _get_image(image_id, ctx):
+    """Gets the boto object that represents the AMI image for image id.
+
+    :param image_id: The ID of the AMI image.
+    :param ctx:  The Cloudify ctx context.
+    :returns an object that represents an AMI image.
+    """
+
+    ec2_client = connection.EC2ConnectionClient().client()
+
+    if not image_id:
         raise NonRecoverableError(
-            'Required parameter image_id not provided.')
+            'No image_id was provided.')
 
-    if 'instance_type' not in ctx.node.properties:
+    try:
+        image = ec2_client.get_image(image_id)
+    except (boto.exception.EC2ResponseError,
+            boto.exception.BotoServerError) as e:
+        raise NonRecoverableError('{0}.'.format(str(e)))
+
+    return image
+
+
+def _get_instance_attribute(attribute, ctx):
+    """Gets an attribute from a boto object that represents an EC2 Instance.
+
+    :param attribute: The named python attribute of a boto object.
+    :param ctx:  The Cloudify ctx context.
+    :returns python attribute of a boto object representing an EC2 instance.
+    :raises NonRecoverableError if constants.EXTERNAL_RESOURCE_ID not set
+    :raises NonRecoverableError if no instance is found.
+    """
+
+    if constants.EXTERNAL_RESOURCE_ID not in ctx.instance.runtime_properties:
         raise NonRecoverableError(
-            'Required parameter instance_type not provided.')
+            'Unable to get instance attibute {0}, because {1} is not set.'
+            .format(attribute, constants.EXTERNAL_RESOURCE_ID))
 
-    image_id = ctx.node.properties['image_id']
-    image_object = utils.get_image(image_id)
+    instance_id = \
+        ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
+    instance = _get_instance_from_id(instance_id, ctx=ctx)
 
-    if 'available' not in image_object.state:
+    if instance is None:
         raise NonRecoverableError(
-            'image_id {0} not available to this account.'.format(image_id))
+            'Unable to get instance attibute {0}, because no instance with id '
+            '{1} exists in this account.'.format(attribute, instance_id))
 
-    if 'ebs' not in image_object.root_device_type:
-        raise NonRecoverableError(
-            'image_id {0} not ebs-backed. Image must be of type \'ebs\'.'
-            .format(image_id))
+    attribute = getattr(instance, attribute)
+    return attribute
+
+
+def _get_instance_state(ctx):
+    """Gets the instance state code of a EC2 Instance
+
+    :param ctx:  The Cloudify ctx context.
+    :returns a state code from a boto object representing an EC2 Image.
+    """
+    state = _get_instance_attribute('state_code', ctx=ctx)
+    return state
+
+
+def _get_instance_from_id(instance_id, ctx):
+    """Gets the instance ID of a EC2 Instance
+
+    :param instance_id: The ID of an EC2 Instance
+    :param ctx:  The Cloudify ctx context.
+    :returns an ID of a an EC2 Instance or None.
+    """
+    ctx.logger.debug('Getting Instance by ID: {0}'.format(instance_id))
+
+    instance = _get_all_instances(ctx=ctx, list_of_instance_ids=instance_id)
+
+    return instance[0] if instance else instance
+
+
+def _get_instance_parameters(ctx):
+    """The parameters to the run_instance boto call.
+
+    :param ctx:  The Cloudify ctx context.
+    :returns parameters dictionary
+    """
+
+    parameters = constants.RUN_INSTANCE_PARAMETERS
+
+    attached_group_ids = _get_attached_security_group_ids(ctx=ctx)
+
+    node_parameter_keys = ctx.node.properties['parameters'].keys()
+
+    for key in parameters.keys():
+        if key is 'security_group_ids':
+            if key in node_parameter_keys:
+                parameters[key] = list(
+                    set(attached_group_ids) | set(
+                        ctx.node.properties['parameters'][key])
+                )
+            else:
+                parameters[key] = attached_group_ids
+        elif key is 'key_name':
+            if key in node_parameter_keys:
+                parameters[key] = ctx.node.properties['parameters'][key]
+            else:
+                parameters[key] = _get_attached_keypair_id(ctx)
+        elif key in node_parameter_keys:
+            parameters[key] = ctx.node.properties['parameters'][key]
+        elif key is 'image_id' or key is 'instance_type':
+            parameters[key] = ctx.node.properties[key]
+        else:
+            del(parameters[key])
+
+    return parameters
+
+
+def _get_attached_keypair_id(ctx):
+    """Gets the ID of a keypair connected via a relationship to a node.
+
+    :param ctx:  The Cloudify ctx context.
+    :returns the ID of a keypair or None.
+    """
+
+    relationship_type = 'instance_connected_to_keypair'
+
+    kplist = _get_target_aws_resource_ids(relationship_type, ctx=ctx)
+
+    return kplist[0] if kplist else kplist
+
+
+def _get_attached_security_group_ids(ctx):
+    """Gets a list of security group ids connected via a relationship to a node.
+
+    :param ctx:  The Cloudify ctx context.
+    :returns a list of security group ids.
+    """
+
+    relationship_type = 'instance_connected_to_security_group'
+
+    return _get_target_aws_resource_ids(relationship_type, ctx=ctx)
+
+
+def _get_target_aws_resource_ids(relationship_type, ctx):
+    """Gets a list of target node ids connected via a relationship to a node.
+
+    :param relationship_type: A string representing the type of relationship.
+    :param ctx:  The Cloudify ctx context.
+    :returns a list of security group ids.
+    """
+
+    ids = []
+
+    if not getattr(ctx.instance, 'relationships', []):
+        ctx.logger.info('Skipping attaching relationships, '
+                        'because none are attached to this node.')
+        return ids
+
+    for r in ctx.instance.relationships:
+        if relationship_type in r.type:
+            ids.append(
+                r.target.instance.runtime_properties['aws_resource_id'])
+
+    return ids
