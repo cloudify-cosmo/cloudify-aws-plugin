@@ -27,6 +27,9 @@ from cloudify.decorators import operation
 
 @operation
 def create(**_):
+    """Creates an EC2 security group.
+    """
+
     ec2_client = connection.EC2ConnectionClient().client()
 
     for property_name in constants.SECURITY_GROUP_REQUIRED_PROPERTIES:
@@ -53,6 +56,9 @@ def create(**_):
 
 @operation
 def delete(**_):
+    """ Deletes an EC2 security group.
+    """
+
     ec2_client = connection.EC2ConnectionClient().client()
 
     group_id = utils.get_external_resource_id_or_raise(
@@ -100,6 +106,9 @@ def authorize_by_id(ec2_client, group, rules):
 
 
 def create_external_securitygroup(ctx):
+    """If use_external_resource is True, this will set the runtime_properties,
+    and then exit.
+    """
 
     if not ctx.node.properties['use_external_resource']:
         return False
@@ -115,6 +124,10 @@ def create_external_securitygroup(ctx):
 
 
 def delete_external_securitygroup(ctx):
+    """If use_external_resource is True, this will delete the runtime_properties,
+    and then exit.
+    """
+
     if not ctx.node.properties['use_external_resource']:
         return False
     else:
@@ -127,6 +140,8 @@ def delete_external_securitygroup(ctx):
 
 @operation
 def creation_validation(**_):
+    """ This validates all nodes before bootstrap.
+    """
 
     for property_key in constants.SECURITY_GROUP_REQUIRED_PROPERTIES:
         utils.validate_node_property(property_key, ctx=ctx)
