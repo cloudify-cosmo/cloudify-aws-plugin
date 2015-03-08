@@ -425,7 +425,7 @@ def _get_attached_keypair_id(ctx):
 
     relationship_type = 'instance_connected_to_keypair'
 
-    kplist = _get_target_aws_resource_ids(relationship_type, ctx=ctx)
+    kplist = utils.get_target_external_resource_ids(relationship_type, ctx=ctx)
 
     return kplist[0] if kplist else kplist
 
@@ -439,27 +439,4 @@ def _get_attached_security_group_ids(ctx):
 
     relationship_type = 'instance_connected_to_security_group'
 
-    return _get_target_aws_resource_ids(relationship_type, ctx=ctx)
-
-
-def _get_target_aws_resource_ids(relationship_type, ctx):
-    """Gets a list of target node ids connected via a relationship to a node.
-
-    :param relationship_type: A string representing the type of relationship.
-    :param ctx:  The Cloudify ctx context.
-    :returns a list of security group ids.
-    """
-
-    ids = []
-
-    if not getattr(ctx.instance, 'relationships', []):
-        ctx.logger.info('Skipping attaching relationships, '
-                        'because none are attached to this node.')
-        return ids
-
-    for r in ctx.instance.relationships:
-        if relationship_type in r.type:
-            ids.append(
-                r.target.instance.runtime_properties['aws_resource_id'])
-
-    return ids
+    return utils.get_target_external_resource_ids(relationship_type, ctx=ctx)

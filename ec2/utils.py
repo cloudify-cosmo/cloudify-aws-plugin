@@ -13,12 +13,8 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
-# Third-party Imports
-import boto.exception
-
 # Cloudify Imports
 from ec2 import constants
-from ec2 import connection
 from cloudify.exceptions import NonRecoverableError
 
 
@@ -117,3 +113,27 @@ def use_external_resource(node_properties, ctx):
             'Using external resource_id: {0}.'
             .format(node_properties['resource_id']))
         return True
+
+
+def get_target_external_resource_ids(relationship_type, ctx):
+    """Gets a list of target node ids connected via a relationship to a node.
+
+    :param relationship_type: A string representing the type of relationship.
+    :param ctx:  The Cloudify ctx context.
+    :returns a list of security group ids.
+    """
+
+    ids = []
+
+    if not getattr(ctx.instance, 'relationships', []):
+        ctx.logger.info('Skipping attaching relationships, '
+                        'because none are attached to this node.')
+        return ids
+
+    for r in ctx.instance.relationships:
+        if relationship_type in r.type:
+            ids.append(
+                r.target.instance.runtime_properties[
+                    constants.EXTERNAL_RESOURCE_ID])
+
+    return ids
