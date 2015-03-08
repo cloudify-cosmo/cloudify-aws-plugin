@@ -35,7 +35,7 @@ def create(**kwargs):
 
     ec2_client = connection.EC2ConnectionClient().client()
 
-    if create_external_keypair(ctx=ctx):
+    if _create_external_keypair(ctx=ctx):
         return
 
     key_pair_name = ctx.node.properties['resource_id']
@@ -50,7 +50,7 @@ def create(**kwargs):
         raise NonRecoverableError('Key pair not created. {0}'.format(str(e)))
 
     utils.set_external_resource_id(kp.name, external=False, ctx=ctx)
-    save_key_pair(kp, ctx=ctx)
+    _save_key_pair(kp, ctx=ctx)
 
 
 @operation
@@ -64,7 +64,7 @@ def delete(**kwargs):
         utils.get_external_resource_id_or_raise(
             'delete key pair', ctx.instance, ctx=ctx)
 
-    if delete_external_keypair(ctx=ctx):
+    if _delete_external_keypair(ctx=ctx):
         return
 
     ctx.logger.debug('Attempting to delete key pair from account.')
@@ -85,11 +85,11 @@ def delete(**kwargs):
             constants.EXTERNAL_RESOURCE_ID, ctx.instance, ctx=ctx)
         utils.unassign_runtime_property_from_resource(
             'key_path', ctx.instance, ctx=ctx)
-        delete_key_file(ctx=ctx)
+        _delete_key_file(ctx=ctx)
         ctx.logger.info('Deleted key pair: {0}.'.format(key_pair_name))
 
 
-def save_key_pair(key_pair_object, ctx):
+def _save_key_pair(key_pair_object, ctx):
     """Saves a keypair to the filesystem.
 
     :param key_pair_object: The key pair object as returned from create.
@@ -111,7 +111,7 @@ def save_key_pair(key_pair_object, ctx):
         raise NonRecoverableError(
             'Unable to save key pair: {0}'.format(str(e)))
 
-    key_path = get_key_file_path(ctx=ctx)
+    key_path = _get_key_file_path(ctx=ctx)
 
     if os.access(key_path, os.W_OK):
         os.chmod(key_path, 0600)
@@ -123,7 +123,7 @@ def save_key_pair(key_pair_object, ctx):
     ctx.instance.runtime_properties['key_path'] = key_path
 
 
-def get_key_file_path(ctx):
+def _get_key_file_path(ctx):
     """Gets the path to the keypair file.
 
     :param ctx: The Cloudify context.
@@ -142,16 +142,16 @@ def get_key_file_path(ctx):
     return key_path
 
 
-def delete_key_file(ctx):
+def _delete_key_file(ctx):
     """ Deletes the key pair in the file specified in the blueprint.
 
     :param ctx: The Cloudify context.
     :raises NonRecoverableError: If unable to delete the local key file.
     """
 
-    key_path = get_key_file_path(ctx=ctx)
+    key_path = _get_key_file_path(ctx=ctx)
 
-    if search_for_key_file(key_path):
+    if _search_for_key_file(key_path):
         try:
             os.remove(key_path)
         except OSError as e:
@@ -159,7 +159,7 @@ def delete_key_file(ctx):
                 'Unable to delete key pair: {0}.'.format(str(e)))
 
 
-def search_for_key_file(key_path):
+def _search_for_key_file(key_path):
     """ Checks if the key_path exists in the local filesystem.
 
     :param key_path: The path to the key pair file.
@@ -169,7 +169,7 @@ def search_for_key_file(key_path):
     return True if os.path.exists(key_path) else False
 
 
-def create_external_keypair(ctx):
+def _create_external_keypair(ctx):
     """If use_external_resource is True, this will set the runtime_properties,
     and then exit.
 
@@ -178,21 +178,21 @@ def create_external_keypair(ctx):
     :raises NonRecoverableError: If unable to locate the existing key file.
     """
 
-    if not ctx.node.properties['use_external_resource']:
+    if not utils.use_external_resource(ctx.node.properties, ctx=ctx):
         return False
     else:
         key_pair_id = ctx.node.properties['resource_id']
         key_pair = utils.get_key_pair_by_id(key_pair_id)
-        key_path = get_key_file_path(ctx=ctx)
+        key_path = _get_key_file_path(ctx=ctx)
         ctx.logger.debug('Path to key file: {0}.'.format(key_path))
-        if not search_for_key_file(key_path):
+        if not _search_for_key_file(key_path):
             raise NonRecoverableError(
                 'External resource, but the key file does not exist.')
         utils.set_external_resource_id(key_pair.name, ctx=ctx)
         return True
 
 
-def delete_external_keypair(ctx):
+def _delete_external_keypair(ctx):
     """If use_external_resource is True, this will delete the runtime_properties,
     and then exit.
 
@@ -200,7 +200,7 @@ def delete_external_keypair(ctx):
     :returns Boolean if use_external_resource is True or not.
     """
 
-    if not ctx.node.properties['use_external_resource']:
+    if not utils.use_external_resource(ctx.node.properties, ctx=ctx):
         return False
     else:
         ctx.logger.info('External resource. Not deleting keypair.')
@@ -216,12 +216,22 @@ def creation_validation(**_):
     """ This validates all nodes before bootstrap.
     """
 
-    key_path = get_key_file_path(ctx=ctx)
+    key_path = _get_key_file_path(ctx=ctx)
+    key_file_exists = _search_for_key_file(key_path)
+    key_pair = utils.get_key_pair_by_id(ctx.node.properties['resource_id'])
 
     if ctx.node.properties['use_external_resource']:
-        if not search_for_key_file(key_path):
+        if not key_file_exists:
             raise NonRecoverableError(
                 'External resource, but the key file does not exist.')
-        if not utils.get_key_pair_by_id(ctx.node.properties['resource_id']):
+        if not key_pair:
             raise NonRecoverableError(
                 'External resource, but the key pair is not in the account.')
+
+    if not ctx.node.properties['use_external_resource']:
+        if key_file_exists:
+            raise NonRecoverableError(
+                'External resource, but the key file does exist.')
+        if key_pair:
+            raise NonRecoverableError(
+                'External resource, but the key pair is in the account.')

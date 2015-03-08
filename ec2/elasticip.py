@@ -29,7 +29,7 @@ from cloudify.decorators import operation
 def allocate(**_):
     ec2_client = connection.EC2ConnectionClient().client()
 
-    if allocate_external_elasticip(ctx=ctx):
+    if _allocate_external_elasticip(ctx=ctx):
         return
 
     ctx.logger.debug('Attempting to allocate elasticip.')
@@ -53,7 +53,7 @@ def release(**_):
         utils.get_external_resource_id_or_raise(
             'release elasticip', ctx.instance, ctx=ctx)
 
-    if release_external_elasticip(ctx=ctx):
+    if _release_external_elasticip(ctx=ctx):
         return
 
     address_object = utils.get_address_object_by_id(elasticip, ctx=ctx)
@@ -98,7 +98,8 @@ def associate(**_):
     elasticip = \
         utils.get_external_resource_id_or_raise(
             'associate elasticip', ctx.target.instance, ctx=ctx)
-    if associate_external_elasticip_or_instance(elasticip, ctx=ctx):
+
+    if _associate_external_elasticip_or_instance(elasticip, ctx=ctx):
         return
 
     ctx.logger.debug(
@@ -130,7 +131,8 @@ def disassociate(**_):
     elasticip = \
         utils.get_external_resource_id_or_raise(
             'disassociate elasticip', ctx.target.instance, ctx=ctx)
-    if disassociate_external_elasticip_or_instance(ctx=ctx):
+
+    if _disassociate_external_elasticip_or_instance(ctx=ctx):
         return
 
     ctx.logger.debug('Disassociating Elastic IP {0}'.format(elasticip))
@@ -149,9 +151,9 @@ def disassociate(**_):
         .format(elasticip, instance_id))
 
 
-def allocate_external_elasticip(ctx):
+def _allocate_external_elasticip(ctx):
 
-    if not ctx.node.properties['use_external_resource']:
+    if not utils.use_external_resource(ctx.node.properties, ctx=ctx):
         return False
     else:
         address_ip = utils.get_address_by_id(
@@ -164,9 +166,9 @@ def allocate_external_elasticip(ctx):
         return True
 
 
-def release_external_elasticip(ctx):
+def _release_external_elasticip(ctx):
 
-    if not ctx.node.properties['use_external_resource']:
+    if not utils.use_external_resource(ctx.node.properties, ctx=ctx):
         return False
     else:
         utils.unassign_runtime_property_from_resource(
@@ -174,11 +176,11 @@ def release_external_elasticip(ctx):
         return True
 
 
-def associate_external_elasticip_or_instance(elasticip, ctx):
+def _associate_external_elasticip_or_instance(elasticip, ctx):
 
-    if not ctx.source.node.properties['use_external_resource']:
+    if not utils.use_external_resource(ctx.source.node.properties, ctx=ctx):
         return False
-    elif not ctx.target.node.properties['use_external_resource']:
+    elif not utils.use_external_resource(ctx.target.node.properties, ctx=ctx):
         return False
     else:
         ctx.logger.info(
@@ -189,11 +191,11 @@ def associate_external_elasticip_or_instance(elasticip, ctx):
         return True
 
 
-def disassociate_external_elasticip_or_instance(ctx):
+def _disassociate_external_elasticip_or_instance(ctx):
 
-    if not ctx.source.node.properties['use_external_resource']:
+    if not utils.use_external_resource(ctx.source.node.properties, ctx=ctx):
         return False
-    elif not ctx.target.node.properties['use_external_resource']:
+    elif not utils.use_external_resource(ctx.target.node.properties, ctx=ctx):
         return False
     else:
         ctx.logger.info(
@@ -208,11 +210,17 @@ def disassociate_external_elasticip_or_instance(ctx):
 def creation_validation(**_):
     """ This checks that all user supplied info is valid """
 
-    if ctx.node.properties['use_external_resource']:
-        address = utils.get_address_by_id(
-            ctx.node.properties['resource_id'], ctx=ctx)
+    address = utils.get_address_by_id(
+        ctx.node.properties['resource_id'], ctx=ctx)
 
-    if not address:
-        raise NonRecoverableError(
-            'External elasticip was indicated, but the given '
-            'elasticip does not exist.')
+    if ctx.node.properties['use_external_resource']:
+        if not address:
+            raise NonRecoverableError(
+                'External elasticip was indicated, but the given '
+                'elasticip does not exist.')
+
+    if not ctx.node.properties['use_external_resource']:
+        if address:
+            raise NonRecoverableError(
+                'External elasticip was not indicated, but the given '
+                'elasticip exists.')

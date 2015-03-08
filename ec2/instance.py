@@ -32,7 +32,7 @@ def run_instances(**_):
     for property_name in constants.INSTANCE_REQUIRED_PROPERTIES:
         utils.validate_node_property(property_name, ctx=ctx)
 
-    if create_external_instance(ctx=ctx):
+    if _create_external_instance(ctx=ctx):
         return
 
     instance_parameters = utils.get_instance_parameters(ctx=ctx)
@@ -68,11 +68,11 @@ def start(**_):
         utils.get_external_resource_id_or_raise(
             'start instance', ctx.instance, ctx=ctx)
 
-    if start_external_instance(instance_id, ctx=ctx):
+    if _start_external_instance(instance_id, ctx=ctx):
         return
 
     if utils.get_instance_state(ctx=ctx) == constants.INSTANCE_STATE_STARTED:
-        instance_started_assign_runtime_properties(instance_id, ctx=ctx)
+        _instance_started_assign_runtime_properties(instance_id, ctx=ctx)
         return
 
     ctx.logger.debug('Attempting to start instance: {0}.)'.format(instance_id))
@@ -86,7 +86,7 @@ def start(**_):
     ctx.logger.debug('Attempted to start instance {0}.'.format(instance_id))
 
     if utils.get_instance_state(ctx=ctx) == constants.INSTANCE_STATE_STARTED:
-        instance_started_assign_runtime_properties(instance_id, ctx=ctx)
+        _instance_started_assign_runtime_properties(instance_id, ctx=ctx)
     else:
         return ctx.operation.retry(
             message='Waiting server to be running. Retrying...')
@@ -100,7 +100,7 @@ def stop(**_):
         utils.get_external_resource_id_or_raise(
             'stop instance', ctx.instance, ctx=ctx)
 
-    if stop_external_instance(instance_id, ctx=ctx):
+    if _stop_external_instance(instance_id, ctx=ctx):
         return
 
     ctx.logger.debug(
@@ -115,7 +115,7 @@ def stop(**_):
     ctx.logger.debug('Attempted to stop instance {0}.'.format(instance_id))
 
     if utils.get_instance_state(ctx=ctx) == constants.INSTANCE_STATE_STOPPED:
-        unassign_runtime_properties(
+        _unassign_runtime_properties(
             runtime_properties=constants.INSTANCE_INTERNAL_ATTRIBUTES, ctx=ctx)
         ctx.logger.info('Stopped instance {0}.'.format(instance_id))
     else:
@@ -131,7 +131,7 @@ def terminate(**_):
         utils.get_external_resource_id_or_raise(
             'terminate instance', ctx.instance, ctx=ctx)
 
-    if terminate_external_instance(instance_id, ctx=ctx):
+    if _terminate_external_instance(instance_id, ctx=ctx):
         return
 
     ctx.logger.debug(
@@ -149,11 +149,11 @@ def terminate(**_):
     if utils.get_instance_state(ctx=ctx) == \
             constants.INSTANCE_STATE_TERMINATED:
         ctx.logger.info('Terminated instance: {0}.'.format(instance_id))
-        unassign_runtime_properties(
+        _unassign_runtime_properties(
             runtime_properties=[constants.EXTERNAL_RESOURCE_ID], ctx=ctx)
 
 
-def assign_runtime_properties_to_instance(runtime_properties, ctx):
+def _assign_runtime_properties_to_instance(runtime_properties, ctx):
 
     for property_name in runtime_properties:
         if 'ip' is property_name:
@@ -168,21 +168,21 @@ def assign_runtime_properties_to_instance(runtime_properties, ctx):
         ctx.logger.debug('Set {0}: {1}.'.format(property_name, attribute))
 
 
-def instance_started_assign_runtime_properties(instance_id, ctx):
-        assign_runtime_properties_to_instance(
+def _instance_started_assign_runtime_properties(instance_id, ctx):
+        _assign_runtime_properties_to_instance(
             runtime_properties=constants.INSTANCE_INTERNAL_ATTRIBUTES, ctx=ctx)
         ctx.logger.info('Instance {0} is running.'.format(instance_id))
 
 
-def unassign_runtime_properties(runtime_properties, ctx=ctx):
+def _unassign_runtime_properties(runtime_properties, ctx=ctx):
     for property_name in runtime_properties:
         utils.unassign_runtime_property_from_resource(
             property_name, ctx.instance, ctx=ctx)
 
 
-def create_external_instance(ctx):
+def _create_external_instance(ctx):
 
-    if not ctx.node.properties['use_external_resource']:
+    if not utils.use_external_resource(ctx.node.properties, ctx=ctx):
         return False
     else:
         instance_id = ctx.node.properties['resource_id']
@@ -195,40 +195,40 @@ def create_external_instance(ctx):
         return True
 
 
-def start_external_instance(instance_id, ctx):
+def _start_external_instance(instance_id, ctx):
 
-    if not ctx.node.properties['use_external_resource']:
+    if not utils.use_external_resource(ctx.node.properties, ctx=ctx):
         return False
     else:
         ctx.logger.info(
             'Not starting instance {0}, because it is an external resource.'
             .format(instance_id))
-        instance_started_assign_runtime_properties(instance_id, ctx=ctx)
+        _instance_started_assign_runtime_properties(instance_id, ctx=ctx)
         return True
 
 
-def stop_external_instance(instance_id, ctx):
+def _stop_external_instance(instance_id, ctx):
 
-    if not ctx.node.properties['use_external_resource']:
+    if not utils.use_external_resource(ctx.node.properties, ctx=ctx):
         return False
     else:
         ctx.logger.info(
             'External resource. Not stopping instance {0}.'
             .format(instance_id))
-        unassign_runtime_properties(
+        _unassign_runtime_properties(
             runtime_properties=constants.INSTANCE_INTERNAL_ATTRIBUTES, ctx=ctx)
         return True
 
 
-def terminate_external_instance(instance_id, ctx):
+def _terminate_external_instance(instance_id, ctx):
 
-    if not ctx.node.properties['use_external_resource']:
+    if not utils.use_external_resource(ctx.node.properties, ctx=ctx):
         return False
     else:
         ctx.logger.info(
             'External resource. Not terminating instance {0}.'
             .format(instance_id))
-        unassign_runtime_properties(
+        _unassign_runtime_properties(
             runtime_properties=[constants.EXTERNAL_RESOURCE_ID], ctx=ctx)
         return True
 
@@ -240,14 +240,20 @@ def creation_validation(**_):
     for property_key in constants.INSTANCE_REQUIRED_PROPERTIES:
         utils.validate_node_property(property_key, ctx=ctx)
 
-    if ctx.node.properties['use_external_resource']:
-        instance = utils.get_instance_from_id(
-            ctx.node.properties['resource_id'], ctx=ctx)
+    instance = utils.get_instance_from_id(
+        ctx.node.properties['resource_id'], ctx=ctx)
 
-    if not instance:
-        raise NonRecoverableError(
-            'Instance ID {0} does not exist in this account.'
-            .format(ctx.node.properties['resource_id']))
+    if ctx.node.properties['use_external_resource']:
+        if not instance:
+            raise NonRecoverableError(
+                'External instance was indicated, but the given instance id '
+                'is not in the account.')
+
+    if not ctx.node.properties['resource_id']:
+        if instance:
+            raise NonRecoverableError(
+                'External instance was not indicated, '
+                'but the instance already exists.')
 
     if 'image_id' not in ctx.node.properties:
         raise NonRecoverableError(

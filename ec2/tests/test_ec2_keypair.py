@@ -150,7 +150,7 @@ class TestKeyPair(testtools.TestCase):
         with open(key_path, 'w') as out:
             out.write('test_save_keypair')
         ex = self.assertRaises(NonRecoverableError,
-                               keypair.save_key_pair, kp, ctx=ctx)
+                               keypair._save_key_pair, kp, ctx=ctx)
         self.assertIn(
             'already exists, it will not be overwritten', ex.message)
         os.remove(key_path)

@@ -35,7 +35,7 @@ def create(**_):
     for property_name in constants.SECURITY_GROUP_REQUIRED_PROPERTIES:
         utils.validate_node_property(property_name, ctx=ctx)
 
-    if create_external_securitygroup(ctx=ctx):
+    if _create_external_securitygroup(ctx=ctx):
         return
 
     ctx.logger.debug(
@@ -50,8 +50,8 @@ def create(**_):
             boto.exception.BotoServerError) as e:
         raise NonRecoverableError('{0}'.format(str(e)))
 
+    _authorize_by_id(ec2_client, group_object.id, ctx.node.properties['rules'])
     utils.set_external_resource_id(group_object.id, external=False, ctx=ctx)
-    authorize_by_id(ec2_client, group_object.id, ctx.node.properties['rules'])
 
 
 @operation
@@ -64,16 +64,12 @@ def delete(**_):
     group_id = utils.get_external_resource_id_or_raise(
         'delete security group', ctx.instance, ctx=ctx)
 
-    if delete_external_securitygroup(ctx):
+    if _delete_external_securitygroup(ctx):
         return
 
     ctx.logger.debug('Deleting Security Group: {0}'.format(group_id))
 
-    try:
-        ec2_client.delete_security_group(group_id=group_id)
-    except (boto.exception.EC2ResponseError,
-            boto.exception.BotoServerError) as e:
-        raise NonRecoverableError('{0}'.format(str(e)))
+    _delete_security_group(group_id, ec2_client)
 
     securitygroup = utils.get_security_group_from_id(group_id, ctx=ctx)
 
@@ -87,7 +83,18 @@ def delete(**_):
             'has been deleted from your account.'.format(securitygroup.id))
 
 
-def authorize_by_id(ec2_client, group, rules):
+def _delete_security_group(group_id, ec2_client):
+    """Tries to delete a Security group
+    """
+
+    try:
+        ec2_client.delete_security_group(group_id=group_id)
+    except (boto.exception.EC2ResponseError,
+            boto.exception.BotoServerError) as e:
+        raise NonRecoverableError('{0}'.format(str(e)))
+
+
+def _authorize_by_id(ec2_client, group_id, rules):
     """ For each rule listed in the blueprint,
         this will add the rule to the group with the given id.
 
@@ -100,7 +107,7 @@ def authorize_by_id(ec2_client, group, rules):
     for r in rules:
         try:
             ec2_client.authorize_security_group(
-                group_id=group,
+                group_id=group_id,
                 ip_protocol=r['ip_protocol'],
                 from_port=r['from_port'],
                 to_port=r['to_port'],
@@ -108,9 +115,13 @@ def authorize_by_id(ec2_client, group, rules):
         except (boto.exception.EC2ResponseError,
                 boto.exception.BotoServerError) as e:
             raise NonRecoverableError('{0}'.format(str(e)))
+        except Exception as e:
+            _delete_security_group(group_id, ec2_client)
+            raise NonRecoverableError(
+                'Error authorizing security group: {e}.'.format(str(e)))
 
 
-def create_external_securitygroup(ctx):
+def _create_external_securitygroup(ctx):
     """If use_external_resource is True, this will set the runtime_properties,
     and then exit.
 
@@ -118,7 +129,7 @@ def create_external_securitygroup(ctx):
     :returns Boolean if use_external_resource is True or not.
     """
 
-    if not ctx.node.properties['use_external_resource']:
+    if not utils.use_external_resource(ctx.node.properties, ctx=ctx):
         return False
     else:
         group_id = ctx.node.properties['resource_id']
@@ -131,7 +142,7 @@ def create_external_securitygroup(ctx):
         return True
 
 
-def delete_external_securitygroup(ctx):
+def _delete_external_securitygroup(ctx):
     """If use_external_resource is True, this will delete the runtime_properties,
     and then exit.
 
@@ -139,7 +150,7 @@ def delete_external_securitygroup(ctx):
     :returns Boolean if use_external_resource is True or not.
     """
 
-    if not ctx.node.properties['use_external_resource']:
+    if not utils.use_external_resource(ctx.node.properties, ctx=ctx):
         return False
     else:
         ctx.logger.info(
@@ -157,8 +168,16 @@ def creation_validation(**_):
     for property_key in constants.SECURITY_GROUP_REQUIRED_PROPERTIES:
         utils.validate_node_property(property_key, ctx=ctx)
 
+    security_group = utils.get_security_group_from_id(
+        ctx.node.properties['resource_id'], ctx=ctx)
+
     if ctx.node.properties['use_external_resource']:
-        if not utils.get_security_group_from_id(
-                ctx.node.properties['resource_id'], ctx=ctx):
+        if not security_group:
             raise NonRecoverableError('use_external_resource was specified, '
                                       'but the security group does not exist.')
+
+    if not ctx.node.properties['use_external_resource']:
+        if security_group:
+            raise NonRecoverableError(
+                'use_external_resource was not specified, '
+                'but the security group does exist.')

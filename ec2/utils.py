@@ -407,9 +407,7 @@ def set_external_resource_id(value, ctx, external=True):
     else:
         resource_type = 'external'
 
-    ctx.logger.info(
-        'Using {0} resource: {1}'.format(
-            resource_type, value))
+    ctx.logger.info('Using {0} resource: {1}'.format(resource_type, value))
     ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID] = value
 
 
@@ -424,3 +422,25 @@ def unassign_runtime_property_from_resource(property_name, ctx_instance, ctx):
     value = ctx_instance.runtime_properties.pop(property_name)
     ctx.logger.debug(
         'Unassigned {0} runtime property: {1}'.format(property_name, value))
+
+
+def use_external_resource(node_properties, ctx):
+    """Checks if use_external_resource node property is true,
+    logs the ID and answer to the debug log,
+    and returns boolean False (if not external) or True.
+
+    :param node_properties: The ctx node properties for a node.
+    :param ctx:  The Cloudify ctx context.
+    :returns boolean: False if not external.
+    """
+
+    if not node_properties['use_external_resource']:
+        ctx.logger.debug(
+            'Using Cloudify resource_id: {0}.'
+            .format(node_properties['resource_id']))
+        return False
+    else:
+        ctx.logger.debug(
+            'Using external resource_id: {0}.'
+            .format(node_properties['resource_id']))
+        return True

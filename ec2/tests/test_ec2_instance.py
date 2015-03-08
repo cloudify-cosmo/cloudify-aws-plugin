@@ -39,6 +39,7 @@ class TestInstance(testtools.TestCase):
         test_node_id = test_name
         test_properties = {
             'use_external_resource': False,
+            'resource_id': '',
             'image_id': TEST_AMI_IMAGE_ID,
             'instance_type': TEST_INSTANCE_TYPE,
             'parameters': {
@@ -217,5 +218,6 @@ class TestInstance(testtools.TestCase):
         ctx.node.properties['resource_id'] = 'bad_id'
         ex = self.assertRaises(
             NonRecoverableError, instance.creation_validation, ctx=ctx)
-        self.assertIn('Instance ID bad_id does not exist in this account',
-                      ex.message)
+        self.assertIn(
+            'External instance was indicated, but the given instance id ',
+            ex.message)

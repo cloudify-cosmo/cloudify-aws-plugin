@@ -147,7 +147,7 @@ class TestSecurityGroup(testtools.TestCase):
         group = ec2_client.create_security_group('test_authorize_by_id',
                                                  'this is test')
         rules = ctx.node.properties['rules']
-        securitygroup.authorize_by_id(ec2_client, group.id, rules)
+        securitygroup._authorize_by_id(ec2_client, group.id, rules)
         self.assertNotEqual(
             group.rules,
             ec2_client.get_all_security_groups(
