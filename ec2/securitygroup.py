@@ -90,6 +90,11 @@ def delete(**_):
 def authorize_by_id(ec2_client, group, rules):
     """ For each rule listed in the blueprint,
         this will add the rule to the group with the given id.
+
+    :param ec2_client: The EC2 Client object.
+    :param group: The group id that you want to add rules to.
+    :param rules: A list of rules.
+    :raises NonRecoverableError: if Boto or EC2 response is an error.
     """
 
     for r in rules:
@@ -108,6 +113,9 @@ def authorize_by_id(ec2_client, group, rules):
 def create_external_securitygroup(ctx):
     """If use_external_resource is True, this will set the runtime_properties,
     and then exit.
+
+    :param ctx: The Cloudify context.
+    :returns Boolean if use_external_resource is True or not.
     """
 
     if not ctx.node.properties['use_external_resource']:
@@ -126,6 +134,9 @@ def create_external_securitygroup(ctx):
 def delete_external_securitygroup(ctx):
     """If use_external_resource is True, this will delete the runtime_properties,
     and then exit.
+
+    :param ctx: The Cloudify context.
+    :returns Boolean if use_external_resource is True or not.
     """
 
     if not ctx.node.properties['use_external_resource']:

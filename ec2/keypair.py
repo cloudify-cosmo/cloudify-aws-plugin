@@ -30,6 +30,8 @@ from cloudify.decorators import operation
 
 @operation
 def create(**kwargs):
+    """Creates a keypair
+    """
 
     ec2_client = connection.EC2ConnectionClient().client()
 
@@ -53,6 +55,9 @@ def create(**kwargs):
 
 @operation
 def delete(**kwargs):
+    """Deletes a keypair.
+    """
+
     ec2_client = connection.EC2ConnectionClient().client()
 
     key_pair_name = \
@@ -85,6 +90,13 @@ def delete(**kwargs):
 
 
 def save_key_pair(key_pair_object, ctx):
+    """Saves a keypair to the filesystem.
+
+    :param key_pair_object: The key pair object as returned from create.
+    :param ctx: The Cloudify Context.
+    :raises NonRecoverableError: If private_key_path node property not set.
+    :raises NonRecoverableError: If Unable to save key file locally.
+    """
 
     ctx.logger.debug('Attempting to save the key_pair_object.')
 
@@ -112,9 +124,11 @@ def save_key_pair(key_pair_object, ctx):
 
 
 def get_key_file_path(ctx):
-    """The key_path is an attribute that gives the full path to the key file.
-    This function creates the path as a string for use by various functions in
-    this module. It doesn't verify whether the path points to anything.
+    """Gets the path to the keypair file.
+
+    :param ctx: The Cloudify context.
+    :returns key_path: Path to the keypair file.
+    :raises NonRecoverableError: If private_key_path is not set.
     """
 
     if 'private_key_path' not in ctx.node.properties:
@@ -129,7 +143,11 @@ def get_key_file_path(ctx):
 
 
 def delete_key_file(ctx):
-    """ Deletes the key pair in the file specified in the blueprint. """
+    """ Deletes the key pair in the file specified in the blueprint.
+
+    :param ctx: The Cloudify context.
+    :raises NonRecoverableError: If unable to delete the local key file.
+    """
 
     key_path = get_key_file_path(ctx=ctx)
 
@@ -142,12 +160,24 @@ def delete_key_file(ctx):
 
 
 def search_for_key_file(key_path):
-    """ Indicates whether the file exists locally. """
+    """ Checks if the key_path exists in the local filesystem.
+
+    :param key_path: The path to the key pair file.
+    :return boolean if key_path exists (True) or not.
+    """
 
     return True if os.path.exists(key_path) else False
 
 
 def create_external_keypair(ctx):
+    """If use_external_resource is True, this will set the runtime_properties,
+    and then exit.
+
+    :param ctx: The Cloudify context.
+    :returns Boolean if use_external_resource is True or not.
+    :raises NonRecoverableError: If unable to locate the existing key file.
+    """
+
     if not ctx.node.properties['use_external_resource']:
         return False
     else:
@@ -163,6 +193,13 @@ def create_external_keypair(ctx):
 
 
 def delete_external_keypair(ctx):
+    """If use_external_resource is True, this will delete the runtime_properties,
+    and then exit.
+
+    :param ctx: The Cloudify context.
+    :returns Boolean if use_external_resource is True or not.
+    """
+
     if not ctx.node.properties['use_external_resource']:
         return False
     else:
@@ -176,6 +213,8 @@ def delete_external_keypair(ctx):
 
 @operation
 def creation_validation(**_):
+    """ This validates all nodes before bootstrap.
+    """
 
     key_path = get_key_file_path(ctx=ctx)
 
