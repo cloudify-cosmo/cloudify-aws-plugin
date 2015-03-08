@@ -13,7 +13,7 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
-# Other Imports
+# Third-party Imports
 from boto.ec2 import EC2Connection
 
 

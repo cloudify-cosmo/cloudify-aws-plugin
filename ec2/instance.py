@@ -13,16 +13,16 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
-# Boto Imports
+# Third-party Imports
 import boto.exception
 
 # Cloudify imports
+from ec2 import utils
+from ec2 import constants
+from ec2 import connection
 from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
 from cloudify.decorators import operation
-from ec2 import utils
-from ec2 import connection
-from ec2 import constants
 
 
 @operation

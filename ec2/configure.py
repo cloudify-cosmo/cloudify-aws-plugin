@@ -16,7 +16,7 @@
 # Built-in Imports:
 import tempfile
 
-# Third Party Imports
+# Third-party Imports
 from boto import config
 
 # Cloudify Imports

@@ -15,10 +15,29 @@
 
 EXTERNAL_RESOURCE_ID = 'aws_resource_id'
 
+# instance module constants
 INSTANCE_STATE_STARTED = 16
 INSTANCE_STATE_TERMINATED = 48
 INSTANCE_STATE_STOPPED = 80
+
 INSTANCE_REQUIRED_PROPERTIES = ['image_id', 'instance_type']
-INSTANCE_INTERNAL_ATTRIBUTES = ['private_dns_name', 'public_dns_name',
-                                'public_ip_address', 'ip']
+
+INSTANCE_INTERNAL_ATTRIBUTES = \
+    ['private_dns_name', 'public_dns_name', 'public_ip_address', 'ip']
+
+RUN_INSTANCE_PARAMETERS = {
+    'image_id': None, 'key_name': None, 'security_groups': None,
+    'user_data': None, 'addressing_type': None,
+    'instance_type': 'm1.small', 'placement': None, 'kernel_id': None,
+    'ramdisk_id': None, 'monitoring_enabled': False, 'subnet_id': None,
+    'block_device_map': None, 'disable_api_termination': False,
+    'instance_initiated_shutdown_behavior': None,
+    'private_ip_address': None, 'placement_group': None,
+    'client_token': None, 'security_group_ids': None,
+    'additional_info': None, 'instance_profile_name': None,
+    'instance_profile_arn': None, 'tenancy': None, 'ebs_optimized': False,
+    'network_interfaces': None, 'dry_run': False
+}
+
+# securitygroup module constants
 SECURITY_GROUP_REQUIRED_PROPERTIES = ['description', 'rules']

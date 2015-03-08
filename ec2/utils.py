@@ -20,37 +20,21 @@ import re
 import boto.exception
 
 # Cloudify Imports
-from ec2 import connection
 from ec2 import constants
+from ec2 import connection
 from cloudify.exceptions import NonRecoverableError
 
 
 def get_instance_parameters(ctx):
-    """ These are the list of supported arguments to the run_instances
-        function and their default values. Essentially, this checks to see
-        if the user provided a value and takes the user's value. If the
-        user did not provide a value, the key is deleted from the
-        dictionary.
-      :param ctx:  The Cloudify ctx context. This function uses the
-                   node.properties attribute.
-      :returns parameters dictionary
+    """The parameters to the run_instance boto call.
+
+    :param ctx:  The Cloudify ctx context.
+    :returns parameters dictionary
     """
 
-    attached_group_ids = get_attached_security_group_ids(ctx=ctx)
+    parameters = constants.RUN_INSTANCE_PARAMETERS
 
-    parameters = {
-        'image_id': None, 'key_name': None, 'security_groups': None,
-        'user_data': None, 'addressing_type': None,
-        'instance_type': 'm1.small', 'placement': None, 'kernel_id': None,
-        'ramdisk_id': None, 'monitoring_enabled': False, 'subnet_id': None,
-        'block_device_map': None, 'disable_api_termination': False,
-        'instance_initiated_shutdown_behavior': None,
-        'private_ip_address': None, 'placement_group': None,
-        'client_token': None, 'security_group_ids': None,
-        'additional_info': None, 'instance_profile_name': None,
-        'instance_profile_arn': None, 'tenancy': None, 'ebs_optimized': False,
-        'network_interfaces': None, 'dry_run': False
-    }
+    attached_group_ids = get_attached_security_group_ids(ctx=ctx)
 
     node_parameter_keys = ctx.node.properties['parameters'].keys()
 
@@ -79,8 +63,9 @@ def get_instance_parameters(ctx):
 
 
 def validate_node_property(key, ctx):
-    """ checks if the node property exists in the blueprint
-        if not, raises unrecoverable Error
+    """Checks if the node property exists in the blueprint.
+
+    :raises NonRecoverableError: if key not in the node's properties
     """
 
     if key not in ctx.node.properties:
@@ -89,6 +74,12 @@ def validate_node_property(key, ctx):
 
 
 def get_image(image_id, ctx):
+    """Gets the boto object that represents the AMI image for image id.
+
+    :param image_id: The ID of the AMI image.
+    :param ctx:  The Cloudify ctx context.
+    :returns an object that represents an AMI image.
+    """
 
     ec2_client = connection.EC2ConnectionClient().client()
 
@@ -106,16 +97,22 @@ def get_image(image_id, ctx):
 
 
 def get_instance_attribute(attribute, ctx):
-    """ given the related instance object
-        the given variable can be retrieved and returned
+    """Gets an attribute from a boto object that represents an EC2 Instance.
+
+    :param attribute: The named python attribute of a boto object.
+    :param ctx:  The Cloudify ctx context.
+    :returns python attribute of a boto object representing an EC2 instance.
+    :raises NonRecoverableError if constants.EXTERNAL_RESOURCE_ID not set
+    :raises NonRecoverableError if no instance is found.
     """
 
-    if 'aws_resource_id' not in ctx.instance.runtime_properties:
+    if constants.EXTERNAL_RESOURCE_ID not in ctx.instance.runtime_properties:
         raise NonRecoverableError(
-            'Unable to get instance attibute {0}, because aws_resource_id '
-            'has not been set.'.format(attribute))
+            'Unable to get instance attibute {0}, because {1} is not set.'
+            .format(attribute, constants.EXTERNAL_RESOURCE_ID))
 
-    instance_id = ctx.instance.runtime_properties['aws_resource_id']
+    instance_id = \
+        ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
     instance = get_instance_from_id(instance_id, ctx=ctx)
 
     if instance is None:
@@ -128,13 +125,21 @@ def get_instance_attribute(attribute, ctx):
 
 
 def get_instance_state(ctx):
+    """Gets the instance state code of a EC2 Instance
+
+    :param ctx:  The Cloudify ctx context.
+    :returns a state code from a boto object representing an EC2 Image.
+    """
     state = get_instance_attribute('state_code', ctx=ctx)
     return state
 
 
 def get_instance_from_id(instance_id, ctx):
-    """ using the instance_id retrieves the instance object
-        from the API and returns the object.
+    """Gets the instance ID of a EC2 Instance
+
+    :param instance_id: The ID of an EC2 Instance
+    :param ctx:  The Cloudify ctx context.
+    :returns an ID of a an EC2 Instance or None.
     """
     ctx.logger.debug('Getting Instance by ID: {0}'.format(instance_id))
 
@@ -144,7 +149,10 @@ def get_instance_from_id(instance_id, ctx):
 
 
 def get_attached_keypair_id(ctx):
-    """ returns a list of provided keypairs
+    """Gets the ID of a keypair connected via a relationship to a node.
+
+    :param ctx:  The Cloudify ctx context.
+    :returns the ID of a keypair or None.
     """
 
     relationship_type = 'instance_connected_to_keypair'
@@ -155,7 +163,10 @@ def get_attached_keypair_id(ctx):
 
 
 def get_attached_security_group_ids(ctx):
-    """ returns a list of attached security groups
+    """Gets a list of security group ids connected via a relationship to a node.
+
+    :param ctx:  The Cloudify ctx context.
+    :returns a list of security group ids.
     """
 
     relationship_type = 'instance_connected_to_security_group'
@@ -164,8 +175,11 @@ def get_attached_security_group_ids(ctx):
 
 
 def get_target_aws_resource_ids(relationship_type, ctx):
-    """ This loops through the relationships of type and returns
-        targets of those relationships.
+    """Gets a list of target node ids connected via a relationship to a node.
+
+    :param relationship_type: A string representing the type of relationship.
+    :param ctx:  The Cloudify ctx context.
+    :returns a list of security group ids.
     """
 
     ids = []
@@ -184,7 +198,11 @@ def get_target_aws_resource_ids(relationship_type, ctx):
 
 
 def get_key_pair_by_id(key_pair_id):
-    """Returns the key pair object for a given key pair id
+    """Returns the key pair object for a given key pair id.
+
+    :param key_pair_id: The ID of a keypair.
+    :returns The boto keypair object.
+    :raises NonRecoverableError: If EC2 finds no matching key pairs.
     """
 
     ec2_client = connection.EC2ConnectionClient().client()
@@ -199,7 +217,12 @@ def get_key_pair_by_id(key_pair_id):
 
 
 def get_security_group_from_id(group_id, ctx):
-    """ returns the group object for a given group id.
+    """Returns the security group object for a given security group id.
+
+    :param ctx:  The Cloudify ctx context.
+    :param group_id: The ID of a security group.
+    :returns The boto security group object.
+    :raises NonRecoverableError: If EC2 finds no matching groups.
     """
 
     if not re.match('^sg\-[0-9a-z]{8}$', group_id):
@@ -212,7 +235,11 @@ def get_security_group_from_id(group_id, ctx):
 
 
 def get_security_group_from_name(group_name, ctx):
-    """Returns the group object for a given group name.
+    """Returns the security group object for a given group name.
+
+    :param ctx:  The Cloudify ctx context.
+    :param group_name: The name of a security group.
+    :returns The boto security group object.
     """
 
     if re.match('^sg\-[0-9a-z]{8}$', group_name):
@@ -225,7 +252,12 @@ def get_security_group_from_name(group_name, ctx):
 
 
 def get_address_by_id(address_id, ctx):
-    """returns the address for a given address_id
+    """Returns the elastip ip for a given address elastip.
+
+    :param ctx:  The Cloudify ctx context.
+    :param address_id: The ID of a elastip.
+    :returns The boto elastip ip.
+    :raises NonRecoverableError: If EC2 finds no matching elastips.
     """
 
     address = get_address_object_by_id(address_id, ctx=ctx)
@@ -234,7 +266,12 @@ def get_address_by_id(address_id, ctx):
 
 
 def get_address_object_by_id(address_id, ctx):
-    """returns the address object for a given address_id
+    """Returns the elastip object for a given address elastip.
+
+    :param ctx:  The Cloudify ctx context.
+    :param address_id: The ID of a elastip.
+    :returns The boto elastip object.
+    :raises NonRecoverableError: If EC2 finds no matching elastips.
     """
 
     address = get_all_addresses(ctx, address=address_id)
@@ -243,8 +280,12 @@ def get_address_object_by_id(address_id, ctx):
 
 
 def get_all_instances(ctx, list_of_instance_ids=None):
-    """returns a list of instances. If an InvalidInstanceID is raised
-    then all of the instances are logged.
+    """Returns a list of instance objects for a list of instance IDs.
+
+    :param ctx:  The Cloudify ctx context.
+    :param address_id: The ID of an EC2 Instance.
+    :returns a list of instance objects.
+    :raises NonRecoverableError: If Boto errors.
     """
 
     ec2_client = connection.EC2ConnectionClient().client()
@@ -269,8 +310,13 @@ def get_all_instances(ctx, list_of_instance_ids=None):
 def get_all_security_groups(ctx,
                             list_of_group_names=None,
                             list_of_group_ids=None):
-    """Returns a list of security groups. If an InvalidGroupId error is raised
-    then it all of the security groups are logged.
+    """Returns a list of security groups for a given list of group names and IDs.
+
+    :param ctx:  The Cloudify ctx context.
+    :param list_of_group_names: A list of security group names.
+    :param list_of_group_ids: A list of security group IDs.
+    :returns A list of security group objects.
+    :raises NonRecoverableError: If Boto errors.
     """
 
     ec2_client = connection.EC2ConnectionClient().client()
@@ -291,8 +337,12 @@ def get_all_security_groups(ctx,
 
 
 def get_all_addresses(ctx, address=None):
-    """Returns a list of addresses. If InvalidAddress is raised all
-    addresses get logged.
+    """Returns a list of elastip objects for a given address elastip.
+
+    :param ctx:  The Cloudify ctx context.
+    :param address: The ID of a elastip.
+    :returns A list of elasticip objects.
+    :raises NonRecoverableError: If Boto errors.
     """
 
     ec2_client = connection.EC2ConnectionClient().client()
@@ -323,6 +373,14 @@ def log_available_resources(list_of_resources, ctx):
 
 
 def get_external_resource_id_or_raise(operation, ctx_instance, ctx):
+    """Checks if the EXTERNAL_RESOURCE_ID runtime_property is set and returns it.
+
+    :param operation: A string representing what is happening.
+    :param ctx_instance: The CTX Node-Instance Context.
+    :param ctx:  The Cloudify ctx context.
+    :returns The EXTERNAL_RESOURCE_ID runtime_property for a CTX Instance.
+    :raises NonRecoverableError: If EXTERNAL_RESOURCE_ID has not been set.
+    """
 
     ctx.logger.debug(
         'Checking if {0} in instance runtime_properties, for {0} operation.'
@@ -337,6 +395,12 @@ def get_external_resource_id_or_raise(operation, ctx_instance, ctx):
 
 
 def set_external_resource_id(value, ctx, external=True):
+    """Sets the EXTERNAL_RESOURCE_ID runtime_property for a Node-Instance.
+
+    :param value: the desired EXTERNAL_RESOURCE_ID runtime_property
+    :param ctx:  The Cloudify ctx context.
+    :param external:  Boolean representing if it is external resource or not.
+    """
 
     if not external:
         resource_type = 'Cloudify'
@@ -350,6 +414,13 @@ def set_external_resource_id(value, ctx, external=True):
 
 
 def unassign_runtime_property_from_resource(property_name, ctx_instance, ctx):
+    """Pops a runtime_property and reports to debug.
+
+    :param property_name: The runtime_property to remove.
+    :param ctx_instance: The CTX Node-Instance Context.
+    :param ctx:  The Cloudify ctx context.
+    """
+
     value = ctx_instance.runtime_properties.pop(property_name)
     ctx.logger.debug(
         'Unassigned {0} runtime property: {1}'.format(property_name, value))
