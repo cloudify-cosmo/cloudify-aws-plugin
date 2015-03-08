@@ -23,6 +23,8 @@ from boto import config
 
 
 class BotoConfig(object):
+    """Functions that provide an interface into a boto or aws config.
+    """
 
     def get_temp_file(self):
         temp_config = tempfile.mktemp()
@@ -32,6 +34,16 @@ class BotoConfig(object):
         return temp_config
 
     def get_config(self, path=None, profile_name='Credentials'):
+        """Gets a specifice configuration from a path to a aws or boto configuration
+        and profile_name
+
+        :param path: path to a aws or boto configuration file
+        :param profile_name: a aws or boto configuration profile_name in a
+            configuration file
+        :returns formatted string containing profile_name aws_access_key_id
+            aws_secret_access_key
+        """
+
         credentials = self._load_credentials_from_path(path, profile_name)
         return '[{0}]\n' \
                'aws_access_key_id = {1}\n' \
@@ -41,15 +53,43 @@ class BotoConfig(object):
                    credentials['aws_secret_access_key'])
 
     def _get_aws_credentials_name(self, credentials='Credentials'):
+        """Gets the Profile Name.
+
+        :param credentials: profile_name in an aws or boto configuration file
+        : returns the __name__ for specified credentials (profile)
+        """
+
         return config.get_value(credentials, '__name__')
 
     def _get_aws_access_key_id(self, credentials='Credentials'):
+        """Gets the AWS Access Key.
+
+        :param credentials: profile_name in an aws or boto configuration file
+        : returns the aws_access_key_id for specified credentials (profile)
+        """
+
         return config.get(credentials, 'aws_access_key_id')
 
     def _get_aws_secret_access_key(self, credentials='Credentials'):
+        """Gets the AWS Secret Access Key.
+
+        :param credentials: profile_name in an aws or boto configuration file
+        : returns the aws_secret_access_key for specified credentials (profile)
+        """
+
         return config.get(credentials, 'aws_secret_access_key')
 
     def _load_credentials_from_path(self, path, profile_name):
+        """Gets the Profile Name AWS Access Key and AWS Secret Access Key
+        for a specified path to a configuraton file and profile_name.
+
+        :param path: path to a aws or boto configuration file
+        :param profile_name: a aws or boto configuration profile_name in a
+            configuration file
+        :returns dictionary containing profile_name aws_access_key_id
+            aws_secret_access_key
+        """
+
         if path:
             config.load_from_path(path)
 

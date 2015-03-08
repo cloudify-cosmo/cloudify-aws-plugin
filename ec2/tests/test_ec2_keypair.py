@@ -133,7 +133,7 @@ class TestKeyPair(testtools.TestCase):
         ex = self.assertRaises(
             NonRecoverableError, keypair.creation_validation, ctx=ctx)
         self.assertIn(
-            'Use external resource is true, but the key file does not exist',
+            'External resource, but the key file does not exist.',
             ex.message)
 
     @mock_ec2
@@ -168,4 +168,4 @@ class TestKeyPair(testtools.TestCase):
         ctx.node.properties['resource_id'] = kp.name
         ex = self.assertRaises(NonRecoverableError, keypair.create, ctx=ctx)
         self.assertIn(
-            'the key pair was not located on the filesystem', ex.message)
+            'External resource, but the key file does not exist', ex.message)

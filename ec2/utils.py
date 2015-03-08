@@ -83,10 +83,9 @@ def validate_node_property(key, ctx):
         if not, raises unrecoverable Error
     """
 
-    if key not in ctx.node.properties.keys() \
-            or ctx.node.properties.get(key) is None:
-        raise NonRecoverableError('{0} is a required input .'
-                                  'Unable to create.'.format(key))
+    if key not in ctx.node.properties:
+        raise NonRecoverableError(
+            '{0} is a required input. Unable to create.'.format(key))
 
 
 def get_image(image_id, ctx):
@@ -323,18 +322,18 @@ def log_available_resources(list_of_resources, ctx):
     ctx.logger.debug(message)
 
 
-def get_external_resource_id_or_raise(operation, ctx):
+def get_external_resource_id_or_raise(operation, ctx_instance, ctx):
 
     ctx.logger.debug(
         'Checking if {0} in instance runtime_properties, for {0} operation.'
         .format(constants.EXTERNAL_RESOURCE_ID, operation))
 
-    if constants.EXTERNAL_RESOURCE_ID not in ctx.instance.runtime_properties:
+    if constants.EXTERNAL_RESOURCE_ID not in ctx_instance.runtime_properties:
         raise NonRecoverableError(
             'Cannot {0} because {1} is not assigned.'
             .format(operation, constants.EXTERNAL_RESOURCE_ID))
 
-    return ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
+    return ctx_instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
 
 
 def set_external_resource_id(value, ctx, external=True):
@@ -348,3 +347,9 @@ def set_external_resource_id(value, ctx, external=True):
         'Using {0} resource: {1}'.format(
             resource_type, value))
     ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID] = value
+
+
+def unassign_runtime_property_from_resource(property_name, ctx_instance, ctx):
+    value = ctx_instance.runtime_properties.pop(property_name)
+    ctx.logger.debug(
+        'Unassigned {0} runtime property: {1}'.format(property_name, value))

@@ -117,7 +117,7 @@ class TestSecurityGroup(testtools.TestCase):
 
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
-            'test_creation_validation', test_properties)
+            'test_use_external_not_existing', test_properties)
         ctx.node.properties['use_external_resource'] = True
         ctx.node.properties['resource_id'] = 'sg-73cd3f1e'
         ex = self.assertRaises(
@@ -152,28 +152,3 @@ class TestSecurityGroup(testtools.TestCase):
             group.rules,
             ec2_client.get_all_security_groups(
                 groupnames='test_authorize_by_id')[0].rules)
-
-    @mock_ec2
-    def test_authorize_external(self):
-        ec2_client = connection.EC2ConnectionClient().client()
-        group = ec2_client.create_security_group('test_authorize_external',
-                                                 'this is test')
-        test_properties = self.get_mock_properties()
-        ctx = self.security_group_mock(
-            'test_authorize_external', test_properties)
-        ctx.node.properties['use_external_resource'] = True
-        ctx.node.properties['resource_id'] = group.id
-        ctx.instance.runtime_properties['aws_resource_id'] = group.id
-        self.assertIsNone(securitygroup.authorize(ctx=ctx))
-
-    @mock_ec2
-    def test_authorize_not_external(self):
-        ec2_client = connection.EC2ConnectionClient().client()
-        group = ec2_client.create_security_group('test_authorize_not_external',
-                                                 'this is test')
-        test_properties = self.get_mock_properties()
-        ctx = self.security_group_mock(
-            'test_authorize_external', test_properties)
-        ctx.node.properties['use_external_resource'] = False
-        ctx.instance.runtime_properties['aws_resource_id'] = group.id
-        securitygroup.authorize(ctx=ctx)

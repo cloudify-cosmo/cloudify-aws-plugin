@@ -29,13 +29,16 @@ from ec2 import constants
 def run_instances(**_):
     ec2_client = connection.EC2ConnectionClient().client()
 
+    for property_name in constants.INSTANCE_REQUIRED_PROPERTIES:
+        utils.validate_node_property(property_name, ctx=ctx)
+
     if create_external_instance(ctx=ctx):
         return
 
     instance_parameters = utils.get_instance_parameters(ctx=ctx)
 
     ctx.logger.debug(
-        'Attempting to create EC2 Instance. Sending these API parameters: {0}.'
+        'Attempting to create EC2 Instance with these API parameters: {0}.'
         .format(instance_parameters))
 
     if ctx.operation.retry_number == 0:
@@ -62,20 +65,14 @@ def start(**_):
     ec2_client = connection.EC2ConnectionClient().client()
 
     instance_id = \
-        utils.get_external_resource_id_or_raise('start instance', ctx=ctx)
+        utils.get_external_resource_id_or_raise(
+            'start instance', ctx.instance, ctx=ctx)
 
-    if ctx.node.properties['use_external_resource']:
-        assign_runtime_properties_to_instance(
-            ctx=ctx, runtime_properties=constants.INSTANCE_INTERNAL_ATTRIBUTES)
-        ctx.logger.info(
-            'Setting Cloudify properties for external resource {0}, '
-            'but not attempting to start server.'.format(instance_id))
+    if start_external_instance(instance_id, ctx=ctx):
         return
 
     if utils.get_instance_state(ctx=ctx) == constants.INSTANCE_STATE_STARTED:
-        assign_runtime_properties_to_instance(
-            ctx=ctx, runtime_properties=constants.INSTANCE_INTERNAL_ATTRIBUTES)
-        ctx.logger.info('Instance {0} is running.'.format(instance_id))
+        instance_started_assign_runtime_properties(instance_id, ctx=ctx)
         return
 
     ctx.logger.debug('Attempting to start instance: {0}.)'.format(instance_id))
@@ -89,9 +86,7 @@ def start(**_):
     ctx.logger.debug('Attempted to start instance {0}.'.format(instance_id))
 
     if utils.get_instance_state(ctx=ctx) == constants.INSTANCE_STATE_STARTED:
-        assign_runtime_properties_to_instance(
-            ctx=ctx, runtime_properties=constants.INSTANCE_INTERNAL_ATTRIBUTES)
-        ctx.logger.info('Instance {0} is running.'.format(instance_id))
+        instance_started_assign_runtime_properties(instance_id, ctx=ctx)
     else:
         return ctx.operation.retry(
             message='Waiting server to be running. Retrying...')
@@ -102,14 +97,10 @@ def stop(**_):
     ec2_client = connection.EC2ConnectionClient().client()
 
     instance_id = \
-        utils.get_external_resource_id_or_raise('stop instance', ctx=ctx)
+        utils.get_external_resource_id_or_raise(
+            'stop instance', ctx.instance, ctx=ctx)
 
-    if ctx.node.properties['use_external_resource']:
-        unassign_runtime_properties(
-            ctx=ctx, runtime_properties=constants.INSTANCE_INTERNAL_ATTRIBUTES)
-        ctx.logger.info(
-            'External resource, not attempting to stop server: {0}.'
-            .format(instance_id))
+    if stop_external_instance(instance_id, ctx=ctx):
         return
 
     ctx.logger.debug(
@@ -125,7 +116,7 @@ def stop(**_):
 
     if utils.get_instance_state(ctx=ctx) == constants.INSTANCE_STATE_STOPPED:
         unassign_runtime_properties(
-            ctx=ctx, runtime_properties=constants.INSTANCE_INTERNAL_ATTRIBUTES)
+            runtime_properties=constants.INSTANCE_INTERNAL_ATTRIBUTES, ctx=ctx)
         ctx.logger.info('Stopped instance {0}.'.format(instance_id))
     else:
         return ctx.operation.retry(
@@ -138,14 +129,9 @@ def terminate(**_):
 
     instance_id = \
         utils.get_external_resource_id_or_raise(
-            'terminate instance', ctx=ctx)
+            'terminate instance', ctx.instance, ctx=ctx)
 
-    if ctx.node.properties['use_external_resource']:
-        unassign_runtime_properties(
-            ctx=ctx, runtime_properties=[constants.EXTERNAL_RESOURCE_ID])
-        ctx.logger.info(
-            'Unsetting Cloudify properties for external resource {0}, '
-            'but not attempting to terminate server.'.format(instance_id))
+    if terminate_external_instance(instance_id, ctx=ctx):
         return
 
     ctx.logger.debug(
@@ -164,49 +150,10 @@ def terminate(**_):
             constants.INSTANCE_STATE_TERMINATED:
         ctx.logger.info('Terminated instance: {0}.'.format(instance_id))
         unassign_runtime_properties(
-            ctx=ctx, runtime_properties=[constants.EXTERNAL_RESOURCE_ID])
+            runtime_properties=[constants.EXTERNAL_RESOURCE_ID], ctx=ctx)
 
 
-@operation
-def creation_validation(**_):
-    """ This checks that all user supplied info is valid """
-    required_properties = ['resource_id', 'use_external_resource',
-                           'image_id', 'instance_type']
-
-    for property_key in required_properties:
-        utils.validate_node_property(property_key, ctx=ctx)
-
-    if ctx.node.properties['use_external_resource']:
-        instance = utils.get_instance_from_id(
-            ctx.node.properties['resource_id'], ctx=ctx)
-
-    if not instance:
-        raise NonRecoverableError(
-            'Instance ID {0} does not exist in this account.'
-            .format(ctx.node.properties['resource_id']))
-
-    if 'image_id' not in ctx.node.properties['parameters']:
-        raise NonRecoverableError(
-            'Required parameter image_id not provided.')
-
-    if 'instance_type' not in ctx.node.properties['parameters']:
-        raise NonRecoverableError(
-            'Required parameter instance_type not provided.')
-
-    image_id = ctx.node.properties['parameters']['image_id']
-    image_object = utils.get_image(image_id)
-
-    if 'available' not in image_object.state:
-        raise NonRecoverableError(
-            'image_id {0} not available to this account.'.format(image_id))
-
-    if 'ebs' not in image_object.root_device_type:
-        raise NonRecoverableError(
-            'image_id {0} not ebs-backed. Image must be of type \'ebs\'.'
-            .format(image_id))
-
-
-def assign_runtime_properties_to_instance(ctx, runtime_properties):
+def assign_runtime_properties_to_instance(runtime_properties, ctx):
 
     for property_name in runtime_properties:
         if 'ip' is property_name:
@@ -221,10 +168,16 @@ def assign_runtime_properties_to_instance(ctx, runtime_properties):
         ctx.logger.debug('Set {0}: {1}.'.format(property_name, attribute))
 
 
-def unassign_runtime_properties(ctx, runtime_properties):
+def instance_started_assign_runtime_properties(instance_id, ctx):
+        assign_runtime_properties_to_instance(
+            runtime_properties=constants.INSTANCE_INTERNAL_ATTRIBUTES, ctx=ctx)
+        ctx.logger.info('Instance {0} is running.'.format(instance_id))
+
+
+def unassign_runtime_properties(runtime_properties, ctx=ctx):
     for property_name in runtime_properties:
-        del(ctx.instance.runtime_properties[property_name])
-        ctx.logger.debug('Deleted {0} runtime property.')
+        utils.unassign_runtime_property_from_resource(
+            property_name, ctx.instance, ctx=ctx)
 
 
 def create_external_instance(ctx):
@@ -240,3 +193,78 @@ def create_external_instance(ctx):
                 'is not in this account.'.format(instance_id))
         utils.set_external_resource_id(instance.id, ctx=ctx)
         return True
+
+
+def start_external_instance(instance_id, ctx):
+
+    if not ctx.node.properties['use_external_resource']:
+        return False
+    else:
+        ctx.logger.info(
+            'Not starting instance {0}, because it is an external resource.'
+            .format(instance_id))
+        instance_started_assign_runtime_properties(instance_id, ctx=ctx)
+        return True
+
+
+def stop_external_instance(instance_id, ctx):
+
+    if not ctx.node.properties['use_external_resource']:
+        return False
+    else:
+        ctx.logger.info(
+            'External resource. Not stopping instance {0}.'
+            .format(instance_id))
+        unassign_runtime_properties(
+            runtime_properties=constants.INSTANCE_INTERNAL_ATTRIBUTES, ctx=ctx)
+        return True
+
+
+def terminate_external_instance(instance_id, ctx):
+
+    if not ctx.node.properties['use_external_resource']:
+        return False
+    else:
+        ctx.logger.info(
+            'External resource. Not terminating instance {0}.'
+            .format(instance_id))
+        unassign_runtime_properties(
+            runtime_properties=[constants.EXTERNAL_RESOURCE_ID], ctx=ctx)
+        return True
+
+
+@operation
+def creation_validation(**_):
+    """ This checks that all user supplied info is valid """
+
+    for property_key in constants.INSTANCE_REQUIRED_PROPERTIES:
+        utils.validate_node_property(property_key, ctx=ctx)
+
+    if ctx.node.properties['use_external_resource']:
+        instance = utils.get_instance_from_id(
+            ctx.node.properties['resource_id'], ctx=ctx)
+
+    if not instance:
+        raise NonRecoverableError(
+            'Instance ID {0} does not exist in this account.'
+            .format(ctx.node.properties['resource_id']))
+
+    if 'image_id' not in ctx.node.properties:
+        raise NonRecoverableError(
+            'Required parameter image_id not provided.')
+
+    if 'instance_type' not in ctx.node.properties:
+        raise NonRecoverableError(
+            'Required parameter instance_type not provided.')
+
+    image_id = ctx.node.properties['image_id']
+    image_object = utils.get_image(image_id)
+
+    if 'available' not in image_object.state:
+        raise NonRecoverableError(
+            'image_id {0} not available to this account.'.format(image_id))
+
+    if 'ebs' not in image_object.root_device_type:
+        raise NonRecoverableError(
+            'image_id {0} not ebs-backed. Image must be of type \'ebs\'.'
+            .format(image_id))

@@ -18,5 +18,7 @@ EXTERNAL_RESOURCE_ID = 'aws_resource_id'
 INSTANCE_STATE_STARTED = 16
 INSTANCE_STATE_TERMINATED = 48
 INSTANCE_STATE_STOPPED = 80
+INSTANCE_REQUIRED_PROPERTIES = ['image_id', 'instance_type']
 INSTANCE_INTERNAL_ATTRIBUTES = ['private_dns_name', 'public_dns_name',
                                 'public_ip_address', 'ip']
+SECURITY_GROUP_REQUIRED_PROPERTIES = ['description', 'rules']

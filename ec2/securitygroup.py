@@ -29,32 +29,26 @@ from ec2 import constants
 def create(**_):
     ec2_client = connection.EC2ConnectionClient().client()
 
+    for property_name in constants.SECURITY_GROUP_REQUIRED_PROPERTIES:
+        utils.validate_node_property(property_name, ctx=ctx)
+
     if create_external_securitygroup(ctx=ctx):
         return
 
-    if 'description' not in ctx.node.properties:
-        raise NonRecoverableError(
-            'Required description not in security group properties.')
-
-    if 'rules' not in ctx.node.properties:
-        raise NonRecoverableError(
-            'Required rules not in security group properties.')
-
-    name = ctx.node.properties['resource_id']
-    description = ctx.node.properties['description']
-    rules = ctx.node.properties['rules']
-
-    ctx.logger.debug('Creating Security Group: {0}'.format(name))
+    ctx.logger.debug(
+        'Creating Security Group: {0}'
+        .format(ctx.node.properties['resource_id']))
 
     try:
-        group_object = ec2_client.create_security_group(name, description)
+        group_object = ec2_client.create_security_group(
+            ctx.node.properties['resource_id'],
+            ctx.node.properties['description'])
     except (boto.exception.EC2ResponseError,
             boto.exception.BotoServerError) as e:
-        raise NonRecoverableError('{0}.'.format(str(e)))
+        raise NonRecoverableError('{0}'.format(str(e)))
 
-    utils.set_external_resource_id(
-        group_object.id, external=False, ctx=ctx)
-    authorize_by_id(ec2_client, group_object.id, rules)
+    utils.set_external_resource_id(group_object.id, external=False, ctx=ctx)
+    authorize_by_id(ec2_client, group_object.id, ctx.node.properties['rules'])
 
 
 @operation
@@ -62,7 +56,10 @@ def delete(**_):
     ec2_client = connection.EC2ConnectionClient().client()
 
     group_id = utils.get_external_resource_id_or_raise(
-        'delete security group', ctx=ctx)
+        'delete security group', ctx.instance, ctx=ctx)
+
+    if delete_external_securitygroup(ctx):
+        return
 
     ctx.logger.debug('Deleting Security Group: {0}'.format(group_id))
 
@@ -75,51 +72,13 @@ def delete(**_):
     securitygroup = utils.get_security_group_from_id(group_id, ctx=ctx)
 
     if not securitygroup:
-        del(ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID])
+        utils.unassign_runtime_property_from_resource(
+            constants.EXTERNAL_RESOURCE_ID, ctx.instance, ctx=ctx)
         ctx.logger.info('Deleted Security Group: {0}.'.format(group_id))
     else:
         return ctx.operation.retry(
             message='Verifying that Security Group {0} '
             'has been deleted from your account.'.format(securitygroup.id))
-
-
-@operation
-def creation_validation(**_):
-    """ This checks that all user supplied info is valid """
-    required_properties = ['resource_id', 'use_external_resource',
-                           'rules']
-
-    for property_key in required_properties:
-        utils.validate_node_property(property_key, ctx=ctx)
-
-    if ctx.node.properties['use_external_resource']:
-        if not utils.get_security_group_from_id(
-                ctx.node.properties['resource_id'], ctx=ctx):
-            raise NonRecoverableError('use_external_resource was specified, '
-                                      'but the security group does not exist.')
-
-
-@operation
-def authorize(**_):
-    ec2_client = connection.EC2ConnectionClient().client()
-
-    group_id = utils.get_external_resource_id_or_raise(
-        'authorize security group', ctx=ctx)
-
-    if 'rules' not in ctx.node.properties:
-        raise NonRecoverableError(
-            'No rules provided. Unable to authorize security group.')
-
-    if ctx.node.properties['use_external_resource']:
-        ctx.logger.info(
-            'Not authorizing security group, '
-            'because use_external_resource is true.')
-        return
-
-    ctx.logger.debug('Attempting to authorize security group.')
-
-    rules = ctx.node.properties['rules']
-    authorize_by_id(ec2_client, group_id, rules)
 
 
 def authorize_by_id(ec2_client, group, rules):
@@ -153,3 +112,27 @@ def create_external_securitygroup(ctx):
                 'security group or Name does not exist.')
         utils.set_external_resource_id(group.id, ctx=ctx)
         return True
+
+
+def delete_external_securitygroup(ctx):
+    if not ctx.node.properties['use_external_resource']:
+        return False
+    else:
+        ctx.logger.info(
+            'External resource. Not deleting security group from account.')
+        utils.unassign_runtime_property_from_resource(
+            constants.EXTERNAL_RESOURCE_ID, ctx.instance, ctx=ctx)
+        return True
+
+
+@operation
+def creation_validation(**_):
+
+    for property_key in constants.SECURITY_GROUP_REQUIRED_PROPERTIES:
+        utils.validate_node_property(property_key, ctx=ctx)
+
+    if ctx.node.properties['use_external_resource']:
+        if not utils.get_security_group_from_id(
+                ctx.node.properties['resource_id'], ctx=ctx):
+            raise NonRecoverableError('use_external_resource was specified, '
+                                      'but the security group does not exist.')

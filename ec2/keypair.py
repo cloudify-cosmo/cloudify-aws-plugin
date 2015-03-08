@@ -56,7 +56,11 @@ def delete(**kwargs):
     ec2_client = connection.EC2ConnectionClient().client()
 
     key_pair_name = \
-        utils.get_external_resource_id_or_raise('delete key pair', ctx=ctx)
+        utils.get_external_resource_id_or_raise(
+            'delete key pair', ctx.instance, ctx=ctx)
+
+    if delete_external_keypair(ctx=ctx):
+        return
 
     ctx.logger.debug('Attempting to delete key pair from account.')
 
@@ -66,34 +70,18 @@ def delete(**kwargs):
             boto.exception.BotoServerError) as e:
         raise NonRecoverableError('{0}'.format(str(e)))
 
-    try:
-        utils.get_key_pair_by_id(key_pair_name)
-    except NonRecoverableError:
-        ctx.logger.debug(
-            'Generally NonRecoverableError indicates that an operation failed.'
-            'In this case, everything worked correctly.')
-        del(ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID])
-        del(ctx.instance.runtime_properties['key_path'])
-        ctx.logger.info('Deleted key pair: {0}.'.format(key_pair_name))
-        delete_key_file(ctx=ctx)
-    else:
+    key_pair = utils.get_key_pair_by_id(key_pair_name)
+
+    if not key_pair:
         ctx.logger.error(
             'Could not delete key pair. Try deleting manually.')
-
-
-@operation
-def creation_validation(**_):
-
-    required_properties = ['resource_id', 'use_external_resource']
-    for property_key in required_properties:
-        utils.validate_node_property(property_key, ctx=ctx)
-
-    key_path = get_key_file_path(ctx=ctx)
-
-    if ctx.node.properties['use_external_resource']:
-        if not search_for_key_file(key_path):
-            raise NonRecoverableError('Use external resource is true, but the '
-                                      'key file does not exist.')
+    else:
+        utils.unassign_runtime_property_from_resource(
+            constants.EXTERNAL_RESOURCE_ID, ctx.instance, ctx=ctx)
+        utils.unassign_runtime_property_from_resource(
+            'key_path', ctx.instance, ctx=ctx)
+        delete_key_file(ctx=ctx)
+        ctx.logger.info('Deleted key pair: {0}.'.format(key_pair_name))
 
 
 def save_key_pair(key_pair_object, ctx):
@@ -165,15 +153,36 @@ def create_external_keypair(ctx):
     else:
         key_pair_id = ctx.node.properties['resource_id']
         key_pair = utils.get_key_pair_by_id(key_pair_id)
-        ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID] = \
-            key_pair.name
         key_path = get_key_file_path(ctx=ctx)
         ctx.logger.debug('Path to key file: {0}.'.format(key_path))
         if not search_for_key_file(key_path):
-            del(ctx.instance.runtime_properties
-                [constants.EXTERNAL_RESOURCE_ID])
-            raise NonRecoverableError('use_external_resource was specified, '
-                                      'and a name given, but the key pair was '
-                                      'not located on the filesystem.')
+            raise NonRecoverableError(
+                'External resource, but the key file does not exist.')
         utils.set_external_resource_id(key_pair.name, ctx=ctx)
         return True
+
+
+def delete_external_keypair(ctx):
+    if not ctx.node.properties['use_external_resource']:
+        return False
+    else:
+        ctx.logger.info('External resource. Not deleting keypair.')
+        utils.unassign_runtime_property_from_resource(
+            constants.EXTERNAL_RESOURCE_ID, ctx.instance, ctx=ctx)
+        utils.unassign_runtime_property_from_resource(
+            'key_path', ctx.instance, ctx=ctx)
+        return True
+
+
+@operation
+def creation_validation(**_):
+
+    key_path = get_key_file_path(ctx=ctx)
+
+    if ctx.node.properties['use_external_resource']:
+        if not search_for_key_file(key_path):
+            raise NonRecoverableError(
+                'External resource, but the key file does not exist.')
+        if not utils.get_key_pair_by_id(ctx.node.properties['resource_id']):
+            raise NonRecoverableError(
+                'External resource, but the key pair is not in the account.')

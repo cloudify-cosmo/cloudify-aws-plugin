@@ -18,9 +18,14 @@ from boto.ec2 import EC2Connection
 
 
 class EC2ConnectionClient():
+    """Provides functions for getting the EC2 Client
+    """
 
     def __init__(self):
         self.connection = None
 
     def client(self):
+    	"""Represents the EC2Connection Client
+        """
+
         return EC2Connection()
