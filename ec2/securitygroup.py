@@ -158,7 +158,7 @@ def _create_external_securitygroup(ctx):
         if not group:
             raise NonRecoverableError(
                 'External security group was indicated, but the given '
-                'security group or Name does not exist.')
+                'security group does not exist.')
         utils.set_external_resource_id(group.id, ctx.instance)
         return True
 

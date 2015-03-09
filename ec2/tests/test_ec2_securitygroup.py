@@ -123,7 +123,7 @@ class TestSecurityGroup(testtools.TestCase):
         ex = self.assertRaises(
             NonRecoverableError, securitygroup.create, ctx=ctx)
         self.assertIn(
-            'but the given security group or Name does not exist', ex.message)
+            'but the given security group does not exist', ex.message)
 
     @mock_ec2
     def test_creation_validation_not_existing(self):
@@ -166,6 +166,7 @@ class TestSecurityGroup(testtools.TestCase):
                 ec2_client.create_security_group('test_get_'
                                                  'security_group_from_name',
                                                  'this is test')
+            ctx.instance.runtime_properties['aws_resource_id'] = group.id
             output = securitygroup._get_security_group_from_name(
                 group.id)
             self.assertEqual(group.id, output.id)
@@ -179,6 +180,7 @@ class TestSecurityGroup(testtools.TestCase):
         ec2_client = connection.EC2ConnectionClient().client()
         group = ec2_client.create_security_group('test_get_all_groups_deleted',
                                                  'this is test')
+        ctx.instance.runtime_properties['aws_resource_id'] = group.id
         output = securitygroup._get_all_security_groups(
             list_of_group_ids=group.id)
         self.assertEqual(output[0].id, group.id)

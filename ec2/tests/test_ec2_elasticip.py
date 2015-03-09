@@ -303,7 +303,6 @@ class TestElasticIP(testtools.TestCase):
     @mock_ec2
     def test_get_all_addresses_bad(self):
 
-        ctx = self.mock_ctx('test_get_all_addresses_bad')
         output = elasticip._get_all_addresses(
             address='127.0.0.1')
         self.assertIsNone(output)
