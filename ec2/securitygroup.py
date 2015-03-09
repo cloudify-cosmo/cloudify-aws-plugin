@@ -39,17 +39,15 @@ def creation_validation(**_):
     security_group = _get_security_group_from_id(
         ctx.node.properties['resource_id'])
 
-    if ctx.node.properties['use_external_resource']:
-        if not security_group:
-            raise NonRecoverableError(
-                'External resource, but the supplied '
-                'security group does not exist in the account.')
+    if ctx.node.properties['use_external_resource'] and not security_group:
+        raise NonRecoverableError(
+            'External resource, but the supplied '
+            'security group does not exist in the account.')
 
-    if not ctx.node.properties['use_external_resource']:
-        if security_group:
-            raise NonRecoverableError(
-                'Not external resource, but the supplied '
-                'security group exists in the account.')
+    if not ctx.node.properties['use_external_resource'] and security_group:
+        raise NonRecoverableError(
+            'Not external resource, but the supplied '
+            'security group exists in the account.')
 
 
 @operation
@@ -99,16 +97,12 @@ def delete(**_):
 
     _delete_security_group(group_id, ec2_client)
 
-    securitygroup = _get_security_group_from_id(group_id)
+    utils.unassign_runtime_property_from_resource(
+        constants.EXTERNAL_RESOURCE_ID, ctx.instance)
 
-    if not securitygroup:
-        utils.unassign_runtime_property_from_resource(
-            constants.EXTERNAL_RESOURCE_ID, ctx.instance)
-        ctx.logger.info('Deleted Security Group: {0}.'.format(group_id))
-    else:
-        return ctx.operation.retry(
-            message='Verifying that Security Group {0} '
-            'has been deleted from your account.'.format(securitygroup.id))
+    ctx.logger.info(
+        'Attempted to delete Security Group: {0}.'
+        .format(group_id))
 
 
 def _delete_security_group(group_id, ec2_client):
@@ -145,8 +139,7 @@ def _authorize_by_id(ec2_client, group_id, rules):
             raise NonRecoverableError('{0}'.format(str(e)))
         except Exception as e:
             _delete_security_group(group_id, ec2_client)
-            raise NonRecoverableError(
-                'Error authorizing security group: {e}.'.format(str(e)))
+            raise
 
 
 def _create_external_securitygroup(ctx):

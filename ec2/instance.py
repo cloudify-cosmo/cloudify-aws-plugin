@@ -186,6 +186,9 @@ def terminate(**_):
         ctx.logger.info('Terminated instance: {0}.'.format(instance_id))
         utils.unassign_runtime_property_from_resource(
             constants.EXTERNAL_RESOURCE_ID, ctx.instance)
+    else:
+        return ctx.operation.retry(
+            message='Waiting server to terminate. Retrying...')
 
 
 def _assign_runtime_properties_to_instance(runtime_properties, ctx):
