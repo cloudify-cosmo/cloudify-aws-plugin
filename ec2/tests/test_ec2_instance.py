@@ -233,7 +233,8 @@ class TestInstance(testtools.TestCase):
 
             ctx = self.mock_ctx('test_no_instance_get_instance_from_id')
             instance_id = 'bad_id'
-            output = instance._get_instance_from_id(instance_id, ctx.logger)
+            ctx.instance.runtime_properties['aws_resource_id'] = instance_id
+            output = instance._get_instance_from_id(instance_id)
             self.assertIsNone(output)
 
     def test_get_private_dns_name(self):
@@ -246,7 +247,7 @@ class TestInstance(testtools.TestCase):
                     reservation.instances[0].id
                 property_name = 'private_dns_name'
                 dns_name = instance._get_instance_attribute(
-                    property_name, ctx=ctx)
+                    property_name, ctx.instance)
                 self.assertRegexpMatches(dns_name, FQDN)
 
     @mock_ec2

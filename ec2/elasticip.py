@@ -229,7 +229,6 @@ def _disassociate_external_elasticip_or_instance(ctx):
 def _get_address_by_id(address_id):
     """Returns the elastip ip for a given address elastip.
 
-    :param ctx:  The Cloudify ctx context.
     :param address_id: The ID of a elastip.
     :returns The boto elastip ip.
     :raises NonRecoverableError: If EC2 finds no matching elastips.
@@ -243,7 +242,6 @@ def _get_address_by_id(address_id):
 def _get_address_object_by_id(address_id):
     """Returns the elastip object for a given address elastip.
 
-    :param ctx:  The Cloudify ctx context.
     :param address_id: The ID of a elastip.
     :returns The boto elastip object.
     :raises NonRecoverableError: If EC2 finds no matching elastips.
@@ -257,7 +255,6 @@ def _get_address_object_by_id(address_id):
 def _get_all_addresses(address=None):
     """Returns a list of elastip objects for a given address elastip.
 
-    :param ctx:  The Cloudify ctx context.
     :param address: The ID of a elastip.
     :returns A list of elasticip objects.
     :raises NonRecoverableError: If Boto errors.

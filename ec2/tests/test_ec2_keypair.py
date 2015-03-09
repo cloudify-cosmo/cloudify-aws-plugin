@@ -109,6 +109,8 @@ class TestKeyPair(testtools.TestCase):
         ec2_client = connection.EC2ConnectionClient().client()
         kp = ec2_client.create_key_pair('test_delete')
         ctx.instance.runtime_properties['aws_resource_id'] = kp.name
+        ctx.instance.runtime_properties['key_path'] = \
+            self.create_dummy_key_path(ctx=ctx)
         keypair.delete(ctx=ctx)
         self.assertEquals(None, ec2_client.get_key_pair(kp.name))
 
@@ -120,6 +122,8 @@ class TestKeyPair(testtools.TestCase):
         kp = ec2_client.create_key_pair('test_delete_deleted')
         ctx.instance.runtime_properties['aws_resource_id'] = kp.name
         kp = ec2_client.delete_key_pair('test_delete_deleted')
+        ctx.instance.runtime_properties['key_path'] = \
+            self.create_dummy_key_path(ctx=ctx)
         keypair.delete(ctx=ctx)
 
     @mock_ec2
