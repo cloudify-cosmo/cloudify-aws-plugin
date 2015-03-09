@@ -327,12 +327,12 @@ def _get_image(image_id):
             'No image_id was provided.')
 
     try:
-        image = ec2_client.get_image(image_id)
+        image_object = ec2_client.get_image(image_id)
     except (boto.exception.EC2ResponseError,
             boto.exception.BotoServerError) as e:
         raise NonRecoverableError('{0}.'.format(str(e)))
 
-    return image
+    return image_object
 
 
 def _get_instance_attribute(attribute, ctx_instance):
@@ -352,14 +352,14 @@ def _get_instance_attribute(attribute, ctx_instance):
 
     instance_id = \
         ctx_instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
-    instance = _get_instance_from_id(instance_id)
+    instance_object = _get_instance_from_id(instance_id)
 
-    if instance is None:
+    if instance_object is None:
         raise NonRecoverableError(
             'Unable to get instance attibute {0}, because no instance with id '
             '{1} exists in this account.'.format(attribute, instance_id))
 
-    attribute = getattr(instance, attribute)
+    attribute = getattr(instance_object, attribute)
     return attribute
 
 
