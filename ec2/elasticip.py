@@ -32,17 +32,15 @@ def creation_validation(**_):
     address = _get_address_by_id(
         ctx.node.properties['resource_id'])
 
-    if ctx.node.properties['use_external_resource']:
-        if not address:
-            raise NonRecoverableError(
-                'External resource, but the supplied '
-                'elasticip does not exist in the account.')
+    if ctx.node.properties['use_external_resource'] and not address:
+        raise NonRecoverableError(
+            'External resource, but the supplied '
+            'elasticip does not exist in the account.')
 
-    if not ctx.node.properties['use_external_resource']:
-        if address:
-            raise NonRecoverableError(
-                'External resource, but the supplied '
-                'elasticip exists.')
+    if not ctx.node.properties['use_external_resource'] and address:
+        raise NonRecoverableError(
+            'External resource, but the supplied '
+            'elasticip exists.')
 
 
 @operation
@@ -267,7 +265,7 @@ def _get_all_addresses(address=None):
     except boto.exception.EC2ResponseError as e:
         if 'InvalidAddress.NotFound' in e:
             addresses = ec2_client.get_all_addresses()
-            utils.log_available_resources(addresses)
+            utils.log_available_resources(addresses, ctx.logger)
         return None
     except boto.exception.BotoServerError as e:
         raise NonRecoverableError('{0}'.format(str(e)))

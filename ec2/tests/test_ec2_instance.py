@@ -223,6 +223,23 @@ class TestInstance(testtools.TestCase):
             'External resource, but the supplied instance id',
             ex.message)
 
+    @mock_ec2
+    def test_validation_no_external_resource_is(self):
+        """ this tests that the instance create function works
+        """
+        ctx = self.mock_ctx('test_validation_no_external_resource_is')
+        ec2_client = connection.EC2ConnectionClient().client()
+        reservation = ec2_client.run_instances(
+            TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
+        instance_id = reservation.instances[0].id
+        ctx.node.properties['use_external_resource'] = False
+        ctx.node.properties['resource_id'] = instance_id
+        ex = self.assertRaises(
+            NonRecoverableError, instance.creation_validation, ctx=ctx)
+        self.assertIn(
+            'Not external resource, but the supplied',
+            ex.message)
+
     def test_no_instance_get_instance_from_id(self):
         """ this tests that a NonRecoverableError is thrown
         when a nonexisting instance_id is provided to the

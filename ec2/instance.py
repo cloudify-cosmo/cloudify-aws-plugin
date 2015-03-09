@@ -34,17 +34,15 @@ def creation_validation(**_):
 
     instance = _get_instance_from_id(ctx.node.properties['resource_id'])
 
-    if ctx.node.properties['use_external_resource']:
-        if not instance:
-            raise NonRecoverableError(
-                'External resource, but the supplied '
-                'instance id is not in the account.')
+    if ctx.node.properties['use_external_resource'] and not instance:
+        raise NonRecoverableError(
+            'External resource, but the supplied '
+            'instance id is not in the account.')
 
-    if not ctx.node.properties['resource_id']:
-        if instance:
-            raise NonRecoverableError(
-                'Not external resource, but the supplied '
-                'but the instance already exists.')
+    if not ctx.node.properties['use_external_resource'] and instance:
+        raise NonRecoverableError(
+            'Not external resource, but the supplied '
+            'but the instance already exists.')
 
     image_id = ctx.node.properties['image_id']
     image_object = _get_image(image_id)
@@ -289,7 +287,7 @@ def _get_all_instances(list_of_instance_ids=None):
         if 'InvalidInstanceID.NotFound' in e:
             instances = [instance for res in ec2_client.get_all_reservations()
                          for instance in res.instances]
-            utils.log_available_resources(instances)
+            utils.log_available_resources(instances, ctx.logger)
         return None
     except boto.exception.BotoServerError as e:
         raise NonRecoverableError('{0}'.format(str(e)))

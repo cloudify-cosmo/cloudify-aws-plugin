@@ -30,7 +30,7 @@ def validate_node_property(key, node_properties):
             '{0} is a required input. Unable to create.'.format(key))
 
 
-def log_available_resources(list_of_resources):
+def log_available_resources(list_of_resources, ctx_logger):
     """This logs a list of available resources.
     """
 
@@ -39,7 +39,7 @@ def log_available_resources(list_of_resources):
     for resource in list_of_resources:
         message = '{0}{1}\n'.format(message, resource)
 
-    ctx.logger.debug(message)
+    ctx_logger.debug(message)
 
 
 def get_external_resource_id_or_raise(operation, ctx_instance):

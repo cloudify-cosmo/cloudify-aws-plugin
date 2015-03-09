@@ -60,3 +60,9 @@ class TestUtils(testtools.TestCase):
             'image_id', ctx.node.properties)
         self.assertIn(
             'is a required input', ex.message)
+
+    def test_log_available_resources(self):
+        list_of_resources = \
+            ['Address:54.163.229.127', 'Address:107.22.223.114']
+        ctx = self.mock_ctx('test_log_available_resources')
+        utils.log_available_resources(list_of_resources, ctx.logger)

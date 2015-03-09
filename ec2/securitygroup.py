@@ -231,7 +231,7 @@ def _get_all_security_groups(list_of_group_names=None, list_of_group_ids=None):
     except boto.exception.EC2ResponseError as e:
         if 'InvalidGroup.NotFound' in e:
             groups = ec2_client.get_all_security_groups()
-            utils.log_available_resources(groups)
+            utils.log_available_resources(groups, ctx.logger)
         return None
     except boto.exception.BotoServerError as e:
         raise NonRecoverableError('{0}'.format(str(e)))

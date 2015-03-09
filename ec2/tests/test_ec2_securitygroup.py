@@ -72,6 +72,22 @@ class TestSecurityGroup(testtools.TestCase):
         securitygroup.create(ctx=ctx)
 
     @mock_ec2
+    def test_create_existing(self):
+
+        test_properties = self.get_mock_properties()
+        ctx = self.security_group_mock(
+            'test_create_duplicate', test_properties)
+        name = ctx.node.properties.get('resource_id')
+        description = ctx.node.properties.get('description')
+        ec2_client = connection.EC2ConnectionClient().client()
+        group = ec2_client.create_security_group(name, description)
+        ctx.node.properties['use_external_resource'] = True
+        securitygroup.create(ctx=ctx)
+        self.assertEqual(
+            ctx.instance.runtime_properties['aws_resource_id'],
+            group.id)
+
+    @mock_ec2
     def test_delete(self):
 
         test_properties = self.get_mock_properties()
@@ -113,6 +129,23 @@ class TestSecurityGroup(testtools.TestCase):
         self.assertIn('InvalidGroup.NotFound', ex.message)
 
     @mock_ec2
+    def test_delete_existing(self):
+
+        test_properties = self.get_mock_properties()
+        ctx = self.security_group_mock(
+            'test_delete_existing', test_properties)
+        ec2_client = connection.EC2ConnectionClient().client()
+        group = ec2_client.create_security_group('test_delete_existing',
+                                                 'this is test')
+        ctx.node.properties['use_external_resource'] = True
+        ctx.node.properties['resource_id'] = group.id
+        ctx.instance.runtime_properties['aws_resource_id'] = group.id
+        securitygroup.delete(ctx=ctx)
+        self.assertNotIn(
+            'aws_resource_id',
+            ctx.instance.runtime_properties)
+
+    @mock_ec2
     def test_use_external_not_existing(self):
 
         test_properties = self.get_mock_properties()
@@ -126,17 +159,35 @@ class TestSecurityGroup(testtools.TestCase):
             'but the given security group does not exist', ex.message)
 
     @mock_ec2
-    def test_creation_validation_not_existing(self):
+    def test_creation_validation_existing(self):
 
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
-            'test_creation_validation', test_properties)
+            'test_creation_validation_existing', test_properties)
         ctx.node.properties['use_external_resource'] = True
         ctx.node.properties['resource_id'] = 'sg-73cd3f1e'
         ex = self.assertRaises(
             NonRecoverableError, securitygroup.creation_validation, ctx=ctx)
         self.assertIn(
             'External resource, but the supplied security group', ex.message)
+
+    @mock_ec2
+    def test_creation_validation_not_existing(self):
+
+        test_properties = self.get_mock_properties()
+        ctx = self.security_group_mock(
+            'test_creation_validation_not_existing', test_properties)
+        ctx.node.properties['use_external_resource'] = False
+        ec2_client = connection.EC2ConnectionClient().client()
+        group = ec2_client.create_security_group(
+            'test_creation_validation_not_existing',
+            'this is a test')
+        ctx.node.properties['resource_id'] = group.id
+        ex = self.assertRaises(
+            NonRecoverableError, securitygroup.creation_validation, ctx=ctx)
+        self.assertIn(
+            'Not external resource, but the supplied security group',
+            ex.message)
 
     @mock_ec2
     def test_authorize_by_id(self):
