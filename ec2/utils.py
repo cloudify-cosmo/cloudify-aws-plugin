@@ -15,21 +15,22 @@
 
 # Cloudify Imports
 from ec2 import constants
+from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
 
 
-def validate_node_property(key, ctx):
+def validate_node_property(key, node_properties):
     """Checks if the node property exists in the blueprint.
 
     :raises NonRecoverableError: if key not in the node's properties
     """
 
-    if key not in ctx.node.properties:
+    if key not in node_properties:
         raise NonRecoverableError(
             '{0} is a required input. Unable to create.'.format(key))
 
 
-def log_available_resources(list_of_resources, ctx):
+def log_available_resources(list_of_resources):
     """This logs a list of available resources.
     """
 
@@ -41,7 +42,7 @@ def log_available_resources(list_of_resources, ctx):
     ctx.logger.debug(message)
 
 
-def get_external_resource_id_or_raise(operation, ctx_instance, ctx):
+def get_external_resource_id_or_raise(operation, ctx_instance):
     """Checks if the EXTERNAL_RESOURCE_ID runtime_property is set and returns it.
 
     :param operation: A string representing what is happening.
@@ -63,7 +64,7 @@ def get_external_resource_id_or_raise(operation, ctx_instance, ctx):
     return ctx_instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
 
 
-def set_external_resource_id(value, ctx, external=True):
+def set_external_resource_id(value, ctx_instance, external=True):
     """Sets the EXTERNAL_RESOURCE_ID runtime_property for a Node-Instance.
 
     :param value: the desired EXTERNAL_RESOURCE_ID runtime_property
@@ -77,10 +78,10 @@ def set_external_resource_id(value, ctx, external=True):
         resource_type = 'external'
 
     ctx.logger.info('Using {0} resource: {1}'.format(resource_type, value))
-    ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID] = value
+    ctx_instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID] = value
 
 
-def unassign_runtime_property_from_resource(property_name, ctx_instance, ctx):
+def unassign_runtime_property_from_resource(property_name, ctx_instance):
     """Pops a runtime_property and reports to debug.
 
     :param property_name: The runtime_property to remove.
@@ -93,7 +94,7 @@ def unassign_runtime_property_from_resource(property_name, ctx_instance, ctx):
         'Unassigned {0} runtime property: {1}'.format(property_name, value))
 
 
-def use_external_resource(node_properties, ctx):
+def use_external_resource(node_properties):
     """Checks if use_external_resource node property is true,
     logs the ID and answer to the debug log,
     and returns boolean False (if not external) or True.
@@ -115,7 +116,7 @@ def use_external_resource(node_properties, ctx):
         return True
 
 
-def get_target_external_resource_ids(relationship_type, ctx):
+def get_target_external_resource_ids(relationship_type):
     """Gets a list of target node ids connected via a relationship to a node.
 
     :param relationship_type: A string representing the type of relationship.

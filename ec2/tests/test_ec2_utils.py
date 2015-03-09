@@ -21,7 +21,6 @@ from moto import mock_ec2
 
 # Cloudify Imports is imported and used in operations
 from ec2 import utils
-from ec2 import securitygroup
 from cloudify.mocks import MockCloudifyContext
 from cloudify.exceptions import NonRecoverableError
 
@@ -53,17 +52,11 @@ class TestUtils(testtools.TestCase):
         return ctx
 
     @mock_ec2
-    def test_log_available_resources(self):
-        ctx = self.mock_ctx('test_log_available_resources')
-        groups = securitygroup._get_all_security_groups(ctx=ctx)
-        utils.log_available_resources(groups, ctx=ctx)
-
-    @mock_ec2
     def test_validate_no_ami(self):
         ctx = self.mock_ctx('test_validate_no_ami')
         ctx.node.properties.pop('image_id')
         ex = self.assertRaises(
             NonRecoverableError, utils.validate_node_property,
-            'image_id', ctx=ctx)
+            'image_id', ctx.node.properties)
         self.assertIn(
             'is a required input', ex.message)

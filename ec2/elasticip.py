@@ -30,7 +30,7 @@ def creation_validation(**_):
     """ This checks that all user supplied info is valid """
 
     address = _get_address_by_id(
-        ctx.node.properties['resource_id'], ctx=ctx)
+        ctx.node.properties['resource_id'])
 
     if ctx.node.properties['use_external_resource']:
         if not address:
@@ -61,7 +61,7 @@ def allocate(**_):
         raise NonRecoverableError('{0}'.format(str(e)))
 
     utils.set_external_resource_id(
-        address_object.public_ip, external=False, ctx=ctx)
+        address_object.public_ip, ctx.instance, external=False)
 
 
 @operation
@@ -71,12 +71,12 @@ def release(**_):
 
     elasticip = \
         utils.get_external_resource_id_or_raise(
-            'release elasticip', ctx.instance, ctx=ctx)
+            'release elasticip', ctx.instance)
 
     if _release_external_elasticip(ctx=ctx):
         return
 
-    address_object = _get_address_object_by_id(elasticip, ctx=ctx)
+    address_object = _get_address_object_by_id(elasticip)
 
     if not address_object:
         raise NonRecoverableError(
@@ -95,11 +95,11 @@ def release(**_):
             'This indicates that a VPC elastic IP was used instead of EC2 '
             'classic: {0}'.format(str(e)))
 
-    address = _get_address_object_by_id(address_object.public_ip, ctx=ctx)
+    address = _get_address_object_by_id(address_object.public_ip)
 
     if not address:
         utils.unassign_runtime_property_from_resource(
-            constants.EXTERNAL_RESOURCE_ID, ctx.instance, ctx=ctx)
+            constants.EXTERNAL_RESOURCE_ID, ctx.instance)
     else:
         return ctx.operation.retry(
             message='Elastic IP not released. Retrying...')
@@ -114,10 +114,10 @@ def associate(**_):
 
     instance_id = \
         utils.get_external_resource_id_or_raise(
-            'associate elasticip', ctx.source.instance, ctx=ctx)
+            'associate elasticip', ctx.source.instance)
     elasticip = \
         utils.get_external_resource_id_or_raise(
-            'associate elasticip', ctx.target.instance, ctx=ctx)
+            'associate elasticip', ctx.target.instance)
 
     if _associate_external_elasticip_or_instance(elasticip, ctx=ctx):
         return
@@ -147,10 +147,10 @@ def disassociate(**_):
 
     instance_id = \
         utils.get_external_resource_id_or_raise(
-            'disassociate elasticip', ctx.source.instance, ctx=ctx)
+            'disassociate elasticip', ctx.source.instance)
     elasticip = \
         utils.get_external_resource_id_or_raise(
-            'disassociate elasticip', ctx.target.instance, ctx=ctx)
+            'disassociate elasticip', ctx.target.instance)
 
     if _disassociate_external_elasticip_or_instance(ctx=ctx):
         return
@@ -164,7 +164,7 @@ def disassociate(**_):
         raise NonRecoverableError('{0}'.format(str(e)))
 
     utils.unassign_runtime_property_from_resource(
-        'public_ip_address', ctx.source.instance, ctx=ctx)
+        'public_ip_address', ctx.source.instance)
 
     ctx.logger.info(
         'Disassociated Elastic IP {0} from instance {1}.'
@@ -173,34 +173,34 @@ def disassociate(**_):
 
 def _allocate_external_elasticip(ctx):
 
-    if not utils.use_external_resource(ctx.node.properties, ctx=ctx):
+    if not utils.use_external_resource(ctx.node.properties):
         return False
     else:
         address_ip = _get_address_by_id(
-            ctx.node.properties['resource_id'], ctx=ctx)
+            ctx.node.properties['resource_id'])
         if not address_ip:
             raise NonRecoverableError(
                 'External elasticip was indicated, but the given '
                 'elasticip does not exist in the account.')
-        utils.set_external_resource_id(address_ip, ctx=ctx)
+        utils.set_external_resource_id(address_ip, ctx.instance)
         return True
 
 
 def _release_external_elasticip(ctx):
 
-    if not utils.use_external_resource(ctx.node.properties, ctx=ctx):
+    if not utils.use_external_resource(ctx.node.properties):
         return False
     else:
         utils.unassign_runtime_property_from_resource(
-            constants.EXTERNAL_RESOURCE_ID, ctx.instance, ctx=ctx)
+            constants.EXTERNAL_RESOURCE_ID, ctx.instance)
         return True
 
 
 def _associate_external_elasticip_or_instance(elasticip, ctx):
 
-    if not utils.use_external_resource(ctx.source.node.properties, ctx=ctx):
+    if not utils.use_external_resource(ctx.source.node.properties):
         return False
-    elif not utils.use_external_resource(ctx.target.node.properties, ctx=ctx):
+    elif not utils.use_external_resource(ctx.target.node.properties):
         return False
     else:
         ctx.logger.info(
@@ -213,20 +213,20 @@ def _associate_external_elasticip_or_instance(elasticip, ctx):
 
 def _disassociate_external_elasticip_or_instance(ctx):
 
-    if not utils.use_external_resource(ctx.source.node.properties, ctx=ctx):
+    if not utils.use_external_resource(ctx.source.node.properties):
         return False
-    elif not utils.use_external_resource(ctx.target.node.properties, ctx=ctx):
+    elif not utils.use_external_resource(ctx.target.node.properties):
         return False
     else:
         ctx.logger.info(
             'Either instance or elasticip is an external resource so not '
             'performing disassociate operation.')
         utils.unassign_runtime_property_from_resource(
-            'public_ip_address', ctx.source.instance, ctx=ctx)
+            'public_ip_address', ctx.source.instance)
         return True
 
 
-def _get_address_by_id(address_id, ctx):
+def _get_address_by_id(address_id):
     """Returns the elastip ip for a given address elastip.
 
     :param ctx:  The Cloudify ctx context.
@@ -235,12 +235,12 @@ def _get_address_by_id(address_id, ctx):
     :raises NonRecoverableError: If EC2 finds no matching elastips.
     """
 
-    address = _get_address_object_by_id(address_id, ctx=ctx)
+    address = _get_address_object_by_id(address_id)
 
     return address.public_ip if address else address
 
 
-def _get_address_object_by_id(address_id, ctx):
+def _get_address_object_by_id(address_id):
     """Returns the elastip object for a given address elastip.
 
     :param ctx:  The Cloudify ctx context.
@@ -249,12 +249,12 @@ def _get_address_object_by_id(address_id, ctx):
     :raises NonRecoverableError: If EC2 finds no matching elastips.
     """
 
-    address = _get_all_addresses(ctx, address=address_id)
+    address = _get_all_addresses(address=address_id)
 
     return address[0] if address else address
 
 
-def _get_all_addresses(ctx, address=None):
+def _get_all_addresses(address=None):
     """Returns a list of elastip objects for a given address elastip.
 
     :param ctx:  The Cloudify ctx context.
@@ -270,7 +270,7 @@ def _get_all_addresses(ctx, address=None):
     except boto.exception.EC2ResponseError as e:
         if 'InvalidAddress.NotFound' in e:
             addresses = ec2_client.get_all_addresses()
-            utils.log_available_resources(addresses, ctx=ctx)
+            utils.log_available_resources(addresses)
         return None
     except boto.exception.BotoServerError as e:
         raise NonRecoverableError('{0}'.format(str(e)))

@@ -34,10 +34,10 @@ def creation_validation(**_):
     """
 
     for property_key in constants.SECURITY_GROUP_REQUIRED_PROPERTIES:
-        utils.validate_node_property(property_key, ctx=ctx)
+        utils.validate_node_property(property_key, ctx.node.properties)
 
     security_group = _get_security_group_from_id(
-        ctx.node.properties['resource_id'], ctx=ctx)
+        ctx.node.properties['resource_id'])
 
     if ctx.node.properties['use_external_resource']:
         if not security_group:
@@ -60,7 +60,7 @@ def create(**_):
     ec2_client = connection.EC2ConnectionClient().client()
 
     for property_name in constants.SECURITY_GROUP_REQUIRED_PROPERTIES:
-        utils.validate_node_property(property_name, ctx=ctx)
+        utils.validate_node_property(property_name, ctx.node.properties)
 
     if _create_external_securitygroup(ctx=ctx):
         return
@@ -78,7 +78,8 @@ def create(**_):
         raise NonRecoverableError('{0}'.format(str(e)))
 
     _authorize_by_id(ec2_client, group_object.id, ctx.node.properties['rules'])
-    utils.set_external_resource_id(group_object.id, external=False, ctx=ctx)
+    utils.set_external_resource_id(
+        group_object.id, ctx.instance, external=False)
 
 
 @operation
@@ -89,7 +90,7 @@ def delete(**_):
     ec2_client = connection.EC2ConnectionClient().client()
 
     group_id = utils.get_external_resource_id_or_raise(
-        'delete security group', ctx.instance, ctx=ctx)
+        'delete security group', ctx.instance)
 
     if _delete_external_securitygroup(ctx):
         return
@@ -98,11 +99,11 @@ def delete(**_):
 
     _delete_security_group(group_id, ec2_client)
 
-    securitygroup = _get_security_group_from_id(group_id, ctx=ctx)
+    securitygroup = _get_security_group_from_id(group_id)
 
     if not securitygroup:
         utils.unassign_runtime_property_from_resource(
-            constants.EXTERNAL_RESOURCE_ID, ctx.instance, ctx=ctx)
+            constants.EXTERNAL_RESOURCE_ID, ctx.instance)
         ctx.logger.info('Deleted Security Group: {0}.'.format(group_id))
     else:
         return ctx.operation.retry(
@@ -156,16 +157,16 @@ def _create_external_securitygroup(ctx):
     :returns Boolean if use_external_resource is True or not.
     """
 
-    if not utils.use_external_resource(ctx.node.properties, ctx=ctx):
+    if not utils.use_external_resource(ctx.node.properties):
         return False
     else:
         group_id = ctx.node.properties['resource_id']
-        group = _get_security_group_from_id(group_id, ctx=ctx)
+        group = _get_security_group_from_id(group_id)
         if not group:
             raise NonRecoverableError(
                 'External security group was indicated, but the given '
                 'security group or Name does not exist.')
-        utils.set_external_resource_id(group.id, ctx=ctx)
+        utils.set_external_resource_id(group.id, ctx.instance)
         return True
 
 
@@ -177,57 +178,51 @@ def _delete_external_securitygroup(ctx):
     :returns Boolean if use_external_resource is True or not.
     """
 
-    if not utils.use_external_resource(ctx.node.properties, ctx=ctx):
+    if not utils.use_external_resource(ctx.node.properties):
         return False
     else:
         ctx.logger.info(
             'External resource. Not deleting security group from account.')
         utils.unassign_runtime_property_from_resource(
-            constants.EXTERNAL_RESOURCE_ID, ctx.instance, ctx=ctx)
+            constants.EXTERNAL_RESOURCE_ID, ctx.instance)
         return True
 
 
-def _get_security_group_from_id(group_id, ctx):
+def _get_security_group_from_id(group_id):
     """Returns the security group object for a given security group id.
 
-    :param ctx:  The Cloudify ctx context.
     :param group_id: The ID of a security group.
     :returns The boto security group object.
-    :raises NonRecoverableError: If EC2 finds no matching groups.
     """
 
     if not re.match('^sg\-[0-9a-z]{8}$', group_id):
-        group = _get_security_group_from_name(group_id, ctx)
+        group = _get_security_group_from_name(group_id)
         return group
 
-    group = _get_all_security_groups(ctx=ctx, list_of_group_ids=group_id)
+    group = _get_all_security_groups(list_of_group_ids=group_id)
 
     return group[0] if group else group
 
 
-def _get_security_group_from_name(group_name, ctx):
+def _get_security_group_from_name(group_name):
     """Returns the security group object for a given group name.
 
-    :param ctx:  The Cloudify ctx context.
     :param group_name: The name of a security group.
     :returns The boto security group object.
     """
 
     if re.match('^sg\-[0-9a-z]{8}$', group_name):
-        group = _get_security_group_from_id(group_name, ctx)
+        group = _get_security_group_from_id(group_name)
         return group
 
-    group = _get_all_security_groups(ctx=ctx, list_of_group_names=group_name)
+    group = _get_all_security_groups(list_of_group_names=group_name)
 
     return group[0] if group else group
 
 
-def _get_all_security_groups(ctx,
-                             list_of_group_names=None,
-                             list_of_group_ids=None):
+def _get_all_security_groups(list_of_group_names=None, list_of_group_ids=None):
     """Returns a list of security groups for a given list of group names and IDs.
 
-    :param ctx:  The Cloudify ctx context.
     :param list_of_group_names: A list of security group names.
     :param list_of_group_ids: A list of security group IDs.
     :returns A list of security group objects.
@@ -243,7 +238,7 @@ def _get_all_security_groups(ctx,
     except boto.exception.EC2ResponseError as e:
         if 'InvalidGroup.NotFound' in e:
             groups = ec2_client.get_all_security_groups()
-            utils.log_available_resources(groups, ctx=ctx)
+            utils.log_available_resources(groups)
         return None
     except boto.exception.BotoServerError as e:
         raise NonRecoverableError('{0}'.format(str(e)))

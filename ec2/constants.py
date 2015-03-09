@@ -39,5 +39,8 @@ RUN_INSTANCE_PARAMETERS = {
     'network_interfaces': None, 'dry_run': False
 }
 
+INSTANCE_SECURITY_GROUP_RELATIONSHIP = 'instance_connected_to_security_group'
+INSTANCE_KEYPAIR_RELATIONSHIP = 'instance_connected_to_keypair'
+
 # securitygroup module constants
 SECURITY_GROUP_REQUIRED_PROPERTIES = ['description', 'rules']

@@ -305,5 +305,5 @@ class TestElasticIP(testtools.TestCase):
 
         ctx = self.mock_ctx('test_get_all_addresses_bad')
         output = elasticip._get_all_addresses(
-            address='127.0.0.1', ctx=ctx)
+            address='127.0.0.1')
         self.assertIsNone(output)

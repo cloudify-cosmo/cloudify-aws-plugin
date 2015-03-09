@@ -167,7 +167,7 @@ class TestSecurityGroup(testtools.TestCase):
                                                  'security_group_from_name',
                                                  'this is test')
             output = securitygroup._get_security_group_from_name(
-                group.id, ctx=ctx)
+                group.id)
             self.assertEqual(group.id, output.id)
 
     @mock_ec2
@@ -180,5 +180,5 @@ class TestSecurityGroup(testtools.TestCase):
         group = ec2_client.create_security_group('test_get_all_groups_deleted',
                                                  'this is test')
         output = securitygroup._get_all_security_groups(
-            list_of_group_ids=group.id, ctx=ctx)
+            list_of_group_ids=group.id)
         self.assertEqual(output[0].id, group.id)
