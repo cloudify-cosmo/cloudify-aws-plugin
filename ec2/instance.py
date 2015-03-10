@@ -399,9 +399,7 @@ def _get_instance_parameters(node_properties):
             if key in node_parameter_keys:
                 parameters[key] = node_properties['parameters'][key]
             else:
-                parameters[key] = \
-                    utils.get_target_external_resource_ids(
-                        constants.INSTANCE_KEYPAIR_RELATIONSHIP)
+                parameters[key] = _get_instance_keypair()
         elif key in node_parameter_keys:
             parameters[key] = node_properties['parameters'][key]
         elif key is 'image_id' or key is 'instance_type':
@@ -410,3 +408,19 @@ def _get_instance_parameters(node_properties):
             del(parameters[key])
 
     return parameters
+
+
+def _get_instance_keypair():
+    """Gets the instance key pair. If more or less than one is provided,
+    this will raise an error.
+
+    """
+    list_of_keypairs = \
+        utils.get_target_external_resource_ids(
+            constants.INSTANCE_KEYPAIR_RELATIONSHIP)
+
+    if len(list_of_keypairs) != 1:
+        raise NonRecoverableError(
+            'Only one keypair may be attached to an instance.')
+
+    return list_of_keypairs[0]
