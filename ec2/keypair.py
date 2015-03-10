@@ -110,9 +110,9 @@ def delete(**kwargs):
             'Could not delete key pair. Try deleting manually.')
     else:
         utils.unassign_runtime_property_from_resource(
-            constants.EXTERNAL_RESOURCE_ID, ctx.instance)
+            constants.EXTERNAL_RESOURCE_ID, ctx.instance, ctx.logger)
         utils.unassign_runtime_property_from_resource(
-            'key_path', ctx.instance)
+            'key_path', ctx.instance, ctx.logger)
         _delete_key_file(ctx.node.properties)
         ctx.logger.info('Deleted key pair: {0}.'.format(key_pair_name))
 
@@ -126,7 +126,7 @@ def _create_external_keypair(ctx):
     :raises NonRecoverableError: If unable to locate the existing key file.
     """
 
-    if not utils.use_external_resource(ctx.node.properties):
+    if not utils.use_external_resource(ctx.node.properties, ctx.logger):
         return False
     else:
         key_pair_id = ctx.node.properties['resource_id']
@@ -148,14 +148,14 @@ def _delete_external_keypair(ctx):
     :returns Boolean if use_external_resource is True or not.
     """
 
-    if not utils.use_external_resource(ctx.node.properties):
+    if not utils.use_external_resource(ctx.node.properties, ctx.logger):
         return False
     else:
         ctx.logger.info('External resource. Not deleting keypair.')
         utils.unassign_runtime_property_from_resource(
-            constants.EXTERNAL_RESOURCE_ID, ctx.instance)
+            constants.EXTERNAL_RESOURCE_ID, ctx.instance, ctx.logger)
         utils.unassign_runtime_property_from_resource(
-            'key_path', ctx.instance)
+            'key_path', ctx.instance, ctx.logger)
         return True
 
 

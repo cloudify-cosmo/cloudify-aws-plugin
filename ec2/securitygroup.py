@@ -98,7 +98,7 @@ def delete(**_):
     _delete_security_group(group_id, ec2_client)
 
     utils.unassign_runtime_property_from_resource(
-        constants.EXTERNAL_RESOURCE_ID, ctx.instance)
+        constants.EXTERNAL_RESOURCE_ID, ctx.instance, ctx.logger)
 
     ctx.logger.info(
         'Attempted to delete Security Group: {0}.'
@@ -150,7 +150,7 @@ def _create_external_securitygroup(ctx):
     :returns Boolean if use_external_resource is True or not.
     """
 
-    if not utils.use_external_resource(ctx.node.properties):
+    if not utils.use_external_resource(ctx.node.properties, ctx.logger):
         return False
     else:
         group_id = ctx.node.properties['resource_id']
@@ -171,13 +171,13 @@ def _delete_external_securitygroup(ctx):
     :returns Boolean if use_external_resource is True or not.
     """
 
-    if not utils.use_external_resource(ctx.node.properties):
+    if not utils.use_external_resource(ctx.node.properties, ctx.logger):
         return False
     else:
         ctx.logger.info(
             'External resource. Not deleting security group from account.')
         utils.unassign_runtime_property_from_resource(
-            constants.EXTERNAL_RESOURCE_ID, ctx.instance)
+            constants.EXTERNAL_RESOURCE_ID, ctx.instance, ctx.logger)
         return True
 
 

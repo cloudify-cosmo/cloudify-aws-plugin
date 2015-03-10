@@ -183,7 +183,7 @@ def terminate(**_):
             constants.INSTANCE_STATE_TERMINATED:
         ctx.logger.info('Terminated instance: {0}.'.format(instance_id))
         utils.unassign_runtime_property_from_resource(
-            constants.EXTERNAL_RESOURCE_ID, ctx.instance)
+            constants.EXTERNAL_RESOURCE_ID, ctx.instance, ctx.logger)
     else:
         return ctx.operation.retry(
             message='Waiting server to terminate. Retrying...')
@@ -213,12 +213,12 @@ def _instance_started_assign_runtime_properties(instance_id, ctx):
 def _unassign_runtime_properties(runtime_properties, ctx_instance):
     for property_name in runtime_properties:
         utils.unassign_runtime_property_from_resource(
-            property_name, ctx_instance)
+            property_name, ctx_instance, ctx.logger)
 
 
 def _create_external_instance(ctx):
 
-    if not utils.use_external_resource(ctx.node.properties):
+    if not utils.use_external_resource(ctx.node.properties, ctx.logger):
         return False
     else:
         instance_id = ctx.node.properties['resource_id']
@@ -233,7 +233,7 @@ def _create_external_instance(ctx):
 
 def _start_external_instance(instance_id, ctx):
 
-    if not utils.use_external_resource(ctx.node.properties):
+    if not utils.use_external_resource(ctx.node.properties, ctx.logger):
         return False
     else:
         ctx.logger.info(
@@ -245,7 +245,7 @@ def _start_external_instance(instance_id, ctx):
 
 def _stop_external_instance(instance_id, ctx):
 
-    if not utils.use_external_resource(ctx.node.properties):
+    if not utils.use_external_resource(ctx.node.properties, ctx.logger):
         return False
     else:
         ctx.logger.info(
@@ -259,14 +259,14 @@ def _stop_external_instance(instance_id, ctx):
 
 def _terminate_external_instance(instance_id, ctx):
 
-    if not utils.use_external_resource(ctx.node.properties):
+    if not utils.use_external_resource(ctx.node.properties, ctx.logger):
         return False
     else:
         ctx.logger.info(
             'External resource. Not terminating instance {0}.'
             .format(instance_id))
         utils.unassign_runtime_property_from_resource(
-            constants.EXTERNAL_RESOURCE_ID, ctx.instance)
+            constants.EXTERNAL_RESOURCE_ID, ctx.instance, ctx.logger)
         return True
 
 
