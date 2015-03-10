@@ -68,6 +68,8 @@ class TestInstance(testtools.TestCase):
 
         ctx = self.mock_ctx('test_run_instances_clean')
 
+        ctx.instance.relationships = self.mock_relationship_context(
+            'test_run_instances_clean_relationship')
         instance.run_instances(ctx=ctx)
         self.assertIn('aws_resource_id',
                       ctx.instance.runtime_properties.keys())

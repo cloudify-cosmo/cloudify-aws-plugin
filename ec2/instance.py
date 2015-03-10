@@ -419,7 +419,7 @@ def _get_instance_keypair():
         utils.get_target_external_resource_ids(
             constants.INSTANCE_KEYPAIR_RELATIONSHIP)
 
-    if len(list_of_keypairs) != 1:
+    if len(list_of_keypairs) > 1:
         raise NonRecoverableError(
             'Only one keypair may be attached to an instance.')
 
