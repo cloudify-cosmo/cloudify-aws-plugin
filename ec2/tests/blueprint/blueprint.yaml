@@ -36,9 +36,9 @@ inputs:
     type: string
     default: ''
 
-  where_to_save_keys:
+  path_to_key_file:
     type: string
-    default: ~/.ssh
+    default: ~/.ssh/keypair.pem
 
 node_templates:
 
@@ -85,7 +85,7 @@ node_templates:
     properties:
       use_external_resource: { get_input: use_existing_agent_keypair }
       resource_id: { get_input: agent_keypair_name }
-      private_key_path: { get_input: where_to_save_keys }
+      private_key_path: { get_input: path_to_key_file }
 
 plugins:
     ec2:

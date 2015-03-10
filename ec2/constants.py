@@ -44,3 +44,6 @@ INSTANCE_KEYPAIR_RELATIONSHIP = 'instance_connected_to_keypair'
 
 # securitygroup module constants
 SECURITY_GROUP_REQUIRED_PROPERTIES = ['description', 'rules']
+
+# keypair module constants
+KEYPAIR_REQUIRED_PROPERTIES = ['private_key_path']

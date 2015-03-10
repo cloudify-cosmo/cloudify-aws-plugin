@@ -43,8 +43,8 @@ class TestKeyPair(testtools.TestCase):
         test_node_id = test_name
         test_properties = {
             'use_external_resource': False,
-            'resource_id': '{0}_keypair'.format(test_name),
-            'private_key_path': '~/.ssh'
+            'resource_id': '{0}'.format(test_name),
+            'private_key_path': '~/.ssh/{0}.pem'.format(test_name)
         }
 
         ctx = MockCloudifyContext(
@@ -55,9 +55,8 @@ class TestKeyPair(testtools.TestCase):
         return ctx
 
     def create_dummy_key_path(self, ctx):
-        key_path = os.path.join(
-            os.path.expanduser(ctx.node.properties['private_key_path']),
-            '{0}{1}'.format(ctx.node.properties['resource_id'], '.pem'))
+        key_path = os.path.expanduser(
+            ctx.node.properties['private_key_path'])
         return key_path
 
     @mock_ec2
@@ -71,17 +70,6 @@ class TestKeyPair(testtools.TestCase):
         keypair.create(ctx=ctx)
         self.assertIn('aws_resource_id',
                       ctx.instance.runtime_properties.keys())
-        os.remove(key_path)
-
-    @mock_ec2
-    def test_create_adds_file(self):
-        """ This tests that the create keypair function
-            creates the key_pair file.
-        """
-
-        ctx = self.mock_ctx('test_create_adds_file')
-        key_path = self.create_dummy_key_path(ctx=ctx)
-        keypair.create(ctx=ctx)
         self.assertTrue(os.path.exists(key_path))
         os.remove(key_path)
 
@@ -212,6 +200,7 @@ class TestKeyPair(testtools.TestCase):
         key_path = self.create_dummy_key_path(ctx=ctx)
         with open(key_path, 'w') as out:
             out.write('test_save_keypair')
+        print ctx.node.properties
         ex = self.assertRaises(NonRecoverableError,
                                keypair._save_key_pair, kp, ctx=ctx)
         self.assertIn(
@@ -245,7 +234,7 @@ class TestKeyPair(testtools.TestCase):
         del(ctx.node.properties['private_key_path'])
         ex = self.assertRaises(
             NonRecoverableError,
-            keypair._get_key_file_path,
+            keypair._get_path_to_key_file,
             ctx.node.properties)
         self.assertIn(
             'Unable to get key file path, private_key_path not set',
@@ -262,7 +251,7 @@ class TestKeyPair(testtools.TestCase):
                 keypair._save_key_pair,
                 kp, ctx)
             self.assertIn(
-                'Unable to save key pair, private_key_path not set',
+                'Unable to get key file path, private_key_path not set',
                 ex.message)
 
     @mock_ec2
@@ -275,7 +264,5 @@ class TestKeyPair(testtools.TestCase):
         ctx.node.properties['use_external_resource'] = True
         ctx.node.properties['resource_id'] = kp.name
         ctx.instance.runtime_properties['aws_resource_id'] = kp.name
-        ctx.instance.runtime_properties['key_path'] = \
-            self.create_dummy_key_path(ctx=ctx)
         keypair.delete(ctx=ctx)
-        self.assertNotIn('key_path', ctx.instance.runtime_properties)
+        self.assertNotIn('aws_resource_id', ctx.instance.runtime_properties)

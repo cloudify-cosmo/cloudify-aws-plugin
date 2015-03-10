@@ -139,3 +139,17 @@ def get_target_external_resource_ids(relationship_type):
                     constants.EXTERNAL_RESOURCE_ID])
 
     return ids
+
+
+def get_resource_id(ctx):
+    """Returns the resource id, if the user doesn't provide one,
+    this will create one for them.
+
+    :param node_properties: The node properties dictionary.
+    :return resource_id: A string.
+    """
+
+    if ctx.node.properties['resource_id']:
+        return ctx.node.properties['resource_id']
+
+    return '{0}-{1}-{2}'.format(ctx.deployment.id, ctx.instance.id)

@@ -37,7 +37,7 @@ def creation_validation(**_):
         utils.validate_node_property(property_key, ctx.node.properties)
 
     security_group = _get_security_group_from_id(
-        ctx.node.properties['resource_id'])
+        utils.get_resource_id(ctx=ctx))
 
     if ctx.node.properties['use_external_resource'] and not security_group:
         raise NonRecoverableError(
@@ -60,16 +60,18 @@ def create(**_):
     for property_name in constants.SECURITY_GROUP_REQUIRED_PROPERTIES:
         utils.validate_node_property(property_name, ctx.node.properties)
 
-    if _create_external_securitygroup(ctx=ctx):
+    name = utils.get_resource_id(ctx=ctx)
+
+    if _create_external_securitygroup(name, ctx=ctx):
         return
 
     ctx.logger.debug(
         'Creating Security Group: {0}'
-        .format(ctx.node.properties['resource_id']))
+        .format(name))
 
     try:
         group_object = ec2_client.create_security_group(
-            ctx.node.properties['resource_id'],
+            name,
             ctx.node.properties['description'])
     except (boto.exception.EC2ResponseError,
             boto.exception.BotoServerError) as e:
@@ -142,19 +144,19 @@ def _authorize_by_id(ec2_client, group_id, rules):
             raise
 
 
-def _create_external_securitygroup(ctx):
+def _create_external_securitygroup(name, ctx):
     """If use_external_resource is True, this will set the runtime_properties,
     and then exit.
 
     :param ctx: The Cloudify context.
-    :returns Boolean if use_external_resource is True or not.
+    :return False: Cloudify resource. Continue operation.
+    :return True: External resource. Set runtime_properties. Ignore operation.
     """
 
     if not utils.use_external_resource(ctx.node.properties, ctx.logger):
         return False
     else:
-        group_id = ctx.node.properties['resource_id']
-        group = _get_security_group_from_id(group_id)
+        group = _get_security_group_from_id(name)
         if not group:
             raise NonRecoverableError(
                 'External security group was indicated, but the given '
@@ -168,7 +170,9 @@ def _delete_external_securitygroup(ctx):
     and then exit.
 
     :param ctx: The Cloudify context.
-    :returns Boolean if use_external_resource is True or not.
+    :return False: Cloudify resource. Continue operation.
+    :return True: External resource. Unset runtime_properties.
+        Ignore operation.
     """
 
     if not utils.use_external_resource(ctx.node.properties, ctx.logger):

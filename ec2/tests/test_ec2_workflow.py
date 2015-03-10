@@ -47,7 +47,7 @@ class TestWorkflowClean(testtools.TestCase):
             'agent_security_group_name': 'test_group',
             'use_existing_agent_keypair': False,
             'agent_keypair_name': 'test_key',
-            'where_to_save_keys': '~/.ssh',
+            'path_to_key_file': '~/.ssh/test_key.pem',
         }
 
         # setup local workflow execution environment
@@ -104,7 +104,7 @@ class TestWorkflowExternalResources(testtools.TestCase):
             'agent_security_group_name': 'test_group2',
             'use_existing_agent_keypair': True,
             'agent_keypair_name': 'test_key2',
-            'where_to_save_keys': '~/.ssh',
+            'path_to_key_file': '~/.ssh/test_key2.pem',
         }
 
         # setup local workflow execution environment

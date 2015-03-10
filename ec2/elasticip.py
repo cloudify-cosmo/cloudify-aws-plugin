@@ -86,10 +86,15 @@ def release(**_):
     ctx.logger.debug('Attempting to release an Elastic IP.')
 
     try:
-        address_object.delete()
+        deleted = address_object.delete()
     except (boto.exception.EC2ResponseError,
             boto.exception.BotoServerError) as e:
         raise NonRecoverableError('{0}'.format(str(e)))
+
+    if not deleted:
+        raise NonRecoverableError(
+            'Elastic IP {0} deletion failed for an unknown reason.'
+            .format(address_object.public_ip))
 
     address = _get_address_object_by_id(address_object.public_ip)
 
@@ -173,6 +178,9 @@ def _allocate_external_elasticip(ctx):
     """Pretends to allocate an Elastic IP but if it was
     not created by Cloudify, it just sets runtime_properties
     and exits the operation.
+
+    :return False: Cloudify resource. Continue operation.
+    :return True: External resource. Set runtime_properties. Ignore operation.
     """
 
     if not utils.use_external_resource(ctx.node.properties, ctx.logger):
@@ -192,6 +200,10 @@ def _release_external_elasticip(ctx):
     """Pretends to release an Elastic IP but if it was
     not created by Cloudify, it just deletes runtime_properties
     and exits the operation.
+
+    :return False: Cloudify resource. Continue operation.
+    :return True: External resource. Unset runtime_properties.
+        Ignore operation.
     """
 
     if not utils.use_external_resource(ctx.node.properties, ctx.logger):
@@ -206,10 +218,14 @@ def _associate_external_elasticip_or_instance(elasticip, ctx):
     """Pretends to associate an Elastic IP with an EC2 instance but if one
     was not created by Cloudify, it just sets runtime_properties
     and exits the operation.
+
+    :return False: At least one is a Cloudify resource. Continue operation.
+    :return True: Both are External resources. Set runtime_properties.
+        Ignore operation.
     """
 
     if not utils.use_external_resource(ctx.source.node.properties, ctx.logger) \
-            and not utils.use_external_resource(
+            or not utils.use_external_resource(
                 ctx.target.node.properties, ctx.logger):
         return False
     else:
@@ -225,10 +241,14 @@ def _disassociate_external_elasticip_or_instance(ctx):
     """Pretends to disassociate an Elastic IP with an EC2 instance but if one
     was not created by Cloudify, it just deletes runtime_properties
     and exits the operation.
+
+    :return False: At least one is a Cloudify resource. Continue operation.
+    :return True: Both are External resources. Set runtime_properties.
+        Ignore operation.
     """
 
     if not utils.use_external_resource(ctx.source.node.properties, ctx.logger) \
-            and not utils.use_external_resource(
+            or not utils.use_external_resource(
                 ctx.target.node.properties, ctx.logger):
         return False
     else:
