@@ -423,4 +423,4 @@ def _get_instance_keypair():
         raise NonRecoverableError(
             'Only one keypair may be attached to an instance.')
 
-    return list_of_keypairs[0]
+    return list_of_keypairs[0] if list_of_keypairs else list_of_keypairs
