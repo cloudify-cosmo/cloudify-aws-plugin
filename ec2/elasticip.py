@@ -39,7 +39,7 @@ def creation_validation(**_):
 
     if not ctx.node.properties['use_external_resource'] and address:
         raise NonRecoverableError(
-            'External resource, but the supplied '
+            'Not external resource, but the supplied '
             'elasticip exists.')
 
 
