@@ -152,4 +152,4 @@ def get_resource_id(ctx):
     if ctx.node.properties['resource_id']:
         return ctx.node.properties['resource_id']
 
-    return '{0}-{1}-{2}'.format(ctx.deployment.id, ctx.instance.id)
+    return '{0}-{1}'.format(ctx.deployment.id, ctx.instance.id)
