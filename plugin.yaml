@@ -42,20 +42,12 @@ node_types:
       cloudify.interfaces.lifecycle:
         create:
           implementation: aws.ec2.instance.run_instances
-          retry_interval: 5
-          max_retries: 10
         start:
           implementation: aws.ec2.instance.start
-          retry_interval: 5
-          max_retries: 10
         stop:
           implementation: aws.ec2.instance.stop
-          retry_interval: 5
-          max_retries: 10
         delete:
           implementation: aws.ec2.instance.terminate
-          retry_interval: 5
-          max_retries: 10
       cloudify.interfaces.validation:
         creation:
           implementation: aws.ec2.instance.creation_validation
@@ -79,11 +71,6 @@ node_types:
         create: aws.ec2.elasticip.allocate
         delete:
           implementation: aws.ec2.elasticip.release
-          inputs:
-            retry_interval:
-              description: How many seconds between checking if the elastic ip was deleted.
-              type: integer
-              default: 5
       cloudify.interfaces.validation:
         creation: aws.ec2.elasticip.creation_validation
 
@@ -118,11 +105,6 @@ node_types:
         create: aws.ec2.securitygroup.create
         delete: 
           implementation: aws.ec2.securitygroup.delete
-          inputs:
-            retry_interval:
-              description: How many seconds between state checks.
-              type: integer
-              default: 5
       cloudify.interfaces.validation:
         creation: aws.ec2.securitygroup.creation_validation
 
