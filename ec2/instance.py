@@ -395,6 +395,14 @@ def _get_instance_parameters(node_properties):
                 )
             else:
                 parameters[key] = attached_group_ids
+        if key is 'security_group_names':
+            if key in node_parameter_keys:
+                parameters[key] = list(
+                    set(attached_group_ids) | set(
+                        node_properties['parameters'][key])
+                )
+            else:
+                parameters[key] = attached_group_ids
         elif key is 'key_name':
             if key in node_parameter_keys:
                 parameters[key] = node_properties['parameters'][key]
