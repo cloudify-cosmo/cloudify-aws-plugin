@@ -197,11 +197,16 @@ def _save_key_pair(key_pair_object, ctx):
 
     key_file = _get_path_to_key_file(ctx.node.properties)
 
+    _set_key_file_permissions(key_file)
+
+
+def _set_key_file_permissions(key_file):
+
     if os.access(key_file, os.W_OK):
         os.chmod(key_file, 0400)
     else:
-        raise NonRecoverableError(
-            'Unable to save key file: {0}.'.format(key_file))
+        ctx.logger.error(
+            'Unable to set permissions key file: {0}.'.format(key_file))
 
 
 def _get_key_pair_by_id(key_pair_id):

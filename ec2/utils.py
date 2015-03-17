@@ -13,6 +13,9 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
+# Built-in Imports
+import os
+
 # Cloudify Imports
 from ec2 import constants
 from cloudify import ctx
@@ -151,5 +154,10 @@ def get_resource_id(ctx):
 
     if ctx.node.properties['resource_id']:
         return ctx.node.properties['resource_id']
+    elif 'private_key_path' in ctx.node.properties:
+        directory_path, filename = \
+            os.path.split(ctx.node.properties['private_key_path'])
+        resource_id, filetype = filename.split('.')
+        return resource_id
 
     return '{0}-{1}'.format(ctx.deployment.id, ctx.instance.id)
