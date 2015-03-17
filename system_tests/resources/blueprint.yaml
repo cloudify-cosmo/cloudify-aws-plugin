@@ -1,0 +1,61 @@
+# DSL version, should appear in the main blueprint.yaml
+# and may appear in other imports. In such case, the versions must match
+tosca_definitions_version: cloudify_dsl_1_1
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/3.2m6/types.yaml
+  - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-aws-plugin/example/plugin.yaml
+
+inputs:
+
+  image:
+    type: string
+    default: ''
+
+  size:
+    type: string
+    default: ''
+
+  key_path:
+    type: string
+
+node_templates:
+
+  simple_elastic_ip:
+    type: cloudify.aws.nodes.ElasticIP
+
+  simple_security_group:
+    type: cloudify.aws.nodes.SecurityGroup
+    properties:
+      description: Simple Security Group
+      rules: []
+
+  simple_key_pair:
+    type: cloudify.aws.nodes.KeyPair
+    properties:
+      private_key_path: { get_input: key_path }
+
+  simple_instance:
+    type: cloudify.aws.nodes.Instance
+    properties:
+      install_agent: false
+      image_id: { get_input: image }
+      instance_type: { get_input: size }
+
+  pair_a_connected_elastic_ip:
+    type: cloudify.aws.nodes.ElasticIP
+
+  pair_a_connected_instance:
+    type: cloudify.aws.nodes.Instance
+    properties:
+      install_agent: false
+      image_id: { get_input: image }
+      instance_type: { get_input: size }
+    relationships:
+      - type: cloudify.aws.relationships.instance_connected_to_elastic_ip
+        target: pair_a_connected_elastic_ip
+
+plugins:
+    ec2:
+        executor: central_deployment_agent
+        install: false
