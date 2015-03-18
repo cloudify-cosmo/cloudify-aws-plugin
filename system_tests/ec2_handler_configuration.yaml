@@ -1,0 +1,64 @@
+######################################################
+### NOTE: If you plan on using this sample configuration,
+### please copy it to some directory that is not
+### managed by git to avoid accidental commits
+
+######################################################
+# first tries to import system_tests.{0} (external handlers)
+# falls back to suites.helpers.handlers.{0}.handler (non external handlers)
+handler: ec2_handler
+
+######################################################
+# full path to manager blueprint inputs (or provider cloudify-config)
+inputs: resources/inputs.yaml
+
+######################################################
+# full path to manager blueprint (not required for providers)
+manager_blueprint: resources/manager_blueprint.yaml
+
+######################################################
+# name of handler_properties entry in suites.yaml.
+# each property of the named entry will be accessible as
+# an attribute of self.env in tests.
+# e.g. for {my_image_id: afd32-312d} the following applies
+# in tests: self.env.my_image_id == 'afd32-312d'.
+# specifying this attribute is required depending on
+# the handler in use and the tests that are to be
+# executed
+properties: aws_ec2
+
+######################################################
+# if specified, tests will run using an existing manager,
+# otherwise, bootstrap will be called in the beginning of
+# each test suite and teardown at the end of it.
+# manager_ip:
+
+######################################################
+# this feature is used extensively in suites.yaml
+# though it is less useful when running tests locally.
+# any entry specified here will override (or add) an entry
+# to the inputs.yaml file (or provider cloudify-config).
+# dot notation may be used to override nested fields
+# (uses YamlPatcher internally)
+# inputs_override: {}
+
+######################################################
+# same as inputs_override but for the manager blueprint
+# manager_blueprint_override: {}
+
+######################################################
+# if set to true, handler cleanup context will not
+# actually clean resources at the end of each test
+# and after teardown (this only applies if the used
+# handler implemented this)
+# skip_cleanup: false
+
+######################################################
+# if set to true, will use providers instead of manager
+# blueprints
+# bootstrap_using_providers: false
+
+######################################################
+# set to false to prevent the --install-plugins
+# flag from being passed to the `cfy bootstrap` command
+# install_manager_blueprint_dependencies: true
