@@ -23,4 +23,3 @@ def setUp():
 
 def tearDown():
     teardown()
-
