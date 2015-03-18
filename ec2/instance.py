@@ -248,7 +248,7 @@ def _start_external_instance(instance_id, ctx):
         ctx.logger.info(
             'Not starting instance {0}, because it is an external resource.'
             .format(instance_id))
-        _instance_started_assign_runtime_properties(instance_id)
+        _instance_started_assign_runtime_properties(instance_id, ctx=ctx)
         return True
 
 

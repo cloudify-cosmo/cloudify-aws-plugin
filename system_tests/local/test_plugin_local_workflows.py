@@ -25,9 +25,6 @@ from ec2_test_utils import (
     PAIR_B_SG, PAIR_B_VM
 )
 
-TEST_AMI = 'ami-3cf8b154'
-TEST_SIZE = 'm3.medium'
-
 
 class TestWorkflowClean(EC2LocalTestUtils):
 
@@ -38,7 +35,7 @@ class TestWorkflowClean(EC2LocalTestUtils):
 
         test_name = 'test_simple_resources'
 
-        inputs = self._get_inputs(TEST_AMI, TEST_SIZE, test_name)
+        inputs = self._get_inputs(test_name=test_name)
         self._set_up(inputs=inputs)
 
         # execute install workflow
@@ -46,7 +43,7 @@ class TestWorkflowClean(EC2LocalTestUtils):
 
         instance_storage = self._get_instances(self.env.storage)
 
-        self.assertEquals(self.expected_nodes, len(instance_storage))
+        self.assertEquals(4, len(instance_storage))
 
         for node_instance in self._get_instances(self.env.storage):
             self.assertIn(EXTERNAL_RESOURCE_ID,
@@ -66,8 +63,31 @@ class TestWorkflowClean(EC2LocalTestUtils):
                 SIMPLE_KP, self.env.storage))
 
         self.assertIsNotNone(
+            os.path.exists(
+                inputs['key_path']))
+
+        self.assertIsNotNone(
             self._get_instance_node_id(
                 SIMPLE_VM, self.env.storage))
+
+        self.env.execute('uninstall', task_retries=10)
+
+    def test_simple_relationships(self):
+
+        test_name = 'test_simple_relationships'
+
+        inputs = self._get_inputs(test_name=test_name)
+
+        self._set_up(
+            inputs=inputs,
+            filename='relationships.yaml')
+
+        # execute install workflow
+        self.env.execute('install', task_retries=10)
+
+        instance_storage = self._get_instances(self.env.storage)
+
+        self.assertEquals(4, len(instance_storage))
 
         # Test assertions for pair a nodes
         self.assertIsNotNone(
@@ -111,16 +131,76 @@ class TestWorkflowClean(EC2LocalTestUtils):
 
         self.env.execute('uninstall', task_retries=10)
 
+        # key_pair_file = os.path.expanduser(inputs['key_path'])
+
+        # if os.path.exists(key_pair_file):
+        #     os.remove(key_pair_file)
+
+    def test_external_resources(self):
+        """ Tests the install workflow using the built in
+            workflows.
+        """
+
+        test_name = 'test_external_resources'
+
+        client = self._get_ec2_client()
+
+        ip = self._create_elastic_ip(client)
+        kp = self._create_key_pair(client, test_name)
+        sg = self._create_security_group(client, test_name, 'test desc')
+        vm = self._create_instance(client)
+
+        inputs = self._get_inputs(
+            test_name=test_name,
+            resource_id_ip=ip.public_ip,
+            resource_id_kp=kp.name,
+            resource_id_sg=sg.id,
+            resource_id_vm=vm.id,
+            external_ip=True,
+            external_kp=True,
+            external_sg=True,
+            external_vm=True)
+
+        self._set_up(inputs=inputs)
+
+        self.env.execute('install', task_retries=10)
+
         instance_storage = self._get_instances(self.env.storage)
 
-        self.assertEquals(self.expected_nodes, len(instance_storage))
+        self.assertEquals(4, len(instance_storage))
 
-        key_pair_file = \
-            os.path.join(os.path.expanduser('~/.ssh'), test_name, '.pem')
+        for node_instance in self._get_instances(self.env.storage):
+            self.assertIn(EXTERNAL_RESOURCE_ID,
+                          node_instance.runtime_properties)
 
+        cfy_ip = self._get_instance_node(SIMPLE_IP, self.env.storage)
+        self.assertEquals(
+            ip.public_ip,
+            cfy_ip.runtime_properties[EXTERNAL_RESOURCE_ID])
+
+        cfy_kp = self._get_instance_node(SIMPLE_KP, self.env.storage)
+        self.assertEquals(
+            kp.name,
+            cfy_kp.runtime_properties[EXTERNAL_RESOURCE_ID])
+        key_pair_file = os.path.expanduser(inputs['key_path'])
+
+        cfy_sg = self._get_instance_node(SIMPLE_SG, self.env.storage)
+        self.assertEquals(
+            sg.id,
+            cfy_sg.runtime_properties[EXTERNAL_RESOURCE_ID])
+
+        cfy_vm = self._get_instance_node(SIMPLE_VM, self.env.storage)
+        self.assertEquals(
+            vm.id,
+            cfy_vm.runtime_properties[EXTERNAL_RESOURCE_ID])
+
+        self.assertIsNotNone(os.path.exists(key_pair_file))
+
+        self.env.execute('uninstall', task_retries=10)
+
+        ip.release()
+        kp.delete()
         if os.path.exists(key_pair_file):
             os.remove(key_pair_file)
-
-    @property
-    def expected_nodes(self):
-        return 8
+        sg.delete()
+        vm.terminate()

@@ -55,14 +55,14 @@ class EC2LocalTestUtils(testtools.TestCase):
     def _set_up(self,
                 inputs=None,
                 directory='resources',
-                filename='blueprint.yaml'):
+                filename='simple.yaml'):
 
         blueprint_path = os.path.join(
             os.path.dirname(
                 os.path.dirname(__file__)), directory, filename)
 
         if not inputs:
-            inputs = self._get_inputs(TEST_AMI, TEST_SIZE)
+            inputs = self._get_inputs()
 
         # setup local workflow execution environment
         self.env = local.init_env(
@@ -72,14 +72,30 @@ class EC2LocalTestUtils(testtools.TestCase):
             ignored_modules=IGNORED_LOCAL_WORKFLOW_MODULES)
 
     def _get_inputs(self,
-                    ami_image_id,
-                    instance_type,
+                    ami_image_id=TEST_AMI,
+                    instance_type=TEST_SIZE,
+                    resource_id_ip='',
+                    resource_id_kp='',
+                    resource_id_sg='',
+                    resource_id_vm='',
+                    external_ip=False,
+                    external_kp=False,
+                    external_sg=False,
+                    external_vm=False,
                     test_name='vanilla_test'):
 
         return {
             'image': ami_image_id,
             'size': instance_type,
-            'key_path': '~/.ssh/{0}.pem'.format(test_name)
+            'key_path': '~/.ssh/{0}.pem'.format(test_name),
+            'resource_id_ip': resource_id_ip,
+            'resource_id_kp': resource_id_kp,
+            'resource_id_sg': resource_id_sg,
+            'resource_id_vm': resource_id_vm,
+            'external_ip': external_ip,
+            'external_kp': external_kp,
+            'external_sg': external_sg,
+            'external_vm': external_vm
         }
 
     def _get_instances(self, storage):
@@ -97,6 +113,20 @@ class EC2LocalTestUtils(testtools.TestCase):
     def _get_ec2_client(self):
         return EC2Connection()
 
+    def _create_elastic_ip(self, ec2_client):
+        new_address = ec2_client.allocate_address(domain=None)
+        return new_address
+
+    def _create_key_pair(self, ec2_client, name):
+        new_key_pair = ec2_client.create_key_pair(name)
+        new_key_pair.save(os.path.expanduser('~/.ssh'))
+        return new_key_pair
+
     def _create_security_group(self, ec2_client, name, description):
         new_group = ec2_client.create_security_group(name, description)
         return new_group
+
+    def _create_instance(self, ec2_client):
+        new_reservation = ec2_client.run_instances(
+            image_id=TEST_AMI, instance_type=TEST_SIZE)
+        return new_reservation.instances[0]
