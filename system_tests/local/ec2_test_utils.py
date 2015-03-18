@@ -30,6 +30,8 @@ IGNORED_LOCAL_WORKFLOW_MODULES = (
 
 TEST_AMI = 'ami-3cf8b154'
 TEST_SIZE = 'm3.medium'
+INSTANCE_TO_IP = 'instance_connected_to_elastic_ip'
+INSTANCE_TO_SG = 'instance_connected_to_security_group'
 EXTERNAL_RESOURCE_ID = 'aws_resource_id'
 SIMPLE_IP = 'simple_elastic_ip'
 SIMPLE_SG = 'simple_security_group'
@@ -37,6 +39,8 @@ SIMPLE_KP = 'simple_key_pair'
 SIMPLE_VM = 'simple_instance'
 PAIR_A_IP = 'pair_a_connected_elastic_ip'
 PAIR_A_VM = 'pair_a_connected_instance'
+PAIR_B_SG = 'pair_b_connected_security_group'
+PAIR_B_VM = 'pair_b_connected_instance'
 
 
 class EC2LocalTestUtils(testtools.TestCase):

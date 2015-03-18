@@ -19,9 +19,10 @@ import os
 # Cloudify Imports
 from ec2_test_utils import (
     EC2LocalTestUtils,
-    EXTERNAL_RESOURCE_ID,
+    EXTERNAL_RESOURCE_ID, INSTANCE_TO_IP, INSTANCE_TO_SG,
     SIMPLE_IP, SIMPLE_SG, SIMPLE_KP, SIMPLE_VM,
-    PAIR_A_IP, PAIR_A_VM
+    PAIR_A_IP, PAIR_A_VM,
+    PAIR_B_SG, PAIR_B_VM
 )
 
 TEST_AMI = 'ami-3cf8b154'
@@ -82,6 +83,32 @@ class TestWorkflowClean(EC2LocalTestUtils):
 
         self.assertEquals(1, len(pair_a_vm_instance.relationships))
 
+        relationship_types = \
+            [relationship['type']
+             for relationship in pair_a_vm_instance.relationships]
+
+        self.assertIn(INSTANCE_TO_IP, relationship_types[0])
+
+        # Test assertions for pair b nodes
+        self.assertIsNotNone(
+            self._get_instance_node_id(
+                PAIR_B_SG, self.env.storage))
+
+        self.assertIsNotNone(
+            self._get_instance_node_id(
+                PAIR_B_VM, self.env.storage))
+
+        pair_b_vm_instance = \
+            self._get_instance_node(PAIR_B_VM, self.env.storage)
+
+        self.assertEquals(1, len(pair_b_vm_instance.relationships))
+
+        relationship_types = \
+            [relationship['type']
+             for relationship in pair_b_vm_instance.relationships]
+
+        self.assertIn(INSTANCE_TO_SG, relationship_types[0])
+
         self.env.execute('uninstall', task_retries=10)
 
         instance_storage = self._get_instances(self.env.storage)
@@ -96,4 +123,4 @@ class TestWorkflowClean(EC2LocalTestUtils):
 
     @property
     def expected_nodes(self):
-        return 6
+        return 8

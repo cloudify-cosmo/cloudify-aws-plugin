@@ -55,6 +55,26 @@ node_templates:
       - type: cloudify.aws.relationships.instance_connected_to_elastic_ip
         target: pair_a_connected_elastic_ip
 
+  pair_b_connected_security_group:
+    type: cloudify.aws.nodes.SecurityGroup
+    properties:
+      description: Pair B Security Group
+      rules:
+        - ip_protocol: tcp
+          from_port: 22
+          to_port: 22
+          cidr_ip: 0.0.0.0/0
+
+  pair_b_connected_instance:
+    type: cloudify.aws.nodes.Instance
+    properties:
+      install_agent: false
+      image_id: { get_input: image }
+      instance_type: { get_input: size }
+    relationships:
+      - type: cloudify.aws.relationships.instance_connected_to_security_group
+        target: pair_b_connected_security_group
+
 plugins:
     ec2:
         executor: central_deployment_agent
