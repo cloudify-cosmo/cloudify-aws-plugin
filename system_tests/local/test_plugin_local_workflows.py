@@ -29,9 +29,6 @@ from ec2_test_utils import (
 class TestWorkflowClean(EC2LocalTestUtils):
 
     def test_simple_resources(self):
-        """ Tests the install workflow using the built in
-            workflows.
-        """
 
         test_name = 'test_simple_resources'
 
@@ -131,15 +128,7 @@ class TestWorkflowClean(EC2LocalTestUtils):
 
         self.env.execute('uninstall', task_retries=10)
 
-        # key_pair_file = os.path.expanduser(inputs['key_path'])
-
-        # if os.path.exists(key_pair_file):
-        #     os.remove(key_pair_file)
-
     def test_external_resources(self):
-        """ Tests the install workflow using the built in
-            workflows.
-        """
 
         test_name = 'test_external_resources'
 
@@ -204,3 +193,71 @@ class TestWorkflowClean(EC2LocalTestUtils):
             os.remove(key_pair_file)
         sg.delete()
         vm.terminate()
+
+    def test_external_relationships(self):
+
+        test_name = 'test_external_relationships'
+
+        inputs = self._get_inputs(
+            test_name=test_name,
+            resource_id_ip=ip.public_ip,
+            resource_id_kp=kp.name,
+            resource_id_sg=sg.id,
+            resource_id_vm=vm.id,
+            external_ip=False,
+            external_kp=True,
+            external_sg=False,
+            external_vm=True)
+
+        self._set_up(
+            inputs=inputs,
+            filename='relationships.yaml')
+
+        # execute install workflow
+        self.env.execute('install', task_retries=10)
+
+        instance_storage = self._get_instances(self.env.storage)
+
+        self.assertEquals(4, len(instance_storage))
+
+        # Test assertions for pair a nodes
+        self.assertIsNotNone(
+            self._get_instance_node_id(
+                PAIR_A_IP, self.env.storage))
+
+        self.assertIsNotNone(
+            self._get_instance_node_id(
+                PAIR_A_VM, self.env.storage))
+
+        pair_a_vm_instance = \
+            self._get_instance_node(PAIR_A_VM, self.env.storage)
+
+        self.assertEquals(1, len(pair_a_vm_instance.relationships))
+
+        relationship_types = \
+            [relationship['type']
+             for relationship in pair_a_vm_instance.relationships]
+
+        self.assertIn(INSTANCE_TO_IP, relationship_types[0])
+
+        # Test assertions for pair b nodes
+        self.assertIsNotNone(
+            self._get_instance_node_id(
+                PAIR_B_SG, self.env.storage))
+
+        self.assertIsNotNone(
+            self._get_instance_node_id(
+                PAIR_B_VM, self.env.storage))
+
+        pair_b_vm_instance = \
+            self._get_instance_node(PAIR_B_VM, self.env.storage)
+
+        self.assertEquals(1, len(pair_b_vm_instance.relationships))
+
+        relationship_types = \
+            [relationship['type']
+             for relationship in pair_b_vm_instance.relationships]
+
+        self.assertIn(INSTANCE_TO_SG, relationship_types[0])
+
+        self.env.execute('uninstall', task_retries=10)
