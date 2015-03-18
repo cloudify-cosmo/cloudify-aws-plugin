@@ -73,14 +73,7 @@ def run_instances(**_):
         'Attempting to create EC2 Instance with these API parameters: {0}.'
         .format(instance_parameters))
 
-    if ctx.operation.retry_number == 0:
-        try:
-            reservation = ec2_client.run_instances(**instance_parameters)
-        except (boto.exception.EC2ResponseError,
-                boto.exception.BotoServerError) as e:
-            raise NonRecoverableError('{0}'.format(str(e)))
-
-    instance_id = reservation.instances[0].id
+    instance_id = _run_instances(ec2_client, instance_parameters, ctx=ctx)
 
     instance = _get_instance_from_id(instance_id)
 
@@ -214,6 +207,22 @@ def _unassign_runtime_properties(runtime_properties, ctx_instance):
     for property_name in runtime_properties:
         utils.unassign_runtime_property_from_resource(
             property_name, ctx_instance, ctx.logger)
+
+
+def _run_instances(ec2_client, instance_parameters, ctx):
+    if ctx.operation.retry_number == 0:
+        try:
+            reservation = ec2_client.run_instances(**instance_parameters)
+        except (boto.exception.EC2ResponseError,
+                boto.exception.BotoServerError) as e:
+            raise NonRecoverableError('{0}'.format(str(e)))
+        return reservation.instances[0].id
+    elif constants.EXTERNAL_RESOURCE_ID not in ctx.instance.runtime_properties:
+        raise NonRecoverableError(
+            'Instance failed for an unknown reason. Node ID: {0}.'
+            .format(ctx.instance.node_id))
+    else:
+        return ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
 
 
 def _create_external_instance(ctx):
