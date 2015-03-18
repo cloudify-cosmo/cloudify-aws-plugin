@@ -220,7 +220,7 @@ def _run_instances(ec2_client, instance_parameters, ctx):
     elif constants.EXTERNAL_RESOURCE_ID not in ctx.instance.runtime_properties:
         raise NonRecoverableError(
             'Instance failed for an unknown reason. Node ID: {0}.'
-            .format(ctx.instance.node_id))
+            .format(ctx.instance.id))
     else:
         return ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
 
