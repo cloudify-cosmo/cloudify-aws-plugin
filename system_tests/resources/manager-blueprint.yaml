@@ -107,6 +107,10 @@ node_templates:
           to_port: 5555
           cidr_ip: 0.0.0.0/0
         - ip_protocol: tcp
+          from_port: 8101
+          to_port: 8101
+          cidr_ip: 0.0.0.0/0
+        - ip_protocol: tcp
           from_port: 5672
           to_port: 5672
           cidr_ip: 0.0.0.0/0

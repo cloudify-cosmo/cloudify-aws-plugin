@@ -220,7 +220,7 @@ class EC2UtilsUnitTests(EC2LocalTestUtils):
         ctx = self.mock_cloudify_context(
             'test_utils_get_resource_id')
 
-        del(ctx.node.properties['resource_id'])
+        ctx.node.properties['resource_id'] = ''
 
         resource_id = utils.get_resource_id(ctx=ctx)
 
@@ -234,7 +234,7 @@ class EC2UtilsUnitTests(EC2LocalTestUtils):
         ctx.node.properties['private_key_path'] = \
             '~/.ssh/test_utils_get_resource_id_from_key_path.pem'
 
-        del(ctx.node.properties['resource_id'])
+        ctx.node.properties['resource_id']
 
         resource_id = utils.get_resource_id(ctx=ctx)
 

@@ -419,7 +419,8 @@ def _get_instance_parameters(node_properties, ctx_instance, ctx_logger):
             if key in node_parameter_keys:
                 parameters[key] = node_properties['parameters'][key]
             else:
-                parameters[key] = _get_instance_keypair(ctx_instance, ctx_logger)
+                parameters[key] = \
+                    _get_instance_keypair(ctx_instance, ctx_logger)
         elif key in node_parameter_keys:
             parameters[key] = node_properties['parameters'][key]
         elif key is 'image_id' or key is 'instance_type':

@@ -18,7 +18,6 @@ import os
 
 # Cloudify Imports
 from ec2 import constants
-from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
 
 
@@ -120,7 +119,8 @@ def use_external_resource(node_properties, ctx_logger):
         return True
 
 
-def get_target_external_resource_ids(relationship_type, ctx_instance, ctx_logger):
+def get_target_external_resource_ids(relationship_type,
+                                     ctx_instance, ctx_logger):
     """Gets a list of target node ids connected via a relationship to a node.
 
     :param relationship_type: A string representing the type of relationship.
@@ -152,7 +152,7 @@ def get_resource_id(ctx):
     :return resource_id: A string.
     """
 
-    if 'resource_id' in ctx.node.properties:
+    if ctx.node.properties['resource_id']:
         return ctx.node.properties['resource_id']
     elif 'private_key_path' in ctx.node.properties:
         directory_path, filename = \

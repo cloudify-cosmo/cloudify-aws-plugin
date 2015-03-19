@@ -129,7 +129,8 @@ class EC2LocalTestUtils(testtools.TestCase):
             operation=operation
         )
 
-        ctx.instance.relationships = [self.mock_relationship_context(test_name)]
+        ctx.instance.relationships = \
+            [self.mock_relationship_context(test_name)]
 
         return ctx
 
