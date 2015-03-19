@@ -45,7 +45,7 @@ def log_available_resources(list_of_resources, ctx_logger):
     ctx_logger.debug(message)
 
 
-def get_external_resource_id_or_raise(operation, ctx_instance):
+def get_external_resource_id_or_raise(operation, ctx_instance, ctx_logger):
     """Checks if the EXTERNAL_RESOURCE_ID runtime_property is set and returns it.
 
     :param operation: A string representing what is happening.
@@ -55,7 +55,7 @@ def get_external_resource_id_or_raise(operation, ctx_instance):
     :raises NonRecoverableError: If EXTERNAL_RESOURCE_ID has not been set.
     """
 
-    ctx.logger.debug(
+    ctx_logger.debug(
         'Checking if {0} in instance runtime_properties, for {0} operation.'
         .format(constants.EXTERNAL_RESOURCE_ID, operation))
 
@@ -67,7 +67,7 @@ def get_external_resource_id_or_raise(operation, ctx_instance):
     return ctx_instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
 
 
-def set_external_resource_id(value, ctx_instance, external=True):
+def set_external_resource_id(value, ctx_instance, ctx_logger, external=True):
     """Sets the EXTERNAL_RESOURCE_ID runtime_property for a Node-Instance.
 
     :param value: the desired EXTERNAL_RESOURCE_ID runtime_property
@@ -80,7 +80,7 @@ def set_external_resource_id(value, ctx_instance, external=True):
     else:
         resource_type = 'external'
 
-    ctx.logger.info('Using {0} resource: {1}'.format(resource_type, value))
+    ctx_logger.info('Using {0} resource: {1}'.format(resource_type, value))
     ctx_instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID] = value
 
 
@@ -152,7 +152,7 @@ def get_resource_id(ctx):
     :return resource_id: A string.
     """
 
-    if ctx.node.properties['resource_id']:
+    if 'resource_id' in ctx.node.properties:
         return ctx.node.properties['resource_id']
     elif 'private_key_path' in ctx.node.properties:
         directory_path, filename = \

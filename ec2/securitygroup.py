@@ -79,7 +79,7 @@ def create(**_):
 
     _authorize_by_id(ec2_client, group_object.id, ctx.node.properties['rules'])
     utils.set_external_resource_id(
-        group_object.id, ctx.instance, external=False)
+        group_object.id, ctx.instance, ctx.logger, external=False)
 
 
 @operation
@@ -90,7 +90,7 @@ def delete(**_):
     ec2_client = connection.EC2ConnectionClient().client()
 
     group_id = utils.get_external_resource_id_or_raise(
-        'delete security group', ctx.instance)
+        'delete security group', ctx.instance, ctx.logger)
 
     if _delete_external_securitygroup(ctx):
         return
@@ -161,7 +161,7 @@ def _create_external_securitygroup(name, ctx):
             raise NonRecoverableError(
                 'External security group was indicated, but the given '
                 'security group does not exist.')
-        utils.set_external_resource_id(group.id, ctx.instance)
+        utils.set_external_resource_id(group.id, ctx.instance, ctx.logger)
         return True
 
 

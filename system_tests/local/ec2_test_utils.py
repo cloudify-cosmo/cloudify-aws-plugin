@@ -22,6 +22,8 @@ from boto.ec2 import EC2Connection
 
 # Cloudify Imports
 from cloudify.workflows import local
+from cloudify.mocks import MockContext
+from cloudify.mocks import MockCloudifyContext
 
 IGNORED_LOCAL_WORKFLOW_MODULES = (
     'worker_installer.tasks',
@@ -97,6 +99,74 @@ class EC2LocalTestUtils(testtools.TestCase):
             'external_sg': external_sg,
             'external_vm': external_vm
         }
+
+    def mock_cloudify_context(self, test_name, external_vm=False,
+                              resource_id_vm='', resource_id_sg='',
+                              resource_id_kp=''):
+        """ Creates a mock context for the instance
+            tests
+        """
+
+        test_node_id = test_name
+        test_properties = {
+            'use_external_resource': external_vm,
+            'resource_id': resource_id_vm,
+            'image_id': TEST_AMI,
+            'instance_type': TEST_SIZE,
+            'parameters': {
+                'security_group_ids': [resource_id_sg],
+                'key_name': resource_id_kp
+            }
+        }
+
+        operation = {
+            'retry_number': 0
+        }
+
+        ctx = MockCloudifyContext(
+            node_id=test_node_id,
+            properties=test_properties,
+            operation=operation
+        )
+
+        return ctx
+
+    def mock_relationship_context(self, testname):
+
+        instance_context = MockContext({
+            'node': MockContext({
+                'properties': {
+                    'use_external_resource': False,
+                    'resource_id': ''
+                }
+            }),
+            'instance': MockContext({
+                'runtime_properties': {
+                    'aws_resource_id': 'i-abc1234',
+                    'public_ip_address': '127.0.0.1'
+                }
+            })
+        })
+
+        elasticip_context = MockContext({
+            'node': MockContext({
+                'properties': {
+                    'use_external_resource': False,
+                    'resource_id': '',
+                }
+            }),
+            'instance': MockContext({
+                'runtime_properties': {
+                    'aws_resource_id': ''
+                }
+            })
+        })
+
+        relationship_context = MockCloudifyContext(
+            node_id=testname, source=instance_context,
+            target=elasticip_context)
+
+        return relationship_context
 
     def _get_instances(self, storage):
         return storage.get_node_instances()

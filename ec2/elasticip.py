@@ -61,7 +61,7 @@ def allocate(**_):
         raise NonRecoverableError('{0}'.format(str(e)))
 
     utils.set_external_resource_id(
-        address_object.public_ip, ctx.instance, external=False)
+        address_object.public_ip, ctx.instance, ctx.logger, external=False)
 
 
 @operation
@@ -72,7 +72,7 @@ def release(**_):
 
     elasticip = \
         utils.get_external_resource_id_or_raise(
-            'release elasticip', ctx.instance)
+            'release elasticip', ctx.instance, ctx.logger)
 
     if _release_external_elasticip(ctx=ctx):
         return
@@ -116,10 +116,10 @@ def associate(**_):
 
     instance_id = \
         utils.get_external_resource_id_or_raise(
-            'associate elasticip', ctx.source.instance)
+            'associate elasticip', ctx.source.instance, ctx.logger)
     elasticip = \
         utils.get_external_resource_id_or_raise(
-            'associate elasticip', ctx.target.instance)
+            'associate elasticip', ctx.target.instance, ctx.logger)
 
     if _associate_external_elasticip_or_instance(elasticip, ctx=ctx):
         return
@@ -150,10 +150,10 @@ def disassociate(**_):
 
     instance_id = \
         utils.get_external_resource_id_or_raise(
-            'disassociate elasticip', ctx.source.instance)
+            'disassociate elasticip', ctx.source.instance, ctx.logger)
     elasticip = \
         utils.get_external_resource_id_or_raise(
-            'disassociate elasticip', ctx.target.instance)
+            'disassociate elasticip', ctx.target.instance, ctx.logger)
 
     if _disassociate_external_elasticip_or_instance(ctx=ctx):
         return
@@ -192,7 +192,7 @@ def _allocate_external_elasticip(ctx):
             raise NonRecoverableError(
                 'External elasticip was indicated, but the given '
                 'elasticip does not exist in the account.')
-        utils.set_external_resource_id(address_ip, ctx.instance)
+        utils.set_external_resource_id(address_ip, ctx.instance, ctx.logger)
         return True
 
 

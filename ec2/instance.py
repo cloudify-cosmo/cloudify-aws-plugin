@@ -82,7 +82,8 @@ def run_instances(**_):
             message='Waiting to verify that instance {0} '
             'has been added to your account.'.format(instance_id))
 
-    utils.set_external_resource_id(instance_id, ctx.instance, external=False)
+    utils.set_external_resource_id(
+        instance_id, ctx.instance, ctx.logger, external=False)
 
 
 @operation
@@ -91,7 +92,7 @@ def start(**_):
 
     instance_id = \
         utils.get_external_resource_id_or_raise(
-            'start instance', ctx.instance)
+            'start instance', ctx.instance, ctx.logger)
 
     if _start_external_instance(instance_id, ctx=ctx):
         return
@@ -123,7 +124,7 @@ def stop(**_):
 
     instance_id = \
         utils.get_external_resource_id_or_raise(
-            'stop instance', ctx.instance)
+            'stop instance', ctx.instance, ctx.logger)
 
     if _stop_external_instance(instance_id, ctx=ctx):
         return
@@ -155,7 +156,7 @@ def terminate(**_):
 
     instance_id = \
         utils.get_external_resource_id_or_raise(
-            'terminate instance', ctx.instance)
+            'terminate instance', ctx.instance, ctx.logger)
 
     if _terminate_external_instance(instance_id, ctx=ctx):
         return
@@ -236,7 +237,7 @@ def _create_external_instance(ctx):
             raise NonRecoverableError(
                 'Cannot use_external_resource because instance_id {0} '
                 'is not in this account.'.format(instance_id))
-        utils.set_external_resource_id(instance.id, ctx.instance)
+        utils.set_external_resource_id(instance.id, ctx.instance, ctx.logger)
         return True
 
 

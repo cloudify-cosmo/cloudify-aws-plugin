@@ -81,7 +81,8 @@ def create(**kwargs):
             boto.exception.BotoClientError) as e:
         raise NonRecoverableError('Key pair not created. {0}'.format(str(e)))
 
-    utils.set_external_resource_id(kp.name, ctx.instance, external=False)
+    utils.set_external_resource_id(
+        kp.name, ctx.instance, ctx.logger, external=False)
     _save_key_pair(kp, ctx=ctx)
 
 
@@ -92,7 +93,7 @@ def delete(**kwargs):
     ec2_client = connection.EC2ConnectionClient().client()
 
     key_pair_name = utils.get_external_resource_id_or_raise(
-        'delete key pair', ctx.instance)
+        'delete key pair', ctx.instance, ctx.logger)
 
     if _delete_external_keypair(ctx=ctx):
         return
@@ -135,7 +136,7 @@ def _create_external_keypair(ctx):
         if not _search_for_key_file(key_path_in_filesystem):
             raise NonRecoverableError(
                 'External resource, but the key file does not exist.')
-        utils.set_external_resource_id(key_pair_name, ctx.instance)
+        utils.set_external_resource_id(key_pair_name, ctx.instance, ctx.logger)
         return True
 
 
