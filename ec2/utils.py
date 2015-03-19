@@ -120,7 +120,7 @@ def use_external_resource(node_properties, ctx_logger):
         return True
 
 
-def get_target_external_resource_ids(relationship_type):
+def get_target_external_resource_ids(relationship_type, ctx_instance, ctx_logger):
     """Gets a list of target node ids connected via a relationship to a node.
 
     :param relationship_type: A string representing the type of relationship.
@@ -130,12 +130,12 @@ def get_target_external_resource_ids(relationship_type):
 
     ids = []
 
-    if not getattr(ctx.instance, 'relationships', []):
-        ctx.logger.info('Skipping attaching relationships, '
+    if not getattr(ctx_instance, 'relationships', []):
+        ctx_logger.info('Skipping attaching relationships, '
                         'because none are attached to this node.')
         return ids
 
-    for r in ctx.instance.relationships:
+    for r in ctx_instance.relationships:
         if relationship_type in r.type:
             ids.append(
                 r.target.instance.runtime_properties[

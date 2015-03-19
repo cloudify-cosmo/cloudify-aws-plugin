@@ -67,7 +67,8 @@ def run_instances(**_):
     if _create_external_instance(ctx=ctx):
         return
 
-    instance_parameters = _get_instance_parameters(ctx.node.properties)
+    instance_parameters = _get_instance_parameters(
+        ctx.node.properties, ctx.instance, ctx.logger)
 
     ctx.logger.debug(
         'Attempting to create EC2 Instance with these API parameters: {0}.'
@@ -381,7 +382,7 @@ def _get_instance_state(ctx_instance):
     return state
 
 
-def _get_instance_parameters(node_properties):
+def _get_instance_parameters(node_properties, ctx_instance, ctx_logger):
     """The parameters to the run_instance boto call.
 
     :param ctx:  The Cloudify ctx context.
@@ -392,7 +393,8 @@ def _get_instance_parameters(node_properties):
 
     attached_group_ids = \
         utils.get_target_external_resource_ids(
-            constants.INSTANCE_SECURITY_GROUP_RELATIONSHIP)
+            constants.INSTANCE_SECURITY_GROUP_RELATIONSHIP,
+            ctx_instance, ctx_logger)
 
     node_parameter_keys = node_properties['parameters'].keys()
 
@@ -417,7 +419,7 @@ def _get_instance_parameters(node_properties):
             if key in node_parameter_keys:
                 parameters[key] = node_properties['parameters'][key]
             else:
-                parameters[key] = _get_instance_keypair()
+                parameters[key] = _get_instance_keypair(ctx_instance, ctx_logger)
         elif key in node_parameter_keys:
             parameters[key] = node_properties['parameters'][key]
         elif key is 'image_id' or key is 'instance_type':
@@ -428,14 +430,14 @@ def _get_instance_parameters(node_properties):
     return parameters
 
 
-def _get_instance_keypair():
+def _get_instance_keypair(ctx_instance, ctx_logger):
     """Gets the instance key pair. If more or less than one is provided,
     this will raise an error.
 
     """
     list_of_keypairs = \
         utils.get_target_external_resource_ids(
-            constants.INSTANCE_KEYPAIR_RELATIONSHIP)
+            constants.INSTANCE_KEYPAIR_RELATIONSHIP, ctx_instance, ctx_logger)
 
     if len(list_of_keypairs) > 1:
         raise NonRecoverableError(
