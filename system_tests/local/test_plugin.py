@@ -19,6 +19,9 @@ import os
 # Cloudify Imports
 from ec2 import (
     utils,
+    securitygroup,
+    keypair,
+    elasticip,
     instance
 )
 from cloudify.exceptions import NonRecoverableError
@@ -386,6 +389,476 @@ class EC2UtilsUnitTests(EC2LocalTestUtils):
 
         self.assertEquals(0, len(output))
 
+class EC2SecurityGroupUnitTests(EC2LocalTestUtils):
+
+    def test_get_all_security_groups(self):
+
+        client = self._get_ec2_client()
+        groups_from_test = client.get_all_security_groups()
+
+        groups_from_plugin = securitygroup._get_all_security_groups()
+
+        self.assertEqual(len(groups_from_test), len(groups_from_plugin))
+
+    def test_get_all_security_groups_not_found(self):
+
+        not_found_names = ['test_get_all_security_groups_not_found']
+
+        groups_from_plugin = securitygroup._get_all_security_groups(
+            list_of_group_names=not_found_names)
+
+        self.assertIsNone(groups_from_plugin)
+
+    def test_get_security_group_from_name(self):
+
+        client = self._get_ec2_client()
+        group = client.create_security_group(
+            'test_get_security_group_from_name',
+            'some description')
+        group_from_plugin = securitygroup._get_security_group_from_id(
+            group_id=group.id)
+        self.assertEqual(group.name, group_from_plugin.name)
+        group.delete()
+
+    def test_get_security_group_from_id(self):
+
+        client = self._get_ec2_client()
+        group = client.create_security_group(
+            'test_get_security_group_from_id',
+            'some description')
+        group_from_plugin = securitygroup._get_security_group_from_name(
+            group_name=group.name)
+        self.assertEqual(group.id, group_from_plugin.id)
+        group.delete()
+
+    def test_get_security_group_from_name_but_really_id(self):
+
+        client = self._get_ec2_client()
+        group = client.create_security_group(
+            'test_get_security_group_from_name_but_really_id',
+            'some description')
+        group_from_plugin = securitygroup._get_security_group_from_name(
+            group_name=group.id)
+        self.assertEqual(group.name, group_from_plugin.name)
+        group.delete()
+
+    def test_get_security_group_from_id_but_really_name(self):
+
+        client = self._get_ec2_client()
+        group = client.create_security_group(
+            'test_get_security_group_from_id_but_really_name',
+            'some description')
+        group_from_plugin = securitygroup._get_security_group_from_id(
+            group_id=group.name)
+        self.assertEqual(group.id, group_from_plugin.id)
+        group.delete()
+
+    def test_delete_external_securitygroup_external(self):
+
+        ctx = self.mock_cloudify_context(
+            'test_delete_external_securitygroup_external')
+
+        ctx.node.properties['use_external_resource'] = True
+        ctx.instance.runtime_properties[EXTERNAL_RESOURCE_ID] = \
+            'sg-blahblah'
+
+        output = securitygroup._delete_external_securitygroup(ctx=ctx)
+        self.assertEqual(True, output)
+        self.assertNotIn(
+            EXTERNAL_RESOURCE_ID, ctx.instance.runtime_properties)
+
+    def test_delete_external_securitygroup_not_external(self):
+
+        ctx = self.mock_cloudify_context(
+            'test_delete_external_securitygroup_not_external')
+
+        ctx.node.properties['use_external_resource'] = False
+
+        output = securitygroup._delete_external_securitygroup(ctx=ctx)
+        self.assertEqual(False, output)
+
+    def test_create_external_securitygroup_external(self):
+
+        ctx = self.mock_cloudify_context(
+            'test_create_external_securitygroup_external')
+
+        client = self._get_ec2_client()
+        group = client.create_security_group(
+            'test_create_external_securitygroup_external',
+            'some description')
+
+        ctx.node.properties['use_external_resource'] = True
+        ctx.node.properties['resource_id'] = group.id
+
+        output = securitygroup._create_external_securitygroup(group.name, ctx=ctx)
+        self.assertEqual(True, output)
+        self.assertEqual(
+            ctx.instance.runtime_properties[EXTERNAL_RESOURCE_ID],
+            group.id)
+        group.delete()
+
+    def test_create_external_securitygroup_external_bad_id(self):
+
+        ctx = self.mock_cloudify_context(
+            'test_create_external_securitygroup_external_bad_id')
+
+        ctx.node.properties['use_external_resource'] = True
+        ctx.node.properties['resource_id'] = 'sg-73cd3f1e'
+
+        ex = self.assertRaises(
+            NonRecoverableError,
+            securitygroup._create_external_securitygroup,
+            'sg-73cd3f1e',
+            ctx=ctx)
+        self.assertIn('security group does not exist', ex.message)
+
+    def test_create_external_securitygroup_not_external(self):
+
+        ctx = self.mock_cloudify_context(
+            'test_create_external_securitygroup_not_external')
+
+        ctx.node.properties['use_external_resource'] = False
+
+        output = securitygroup._delete_external_securitygroup(ctx=ctx)
+        self.assertEqual(False, output)
+
+    def test_authorize_by_id(self):
+
+        client = self._get_ec2_client()
+        group = client.create_security_group(
+            'test_authorize_by_id',
+            'some description')
+        rules = [
+            {
+                'ip_protocol': 'tcp',
+                'from_port': 22,
+                'to_port': 22,
+                'cidr_ip': '0.0.0.0/0'
+             }
+        ]
+        securitygroup._authorize_by_id(
+            client, group.id, rules
+        )
+        groups_from_test = client.get_all_security_groups(groupnames=[group.name])
+        self.assertEqual(group.id, groups_from_test[0].id)
+        self.assertEqual(
+            str(groups_from_test[0].rules[0]),
+            'IPPermissions:tcp(22-22)'
+        )
+        group.delete()
+
+    def test_authorize_by_id_bad_id(self):
+
+        client = self._get_ec2_client()
+        rules = [
+            {
+                'ip_protocol': 'tcp',
+                'from_port': 22,
+                'to_port': 22,
+                'cidr_ip': '0.0.0.0/0'
+             }
+        ]
+
+        ex = self.assertRaises(
+            NonRecoverableError,
+            securitygroup._authorize_by_id,
+            client, 'sg-73cd3f1e', rules
+        )
+        self.assertIn('InvalidGroup.NotFound', ex.message)
+
+    def test_delete_security_group_bad_group(self):
+
+        client = self._get_ec2_client()
+
+        ex = self.assertRaises(
+            NonRecoverableError,
+            securitygroup._delete_security_group,
+            'sg-73cd3f1e', client
+        )
+
+        self.assertIn('InvalidGroup.NotFound', ex.message)
+
+
+class EC2KeyPairUnitTests(EC2LocalTestUtils):
+
+    def test_search_for_key_file_no_file(self):
+
+        output = keypair._search_for_key_file(
+            '~/.ssh/test_search_for_key_file.pem')
+
+        self.assertEquals(
+            False,
+            output
+        )
+
+    def test_get_path_to_key_folder_no_private_key_path(self):
+
+        ctx = self.mock_cloudify_context(
+            'test_get_path_to_key_folder_no_private_key_path')
+
+        ex = self.assertRaises(
+            NonRecoverableError,
+            keypair._get_path_to_key_file,
+            ctx.node.properties)
+
+        self.assertIn(
+            'private_key_path not set',
+            ex.message
+        )
+
+    def test_get_path_to_key_folder(self):
+
+        ctx = self.mock_cloudify_context(
+            'test_get_path_to_key_folder')
+
+        ctx.node.properties['private_key_path'] = \
+            '~/.ssh/test_get_path_to_key_folder.pem'
+
+        full_key_path = os.path.expanduser(
+            ctx.node.properties['private_key_path']
+        )
+
+        key_directory, key_filename = os.path.split(full_key_path)
+
+        output = keypair._get_path_to_key_folder(
+            ctx.node.properties
+        )
+
+        self.assertEqual(key_directory, output)
+
+    def test_get_path_to_key_file_no_private_key_path(self):
+
+        ctx = self.mock_cloudify_context(
+            'test_get_path_to_key_folder_no_private_key_path')
+
+        ex = self.assertRaises(
+            NonRecoverableError,
+            keypair._get_path_to_key_file,
+            ctx.node.properties)
+
+        self.assertIn(
+            'private_key_path not set',
+            ex.message
+        )
+
+    def test_get_path_to_key_file(self):
+
+        ctx = self.mock_cloudify_context(
+            'test_get_path_to_key_folder')
+
+        ctx.node.properties['private_key_path'] = \
+            '~/.ssh/test_get_path_to_key_folder.pem'
+
+        full_key_path = os.path.expanduser(
+            ctx.node.properties['private_key_path']
+        )
+
+        output = keypair._get_path_to_key_file(
+            ctx.node.properties
+        )
+
+        self.assertEqual(full_key_path, output)
+
+    def test_get_key_pair_by_id_no_kp(self):
+
+        ex = self.assertRaises(
+            NonRecoverableError,
+            keypair._get_key_pair_by_id,
+            'test_get_key_pair_by_id_no_kp')
+
+        self.assertIn(
+            'InvalidKeyPair.NotFound',
+            ex.message)
+
+    def test_get_key_pair_by_id(self):
+
+        client = self._get_ec2_client()
+        kp = client.create_key_pair(
+            'test_get_key_pair_by_id')
+
+
+        output = keypair._get_key_pair_by_id(kp.name)
+        self.assertEqual(kp.name, output.name)
+        kp.delete()
+
+
+class EC2ElasticIPUnitTests(EC2LocalTestUtils):
+
+    def test_get_all_addresses_bad_address(self):
+
+        output = elasticip._get_all_addresses('127.0.0.1')
+
+        self.assertIsNone(output)
+
+    def test_get_address_object_by_id(self):
+
+        client = self._get_ec2_client()
+        address = client.allocate_address()
+        address_object = \
+            elasticip._get_address_object_by_id(address.public_ip)
+        self.assertEqual(
+            address.public_ip, address_object.public_ip)
+        address_object.delete()
+
+    def test_get_address_by_id(self):
+
+        client = self._get_ec2_client()
+        address_object = client.allocate_address()
+        address = elasticip._get_address_by_id(address_object.public_ip)
+        self.assertEqual(address, address_object.public_ip)
+        address_object.delete()
+
+    def test_disassociate_external_elasticip_or_instance(self):
+
+        ctx = self.mock_relationship_context(
+            'test_disassociate_external_elasticip_or_instance')
+
+        ctx.source.node.properties['use_external_resource'] = False
+
+        output = \
+            elasticip._disassociate_external_elasticip_or_instance(ctx=ctx)
+
+        self.assertEqual(False, output)
+
+    def test_disassociate_external_elasticip_or_instance_external(self):
+
+        ctx = self.mock_relationship_context(
+            'test_disassociate_external_elasticip_or_instance_external')
+
+        ctx.source.node.properties['use_external_resource'] = True
+        ctx.target.node.properties['use_external_resource'] = True
+        ctx.source.instance.runtime_properties['public_ip_address'] = \
+            '127.0.0.1'
+
+        output = \
+            elasticip._disassociate_external_elasticip_or_instance(ctx=ctx)
+
+        self.assertEqual(True, output)
+        self.assertNotIn(
+            'public_ip_address',
+            ctx.source.instance.runtime_properties)
+
+    def test_associate_external_elasticip_or_instance(self):
+
+        ctx = self.mock_relationship_context(
+            'test_associate_external_elasticip_or_instance')
+
+        ctx.source.node.properties['use_external_resource'] = False
+
+        output = \
+            elasticip._associate_external_elasticip_or_instance(
+                '127.0.0.1', ctx=ctx)
+
+        self.assertEqual(False, output)
+
+    def test_associate_external_elasticip_or_instance_external(self):
+
+        ctx = self.mock_relationship_context(
+            'test_associate_external_elasticip_or_instance_external')
+
+        client = self._get_ec2_client()
+        address_object = client.allocate_address()
+
+        ctx.source.node.properties['use_external_resource'] = True
+        ctx.target.node.properties['use_external_resource'] = True
+        ctx.source.instance.runtime_properties['public_ip_address'] = \
+            '127.0.0.1'
+
+        output = \
+            elasticip._associate_external_elasticip_or_instance(
+                address_object.public_ip, ctx=ctx)
+
+        self.assertEqual(True, output)
+
+        self.assertIn(
+            'public_ip_address',
+            ctx.source.instance.runtime_properties)
+        self.assertEqual(
+            address_object.public_ip,
+            ctx.source.instance.runtime_properties['public_ip_address'])
+        address_object.delete()
+
+    def test_release_external_elasticip(self):
+
+        ctx = self.mock_cloudify_context(
+            'test_release_external_elasticip')
+
+        ctx.node.properties['use_external_resource'] = False
+
+        output = \
+            elasticip._release_external_elasticip(ctx=ctx)
+
+        self.assertEqual(False, output)
+
+    def test_release_external_elasticip_external(self):
+
+        ctx = self.mock_cloudify_context(
+            'test_release_external_elasticip')
+
+        ctx.node.properties['use_external_resource'] = True
+        ctx.instance.runtime_properties[EXTERNAL_RESOURCE_ID] = \
+            '127.0.0.1'
+
+        output = \
+            elasticip._release_external_elasticip(ctx=ctx)
+
+        self.assertEqual(True, output)
+        self.assertNotIn(
+            EXTERNAL_RESOURCE_ID,
+            ctx.instance.runtime_properties)
+
+    def test_allocate_external_elasticip(self):
+
+        ctx = self.mock_cloudify_context(
+            'test_allocate_external_elasticip')
+
+        ctx.node.properties['use_external_resource'] = False
+
+        output = \
+            elasticip._allocate_external_elasticip(ctx=ctx)
+
+        self.assertEqual(False, output)
+
+    def test_allocate_external_elasticip_external(self):
+
+        ctx = self.mock_cloudify_context(
+            'test_allocate_external_elasticip_external')
+
+        client = self._get_ec2_client()
+        address_object = client.allocate_address()
+
+        ctx.node.properties['use_external_resource'] = True
+        ctx.node.properties['resource_id'] = address_object.public_ip
+
+        output = \
+            elasticip._allocate_external_elasticip(ctx=ctx)
+
+        self.assertEqual(True, output)
+        self.assertIn(
+            EXTERNAL_RESOURCE_ID,
+            ctx.instance.runtime_properties)
+        self.assertEqual(
+            address_object.public_ip,
+            ctx.instance.runtime_properties[EXTERNAL_RESOURCE_ID])
+
+        address_object.delete()
+
+    def test_allocate_external_elasticip_external_bad_id(self):
+
+        ctx = self.mock_cloudify_context(
+            'test_allocate_external_elasticip_external')
+
+        ctx.node.properties['use_external_resource'] = True
+        ctx.node.properties['resource_id'] = '127.0.0.1'
+
+        ex = self.assertRaises(
+            NonRecoverableError,
+            elasticip._allocate_external_elasticip, ctx=ctx)
+
+        self.assertIn(
+            'the given elasticip does not exist in the account',
+            ex.message)
+
 
 class EC2InstanceUnitTests(EC2LocalTestUtils):
 
@@ -401,7 +874,7 @@ class EC2InstanceUnitTests(EC2LocalTestUtils):
     def test_instance_get_image_id(self):
 
         image_object = instance._get_image(TEST_AMI)
-        self.assertEquals(image_object.id, TEST_AMI)
+        self.assertEqual(image_object.id, TEST_AMI)
 
     def test_instance_external_invalid_instance(self):
 

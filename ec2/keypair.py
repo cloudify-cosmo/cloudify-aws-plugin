@@ -221,12 +221,12 @@ def _get_key_pair_by_id(key_pair_id):
     ec2_client = connection.EC2ConnectionClient().client()
 
     try:
-        key_pair = ec2_client.get_key_pair(key_pair_id)
+        key_pairs = ec2_client.get_all_key_pairs(keynames=key_pair_id)
     except (boto.exception.EC2ResponseError,
             boto.exception.BotoServerError) as e:
-        raise NonRecoverableError('{0}.'.format(str(e)))
+        raise NonRecoverableError('{0}'.format(str(e)))
 
-    return key_pair
+    return key_pairs[0] if key_pairs else None
 
 
 def _get_path_to_key_file(node_properties):
