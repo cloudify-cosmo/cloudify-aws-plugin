@@ -13,183 +13,151 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
-# built-in imports
-import time
+# Built-in Imports
+import os
 
-# other imports
-from boto.exception import EC2ResponseError, BotoServerError
-
-# Cloudify imports
-from ec2 import connection
+# Cloudify Imports
+from ec2 import constants
 from cloudify.exceptions import NonRecoverableError
 
 
-def validate_state(instance, state, timeout_length, check_interval, ctx):
-    """ Check if an EC2 instance is in a particular state.
-    :param instance: And EC2 instance.
-    :param state: The state code (pending = 0, running = 16,
-                  shutting down = 32, terminated = 48, stopping = 64,
-                  stopped = 80
-    :param timeout_length: How long to wait for a positive answer
-           before we stop checking.
-    :param check_interval: How long to wait between checks.
-    :return: bool (True the desired state was reached, False, it was not.)
+def validate_node_property(key, node_properties):
+    """Checks if the node property exists in the blueprint.
+
+    :raises NonRecoverableError: if key not in the node's properties
     """
 
-    ctx.logger.debug('Attempting state validation: '
-                     'instance id: {0}, state: {1}, timeout length: {2}, '
-                     'check interval: {3}.'.format(instance.id, state,
-                                                   timeout_length,
-                                                   check_interval))
-
-    if check_interval < 1:
-        check_interval = 1
-
-    timeout = time.time() + timeout_length
-
-    while True:
-        if state == get_instance_state(instance, ctx=ctx):
-            ctx.logger.info('Instance state validated: instance {0}.'
-                            .format(instance.state))
-            return True
-        elif time.time() > timeout:
-            raise NonRecoverableError('Timed out during '
-                                      'instance state validation: '
-                                      'instance: {0}, '
-                                      'timeout length: {1}, '
-                                      'check interval: {2}.'
-                                      .format(instance.id,
-                                              timeout_length,
-                                              check_interval))
-        time.sleep(check_interval)
+    if key not in node_properties:
+        raise NonRecoverableError(
+            '{0} is a required input. Unable to create.'.format(key))
 
 
-def get_instance_state(instance, ctx):
-    """ Gets the instance's current state
+def log_available_resources(list_of_resources, ctx_logger):
+    """This logs a list of available resources.
     """
 
-    ctx.logger.debug('Checking the instance state for {0}.'
-                     .format(instance.id))
-    state = instance.update()
-    ctx.logger.debug('Instance state is {0}.'
-                     .format(state))
-    return instance.state_code
+    message = 'Available resources: \n'
+
+    for resource in list_of_resources:
+        message = '{0}{1}\n'.format(message, resource)
+
+    ctx_logger.debug(message)
 
 
-def validate_instance_id(instance_id, ctx):
-    """ Checks to see if instance_id resolves an instance from
-        get_all_reservations
+def get_external_resource_id_or_raise(operation, ctx_instance, ctx_logger):
+    """Checks if the EXTERNAL_RESOURCE_ID runtime_property is set and returns it.
+
+    :param operation: A string representing what is happening.
+    :param ctx_instance: The CTX Node-Instance Context.
+    :param ctx:  The Cloudify ctx context.
+    :returns The EXTERNAL_RESOURCE_ID runtime_property for a CTX Instance.
+    :raises NonRecoverableError: If EXTERNAL_RESOURCE_ID has not been set.
     """
-    ec2_client = connection.EC2ConnectionClient().client()
 
-    try:
-        ec2_client.get_all_reservations(instance_id)
-    except (EC2ResponseError, BotoServerError) as e:
-        raise NonRecoverableError('Error. Failed to validate instance id: '
-                                  'API returned: {0}.'
-                                  .format(e))
+    ctx_logger.debug(
+        'Checking if {0} in instance runtime_properties, for {0} operation.'
+        .format(constants.EXTERNAL_RESOURCE_ID, operation))
 
-    return True
+    if constants.EXTERNAL_RESOURCE_ID not in ctx_instance.runtime_properties:
+        raise NonRecoverableError(
+            'Cannot {0} because {1} is not assigned.'
+            .format(operation, constants.EXTERNAL_RESOURCE_ID))
+
+    return ctx_instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
 
 
-def get_instance_from_id(instance_id, ctx):
-    """ using the instance_id retrieves the instance object
-        from the API and returns the object.
+def set_external_resource_id(value, ctx_instance, ctx_logger, external=True):
+    """Sets the EXTERNAL_RESOURCE_ID runtime_property for a Node-Instance.
+
+    :param value: the desired EXTERNAL_RESOURCE_ID runtime_property
+    :param ctx:  The Cloudify ctx context.
+    :param external:  Boolean representing if it is external resource or not.
     """
-    ec2_client = connection.EC2ConnectionClient().client()
 
-    try:
-        reservations = ec2_client.get_all_reservations(instance_id)
-    except (EC2ResponseError, BotoServerError) as e:
-        raise NonRecoverableError('(Node: {0}): Error. '
-                                  'Failed to get instance by id: '
-                                  'API returned: {1}.'
-                                  .format(ctx.instance.id, e))
-
-    instance = reservations[0].instances[0]
-
-    return instance
-
-
-def get_instance_attribute(instance, attribute, timeout_length):
-    """ given the related instance object
-        the given variable can be retrieved and returned
-    """
-    timeout = time.time() + timeout_length
-
-    while instance.update() != 'running':
-        time.sleep(5)
-        if time.time() > timeout:
-            raise NonRecoverableError('Timed out while attemting to get the '
-                                      'instance {0}. Timeout length: {1}.'
-                                      .format(attribute, timeout_length))
-    attribute = getattr(instance, attribute)
-    return attribute
-
-
-def get_private_dns_name(instance, timeout_length):
-    """ returns the private_dns_name variable for a given instance
-    """
-    return get_instance_attribute(instance,
-                                  'private_dns_name', timeout_length)
-
-
-def get_public_dns_name(instance, timeout_length):
-    """ returns the public_dns_name variable for a given instance
-    """
-    return get_instance_attribute(instance,
-                                  'public_dns_name', timeout_length)
-
-
-def get_private_ip_address(instance, timeout_length):
-    """ returns the private_ip_address variable for a given instance
-    """
-    return get_instance_attribute(instance,
-                                  'private_ip_address', timeout_length)
-
-
-def get_public_ip_address(instance, timeout_length):
-    """ returns the public_ip_address variable for a given instance
-    """
-    return get_instance_attribute(instance,
-                                  'public_ip_address', timeout_length)
-
-
-def validate_group(group, ctx):
-    ctx.logger.debug('Testing if group with identifier '
-                     ' {0} exists in this account.'.format(group))
-    groups = get_security_group_from_id(group, ctx)
-
-    if groups is not None:
-        return True
+    if not external:
+        resource_type = 'Cloudify'
     else:
-        return False
+        resource_type = 'external'
+
+    ctx_logger.info('Using {0} resource: {1}'.format(resource_type, value))
+    ctx_instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID] = value
 
 
-def get_security_group_from_id(group, ctx):
-    ec2_client = connection.EC2ConnectionClient().client()
-    ctx.logger.debug('Getting Security Group by ID: {0}'.format(group))
+def unassign_runtime_property_from_resource(
+        property_name, ctx_instance, ctx_logger):
+    """Pops a runtime_property and reports to debug.
 
-    try:
-        groups = ec2_client.get_all_security_groups(group_ids=group)
-    except (EC2ResponseError, BotoServerError) as e:
-        raise NonRecoverableError('(Node: {0}): Error. '
-                                  'Failed to group by id: '
-                                  'API returned: {1}.'
-                                  .format(ctx.instance.id, e))
-    return groups
-
-
-def save_key_pair(key_pair_object, ctx):
-    """ Saves the key pair to the file specified in the blueprint
+    :param property_name: The runtime_property to remove.
+    :param ctx_instance: The CTX Node-Instance Context.
+    :param ctx:  The Cloudify ctx context.
     """
 
-    ctx.logger.debug('Attempting to save the key_pair_object.')
+    value = ctx_instance.runtime_properties.pop(property_name)
+    ctx_logger.debug(
+        'Unassigned {0} runtime property: {1}'.format(property_name, value))
 
-    try:
-        key_pair_object.save(ctx.node.properties['private_key_path'])
-    except OSError:
-        raise NonRecoverableError('Unable to save key pair to file: {0}.'
-                                  'OS Returned: {1}'.format(
-                                      ctx.node.properties['private_key_path'],
-                                      OSError))
+
+def use_external_resource(node_properties, ctx_logger):
+    """Checks if use_external_resource node property is true,
+    logs the ID and answer to the debug log,
+    and returns boolean False (if not external) or True.
+
+    :param node_properties: The ctx node properties for a node.
+    :param ctx:  The Cloudify ctx context.
+    :returns boolean: False if not external.
+    """
+
+    if not node_properties['use_external_resource']:
+        ctx_logger.debug(
+            'Using Cloudify resource_id: {0}.'
+            .format(node_properties['resource_id']))
+        return False
+    else:
+        ctx_logger.debug(
+            'Using external resource_id: {0}.'
+            .format(node_properties['resource_id']))
+        return True
+
+
+def get_target_external_resource_ids(relationship_type,
+                                     ctx_instance, ctx_logger):
+    """Gets a list of target node ids connected via a relationship to a node.
+
+    :param relationship_type: A string representing the type of relationship.
+    :param ctx:  The Cloudify ctx context.
+    :returns a list of security group ids.
+    """
+
+    ids = []
+
+    if not getattr(ctx_instance, 'relationships', []):
+        ctx_logger.info('Skipping attaching relationships, '
+                        'because none are attached to this node.')
+        return ids
+
+    for r in ctx_instance.relationships:
+        if relationship_type in r.type:
+            ids.append(
+                r.target.instance.runtime_properties[
+                    constants.EXTERNAL_RESOURCE_ID])
+
+    return ids
+
+
+def get_resource_id(ctx):
+    """Returns the resource id, if the user doesn't provide one,
+    this will create one for them.
+
+    :param node_properties: The node properties dictionary.
+    :return resource_id: A string.
+    """
+
+    if ctx.node.properties['resource_id']:
+        return ctx.node.properties['resource_id']
+    elif 'private_key_path' in ctx.node.properties:
+        directory_path, filename = \
+            os.path.split(ctx.node.properties['private_key_path'])
+        resource_id, filetype = filename.split('.')
+        return resource_id
+
+    return '{0}-{1}'.format(ctx.deployment.id, ctx.instance.id)

@@ -13,19 +13,12 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
-# Third-party Imports
-from boto.ec2 import EC2Connection
+
+def get_instances(storage):
+    return storage.get_node_instances()
 
 
-class EC2ConnectionClient():
-    """Provides functions for getting the EC2 Client
-    """
-
-    def __init__(self):
-        self.connection = None
-
-    def client(self):
-    	"""Represents the EC2Connection Client
-        """
-
-        return EC2Connection()
+def get_instance_node_id(node_name, storage):
+    for instance in get_instances(storage):
+        if node_name in instance.node_id:
+            return node_name

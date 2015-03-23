@@ -13,110 +13,295 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
-# Boto Imports
-from boto.exception import EC2ResponseError
-from boto.exception import BotoServerError
+# Third-party Imports
+import boto.exception
 
 # Cloudify imports
+from ec2 import utils
+from ec2 import constants
+from ec2 import connection
 from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
 from cloudify.decorators import operation
-from ec2 import connection
 
 
 @operation
-def allocate(**kwargs):
-    """ Allocates an Elastic IP in the connected region in the AWS account.
-    """
+def creation_validation(**_):
+    """ This checks that all user supplied info is valid """
+
+    address = _get_address_by_id(
+        ctx.node.properties['resource_id'])
+
+    if ctx.node.properties['use_external_resource'] and not address:
+        raise NonRecoverableError(
+            'External resource, but the supplied '
+            'elasticip does not exist in the account.')
+
+    if not ctx.node.properties['use_external_resource'] and address:
+        raise NonRecoverableError(
+            'Not external resource, but the supplied '
+            'elasticip exists.')
+
+
+@operation
+def allocate(**_):
+    """This allocates an Elastic IP in the connected account."""
+
     ec2_client = connection.EC2ConnectionClient().client()
-    ctx.logger.info('Allocating Elastic IP.')
+
+    if _allocate_external_elasticip(ctx=ctx):
+        return
+
+    ctx.logger.debug('Attempting to allocate elasticip.')
 
     try:
-        address_object = ec2_client.allocate_address()
-    except (EC2ResponseError, BotoServerError) as e:
-        raise NonRecoverableError('Error. Failed to '
-                                  'provision Elastic IP. Error: {0}.'
-                                  .format(e))
+        address_object = ec2_client.allocate_address(domain=None)
+    except (boto.exception.EC2ResponseError,
+            boto.exception.BotoServerError) as e:
+        raise NonRecoverableError('{0}'.format(str(e)))
 
-    ctx.logger.info('Elastic IP allocated: {0}'.format(
-        address_object.public_ip))
-    ctx.instance.runtime_properties['elasticip'] = address_object.public_ip
+    utils.set_external_resource_id(
+        address_object.public_ip, ctx.instance, ctx.logger, external=False)
 
 
 @operation
-def release(**kwargs):
-    """ Releases an Elastic IP from the connected region in the AWS account.
+def release(**_):
+    """This releases an Elastic IP created by Cloudify
+    in the connected account.
     """
-    ec2_client = connection.EC2ConnectionClient().client()
-    ctx.logger.info('Releasing an Elastic IP.')
 
-    elasticip = ctx.instance.runtime_properties['elasticip']
+    elasticip = \
+        utils.get_external_resource_id_or_raise(
+            'release elasticip', ctx.instance, ctx.logger)
+
+    if _release_external_elasticip(ctx=ctx):
+        return
+
+    address_object = _get_address_object_by_id(elasticip)
+
+    if not address_object:
+        raise NonRecoverableError(
+            'Unable to release elasticip. Elasticip not in account.')
+
+    ctx.logger.debug('Attempting to release an Elastic IP.')
 
     try:
-        ec2_client.release_address(public_ip=elasticip)
-    except (EC2ResponseError, BotoServerError) as e:
-        raise NonRecoverableError('Error. Failed to '
-                                  'delete Elastic IP. Error: {0}.'
-                                  .format(e))
+        deleted = address_object.delete()
+    except (boto.exception.EC2ResponseError,
+            boto.exception.BotoServerError) as e:
+        raise NonRecoverableError('{0}'.format(str(e)))
 
-    ctx.logger.info('Released Elastic IP {0}.'.format(elasticip))
+    if not deleted:
+        raise NonRecoverableError(
+            'Elastic IP {0} deletion failed for an unknown reason.'
+            .format(address_object.public_ip))
+
+    address = _get_address_object_by_id(address_object.public_ip)
+
+    if not address:
+        utils.unassign_runtime_property_from_resource(
+            constants.EXTERNAL_RESOURCE_ID, ctx.instance, ctx.logger)
+    else:
+        return ctx.operation.retry(
+            message='Elastic IP not released. Retrying...')
 
 
 @operation
-def associate(**kwargs):
-    """ Associates an Elastic IP with an EC2 Instance.
+def associate(**_):
+    """ Associates an Elastic IP created by Cloudify with an EC2 Instance
+    that was also created by Cloudify.
     """
+
     ec2_client = connection.EC2ConnectionClient().client()
 
-    elasticip = ctx.target.node.properties['elasticip']
-    instance_id = ctx.source.instance.runtime_properties['instance_id']
-    ctx.logger.info('Associating an Elastic IP {0} '
-                    'with an EC2 Instance {1}.'.format(elasticip, instance_id))
+    instance_id = \
+        utils.get_external_resource_id_or_raise(
+            'associate elasticip', ctx.source.instance, ctx.logger)
+    elasticip = \
+        utils.get_external_resource_id_or_raise(
+            'associate elasticip', ctx.target.instance, ctx.logger)
+
+    if _associate_external_elasticip_or_instance(elasticip, ctx=ctx):
+        return
+
+    ctx.logger.debug(
+        'Attempting to associate elasticip {0} and instance {1}.'
+        .format(elasticip, instance_id))
 
     try:
-        ec2_client.associate_address(instance_id=instance_id,
-                                     public_ip=elasticip)
-    except (EC2ResponseError, BotoServerError) as e:
-        raise NonRecoverableError('Error. Failed to '
-                                  'attach Elastic IP. Error: {0}.'
-                                  .format(e))
+        ec2_client.associate_address(
+            instance_id=instance_id, public_ip=elasticip)
+    except (boto.exception.EC2ResponseError,
+            boto.exception.BotoServerError) as e:
+        raise NonRecoverableError('{0}'.format(str(e)))
 
-    ctx.logger.info('Associated Elastic IP {0} with instance {1}.'.format(
-        elasticip, instance_id))
+    ctx.logger.info(
+        'Associated Elastic IP {0} with instance {1}.'
+        .format(elasticip, instance_id))
+    ctx.source.instance.runtime_properties['public_ip_address'] = elasticip
 
 
 @operation
-def disassociate(**kwargs):
-    """ Disassociates an Elastic IP from an EC2 Instance.
+def disassociate(**_):
+    """ Disassocates an Elastic IP created by Cloudify from an EC2 Instance
+    that was also created by Cloudify.
     """
     ec2_client = connection.EC2ConnectionClient().client()
-    elasticip = ctx.target.node.properties['elasticip']
-    ctx.logger.info('Disassociating Elastic IP {0}'.format(elasticip))
+
+    instance_id = \
+        utils.get_external_resource_id_or_raise(
+            'disassociate elasticip', ctx.source.instance, ctx.logger)
+    elasticip = \
+        utils.get_external_resource_id_or_raise(
+            'disassociate elasticip', ctx.target.instance, ctx.logger)
+
+    if _disassociate_external_elasticip_or_instance(ctx=ctx):
+        return
+
+    ctx.logger.debug('Disassociating Elastic IP {0}'.format(elasticip))
 
     try:
         ec2_client.disassociate_address(public_ip=elasticip)
-    except (EC2ResponseError, BotoServerError) as e:
-        raise NonRecoverableError('Error. Failed to detach '
-                                  'Elastic IP, returned: {0}.'
-                                  .format(e))
+    except (boto.exception.EC2ResponseError,
+            boto.exception.BotoServerError) as e:
+        raise NonRecoverableError('{0}'.format(str(e)))
 
-    ctx.logger.info('Disassociated Elastic IP {0}.'.format(
-        elasticip))
+    utils.unassign_runtime_property_from_resource(
+        'public_ip_address', ctx.source.instance, ctx.logger)
+
+    ctx.logger.info(
+        'Disassociated Elastic IP {0} from instance {1}.'
+        .format(elasticip, instance_id))
 
 
-@operation
-def creation_validation(**kwargs):
+def _allocate_external_elasticip(ctx):
+    """Pretends to allocate an Elastic IP but if it was
+    not created by Cloudify, it just sets runtime_properties
+    and exits the operation.
+
+    :return False: Cloudify resource. Continue operation.
+    :return True: External resource. Set runtime_properties. Ignore operation.
+    """
+
+    if not utils.use_external_resource(ctx.node.properties, ctx.logger):
+        return False
+    else:
+        address_ip = _get_address_by_id(
+            ctx.node.properties['resource_id'])
+        if not address_ip:
+            raise NonRecoverableError(
+                'External elasticip was indicated, but the given '
+                'elasticip does not exist in the account.')
+        utils.set_external_resource_id(address_ip, ctx.instance, ctx.logger)
+        return True
+
+
+def _release_external_elasticip(ctx):
+    """Pretends to release an Elastic IP but if it was
+    not created by Cloudify, it just deletes runtime_properties
+    and exits the operation.
+
+    :return False: Cloudify resource. Continue operation.
+    :return True: External resource. Unset runtime_properties.
+        Ignore operation.
+    """
+
+    if not utils.use_external_resource(ctx.node.properties, ctx.logger):
+        return False
+    else:
+        utils.unassign_runtime_property_from_resource(
+            constants.EXTERNAL_RESOURCE_ID, ctx.instance, ctx.logger)
+        return True
+
+
+def _associate_external_elasticip_or_instance(elasticip, ctx):
+    """Pretends to associate an Elastic IP with an EC2 instance but if one
+    was not created by Cloudify, it just sets runtime_properties
+    and exits the operation.
+
+    :return False: At least one is a Cloudify resource. Continue operation.
+    :return True: Both are External resources. Set runtime_properties.
+        Ignore operation.
+    """
+
+    if not utils.use_external_resource(ctx.source.node.properties, ctx.logger) \
+            or not utils.use_external_resource(
+                ctx.target.node.properties, ctx.logger):
+        return False
+    else:
+        ctx.logger.info(
+            'Either instance or elasticip is an external resource so not '
+            'performing associate operation.')
+        ctx.source.instance.runtime_properties['public_ip_address'] = \
+            elasticip
+        return True
+
+
+def _disassociate_external_elasticip_or_instance(ctx):
+    """Pretends to disassociate an Elastic IP with an EC2 instance but if one
+    was not created by Cloudify, it just deletes runtime_properties
+    and exits the operation.
+
+    :return False: At least one is a Cloudify resource. Continue operation.
+    :return True: Both are External resources. Set runtime_properties.
+        Ignore operation.
+    """
+
+    if not utils.use_external_resource(ctx.source.node.properties, ctx.logger) \
+            or not utils.use_external_resource(
+                ctx.target.node.properties, ctx.logger):
+        return False
+    else:
+        ctx.logger.info(
+            'Either instance or elasticip is an external resource so not '
+            'performing disassociate operation.')
+        utils.unassign_runtime_property_from_resource(
+            'public_ip_address', ctx.source.instance, ctx.logger)
+        return True
+
+
+def _get_address_by_id(address_id):
+    """Returns the elastip ip for a given address elastip.
+
+    :param address_id: The ID of a elastip.
+    :returns The boto elastip ip.
+    """
+
+    address = _get_address_object_by_id(address_id)
+
+    return address.public_ip if address else address
+
+
+def _get_address_object_by_id(address_id):
+    """Returns the elastip object for a given address elastip.
+
+    :param address_id: The ID of a elastip.
+    :returns The boto elastip object.
+    """
+
+    address = _get_all_addresses(address=address_id)
+
+    return address[0] if address else address
+
+
+def _get_all_addresses(address=None):
+    """Returns a list of elastip objects for a given address elastip.
+
+    :param address: The ID of a elastip.
+    :returns A list of elasticip objects.
+    :raises NonRecoverableError: If Boto errors.
+    """
+
     ec2_client = connection.EC2ConnectionClient().client()
-    ctx.logger.info('Validating Elastic IP.')
-    elasticip = ctx.instance.runtime_properties['elasticip']
 
     try:
-        ec2_client.get_all_addresses(elasticip)
-    except (EC2ResponseError, BotoServerError) as e:
-        raise NonRecoverableError('Error. Failed to validate '
-                                  'Elastic IP, returned: {0}.'
-                                  .format(e))
+        addresses = ec2_client.get_all_addresses(address)
+    except boto.exception.EC2ResponseError as e:
+        if 'InvalidAddress.NotFound' in e:
+            addresses = ec2_client.get_all_addresses()
+            utils.log_available_resources(addresses, ctx.logger)
+        return None
+    except boto.exception.BotoServerError as e:
+        raise NonRecoverableError('{0}'.format(str(e)))
 
-    ctx.logger.info('Verified that Elastic IP {0} was created.'.format(
-        elasticip))
-    return True
+    return addresses

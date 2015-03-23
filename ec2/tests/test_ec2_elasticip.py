@@ -21,7 +21,6 @@ from moto import mock_ec2
 
 # Cloudify Imports is imported and used in operations
 from ec2 import connection
-from ec2 import utils
 from ec2 import elasticip
 from cloudify.mocks import MockCloudifyContext
 from cloudify.mocks import MockContext
@@ -38,11 +37,12 @@ class TestElasticIP(testtools.TestCase):
 
         test_node_id = test_name
         test_properties = {
+            'use_external_resource': False,
+            'resource_id': '',
             'image_id': TEST_AMI_IMAGE_ID,
             'instance_type': TEST_INSTANCE_TYPE,
-            'attributes': {
-                'security_groups': ['sg-73cd3f1e'],
-                'instance_initiated_shutdown_behavior': 'stop'
+            'parameters': {
+                'security_group_ids': ['sg-73cd3f1e']
             }
         }
 
@@ -53,166 +53,332 @@ class TestElasticIP(testtools.TestCase):
 
         return ctx
 
-    def mock_relationship_ctx(self, testname):
+    def mock_elastic_ip_node(self, test_name):
 
-        instance_ctx = MockContext({
+        test_node_id = test_name
+        test_properties = {
+            'use_external_resource': False,
+            'resource_id': ''
+        }
+
+        ctx = MockCloudifyContext(
+            node_id=test_node_id,
+            properties=test_properties
+        )
+
+        return ctx
+
+    def mock_relationship_context(self, testname):
+
+        instance_context = MockContext({
             'node': MockContext({
-                'properties': {}
+                'properties': {
+                    'use_external_resource': False,
+                    'resource_id': ''
+                }
             }),
             'instance': MockContext({
                 'runtime_properties': {
-                    'instance_id': 'i-abc1234'
+                    'aws_resource_id': 'i-abc1234',
+                    'public_ip_address': '127.0.0.1'
                 }
             })
         })
 
-        elasticip_ctx = MockContext({
+        elasticip_context = MockContext({
             'node': MockContext({
-                'properties': {}
+                'properties': {
+                    'use_external_resource': False,
+                    'resource_id': '',
+                }
             }),
             'instance': MockContext({
                 'runtime_properties': {
-                    'elasticip': ''
+                    'aws_resource_id': ''
                 }
             })
         })
 
-        relationship_ctx = MockCloudifyContext(node_id=testname,
-                                               source=instance_ctx,
-                                               target=elasticip_ctx)
+        relationship_context = MockCloudifyContext(
+            node_id=testname, source=instance_context,
+            target=elasticip_context)
 
-        return relationship_ctx
+        return relationship_context
 
+    def get_client(self):
+        return connection.EC2ConnectionClient().client()
+
+    def allocate_address(self, client):
+        return client.allocate_address(domain=None)
+
+    def run_instance(self, client):
+        return client.run_instances(
+            TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
+
+    def get_address(self):
+        client = self.get_client()
+        address = self.allocate_address(client)
+        return address
+
+    def get_instance_id(self):
+        client = self.get_client()
+        reservation = self.run_instance(client)
+        return reservation.instances[0].id
+
+    @mock_ec2
     def test_allocate(self):
-        """ Tests that the allocate function is 100% successful.
-        """
-        ctx = self.mock_ctx('test_create_address')
 
-        with mock_ec2():
-            elasticip.allocate(ctx=ctx)
-            self.assertIn('elasticip', ctx.instance.runtime_properties)
+        ctx = self.mock_ctx('test_allocate')
 
+        elasticip.allocate(ctx=ctx)
+        self.assertIn('aws_resource_id', ctx.instance.runtime_properties)
+
+    @mock_ec2
+    def test_external_resource(self):
+
+        address = self.get_address()
+        ctx = self.mock_elastic_ip_node('test_allocate')
+        ctx.node.properties['use_external_resource'] = True
+        ctx.node.properties['resource_id'] = address.public_ip
+
+        elasticip.allocate(ctx=ctx)
+        self.assertIn('aws_resource_id', ctx.instance.runtime_properties)
+
+    @mock_ec2
     def test_good_address_release(self):
-        """ Tests that when an address that is in the user's
-            EC2 account is provided to the release function
-            no errors are raised
-        """
 
         ctx = self.mock_ctx('test_good_address_delete')
 
-        with mock_ec2():
-            ec2_client = connection.EC2ConnectionClient().client()
-            address = ec2_client.allocate_address()
-            ctx.instance.runtime_properties['elasticip'] = address.public_ip
-            elasticip.release(ctx=ctx)
+        address = self.get_address()
+        ctx.instance.runtime_properties['aws_resource_id'] = \
+            address.public_ip
+        elasticip.release(ctx=ctx)
+        self.assertNotIn('aws_resource_id',
+                         ctx.instance.runtime_properties.keys())
 
+    @mock_ec2
+    def test_bad_address_release(self):
+
+        ctx = self.mock_ctx('test_bad_address_release')
+
+        ctx.instance.runtime_properties['aws_resource_id'] = \
+            '127.0.0.1'
+        ex = self.assertRaises(
+            NonRecoverableError, elasticip.release, ctx=ctx)
+        self.assertIn(
+            'Unable to release elasticip. Elasticip not in account.',
+            ex.message)
+
+    @mock_ec2
     def test_good_address_associate(self):
-        """ Tests that when an address that is in the user's
-            EC2 account is provided to the attach function
-            no errors are raised
-        """
 
-        ctx = self.mock_relationship_ctx('test_good_address_attach')
+        ctx = self.mock_relationship_context('test_good_address_associate')
 
-        with mock_ec2():
-            ec2_client = connection.EC2ConnectionClient().client()
-            reservation = ec2_client.run_instances(
-                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
-            id = reservation.instances[0].id
-            address = ec2_client.allocate_address()
-            ctx.target.node.properties['elasticip'] = address.public_ip
-            ctx.source.instance.runtime_properties['instance_id'] = id
-            elasticip.associate(ctx=ctx)
+        address = self.get_address()
+        instance_id = self.get_instance_id()
+        ctx.target.instance.runtime_properties['aws_resource_id'] = \
+            address.public_ip
+        ctx.source.instance.runtime_properties['aws_resource_id'] = \
+            instance_id
+        elasticip.associate(ctx=ctx)
 
-    def test_bad_address_associate(self):
-        """ Tests that NonRecoverableError: Invalid Address is
-            raised when an address that is not in the user's
-            EC2 account is provided to the attach function
-        """
-
-        ctx = self.mock_relationship_ctx('test_bad_address_attach')
-
-        with mock_ec2():
-            ec2_client = connection.EC2ConnectionClient().client()
-            reservation = ec2_client.run_instances(
-                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
-            id = reservation.instances[0].id
-            ctx.target.node.properties['elasticip'] = '0.0.0.0'
-            ctx.source.instance.runtime_properties['instance_id'] = id
-            ex = self.assertRaises(NonRecoverableError,
-                                   elasticip.associate, ctx=ctx)
-            self.assertIn('InvalidAddress.NotFound', ex.message)
-
+    @mock_ec2
     def test_good_address_disassociate(self):
+
+        ctx = self.mock_relationship_context('test_good_address_detach')
+
+        address = self.get_address()
+        instance_id = self.get_instance_id()
+
+        ctx.target.instance.runtime_properties['aws_resource_id'] = \
+            address.public_ip
+        ctx.source.instance.runtime_properties['instance_id'] = instance_id
+        ctx.source.instance.runtime_properties['ip'] = address.public_ip
+        elasticip.disassociate(ctx=ctx)
+
+    @mock_ec2
+    def test_bad_address_associate(self):
         """ Tests that when an address that is in the user's
-            EC2 account is provided to the detach function
+            EC2 account is provided to the attach function
             no errors are raised
         """
 
-        ctx = self.mock_relationship_ctx('test_good_address_detach')
+        ctx = self.mock_relationship_context('test_bad_address_associate')
 
-        with mock_ec2():
-            ec2_client = connection.EC2ConnectionClient().client()
-            reservation = ec2_client.run_instances(
-                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
-            id = reservation.instances[0].id
-            address = ec2_client.allocate_address()
-            ctx.target.node.properties['elasticip'] = address.public_ip
-            ctx.source.instance.runtime_properties['instance_id'] = id
-            elasticip.disassociate(ctx=ctx)
+        instance_id = self.get_instance_id()
+        ctx.target.instance.runtime_properties['aws_resource_id'] = '127.0.0.1'
+        ctx.source.instance.runtime_properties['aws_resource_id'] = \
+            instance_id
+        ex = self.assertRaises(NonRecoverableError, elasticip.associate,
+                               ctx=ctx)
+        ctx.source.instance.runtime_properties['public_ip_address'] = \
+            '127.0.0.1'
+        self.assertIn('InvalidAddress.NotFound', ex.message)
 
+    @mock_ec2
     def test_bad_address_disassociate(self):
         """ Tests that NonRecoverableError: Invalid Address is
             raised when an address that is not in the user's
             EC2 account is provided to the detach function
         """
 
-        ctx = self.mock_relationship_ctx('test_bad_address_detach')
+        ctx = self.mock_relationship_context('test_bad_address_detach')
 
-        with mock_ec2():
-            ctx.target.node.properties['elasticip'] = '0.0.0.0'
-            ex = self.assertRaises(NonRecoverableError,
-                                   elasticip.disassociate, ctx=ctx)
-            self.assertIn('InvalidAddress.NotFound', ex.message)
+        ctx.target.instance.runtime_properties['aws_resource_id'] = '0.0.0.0'
+        ctx.source.instance.runtime_properties['public_ip_address'] = '0.0.0.0'
+        ex = self.assertRaises(NonRecoverableError,
+                               elasticip.disassociate, ctx=ctx)
+        self.assertIn('InvalidAddress.NotFound', ex.message)
 
-    def test_get_private_dns_name(self):
-        """ tests that private_dns_name matches the regex for
-            an FQDN
+    @mock_ec2
+    def test_validation(self):
+        """ Tests that the allocate function assigns the aws_resource_id.
         """
 
-        ctx = self.mock_ctx('test_get_private_dns_name')
+        ctx = self.mock_elastic_ip_node('test_allocate')
+        ctx.node.properties['use_external_resource'] = True
+        ctx.node.properties['resource_id'] = '127.0.0.1'
 
-        with mock_ec2():
-            ec2_client = connection.EC2ConnectionClient().client()
-            reservation = ec2_client.run_instances(
-                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
-            id = reservation.instances[0].id
-            instance_object = utils.get_instance_from_id(id, ctx=ctx)
-            dns_name = utils.get_private_dns_name(instance_object, 6 * 30)
-            self.assertRegexpMatches(dns_name, FQDN)
+        ex = self.assertRaises(
+            NonRecoverableError, elasticip.creation_validation, ctx=ctx)
+        self.assertIn('elasticip does not exist', ex.message)
 
-    def test_get_public_dns_name(self):
-        """ tests that public_dns_name matches the regex for
-            an FQDN
+    @mock_ec2
+    def test_validation_not_external(self):
+        """ Tests that the allocate function assigns the aws_resource_id.
         """
 
-        ctx = self.mock_ctx('test_get_public_dns_name')
+        ctx = self.mock_elastic_ip_node('test_validation_not_external')
 
-        with mock_ec2():
-            ec2_client = connection.EC2ConnectionClient().client()
-            reservation = ec2_client.run_instances(
-                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
-            id = reservation.instances[0].id
-            instance_object = utils.get_instance_from_id(id, ctx=ctx)
-            dns_name = utils.get_public_dns_name(instance_object, 6 * 30)
-            self.assertRegexpMatches(dns_name, FQDN)
+        address = self.get_address()
 
-    def test_validate_creation(self):
+        ctx.node.properties['use_external_resource'] = False
+        ctx.node.properties['resource_id'] = address.public_ip
 
-        ctx = self.mock_ctx('test_validate_creation')
+        ex = self.assertRaises(
+            NonRecoverableError, elasticip.creation_validation, ctx=ctx)
+        self.assertIn('elasticip exists', ex.message)
 
-        with mock_ec2():
-            ec2_client = connection.EC2ConnectionClient().client()
-            a = ec2_client.allocate_address()
-            ctx.instance.runtime_properties['elasticip'] = a.public_ip
-            self.assertTrue(elasticip.creation_validation(ctx=ctx))
+    @mock_ec2
+    def test_associate_no_instance_id(self):
+
+        ctx = self.mock_relationship_context('test_associate_no_instance_id')
+        del(ctx.source.instance.runtime_properties['aws_resource_id'])
+        ex = self.assertRaises(
+            NonRecoverableError, elasticip.associate, ctx=ctx)
+        self.assertIn(
+            'Cannot associate elasticip because aws_resource_id is not',
+            ex.message)
+
+    @mock_ec2
+    def test_associate_no_elasticip_id(self):
+
+        ctx = self.mock_relationship_context('test_associate_no_elasticip_id')
+        del(ctx.target.instance.runtime_properties['aws_resource_id'])
+        ex = self.assertRaises(
+            NonRecoverableError, elasticip.associate, ctx=ctx)
+        self.assertIn(
+            'Cannot associate elasticip because aws_resource_id is not',
+            ex.message)
+
+    @mock_ec2
+    def test_bad_address_external_resource(self):
+
+        ctx = self.mock_ctx('test_bad_address_external_resource')
+
+        ctx.node.properties['use_external_resource'] = True
+        ctx.node.properties['resource_id'] = '127.0.0.1'
+        ex = self.assertRaises(
+            NonRecoverableError, elasticip.allocate, ctx=ctx)
+        self.assertIn(
+            'External elasticip was indicated',
+            ex.message)
+
+    @mock_ec2
+    def test_release_existing(self):
+
+        ctx = self.mock_ctx('test_release_existing')
+
+        address = self.get_address()
+        ctx.instance.runtime_properties['aws_resource_id'] = \
+            address.public_ip
+        ctx.node.properties['use_external_resource'] = True
+        elasticip.release(ctx=ctx)
+        self.assertNotIn(
+            'aws_resource_id', ctx.instance.runtime_properties.keys())
+        ec2_client = self.get_client()
+        self.assertIsNotNone(ec2_client.get_all_addresses(address.public_ip))
+
+    @mock_ec2
+    def test_get_all_addresses_bad(self):
+
+        output = elasticip._get_all_addresses(
+            address='127.0.0.1')
+        self.assertIsNone(output)
+
+    @mock_ec2
+    def test_existing_address_associate(self):
+        """ Tests that when an address that is in the user's
+            EC2 account is provided to the attach function
+            no errors are raised
+        """
+
+        ctx = self.mock_relationship_context('test_existing_address_associate')
+
+        address = self.get_address()
+        instance_id = self.get_instance_id()
+
+        ctx.target.node.properties['use_external_resource'] = True
+        ctx.target.node.properties['resource_id'] = address.public_ip
+        ctx.target.instance.runtime_properties['aws_resource_id'] = \
+            address.public_ip
+        ctx.source.node.properties['use_external_resource'] = True
+        ctx.source.node.properties['resource_id'] = instance_id
+        ctx.source.instance.runtime_properties['aws_resource_id'] = \
+            instance_id
+        elasticip.associate(ctx=ctx)
+        self.assertEqual(
+            address.public_ip,
+            ctx.source.instance.runtime_properties['public_ip_address'])
+
+    @mock_ec2
+    def test_existing_address_disassociate(self):
+
+        ctx = self.mock_relationship_context(
+            'test_existing_address_disassociate')
+
+        address = self.get_address()
+        instance_id = self.get_instance_id()
+        ctx.target.node.properties['use_external_resource'] = True
+        ctx.target.node.properties['resource_id'] = address.public_ip
+        ctx.target.instance.runtime_properties['aws_resource_id'] = \
+            address.public_ip
+        ctx.source.node.properties['use_external_resource'] = True
+        ctx.source.node.properties['resource_id'] = instance_id
+        ctx.source.instance.runtime_properties['aws_resource_id'] = \
+            instance_id
+        ctx.source.instance.runtime_properties['public_ip_address'] = \
+            address.public_ip
+        elasticip.disassociate(ctx=ctx)
+        self.assertNotIn(
+            'public_ip_address', ctx.source.instance.runtime_properties)
+
+    @mock_ec2
+    def test_disassociate_external_elasticip(self):
+        ctx = self.mock_relationship_context(
+            'test_disassociate_external_elasticip')
+
+        address = self.get_address()
+        instance_id = self.get_instance_id()
+
+        ctx.target.node.properties['use_external_resource'] = False
+        ctx.target.node.properties['resource_id'] = address.public_ip
+        ctx.source.node.properties['use_external_resource'] = False
+        ctx.source.node.properties['resource_id'] = instance_id
+        ctx.source.instance.runtime_properties['aws_resource_id'] = \
+            instance_id
+
+        output = \
+            elasticip._disassociate_external_elasticip_or_instance(ctx=ctx)
+
+        self.assertEqual(False, output)

@@ -27,6 +27,7 @@ from cloudify.exceptions import NonRecoverableError
 
 TEST_AMI_IMAGE_ID = 'ami-e214778a'
 TEST_INSTANCE_TYPE = 't1.micro'
+FQDN = '((?:[a-z][a-z\\.\\d\\-]+)\\.(?:[a-z][a-z\\-]+))(?![\\w\\.])'
 
 
 class TestInstance(testtools.TestCase):
@@ -38,138 +39,236 @@ class TestInstance(testtools.TestCase):
 
         test_node_id = test_name
         test_properties = {
+            'use_external_resource': False,
+            'resource_id': '',
             'image_id': TEST_AMI_IMAGE_ID,
             'instance_type': TEST_INSTANCE_TYPE,
-            'attributes': {
-                'security_groups': ['sg-73cd3f1e'],
+            'parameters': {
+                'security_group_ids': ['sg-73cd3f1e'],
                 'instance_initiated_shutdown_behavior': 'stop'
             }
         }
 
+        operation = {
+            'retry_number': 0
+        }
+
         ctx = MockCloudifyContext(
             node_id=test_node_id,
-            properties=test_properties
+            properties=test_properties,
+            operation=operation
         )
 
         return ctx
 
-    def test_create(self):
+    @mock_ec2
+    def test_run_instances_clean(self):
         """ this tests that the instance create function works
         """
 
-        ctx = self.mock_ctx('test_instance_create')
+        ctx = self.mock_ctx('test_run_instances_clean')
+        instance.run_instances(ctx=ctx)
+        self.assertIn('aws_resource_id',
+                      ctx.instance.runtime_properties.keys())
 
-        with mock_ec2():
-            instance.create(ctx=ctx)
-            self.assertIn('instance_id',
-                          ctx.instance.runtime_properties.keys())
-
-    def test_stop(self):
+    @mock_ec2
+    def test_stop_clean(self):
         """
         this tests that the instance stop function works
         """
 
-        ctx = self.mock_ctx('test_instance_stop')
+        ctx = self.mock_ctx('test_stop_clean')
 
-        with mock_ec2():
-            ec2_client = connection.EC2ConnectionClient().client()
-            reservation = ec2_client.run_instances(
-                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
-            id = reservation.instances[0].id
-            ctx.instance.runtime_properties['instance_id'] = id
-            instance.stop(ctx=ctx)
-            reservations = ec2_client.get_all_reservations(id)
-            instance_object = reservations[0].instances[0]
-            state = instance_object.update()
-            self.assertEqual(state, 'stopped')
+        ec2_client = connection.EC2ConnectionClient().client()
+        reservation = ec2_client.run_instances(
+            TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
+        instance_id = reservation.instances[0].id
+        ctx.instance.runtime_properties['aws_resource_id'] = instance_id
+        ctx.instance.runtime_properties['private_dns_name'] = '0.0.0.0'
+        ctx.instance.runtime_properties['public_dns_name'] = '0.0.0.0'
+        ctx.instance.runtime_properties['public_ip_address'] = '0.0.0.0'
+        ctx.instance.runtime_properties['ip'] = '0.0.0.0'
+        instance.stop(ctx=ctx)
+        reservations = ec2_client.get_all_reservations(instance_id)
+        instance_object = reservations[0].instances[0]
+        state = instance_object.update()
+        self.assertEqual(state, 'stopped')
 
-    def test_start(self):
+    @mock_ec2
+    def test_start_clean(self):
         """ this tests that the instance start function works
         """
 
-        ctx = self.mock_ctx('test_instance_start')
+        ctx = self.mock_ctx('test_start_clean')
 
-        with mock_ec2():
-            ec2_client = connection.EC2ConnectionClient().client()
-            reservation = ec2_client.run_instances(
-                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
-            id = reservation.instances[0].id
-            ctx.instance.runtime_properties['instance_id'] = id
-            ec2_client.stop_instances(id)
-            instance.start(ctx=ctx)
-            reservations = ec2_client.get_all_reservations(id)
-            instance_object = reservations[0].instances[0]
-            state = instance_object.update()
-            self.assertEqual(state, 'running')
+        ec2_client = connection.EC2ConnectionClient().client()
+        reservation = ec2_client.run_instances(
+            TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
+        instance_id = reservation.instances[0].id
+        ctx.instance.runtime_properties['aws_resource_id'] = instance_id
+        ec2_client.stop_instances(instance_id)
+        instance.start(ctx=ctx)
+        reservations = ec2_client.get_all_reservations(instance_id)
+        instance_object = reservations[0].instances[0]
+        state = instance_object.update()
+        self.assertEqual(state, 'running')
 
-    def test_terminate(self):
+    @mock_ec2
+    def test_terminate_clean(self):
         """ this tests that the instance.terminate function
             works
         """
 
-        ctx = self.mock_ctx('test_instance_terminate')
+        ctx = self.mock_ctx('test_terminate_clean')
 
-        with mock_ec2():
-            ec2_client = connection.EC2ConnectionClient().client()
-            reservation = ec2_client.run_instances(
-                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
-            id = reservation.instances[0].id
-            ctx.instance.runtime_properties['instance_id'] = id
-            instance.terminate(ctx=ctx)
-            reservations = ec2_client.get_all_reservations(id)
-            instance_object = reservations[0].instances[0]
-            state = instance_object.update()
-            self.assertEqual(state, 'terminated')
+        ec2_client = connection.EC2ConnectionClient().client()
+        reservation = ec2_client.run_instances(
+            TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
+        instance_id = reservation.instances[0].id
+        ctx.instance.runtime_properties['aws_resource_id'] = instance_id
+        instance.terminate(ctx=ctx)
+        reservations = ec2_client.get_all_reservations(instance_id)
+        instance_object = reservations[0].instances[0]
+        state = instance_object.update()
+        self.assertEqual(state, 'terminated')
 
-    def test_bad_id_start(self):
+    @mock_ec2
+    def test_start_bad_id(self):
         """this tests that start fails when given an invalid
            instance_id and the proper error is raised
         """
 
-        ctx = self.mock_ctx('test_bad_instance_id_start')
+        ctx = self.mock_ctx('test_start_bad_id')
 
-        with mock_ec2():
-            ctx.instance.runtime_properties['instance_id'] = 'bad_id'
-            ex = self.assertRaises(NonRecoverableError,
-                                   instance.start, ctx=ctx)
-            self.assertIn('InvalidInstanceID.NotFound', ex.message)
+        ctx.instance.runtime_properties['aws_resource_id'] = 'bad_id'
+        ex = self.assertRaises(NonRecoverableError,
+                               instance.start, ctx=ctx)
+        self.assertIn('no instance with id bad_id exists in this account',
+                      ex.message)
 
-    def test_bad_id_stop(self):
+    @mock_ec2
+    def test_stop_bad_id(self):
         """ this tests that stop fails when given an invalid
             instance_id and the proper error is raised
         """
 
-        ctx = self.mock_ctx('test_bad_instance_id_stop')
+        ctx = self.mock_ctx('test_stop_bad_id')
 
-        with mock_ec2():
-            ctx.instance.runtime_properties['instance_id'] = 'bad_id'
-            ex = self.assertRaises(NonRecoverableError,
-                                   instance.stop, ctx=ctx)
-            self.assertIn('InvalidInstanceID.NotFound', ex.message)
+        ctx.instance.runtime_properties['aws_resource_id'] = 'bad_id'
+        ctx.instance.runtime_properties['private_dns_name'] = '0.0.0.0'
+        ctx.instance.runtime_properties['public_dns_name'] = '0.0.0.0'
+        ctx.instance.runtime_properties['public_ip_address'] = '0.0.0.0'
+        ctx.instance.runtime_properties['ip'] = '0.0.0.0'
+        ex = self.assertRaises(
+            NonRecoverableError, instance.stop, ctx=ctx)
+        self.assertIn('InvalidInstanceID', ex.message)
 
-    def test_bad_id_terminate(self):
+    @mock_ec2
+    def test_terminate_bad_id(self):
         """ this tests that a terminate fails when given an
             invalid instance_id and the proper error is raised
         """
 
-        ctx = self.mock_ctx('test_bad_instance_id_terminate')
+        ctx = self.mock_ctx('test_terminate_bad_id')
 
-        with mock_ec2():
-            ctx.instance.runtime_properties['instance_id'] = 'bad_id'
-            ex = self.assertRaises(NonRecoverableError,
-                                   instance.terminate, ctx=ctx)
-            self.assertIn('InvalidInstanceID.NotFound', ex.message)
+        ctx.instance.runtime_properties['aws_resource_id'] = 'bad_id'
+        ctx.instance.runtime_properties['private_dns_name'] = '0.0.0.0'
+        ctx.instance.runtime_properties['public_dns_name'] = '0.0.0.0'
+        ctx.instance.runtime_properties['public_ip_address'] = '0.0.0.0'
+        ctx.instance.runtime_properties['ip'] = '0.0.0.0'
+        ex = self.assertRaises(NonRecoverableError,
+                               instance.terminate, ctx=ctx)
+        self.assertIn('InvalidInstanceID.NotFound', ex.message)
 
-    def test_bad_subnet_id_create(self):
+    @mock_ec2
+    def test_run_instances_bad_subnet_id(self):
         """ This tests that the NonRecoverableError is triggered
             when an non existing subnet_id is included in the create
             statement
         """
 
-        ctx = self.mock_ctx('test_bad_subnet_id_create')
+        ctx = self.mock_ctx('test_run_instances_bad_subnet_id')
+        ctx.node.properties['parameters']['subnet_id'] = 'test'
+        ex = self.assertRaises(
+            NonRecoverableError, instance.run_instances, ctx=ctx)
+        self.assertIn('InvalidSubnetID.NotFound', ex.message)
+
+    @mock_ec2
+    def test_run_instances_external_resource(self):
+        """ this tests that the instance create function works
+        """
+        ec2_client = connection.EC2ConnectionClient().client()
+        reservation = ec2_client.run_instances(
+            TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
+        instance_id = reservation.instances[0].id
+        ctx = self.mock_ctx('test_run_instances_external_resource')
+        ctx.node.properties['use_external_resource'] = True
+        ctx.node.properties['resource_id'] = instance_id
+
+        instance.run_instances(ctx=ctx)
+        self.assertIn('aws_resource_id',
+                      ctx.instance.runtime_properties.keys())
+
+    @mock_ec2
+    def test_validation_external_resource(self):
+        """ this tests that the instance create function works
+        """
+        ctx = self.mock_ctx('test_validation_external_resource')
+        ctx.node.properties['use_external_resource'] = True
+        ctx.node.properties['resource_id'] = 'bad_id'
+        ex = self.assertRaises(
+            NonRecoverableError, instance.creation_validation, ctx=ctx)
+        self.assertIn(
+            'External resource, but the supplied instance id',
+            ex.message)
+
+    @mock_ec2
+    def test_validation_no_external_resource_is(self):
+        """ this tests that the instance create function works
+        """
+        ctx = self.mock_ctx('test_validation_no_external_resource_is')
+        ec2_client = connection.EC2ConnectionClient().client()
+        reservation = ec2_client.run_instances(
+            TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
+        instance_id = reservation.instances[0].id
+        ctx.node.properties['use_external_resource'] = False
+        ctx.node.properties['resource_id'] = instance_id
+        ex = self.assertRaises(
+            NonRecoverableError, instance.creation_validation, ctx=ctx)
+        self.assertIn(
+            'Not external resource, but the supplied',
+            ex.message)
+
+    def test_no_instance_get_instance_from_id(self):
+        """ this tests that a NonRecoverableError is thrown
+        when a nonexisting instance_id is provided to the
+        get_instance_from_id function
+        """
 
         with mock_ec2():
-            ctx.node.properties['attributes']['subnet_id'] = 'test'
-            ex = self.assertRaises(NonRecoverableError,
-                                   instance.create, ctx=ctx)
-            self.assertIn('InvalidSubnetID.NotFound', ex.message)
+
+            ctx = self.mock_ctx('test_no_instance_get_instance_from_id')
+            instance_id = 'bad_id'
+            ctx.instance.runtime_properties['aws_resource_id'] = instance_id
+            output = instance._get_instance_from_id(instance_id)
+            self.assertIsNone(output)
+
+    def test_get_private_dns_name(self):
+            ctx = self.mock_ctx('test_get_private_dns_name')
+            with mock_ec2():
+                ec2_client = connection.EC2ConnectionClient().client()
+                reservation = ec2_client.run_instances(
+                    TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
+                ctx.instance.runtime_properties['aws_resource_id'] = \
+                    reservation.instances[0].id
+                property_name = 'private_dns_name'
+                dns_name = instance._get_instance_attribute(
+                    property_name, ctx.instance)
+                self.assertRegexpMatches(dns_name, FQDN)
+
+    @mock_ec2
+    def test_get_all_instances_bad_id(self):
+
+        output = instance._get_all_instances(
+            list_of_instance_ids='test_get_all_instances_bad_id')
+        self.assertIsNone(output)

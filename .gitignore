@@ -61,3 +61,7 @@ docs/_build/
 
 .noseids
 *.orig
+
+# OS Files
+.DS_Store
+.idea

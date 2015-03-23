@@ -12,20 +12,3 @@
 #    * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
-
-# Third-party Imports
-from boto.ec2 import EC2Connection
-
-
-class EC2ConnectionClient():
-    """Provides functions for getting the EC2 Client
-    """
-
-    def __init__(self):
-        self.connection = None
-
-    def client(self):
-    	"""Represents the EC2Connection Client
-        """
-
-        return EC2Connection()

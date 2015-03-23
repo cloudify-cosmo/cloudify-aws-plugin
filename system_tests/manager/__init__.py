@@ -13,19 +13,13 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
-# Third-party Imports
-from boto.ec2 import EC2Connection
+
+from cosmo_tester.framework.testenv import bootstrap, teardown
 
 
-class EC2ConnectionClient():
-    """Provides functions for getting the EC2 Client
-    """
+def setUp():
+    bootstrap(task_retries=30)
 
-    def __init__(self):
-        self.connection = None
 
-    def client(self):
-    	"""Represents the EC2Connection Client
-        """
-
-        return EC2Connection()
+def tearDown():
+    teardown()
