@@ -155,14 +155,14 @@ def _create_external_securitygroup(name, ctx):
 
     if not utils.use_external_resource(ctx.node.properties, ctx.logger):
         return False
-    else:
-        group = _get_security_group_from_id(name)
-        if not group:
-            raise NonRecoverableError(
-                'External security group was indicated, but the given '
-                'security group does not exist.')
-        utils.set_external_resource_id(group.id, ctx.instance, ctx.logger)
-        return True
+
+    group = _get_security_group_from_id(name)
+    if not group:
+        raise NonRecoverableError(
+            'External security group was indicated, but the given '
+            'security group does not exist.')
+    utils.set_external_resource_id(group.id, ctx.instance, ctx.logger)
+    return True
 
 
 def _delete_external_securitygroup(ctx):
@@ -177,12 +177,12 @@ def _delete_external_securitygroup(ctx):
 
     if not utils.use_external_resource(ctx.node.properties, ctx.logger):
         return False
-    else:
-        ctx.logger.info(
-            'External resource. Not deleting security group from account.')
-        utils.unassign_runtime_property_from_resource(
-            constants.EXTERNAL_RESOURCE_ID, ctx.instance, ctx.logger)
-        return True
+
+    ctx.logger.info(
+        'External resource. Not deleting security group from account.')
+    utils.unassign_runtime_property_from_resource(
+        constants.EXTERNAL_RESOURCE_ID, ctx.instance, ctx.logger)
+    return True
 
 
 def _get_security_group_from_id(group_id):

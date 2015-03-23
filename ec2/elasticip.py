@@ -185,15 +185,15 @@ def _allocate_external_elasticip(ctx):
 
     if not utils.use_external_resource(ctx.node.properties, ctx.logger):
         return False
-    else:
-        address_ip = _get_address_by_id(
-            ctx.node.properties['resource_id'])
-        if not address_ip:
-            raise NonRecoverableError(
-                'External elasticip was indicated, but the given '
-                'elasticip does not exist in the account.')
-        utils.set_external_resource_id(address_ip, ctx.instance, ctx.logger)
-        return True
+
+    address_ip = _get_address_by_id(
+        ctx.node.properties['resource_id'])
+    if not address_ip:
+        raise NonRecoverableError(
+            'External elasticip was indicated, but the given '
+            'elasticip does not exist in the account.')
+    utils.set_external_resource_id(address_ip, ctx.instance, ctx.logger)
+    return True
 
 
 def _release_external_elasticip(ctx):
@@ -208,10 +208,10 @@ def _release_external_elasticip(ctx):
 
     if not utils.use_external_resource(ctx.node.properties, ctx.logger):
         return False
-    else:
-        utils.unassign_runtime_property_from_resource(
-            constants.EXTERNAL_RESOURCE_ID, ctx.instance, ctx.logger)
-        return True
+
+    utils.unassign_runtime_property_from_resource(
+        constants.EXTERNAL_RESOURCE_ID, ctx.instance, ctx.logger)
+    return True
 
 
 def _associate_external_elasticip_or_instance(elasticip, ctx):
@@ -228,13 +228,13 @@ def _associate_external_elasticip_or_instance(elasticip, ctx):
             or not utils.use_external_resource(
                 ctx.target.node.properties, ctx.logger):
         return False
-    else:
-        ctx.logger.info(
-            'Either instance or elasticip is an external resource so not '
-            'performing associate operation.')
-        ctx.source.instance.runtime_properties['public_ip_address'] = \
-            elasticip
-        return True
+
+    ctx.logger.info(
+        'Either instance or elasticip is an external resource so not '
+        'performing associate operation.')
+    ctx.source.instance.runtime_properties['public_ip_address'] = \
+        elasticip
+    return True
 
 
 def _disassociate_external_elasticip_or_instance(ctx):
@@ -251,13 +251,13 @@ def _disassociate_external_elasticip_or_instance(ctx):
             or not utils.use_external_resource(
                 ctx.target.node.properties, ctx.logger):
         return False
-    else:
-        ctx.logger.info(
-            'Either instance or elasticip is an external resource so not '
-            'performing disassociate operation.')
-        utils.unassign_runtime_property_from_resource(
-            'public_ip_address', ctx.source.instance, ctx.logger)
-        return True
+
+    ctx.logger.info(
+        'Either instance or elasticip is an external resource so not '
+        'performing disassociate operation.')
+    utils.unassign_runtime_property_from_resource(
+        'public_ip_address', ctx.source.instance, ctx.logger)
+    return True
 
 
 def _get_address_by_id(address_id):
