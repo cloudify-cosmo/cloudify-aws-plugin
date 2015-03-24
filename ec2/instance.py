@@ -51,11 +51,6 @@ def creation_validation(**_):
         raise NonRecoverableError(
             'image_id {0} not available to this account.'.format(image_id))
 
-    if 'ebs' not in image_object.root_device_type:
-        raise NonRecoverableError(
-            'image_id {0} not ebs-backed. Image must be of type \'ebs\'.'
-            .format(image_id))
-
 
 @operation
 def run_instances(**_):
@@ -73,7 +68,7 @@ def run_instances(**_):
         'Attempting to create EC2 Instance with these API parameters: {0}.'
         .format(instance_parameters))
 
-    instance_id = _run_instances(ec2_client, instance_parameters)
+    instance_id = _run_instances_if_needed(ec2_client, instance_parameters)
 
     instance = _get_instance_from_id(instance_id)
 
@@ -210,7 +205,7 @@ def _unassign_runtime_properties(runtime_properties, ctx_instance):
             property_name, ctx_instance)
 
 
-def _run_instances(ec2_client, instance_parameters):
+def _run_instances_if_needed(ec2_client, instance_parameters):
     if ctx.operation.retry_number == 0:
         try:
             reservation = ec2_client.run_instances(**instance_parameters)
