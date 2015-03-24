@@ -389,44 +389,19 @@ def _get_instance_parameters(node_properties, ctx_instance, ctx_logger):
     :returns parameters dictionary
     """
 
-    parameters = constants.RUN_INSTANCE_PARAMETERS
-
     attached_group_ids = \
         utils.get_target_external_resource_ids(
             constants.INSTANCE_SECURITY_GROUP_RELATIONSHIP,
             ctx_instance, ctx_logger)
 
-    node_parameter_keys = node_properties['parameters'].keys()
+    parameters = {
+        'image_id': node_properties['image_id'],
+        'instance_type': node_properties['instance_type'],
+        'security_group_ids': attached_group_ids,
+        'key_name': _get_instance_keypair(ctx_instance, ctx_logger)
+    }
 
-    for key in parameters.keys():
-        if key is 'security_group_ids':
-            if key in node_parameter_keys:
-                parameters[key] = list(
-                    set(attached_group_ids) | set(
-                        node_properties['parameters'][key])
-                )
-            else:
-                parameters[key] = attached_group_ids
-        if key is 'security_group_names':
-            if key in node_parameter_keys:
-                parameters[key] = list(
-                    set(attached_group_ids) | set(
-                        node_properties['parameters'][key])
-                )
-            else:
-                parameters[key] = attached_group_ids
-        elif key is 'key_name':
-            if key in node_parameter_keys:
-                parameters[key] = node_properties['parameters'][key]
-            else:
-                parameters[key] = \
-                    _get_instance_keypair(ctx_instance, ctx_logger)
-        elif key in node_parameter_keys:
-            parameters[key] = node_properties['parameters'][key]
-        elif key is 'image_id' or key is 'instance_type':
-            parameters[key] = node_properties[key]
-        else:
-            del(parameters[key])
+    parameters.update(node_properties['parameters'])
 
     return parameters
 
