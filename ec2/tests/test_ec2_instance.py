@@ -22,6 +22,7 @@ from moto import mock_ec2
 # Cloudify Imports is imported and used in operations
 from ec2 import connection
 from ec2 import instance
+from cloudify.state import current_ctx
 from cloudify.mocks import MockCloudifyContext
 from cloudify.exceptions import NonRecoverableError
 
@@ -255,6 +256,7 @@ class TestInstance(testtools.TestCase):
 
     def test_get_private_dns_name(self):
             ctx = self.mock_ctx('test_get_private_dns_name')
+            current_ctx.set(ctx=ctx)
             with mock_ec2():
                 ec2_client = connection.EC2ConnectionClient().client()
                 reservation = ec2_client.run_instances(
@@ -263,7 +265,7 @@ class TestInstance(testtools.TestCase):
                     reservation.instances[0].id
                 property_name = 'private_dns_name'
                 dns_name = instance._get_instance_attribute(
-                    property_name, ctx.instance)
+                    property_name)
                 self.assertRegexpMatches(dns_name, FQDN)
 
     @mock_ec2

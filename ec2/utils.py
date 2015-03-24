@@ -18,21 +18,22 @@ import os
 
 # Cloudify Imports
 from ec2 import constants
+from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
 
 
-def validate_node_property(key, node_properties):
+def validate_node_property(key, ctx_node_properties):
     """Checks if the node property exists in the blueprint.
 
     :raises NonRecoverableError: if key not in the node's properties
     """
 
-    if key not in node_properties:
+    if key not in ctx_node_properties:
         raise NonRecoverableError(
             '{0} is a required input. Unable to create.'.format(key))
 
 
-def log_available_resources(list_of_resources, ctx_logger):
+def log_available_resources(list_of_resources):
     """This logs a list of available resources.
     """
 
@@ -41,10 +42,10 @@ def log_available_resources(list_of_resources, ctx_logger):
     for resource in list_of_resources:
         message = '{0}{1}\n'.format(message, resource)
 
-    ctx_logger.debug(message)
+    ctx.logger.debug(message)
 
 
-def get_external_resource_id_or_raise(operation, ctx_instance, ctx_logger):
+def get_external_resource_id_or_raise(operation, ctx_instance):
     """Checks if the EXTERNAL_RESOURCE_ID runtime_property is set and returns it.
 
     :param operation: A string representing what is happening.
@@ -54,7 +55,7 @@ def get_external_resource_id_or_raise(operation, ctx_instance, ctx_logger):
     :raises NonRecoverableError: If EXTERNAL_RESOURCE_ID has not been set.
     """
 
-    ctx_logger.debug(
+    ctx.logger.debug(
         'Checking if {0} in instance runtime_properties, for {0} operation.'
         .format(constants.EXTERNAL_RESOURCE_ID, operation))
 
@@ -66,7 +67,7 @@ def get_external_resource_id_or_raise(operation, ctx_instance, ctx_logger):
     return ctx_instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
 
 
-def set_external_resource_id(value, ctx_instance, ctx_logger, external=True):
+def set_external_resource_id(value, ctx_instance, external=True):
     """Sets the EXTERNAL_RESOURCE_ID runtime_property for a Node-Instance.
 
     :param value: the desired EXTERNAL_RESOURCE_ID runtime_property
@@ -79,12 +80,11 @@ def set_external_resource_id(value, ctx_instance, ctx_logger, external=True):
     else:
         resource_type = 'external'
 
-    ctx_logger.info('Using {0} resource: {1}'.format(resource_type, value))
+    ctx.logger.info('Using {0} resource: {1}'.format(resource_type, value))
     ctx_instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID] = value
 
 
-def unassign_runtime_property_from_resource(
-        property_name, ctx_instance, ctx_logger):
+def unassign_runtime_property_from_resource(property_name, ctx_instance):
     """Pops a runtime_property and reports to debug.
 
     :param property_name: The runtime_property to remove.
@@ -93,11 +93,11 @@ def unassign_runtime_property_from_resource(
     """
 
     value = ctx_instance.runtime_properties.pop(property_name)
-    ctx_logger.debug(
+    ctx.logger.debug(
         'Unassigned {0} runtime property: {1}'.format(property_name, value))
 
 
-def use_external_resource(node_properties, ctx_logger):
+def use_external_resource(ctx_node_properties):
     """Checks if use_external_resource node property is true,
     logs the ID and answer to the debug log,
     and returns boolean False (if not external) or True.
@@ -107,20 +107,19 @@ def use_external_resource(node_properties, ctx_logger):
     :returns boolean: False if not external.
     """
 
-    if not node_properties['use_external_resource']:
-        ctx_logger.debug(
+    if not ctx_node_properties['use_external_resource']:
+        ctx.logger.debug(
             'Using Cloudify resource_id: {0}.'
-            .format(node_properties['resource_id']))
+            .format(ctx_node_properties['resource_id']))
         return False
     else:
-        ctx_logger.debug(
+        ctx.logger.debug(
             'Using external resource_id: {0}.'
-            .format(node_properties['resource_id']))
+            .format(ctx_node_properties['resource_id']))
         return True
 
 
-def get_target_external_resource_ids(relationship_type,
-                                     ctx_instance, ctx_logger):
+def get_target_external_resource_ids(relationship_type, ctx_instance):
     """Gets a list of target node ids connected via a relationship to a node.
 
     :param relationship_type: A string representing the type of relationship.
@@ -131,7 +130,7 @@ def get_target_external_resource_ids(relationship_type,
     ids = []
 
     if not getattr(ctx_instance, 'relationships', []):
-        ctx_logger.info('Skipping attaching relationships, '
+        ctx.logger.info('Skipping attaching relationships, '
                         'because none are attached to this node.')
         return ids
 
@@ -144,7 +143,7 @@ def get_target_external_resource_ids(relationship_type,
     return ids
 
 
-def get_resource_id(ctx):
+def get_resource_id():
     """Returns the resource id, if the user doesn't provide one,
     this will create one for them.
 
