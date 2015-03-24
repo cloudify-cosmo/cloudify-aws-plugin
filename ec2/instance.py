@@ -394,11 +394,13 @@ def _get_instance_parameters(node_properties, ctx_instance, ctx_logger):
             constants.INSTANCE_SECURITY_GROUP_RELATIONSHIP,
             ctx_instance, ctx_logger)
 
-    parameters = {}
-    parameters['image_id'] = node_properties['image_id']
-    parameters['instance_type'] = node_properties['instance_type']
-    parameters['security_group_ids'] = attached_group_ids
-    parameters['key_name'] = _get_instance_keypair(ctx_instance, ctx_logger)
+    parameters = {
+        'image_id': node_properties['image_id'],
+        'instance_type': node_properties['instance_type'],
+        'security_group_ids': attached_group_ids,
+        'key_name': _get_instance_keypair(ctx_instance, ctx_logger)
+    }
+
     parameters.update(node_properties['parameters'])
 
     return parameters
