@@ -124,20 +124,20 @@ def _create_external_keypair():
 
     if not utils.use_external_resource(ctx.node.properties):
         return False
-    else:
-        key_pair_name = ctx.node.properties['resource_id']
-        key_pair_in_account = _get_key_pair_by_id(key_pair_name)
-        key_path_in_filesystem = _get_path_to_key_file()
-        ctx.logger.debug(
-            'Path to key file: {0}.'.format(key_path_in_filesystem))
-        if not key_pair_in_account:
-            raise NonRecoverableError(
-                'External resource, but the key pair is not in the account.')
-        if not _search_for_key_file(key_path_in_filesystem):
-            raise NonRecoverableError(
-                'External resource, but the key file does not exist.')
-        utils.set_external_resource_id(key_pair_name, ctx.instance)
-        return True
+
+    key_pair_name = ctx.node.properties['resource_id']
+    key_pair_in_account = _get_key_pair_by_id(key_pair_name)
+    key_path_in_filesystem = _get_path_to_key_file()
+    ctx.logger.debug(
+        'Path to key file: {0}.'.format(key_path_in_filesystem))
+    if not key_pair_in_account:
+        raise NonRecoverableError(
+            'External resource, but the key pair is not in the account.')
+    if not _search_for_key_file(key_path_in_filesystem):
+        raise NonRecoverableError(
+            'External resource, but the key file does not exist.')
+    utils.set_external_resource_id(key_pair_name, ctx.instance)
+    return True
 
 
 def _delete_external_keypair():
@@ -152,11 +152,11 @@ def _delete_external_keypair():
 
     if not utils.use_external_resource(ctx.node.properties):
         return False
-    else:
-        ctx.logger.info('External resource. Not deleting keypair.')
-        utils.unassign_runtime_property_from_resource(
-            constants.EXTERNAL_RESOURCE_ID, ctx.instance)
-        return True
+
+    ctx.logger.info('External resource. Not deleting keypair.')
+    utils.unassign_runtime_property_from_resource(
+        constants.EXTERNAL_RESOURCE_ID, ctx.instance)
+    return True
 
 
 def _delete_key_file():

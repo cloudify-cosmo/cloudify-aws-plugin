@@ -67,8 +67,7 @@ def run_instances(**_):
     if _create_external_instance():
         return
 
-    instance_parameters = _get_instance_parameters(
-        ctx.node.properties, ctx.instance)
+    instance_parameters = _get_instance_parameters()
 
     ctx.logger.debug(
         'Attempting to create EC2 Instance with these API parameters: {0}.'
@@ -231,54 +230,54 @@ def _create_external_instance():
 
     if not utils.use_external_resource(ctx.node.properties):
         return False
-    else:
-        instance_id = ctx.node.properties['resource_id']
-        instance = _get_instance_from_id(instance_id)
-        if instance is None:
-            raise NonRecoverableError(
-                'Cannot use_external_resource because instance_id {0} '
-                'is not in this account.'.format(instance_id))
-        utils.set_external_resource_id(instance.id, ctx.instance)
-        return True
+
+    instance_id = ctx.node.properties['resource_id']
+    instance = _get_instance_from_id(instance_id)
+    if instance is None:
+        raise NonRecoverableError(
+            'Cannot use_external_resource because instance_id {0} '
+            'is not in this account.'.format(instance_id))
+    utils.set_external_resource_id(instance.id, ctx.instance)
+    return True
 
 
 def _start_external_instance(instance_id):
 
     if not utils.use_external_resource(ctx.node.properties):
         return False
-    else:
-        ctx.logger.info(
-            'Not starting instance {0}, because it is an external resource.'
-            .format(instance_id))
-        _instance_started_assign_runtime_properties(instance_id)
-        return True
+
+    ctx.logger.info(
+        'Not starting instance {0}, because it is an external resource.'
+        .format(instance_id))
+    _instance_started_assign_runtime_properties(instance_id)
+    return True
 
 
 def _stop_external_instance(instance_id):
 
     if not utils.use_external_resource(ctx.node.properties):
         return False
-    else:
-        ctx.logger.info(
-            'External resource. Not stopping instance {0}.'
-            .format(instance_id))
-        _unassign_runtime_properties(
-            runtime_properties=constants.INSTANCE_INTERNAL_ATTRIBUTES,
-            ctx_instance=ctx.instance)
-        return True
+
+    ctx.logger.info(
+        'External resource. Not stopping instance {0}.'
+        .format(instance_id))
+    _unassign_runtime_properties(
+        runtime_properties=constants.INSTANCE_INTERNAL_ATTRIBUTES,
+        ctx_instance=ctx.instance)
+    return True
 
 
 def _terminate_external_instance(instance_id):
 
     if not utils.use_external_resource(ctx.node.properties):
         return False
-    else:
-        ctx.logger.info(
-            'External resource. Not terminating instance {0}.'
-            .format(instance_id))
-        utils.unassign_runtime_property_from_resource(
-            constants.EXTERNAL_RESOURCE_ID, ctx.instance)
-        return True
+
+    ctx.logger.info(
+        'External resource. Not terminating instance {0}.'
+        .format(instance_id))
+    utils.unassign_runtime_property_from_resource(
+        constants.EXTERNAL_RESOURCE_ID, ctx.instance)
+    return True
 
 
 def _get_all_instances(list_of_instance_ids=None):
@@ -382,51 +381,26 @@ def _get_instance_state():
     return state
 
 
-def _get_instance_parameters(node_properties, ctx_instance):
+def _get_instance_parameters():
     """The parameters to the run_instance boto call.
 
     :param ctx:  The Cloudify ctx context.
     :returns parameters dictionary
     """
 
-    parameters = constants.RUN_INSTANCE_PARAMETERS
-
     attached_group_ids = \
         utils.get_target_external_resource_ids(
             constants.INSTANCE_SECURITY_GROUP_RELATIONSHIP,
-            ctx_instance)
+            ctx.instance)
 
-    node_parameter_keys = node_properties['parameters'].keys()
+    parameters = {
+        'image_id': ctx.node.properties['image_id'],
+        'instance_type': ctx.node.properties['instance_type'],
+        'security_group_ids': attached_group_ids,
+        'key_name': _get_instance_keypair()
+    }
 
-    for key in parameters.keys():
-        if key is 'security_group_ids':
-            if key in node_parameter_keys:
-                parameters[key] = list(
-                    set(attached_group_ids) | set(
-                        node_properties['parameters'][key])
-                )
-            else:
-                parameters[key] = attached_group_ids
-        if key is 'security_group_names':
-            if key in node_parameter_keys:
-                parameters[key] = list(
-                    set(attached_group_ids) | set(
-                        node_properties['parameters'][key])
-                )
-            else:
-                parameters[key] = attached_group_ids
-        elif key is 'key_name':
-            if key in node_parameter_keys:
-                parameters[key] = node_properties['parameters'][key]
-            else:
-                parameters[key] = \
-                    _get_instance_keypair()
-        elif key in node_parameter_keys:
-            parameters[key] = node_properties['parameters'][key]
-        elif key is 'image_id' or key is 'instance_type':
-            parameters[key] = node_properties[key]
-        else:
-            del(parameters[key])
+    parameters.update(ctx.node.properties['parameters'])
 
     return parameters
 
