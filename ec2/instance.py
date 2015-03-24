@@ -231,54 +231,54 @@ def _create_external_instance(ctx):
 
     if not utils.use_external_resource(ctx.node.properties, ctx.logger):
         return False
-    else:
-        instance_id = ctx.node.properties['resource_id']
-        instance = _get_instance_from_id(instance_id)
-        if instance is None:
-            raise NonRecoverableError(
-                'Cannot use_external_resource because instance_id {0} '
-                'is not in this account.'.format(instance_id))
-        utils.set_external_resource_id(instance.id, ctx.instance, ctx.logger)
-        return True
+
+    instance_id = ctx.node.properties['resource_id']
+    instance = _get_instance_from_id(instance_id)
+    if instance is None:
+        raise NonRecoverableError(
+            'Cannot use_external_resource because instance_id {0} '
+            'is not in this account.'.format(instance_id))
+    utils.set_external_resource_id(instance.id, ctx.instance, ctx.logger)
+    return True
 
 
 def _start_external_instance(instance_id, ctx):
 
     if not utils.use_external_resource(ctx.node.properties, ctx.logger):
         return False
-    else:
-        ctx.logger.info(
-            'Not starting instance {0}, because it is an external resource.'
-            .format(instance_id))
-        _instance_started_assign_runtime_properties(instance_id, ctx=ctx)
-        return True
+
+    ctx.logger.info(
+        'Not starting instance {0}, because it is an external resource.'
+        .format(instance_id))
+    _instance_started_assign_runtime_properties(instance_id, ctx=ctx)
+    return True
 
 
 def _stop_external_instance(instance_id, ctx):
 
     if not utils.use_external_resource(ctx.node.properties, ctx.logger):
         return False
-    else:
-        ctx.logger.info(
-            'External resource. Not stopping instance {0}.'
-            .format(instance_id))
-        _unassign_runtime_properties(
-            runtime_properties=constants.INSTANCE_INTERNAL_ATTRIBUTES,
-            ctx_instance=ctx.instance)
-        return True
+
+    ctx.logger.info(
+        'External resource. Not stopping instance {0}.'
+        .format(instance_id))
+    _unassign_runtime_properties(
+        runtime_properties=constants.INSTANCE_INTERNAL_ATTRIBUTES,
+        ctx_instance=ctx.instance)
+    return True
 
 
 def _terminate_external_instance(instance_id, ctx):
 
     if not utils.use_external_resource(ctx.node.properties, ctx.logger):
         return False
-    else:
-        ctx.logger.info(
-            'External resource. Not terminating instance {0}.'
-            .format(instance_id))
-        utils.unassign_runtime_property_from_resource(
-            constants.EXTERNAL_RESOURCE_ID, ctx.instance, ctx.logger)
-        return True
+
+    ctx.logger.info(
+        'External resource. Not terminating instance {0}.'
+        .format(instance_id))
+    utils.unassign_runtime_property_from_resource(
+        constants.EXTERNAL_RESOURCE_ID, ctx.instance, ctx.logger)
+    return True
 
 
 def _get_all_instances(list_of_instance_ids=None):
