@@ -22,6 +22,7 @@ from moto import mock_ec2
 # Cloudify Imports is imported and used in operations
 from ec2 import connection
 from ec2 import securitygroup
+from cloudify.state import current_ctx
 from cloudify.mocks import MockCloudifyContext
 from cloudify.exceptions import NonRecoverableError
 
@@ -69,6 +70,7 @@ class TestSecurityGroup(testtools.TestCase):
 
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock('test_create', test_properties)
+        current_ctx.set(ctx=ctx)
         securitygroup.create(ctx=ctx)
 
     @mock_ec2
@@ -77,6 +79,7 @@ class TestSecurityGroup(testtools.TestCase):
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
             'test_create_duplicate', test_properties)
+        current_ctx.set(ctx=ctx)
         name = ctx.node.properties.get('resource_id')
         description = ctx.node.properties.get('description')
         ec2_client = connection.EC2ConnectionClient().client()
@@ -92,6 +95,7 @@ class TestSecurityGroup(testtools.TestCase):
 
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock('test_delete', test_properties)
+        current_ctx.set(ctx=ctx)
         ec2_client = connection.EC2ConnectionClient().client()
         group = ec2_client.create_security_group('test',
                                                  'this is test')
@@ -105,6 +109,7 @@ class TestSecurityGroup(testtools.TestCase):
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
             'test_create_duplicate', test_properties)
+        current_ctx.set(ctx=ctx)
         name = ctx.node.properties.get('resource_id')
         description = ctx.node.properties.get('description')
         ec2_client = connection.EC2ConnectionClient().client()
@@ -119,6 +124,7 @@ class TestSecurityGroup(testtools.TestCase):
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
             'test_delete_deleted', test_properties)
+        current_ctx.set(ctx=ctx)
         ec2_client = connection.EC2ConnectionClient().client()
         group = ec2_client.create_security_group('test_delete_deleted',
                                                  'this is test')
@@ -134,6 +140,7 @@ class TestSecurityGroup(testtools.TestCase):
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
             'test_delete_existing', test_properties)
+        current_ctx.set(ctx=ctx)
         ec2_client = connection.EC2ConnectionClient().client()
         group = ec2_client.create_security_group('test_delete_existing',
                                                  'this is test')
@@ -151,6 +158,7 @@ class TestSecurityGroup(testtools.TestCase):
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
             'test_use_external_not_existing', test_properties)
+        current_ctx.set(ctx=ctx)
         ctx.node.properties['use_external_resource'] = True
         ctx.node.properties['resource_id'] = 'sg-73cd3f1e'
         ex = self.assertRaises(
@@ -164,6 +172,7 @@ class TestSecurityGroup(testtools.TestCase):
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
             'test_creation_validation_existing', test_properties)
+        current_ctx.set(ctx=ctx)
         ctx.node.properties['use_external_resource'] = True
         ctx.node.properties['resource_id'] = 'sg-73cd3f1e'
         ex = self.assertRaises(
@@ -177,6 +186,7 @@ class TestSecurityGroup(testtools.TestCase):
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
             'test_creation_validation_not_existing', test_properties)
+        current_ctx.set(ctx=ctx)
         ctx.node.properties['use_external_resource'] = False
         ec2_client = connection.EC2ConnectionClient().client()
         group = ec2_client.create_security_group(
@@ -196,6 +206,7 @@ class TestSecurityGroup(testtools.TestCase):
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
             'test_authorize_by_id', test_properties)
+        current_ctx.set(ctx=ctx)
         group = ec2_client.create_security_group('test_authorize_by_id',
                                                  'this is test')
         rules = ctx.node.properties['rules']
@@ -210,6 +221,7 @@ class TestSecurityGroup(testtools.TestCase):
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
             'test_get_security_group_from_name', test_properties)
+        current_ctx.set(ctx=ctx)
 
         with mock_ec2():
             ec2_client = connection.EC2ConnectionClient().client()
@@ -228,6 +240,7 @@ class TestSecurityGroup(testtools.TestCase):
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
             'test_get_all_groups_deleted', test_properties)
+        current_ctx.set(ctx=ctx)
         ec2_client = connection.EC2ConnectionClient().client()
         group = ec2_client.create_security_group('test_get_all_groups_deleted',
                                                  'this is test')

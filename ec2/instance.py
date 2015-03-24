@@ -32,7 +32,7 @@ def creation_validation(**_):
     for property_key in constants.INSTANCE_REQUIRED_PROPERTIES:
         utils.validate_node_property(property_key, ctx.node.properties)
 
-    instance = _get_instance_from_id(utils.get_resource_id(ctx=ctx))
+    instance = _get_instance_from_id(utils.get_resource_id())
 
     if ctx.node.properties['use_external_resource'] and not instance:
         raise NonRecoverableError(
@@ -64,17 +64,16 @@ def run_instances(**_):
     for property_name in constants.INSTANCE_REQUIRED_PROPERTIES:
         utils.validate_node_property(property_name, ctx.node.properties)
 
-    if _create_external_instance(ctx=ctx):
+    if _create_external_instance():
         return
 
-    instance_parameters = _get_instance_parameters(
-        ctx.node.properties, ctx.instance, ctx.logger)
+    instance_parameters = _get_instance_parameters()
 
     ctx.logger.debug(
         'Attempting to create EC2 Instance with these API parameters: {0}.'
         .format(instance_parameters))
 
-    instance_id = _run_instances(ec2_client, instance_parameters, ctx=ctx)
+    instance_id = _run_instances(ec2_client, instance_parameters)
 
     instance = _get_instance_from_id(instance_id)
 
@@ -84,7 +83,7 @@ def run_instances(**_):
             'has been added to your account.'.format(instance_id))
 
     utils.set_external_resource_id(
-        instance_id, ctx.instance, ctx.logger, external=False)
+        instance_id, ctx.instance, external=False)
 
 
 @operation
@@ -93,13 +92,13 @@ def start(**_):
 
     instance_id = \
         utils.get_external_resource_id_or_raise(
-            'start instance', ctx.instance, ctx.logger)
+            'start instance', ctx.instance)
 
-    if _start_external_instance(instance_id, ctx=ctx):
+    if _start_external_instance(instance_id):
         return
 
-    if _get_instance_state(ctx.instance) == constants.INSTANCE_STATE_STARTED:
-        _instance_started_assign_runtime_properties(instance_id, ctx=ctx)
+    if _get_instance_state() == constants.INSTANCE_STATE_STARTED:
+        _instance_started_assign_runtime_properties(instance_id)
         return
 
     ctx.logger.debug('Attempting to start instance: {0}.)'.format(instance_id))
@@ -112,8 +111,8 @@ def start(**_):
 
     ctx.logger.debug('Attempted to start instance {0}.'.format(instance_id))
 
-    if _get_instance_state(ctx.instance) == constants.INSTANCE_STATE_STARTED:
-        _instance_started_assign_runtime_properties(instance_id, ctx=ctx)
+    if _get_instance_state() == constants.INSTANCE_STATE_STARTED:
+        _instance_started_assign_runtime_properties(instance_id)
     else:
         return ctx.operation.retry(
             message='Waiting server to be running. Retrying...')
@@ -125,9 +124,9 @@ def stop(**_):
 
     instance_id = \
         utils.get_external_resource_id_or_raise(
-            'stop instance', ctx.instance, ctx.logger)
+            'stop instance', ctx.instance)
 
-    if _stop_external_instance(instance_id, ctx=ctx):
+    if _stop_external_instance(instance_id):
         return
 
     ctx.logger.debug(
@@ -141,7 +140,7 @@ def stop(**_):
 
     ctx.logger.debug('Attempted to stop instance {0}.'.format(instance_id))
 
-    if _get_instance_state(ctx.instance) == constants.INSTANCE_STATE_STOPPED:
+    if _get_instance_state() == constants.INSTANCE_STATE_STOPPED:
         _unassign_runtime_properties(
             runtime_properties=constants.INSTANCE_INTERNAL_ATTRIBUTES,
             ctx_instance=ctx.instance)
@@ -157,9 +156,9 @@ def terminate(**_):
 
     instance_id = \
         utils.get_external_resource_id_or_raise(
-            'terminate instance', ctx.instance, ctx.logger)
+            'terminate instance', ctx.instance)
 
-    if _terminate_external_instance(instance_id, ctx=ctx):
+    if _terminate_external_instance(instance_id):
         return
 
     ctx.logger.debug(
@@ -174,44 +173,44 @@ def terminate(**_):
     ctx.logger.debug(
         'Attemped to terminate instance {0}'.format(instance_id))
 
-    if _get_instance_state(ctx.instance) == \
+    if _get_instance_state() == \
             constants.INSTANCE_STATE_TERMINATED:
         ctx.logger.info('Terminated instance: {0}.'.format(instance_id))
         utils.unassign_runtime_property_from_resource(
-            constants.EXTERNAL_RESOURCE_ID, ctx.instance, ctx.logger)
+            constants.EXTERNAL_RESOURCE_ID, ctx.instance)
     else:
         return ctx.operation.retry(
             message='Waiting server to terminate. Retrying...')
 
 
-def _assign_runtime_properties_to_instance(runtime_properties, ctx):
+def _assign_runtime_properties_to_instance(runtime_properties):
 
     for property_name in runtime_properties:
         if 'ip' is property_name:
             ctx.instance.runtime_properties[property_name] = \
-                _get_instance_attribute('private_ip_address', ctx.instance)
+                _get_instance_attribute('private_ip_address')
         elif 'public_ip_address' is property_name:
             ctx.instance.runtime_properties[property_name] = \
-                _get_instance_attribute('ip_address', ctx.instance)
+                _get_instance_attribute('ip_address')
         else:
-            attribute = _get_instance_attribute(property_name, ctx.instance)
+            attribute = _get_instance_attribute(property_name)
 
         ctx.logger.debug('Set {0}: {1}.'.format(property_name, attribute))
 
 
-def _instance_started_assign_runtime_properties(instance_id, ctx):
+def _instance_started_assign_runtime_properties(instance_id):
         _assign_runtime_properties_to_instance(
-            runtime_properties=constants.INSTANCE_INTERNAL_ATTRIBUTES, ctx=ctx)
+            runtime_properties=constants.INSTANCE_INTERNAL_ATTRIBUTES)
         ctx.logger.info('Instance {0} is running.'.format(instance_id))
 
 
 def _unassign_runtime_properties(runtime_properties, ctx_instance):
     for property_name in runtime_properties:
         utils.unassign_runtime_property_from_resource(
-            property_name, ctx_instance, ctx.logger)
+            property_name, ctx_instance)
 
 
-def _run_instances(ec2_client, instance_parameters, ctx):
+def _run_instances(ec2_client, instance_parameters):
     if ctx.operation.retry_number == 0:
         try:
             reservation = ec2_client.run_instances(**instance_parameters)
@@ -227,9 +226,9 @@ def _run_instances(ec2_client, instance_parameters, ctx):
         return ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
 
 
-def _create_external_instance(ctx):
+def _create_external_instance():
 
-    if not utils.use_external_resource(ctx.node.properties, ctx.logger):
+    if not utils.use_external_resource(ctx.node.properties):
         return False
 
     instance_id = ctx.node.properties['resource_id']
@@ -238,25 +237,25 @@ def _create_external_instance(ctx):
         raise NonRecoverableError(
             'Cannot use_external_resource because instance_id {0} '
             'is not in this account.'.format(instance_id))
-    utils.set_external_resource_id(instance.id, ctx.instance, ctx.logger)
+    utils.set_external_resource_id(instance.id, ctx.instance)
     return True
 
 
-def _start_external_instance(instance_id, ctx):
+def _start_external_instance(instance_id):
 
-    if not utils.use_external_resource(ctx.node.properties, ctx.logger):
+    if not utils.use_external_resource(ctx.node.properties):
         return False
 
     ctx.logger.info(
         'Not starting instance {0}, because it is an external resource.'
         .format(instance_id))
-    _instance_started_assign_runtime_properties(instance_id, ctx=ctx)
+    _instance_started_assign_runtime_properties(instance_id)
     return True
 
 
-def _stop_external_instance(instance_id, ctx):
+def _stop_external_instance(instance_id):
 
-    if not utils.use_external_resource(ctx.node.properties, ctx.logger):
+    if not utils.use_external_resource(ctx.node.properties):
         return False
 
     ctx.logger.info(
@@ -268,16 +267,16 @@ def _stop_external_instance(instance_id, ctx):
     return True
 
 
-def _terminate_external_instance(instance_id, ctx):
+def _terminate_external_instance(instance_id):
 
-    if not utils.use_external_resource(ctx.node.properties, ctx.logger):
+    if not utils.use_external_resource(ctx.node.properties):
         return False
 
     ctx.logger.info(
         'External resource. Not terminating instance {0}.'
         .format(instance_id))
     utils.unassign_runtime_property_from_resource(
-        constants.EXTERNAL_RESOURCE_ID, ctx.instance, ctx.logger)
+        constants.EXTERNAL_RESOURCE_ID, ctx.instance)
     return True
 
 
@@ -298,7 +297,7 @@ def _get_all_instances(list_of_instance_ids=None):
         if 'InvalidInstanceID.NotFound' in e:
             instances = [instance for res in ec2_client.get_all_reservations()
                          for instance in res.instances]
-            utils.log_available_resources(instances, ctx.logger)
+            utils.log_available_resources(instances)
         return None
     except boto.exception.BotoServerError as e:
         raise NonRecoverableError('{0}'.format(str(e)))
@@ -344,7 +343,7 @@ def _get_image(image_id):
     return image_object
 
 
-def _get_instance_attribute(attribute, ctx_instance):
+def _get_instance_attribute(attribute):
     """Gets an attribute from a boto object that represents an EC2 Instance.
 
     :param attribute: The named python attribute of a boto object.
@@ -354,13 +353,13 @@ def _get_instance_attribute(attribute, ctx_instance):
     :raises NonRecoverableError if no instance is found.
     """
 
-    if constants.EXTERNAL_RESOURCE_ID not in ctx_instance.runtime_properties:
+    if constants.EXTERNAL_RESOURCE_ID not in ctx.instance.runtime_properties:
         raise NonRecoverableError(
             'Unable to get instance attibute {0}, because {1} is not set.'
             .format(attribute, constants.EXTERNAL_RESOURCE_ID))
 
     instance_id = \
-        ctx_instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
+        ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
     instance_object = _get_instance_from_id(instance_id)
 
     if instance_object is None:
@@ -372,17 +371,17 @@ def _get_instance_attribute(attribute, ctx_instance):
     return attribute
 
 
-def _get_instance_state(ctx_instance):
+def _get_instance_state():
     """Gets the instance state code of a EC2 Instance
 
     :param ctx:  The Cloudify ctx context.
     :returns a state code from a boto object representing an EC2 Image.
     """
-    state = _get_instance_attribute('state_code', ctx_instance)
+    state = _get_instance_attribute('state_code')
     return state
 
 
-def _get_instance_parameters(node_properties, ctx_instance, ctx_logger):
+def _get_instance_parameters():
     """The parameters to the run_instance boto call.
 
     :param ctx:  The Cloudify ctx context.
@@ -392,28 +391,28 @@ def _get_instance_parameters(node_properties, ctx_instance, ctx_logger):
     attached_group_ids = \
         utils.get_target_external_resource_ids(
             constants.INSTANCE_SECURITY_GROUP_RELATIONSHIP,
-            ctx_instance, ctx_logger)
+            ctx.instance)
 
     parameters = {
-        'image_id': node_properties['image_id'],
-        'instance_type': node_properties['instance_type'],
+        'image_id': ctx.node.properties['image_id'],
+        'instance_type': ctx.node.properties['instance_type'],
         'security_group_ids': attached_group_ids,
-        'key_name': _get_instance_keypair(ctx_instance, ctx_logger)
+        'key_name': _get_instance_keypair()
     }
 
-    parameters.update(node_properties['parameters'])
+    parameters.update(ctx.node.properties['parameters'])
 
     return parameters
 
 
-def _get_instance_keypair(ctx_instance, ctx_logger):
+def _get_instance_keypair():
     """Gets the instance key pair. If more or less than one is provided,
     this will raise an error.
 
     """
     list_of_keypairs = \
         utils.get_target_external_resource_ids(
-            constants.INSTANCE_KEYPAIR_RELATIONSHIP, ctx_instance, ctx_logger)
+            constants.INSTANCE_KEYPAIR_RELATIONSHIP, ctx.instance)
 
     if len(list_of_keypairs) > 1:
         raise NonRecoverableError(

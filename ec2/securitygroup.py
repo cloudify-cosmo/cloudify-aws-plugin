@@ -37,7 +37,7 @@ def creation_validation(**_):
         utils.validate_node_property(property_key, ctx.node.properties)
 
     security_group = _get_security_group_from_id(
-        utils.get_resource_id(ctx=ctx))
+        utils.get_resource_id())
 
     if ctx.node.properties['use_external_resource'] and not security_group:
         raise NonRecoverableError(
@@ -60,9 +60,9 @@ def create(**_):
     for property_name in constants.SECURITY_GROUP_REQUIRED_PROPERTIES:
         utils.validate_node_property(property_name, ctx.node.properties)
 
-    name = utils.get_resource_id(ctx=ctx)
+    name = utils.get_resource_id()
 
-    if _create_external_securitygroup(name, ctx=ctx):
+    if _create_external_securitygroup(name):
         return
 
     ctx.logger.debug(
@@ -79,7 +79,7 @@ def create(**_):
 
     _authorize_by_id(ec2_client, group_object.id, ctx.node.properties['rules'])
     utils.set_external_resource_id(
-        group_object.id, ctx.instance, ctx.logger, external=False)
+        group_object.id, ctx.instance, external=False)
 
 
 @operation
@@ -90,9 +90,9 @@ def delete(**_):
     ec2_client = connection.EC2ConnectionClient().client()
 
     group_id = utils.get_external_resource_id_or_raise(
-        'delete security group', ctx.instance, ctx.logger)
+        'delete security group', ctx.instance)
 
-    if _delete_external_securitygroup(ctx):
+    if _delete_external_securitygroup():
         return
 
     ctx.logger.debug('Deleting Security Group: {0}'.format(group_id))
@@ -100,7 +100,7 @@ def delete(**_):
     _delete_security_group(group_id, ec2_client)
 
     utils.unassign_runtime_property_from_resource(
-        constants.EXTERNAL_RESOURCE_ID, ctx.instance, ctx.logger)
+        constants.EXTERNAL_RESOURCE_ID, ctx.instance)
 
     ctx.logger.info(
         'Attempted to delete Security Group: {0}.'
@@ -144,7 +144,7 @@ def _authorize_by_id(ec2_client, group_id, rules):
             raise
 
 
-def _create_external_securitygroup(name, ctx):
+def _create_external_securitygroup(name):
     """If use_external_resource is True, this will set the runtime_properties,
     and then exit.
 
@@ -153,7 +153,7 @@ def _create_external_securitygroup(name, ctx):
     :return True: External resource. Set runtime_properties. Ignore operation.
     """
 
-    if not utils.use_external_resource(ctx.node.properties, ctx.logger):
+    if not utils.use_external_resource(ctx.node.properties):
         return False
 
     group = _get_security_group_from_id(name)
@@ -161,11 +161,11 @@ def _create_external_securitygroup(name, ctx):
         raise NonRecoverableError(
             'External security group was indicated, but the given '
             'security group does not exist.')
-    utils.set_external_resource_id(group.id, ctx.instance, ctx.logger)
+    utils.set_external_resource_id(group.id, ctx.instance)
     return True
 
 
-def _delete_external_securitygroup(ctx):
+def _delete_external_securitygroup():
     """If use_external_resource is True, this will delete the runtime_properties,
     and then exit.
 
@@ -175,13 +175,13 @@ def _delete_external_securitygroup(ctx):
         Ignore operation.
     """
 
-    if not utils.use_external_resource(ctx.node.properties, ctx.logger):
+    if not utils.use_external_resource(ctx.node.properties):
         return False
 
     ctx.logger.info(
         'External resource. Not deleting security group from account.')
     utils.unassign_runtime_property_from_resource(
-        constants.EXTERNAL_RESOURCE_ID, ctx.instance, ctx.logger)
+        constants.EXTERNAL_RESOURCE_ID, ctx.instance)
     return True
 
 
@@ -235,7 +235,7 @@ def _get_all_security_groups(list_of_group_names=None, list_of_group_ids=None):
     except boto.exception.EC2ResponseError as e:
         if 'InvalidGroup.NotFound' in e:
             groups = ec2_client.get_all_security_groups()
-            utils.log_available_resources(groups, ctx.logger)
+            utils.log_available_resources(groups)
         return None
     except boto.exception.BotoServerError as e:
         raise NonRecoverableError('{0}'.format(str(e)))

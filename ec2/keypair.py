@@ -36,7 +36,7 @@ def creation_validation(**_):
     for property_key in constants.KEYPAIR_REQUIRED_PROPERTIES:
         utils.validate_node_property(property_key, ctx.node.properties)
 
-    key_file = _get_path_to_key_file(ctx.node.properties)
+    key_file = _get_path_to_key_file()
     key_file_in_filesystem = _search_for_key_file(key_file)
     key_pair_in_account = _get_key_pair_by_id(
         ctx.node.properties['resource_id'])
@@ -67,10 +67,10 @@ def create(**kwargs):
 
     ec2_client = connection.EC2ConnectionClient().client()
 
-    if _create_external_keypair(ctx=ctx):
+    if _create_external_keypair():
         return
 
-    key_pair_name = utils.get_resource_id(ctx=ctx)
+    key_pair_name = utils.get_resource_id()
 
     ctx.logger.debug('Attempting to create key pair.')
 
@@ -82,8 +82,8 @@ def create(**kwargs):
         raise NonRecoverableError('Key pair not created. {0}'.format(str(e)))
 
     utils.set_external_resource_id(
-        kp.name, ctx.instance, ctx.logger, external=False)
-    _save_key_pair(kp, ctx=ctx)
+        kp.name, ctx.instance, external=False)
+    _save_key_pair(kp)
 
 
 @operation
@@ -93,9 +93,9 @@ def delete(**kwargs):
     ec2_client = connection.EC2ConnectionClient().client()
 
     key_pair_name = utils.get_external_resource_id_or_raise(
-        'delete key pair', ctx.instance, ctx.logger)
+        'delete key pair', ctx.instance)
 
-    if _delete_external_keypair(ctx=ctx):
+    if _delete_external_keypair():
         return
 
     ctx.logger.debug('Attempting to delete key pair from account.')
@@ -107,12 +107,12 @@ def delete(**kwargs):
         raise NonRecoverableError('{0}'.format(str(e)))
 
     utils.unassign_runtime_property_from_resource(
-        constants.EXTERNAL_RESOURCE_ID, ctx.instance, ctx.logger)
-    _delete_key_file(ctx.node.properties)
+        constants.EXTERNAL_RESOURCE_ID, ctx.instance)
+    _delete_key_file()
     ctx.logger.info('Deleted key pair: {0}.'.format(key_pair_name))
 
 
-def _create_external_keypair(ctx):
+def _create_external_keypair():
     """If use_external_resource is True, this will set the runtime_properties,
     and then exit.
 
@@ -122,12 +122,12 @@ def _create_external_keypair(ctx):
     :raises NonRecoverableError: If unable to locate the existing key file.
     """
 
-    if not utils.use_external_resource(ctx.node.properties, ctx.logger):
+    if not utils.use_external_resource(ctx.node.properties):
         return False
 
     key_pair_name = ctx.node.properties['resource_id']
     key_pair_in_account = _get_key_pair_by_id(key_pair_name)
-    key_path_in_filesystem = _get_path_to_key_file(ctx.node.properties)
+    key_path_in_filesystem = _get_path_to_key_file()
     ctx.logger.debug(
         'Path to key file: {0}.'.format(key_path_in_filesystem))
     if not key_pair_in_account:
@@ -136,11 +136,11 @@ def _create_external_keypair(ctx):
     if not _search_for_key_file(key_path_in_filesystem):
         raise NonRecoverableError(
             'External resource, but the key file does not exist.')
-    utils.set_external_resource_id(key_pair_name, ctx.instance, ctx.logger)
+    utils.set_external_resource_id(key_pair_name, ctx.instance)
     return True
 
 
-def _delete_external_keypair(ctx):
+def _delete_external_keypair():
     """If use_external_resource is True, this will delete the runtime_properties,
     and then exit.
 
@@ -150,23 +150,23 @@ def _delete_external_keypair(ctx):
         Ignore operation.
     """
 
-    if not utils.use_external_resource(ctx.node.properties, ctx.logger):
+    if not utils.use_external_resource(ctx.node.properties):
         return False
 
     ctx.logger.info('External resource. Not deleting keypair.')
     utils.unassign_runtime_property_from_resource(
-        constants.EXTERNAL_RESOURCE_ID, ctx.instance, ctx.logger)
+        constants.EXTERNAL_RESOURCE_ID, ctx.instance)
     return True
 
 
-def _delete_key_file(node_properties):
+def _delete_key_file():
     """ Deletes the key pair in the file specified in the blueprint.
 
     :param ctx: The Cloudify context.
     :raises NonRecoverableError: If unable to delete the local key file.
     """
 
-    key_path = _get_path_to_key_file(node_properties)
+    key_path = _get_path_to_key_file()
 
     if _search_for_key_file(key_path):
         try:
@@ -177,7 +177,7 @@ def _delete_key_file(node_properties):
                 .format(str(e)))
 
 
-def _save_key_pair(key_pair_object, ctx):
+def _save_key_pair(key_pair_object):
     """Saves a keypair to the filesystem.
 
     :param key_pair_object: The key pair object as returned from create.
@@ -188,7 +188,7 @@ def _save_key_pair(key_pair_object, ctx):
 
     ctx.logger.debug('Attempting to save the key_pair_object.')
 
-    directory_path = _get_path_to_key_folder(ctx.node.properties)
+    directory_path = _get_path_to_key_folder()
 
     try:
         key_pair_object.save(directory_path)
@@ -196,7 +196,7 @@ def _save_key_pair(key_pair_object, ctx):
         raise NonRecoverableError(
             'Unable to save key pair: {0}'.format(str(e)))
 
-    key_file = _get_path_to_key_file(ctx.node.properties)
+    key_file = _get_path_to_key_file()
 
     _set_key_file_permissions(key_file)
 
@@ -229,7 +229,7 @@ def _get_key_pair_by_id(key_pair_id):
     return key_pairs[0] if key_pairs else None
 
 
-def _get_path_to_key_file(node_properties):
+def _get_path_to_key_file():
     """Gets the path to the key file.
 
     :param ctx: The Cloudify context.
@@ -237,14 +237,14 @@ def _get_path_to_key_file(node_properties):
     :raises NonRecoverableError: If private_key_path is not set.
     """
 
-    if 'private_key_path' not in node_properties:
+    if 'private_key_path' not in ctx.node.properties:
         raise NonRecoverableError(
             'Unable to get key file path, private_key_path not set.')
 
-    return os.path.expanduser(node_properties['private_key_path'])
+    return os.path.expanduser(ctx.node.properties['private_key_path'])
 
 
-def _get_path_to_key_folder(node_properties):
+def _get_path_to_key_folder():
     """Gets the path to the folder that the key file is located in.
 
     :param node_properties: The properties dictionary in the ctx.node object.
@@ -252,11 +252,11 @@ def _get_path_to_key_folder(node_properties):
     :raises NonRecoverableError: If private_key_path is not set.
     """
 
-    if 'private_key_path' not in node_properties:
+    if 'private_key_path' not in ctx.node.properties:
         raise NonRecoverableError(
             'Unable to get key file path, private_key_path not set.')
 
-    full_path_to_file = _get_path_to_key_file(node_properties)
+    full_path_to_file = _get_path_to_key_file()
 
     directory_path, filename = os.path.split(full_path_to_file)
 

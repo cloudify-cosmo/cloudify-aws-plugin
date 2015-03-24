@@ -21,6 +21,7 @@ from moto import mock_ec2
 
 # Cloudify Imports is imported and used in operations
 from ec2 import utils
+from cloudify.state import current_ctx
 from cloudify.mocks import MockCloudifyContext
 from cloudify.exceptions import NonRecoverableError
 
@@ -65,4 +66,5 @@ class TestUtils(testtools.TestCase):
         list_of_resources = \
             ['Address:54.163.229.127', 'Address:107.22.223.114']
         ctx = self.mock_ctx('test_log_available_resources')
-        utils.log_available_resources(list_of_resources, ctx.logger)
+        current_ctx.set(ctx=ctx)
+        utils.log_available_resources(list_of_resources)

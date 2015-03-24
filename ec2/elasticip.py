@@ -49,7 +49,7 @@ def allocate(**_):
 
     ec2_client = connection.EC2ConnectionClient().client()
 
-    if _allocate_external_elasticip(ctx=ctx):
+    if _allocate_external_elasticip():
         return
 
     ctx.logger.debug('Attempting to allocate elasticip.')
@@ -61,7 +61,7 @@ def allocate(**_):
         raise NonRecoverableError('{0}'.format(str(e)))
 
     utils.set_external_resource_id(
-        address_object.public_ip, ctx.instance, ctx.logger, external=False)
+        address_object.public_ip, ctx.instance, external=False)
 
 
 @operation
@@ -72,9 +72,9 @@ def release(**_):
 
     elasticip = \
         utils.get_external_resource_id_or_raise(
-            'release elasticip', ctx.instance, ctx.logger)
+            'release elasticip', ctx.instance)
 
-    if _release_external_elasticip(ctx=ctx):
+    if _release_external_elasticip():
         return
 
     address_object = _get_address_object_by_id(elasticip)
@@ -100,7 +100,7 @@ def release(**_):
 
     if not address:
         utils.unassign_runtime_property_from_resource(
-            constants.EXTERNAL_RESOURCE_ID, ctx.instance, ctx.logger)
+            constants.EXTERNAL_RESOURCE_ID, ctx.instance)
     else:
         return ctx.operation.retry(
             message='Elastic IP not released. Retrying...')
@@ -116,12 +116,12 @@ def associate(**_):
 
     instance_id = \
         utils.get_external_resource_id_or_raise(
-            'associate elasticip', ctx.source.instance, ctx.logger)
+            'associate elasticip', ctx.source.instance)
     elasticip = \
         utils.get_external_resource_id_or_raise(
-            'associate elasticip', ctx.target.instance, ctx.logger)
+            'associate elasticip', ctx.target.instance)
 
-    if _associate_external_elasticip_or_instance(elasticip, ctx=ctx):
+    if _associate_external_elasticip_or_instance(elasticip):
         return
 
     ctx.logger.debug(
@@ -150,12 +150,12 @@ def disassociate(**_):
 
     instance_id = \
         utils.get_external_resource_id_or_raise(
-            'disassociate elasticip', ctx.source.instance, ctx.logger)
+            'disassociate elasticip', ctx.source.instance)
     elasticip = \
         utils.get_external_resource_id_or_raise(
-            'disassociate elasticip', ctx.target.instance, ctx.logger)
+            'disassociate elasticip', ctx.target.instance)
 
-    if _disassociate_external_elasticip_or_instance(ctx=ctx):
+    if _disassociate_external_elasticip_or_instance():
         return
 
     ctx.logger.debug('Disassociating Elastic IP {0}'.format(elasticip))
@@ -167,14 +167,14 @@ def disassociate(**_):
         raise NonRecoverableError('{0}'.format(str(e)))
 
     utils.unassign_runtime_property_from_resource(
-        'public_ip_address', ctx.source.instance, ctx.logger)
+        'public_ip_address', ctx.source.instance)
 
     ctx.logger.info(
         'Disassociated Elastic IP {0} from instance {1}.'
         .format(elasticip, instance_id))
 
 
-def _allocate_external_elasticip(ctx):
+def _allocate_external_elasticip():
     """Pretends to allocate an Elastic IP but if it was
     not created by Cloudify, it just sets runtime_properties
     and exits the operation.
@@ -183,7 +183,7 @@ def _allocate_external_elasticip(ctx):
     :return True: External resource. Set runtime_properties. Ignore operation.
     """
 
-    if not utils.use_external_resource(ctx.node.properties, ctx.logger):
+    if not utils.use_external_resource(ctx.node.properties):
         return False
 
     address_ip = _get_address_by_id(
@@ -192,11 +192,11 @@ def _allocate_external_elasticip(ctx):
         raise NonRecoverableError(
             'External elasticip was indicated, but the given '
             'elasticip does not exist in the account.')
-    utils.set_external_resource_id(address_ip, ctx.instance, ctx.logger)
+    utils.set_external_resource_id(address_ip, ctx.instance)
     return True
 
 
-def _release_external_elasticip(ctx):
+def _release_external_elasticip():
     """Pretends to release an Elastic IP but if it was
     not created by Cloudify, it just deletes runtime_properties
     and exits the operation.
@@ -206,15 +206,15 @@ def _release_external_elasticip(ctx):
         Ignore operation.
     """
 
-    if not utils.use_external_resource(ctx.node.properties, ctx.logger):
+    if not utils.use_external_resource(ctx.node.properties):
         return False
 
     utils.unassign_runtime_property_from_resource(
-        constants.EXTERNAL_RESOURCE_ID, ctx.instance, ctx.logger)
+        constants.EXTERNAL_RESOURCE_ID, ctx.instance)
     return True
 
 
-def _associate_external_elasticip_or_instance(elasticip, ctx):
+def _associate_external_elasticip_or_instance(elasticip):
     """Pretends to associate an Elastic IP with an EC2 instance but if one
     was not created by Cloudify, it just sets runtime_properties
     and exits the operation.
@@ -224,9 +224,9 @@ def _associate_external_elasticip_or_instance(elasticip, ctx):
         Ignore operation.
     """
 
-    if not utils.use_external_resource(ctx.source.node.properties, ctx.logger) \
+    if not utils.use_external_resource(ctx.source.node.properties) \
             or not utils.use_external_resource(
-                ctx.target.node.properties, ctx.logger):
+                ctx.target.node.properties):
         return False
 
     ctx.logger.info(
@@ -237,7 +237,7 @@ def _associate_external_elasticip_or_instance(elasticip, ctx):
     return True
 
 
-def _disassociate_external_elasticip_or_instance(ctx):
+def _disassociate_external_elasticip_or_instance():
     """Pretends to disassociate an Elastic IP with an EC2 instance but if one
     was not created by Cloudify, it just deletes runtime_properties
     and exits the operation.
@@ -247,16 +247,16 @@ def _disassociate_external_elasticip_or_instance(ctx):
         Ignore operation.
     """
 
-    if not utils.use_external_resource(ctx.source.node.properties, ctx.logger) \
+    if not utils.use_external_resource(ctx.source.node.properties) \
             or not utils.use_external_resource(
-                ctx.target.node.properties, ctx.logger):
+                ctx.target.node.properties):
         return False
 
     ctx.logger.info(
         'Either instance or elasticip is an external resource so not '
         'performing disassociate operation.')
     utils.unassign_runtime_property_from_resource(
-        'public_ip_address', ctx.source.instance, ctx.logger)
+        'public_ip_address', ctx.source.instance)
     return True
 
 
