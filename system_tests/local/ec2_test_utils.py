@@ -113,6 +113,7 @@ class EC2LocalTestUtils(testtools.TestCase):
             'resource_id': resource_id_vm,
             'image_id': TEST_AMI,
             'instance_type': TEST_SIZE,
+            'cloudify_agent': {},
             'parameters': {
                 'security_group_ids': [resource_id_sg],
                 'key_name': resource_id_kp

@@ -14,7 +14,9 @@
 #    * limitations under the License.
 
 # Built-in Imports
+import os
 import testtools
+import json
 
 # Third Party Imports
 from moto import mock_ec2
@@ -39,6 +41,7 @@ class TestUtils(testtools.TestCase):
             'resource_id': '',
             'image_id': TEST_AMI_IMAGE_ID,
             'instance_type': TEST_INSTANCE_TYPE,
+            'cloudify_agent': {},
             'parameters': {
                 'security_group_ids': ['sg-73cd3f1e'],
                 'instance_initiated_shutdown_behavior': 'stop'
@@ -68,3 +71,39 @@ class TestUtils(testtools.TestCase):
         ctx = self.mock_ctx('test_log_available_resources')
         current_ctx.set(ctx=ctx)
         utils.log_available_resources(list_of_resources)
+
+    def test_get_provider_variable_from_file(self):
+
+        ctx = self.mock_ctx('test_get_provider_variable_from_file')
+        current_ctx.set(ctx=ctx)
+
+        provider_context_json = {
+            "agents_keypair": "agents",
+            "agents_security_group": "agents"
+        }
+
+        with open(os.path.expanduser('~/.aws_config.json'), 'w') \
+                as provider_context_file:
+            json.dump(
+                provider_context_json,
+                provider_context_file)
+
+        output = utils._get_provider_variable_from_file(
+            'agents_keypair')
+        self.assertIn('agents', output)
+        output = utils._get_provider_variable_from_file(
+            'agents_security_group')
+        self.assertIn('agents', output)
+        os.remove(os.path.expanduser('~/.aws_config.json'))
+
+    def test_get_provider_context_empty_file(self):
+        ctx = self.mock_ctx('test_get_provider_context')
+        current_ctx.set(ctx=ctx)
+
+        with open(os.path.expanduser('~/.aws_config.json'), 'w') \
+                as provider_context_file:
+            provider_context_file.write('')
+
+        self.assertEqual({}, utils._get_provider_context(
+            os.path.expanduser('~/.aws_config.json')))
+        os.remove(os.path.expanduser('~/.aws_config.json'))
