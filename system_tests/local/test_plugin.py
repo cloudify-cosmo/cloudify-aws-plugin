@@ -24,6 +24,7 @@ from ec2 import (
     elasticip,
     instance
 )
+from cloudify.state import current_ctx
 from cloudify.exceptions import NonRecoverableError
 from ec2_test_utils import (
     EC2LocalTestUtils, TEST_AMI,
@@ -209,11 +210,11 @@ class EC2UtilsUnitTests(EC2LocalTestUtils):
 
         ctx = self.mock_cloudify_context(
             'test_utils_get_resource_id')
-
+        current_ctx.set(ctx=ctx)
         ctx.node.properties['resource_id'] = \
             'test_utils_get_resource_id'
 
-        resource_id = utils.get_resource_id(ctx=ctx)
+        resource_id = utils.get_resource_id()
 
         self.assertEquals(
             'test_utils_get_resource_id', resource_id)
@@ -222,10 +223,10 @@ class EC2UtilsUnitTests(EC2LocalTestUtils):
 
         ctx = self.mock_cloudify_context(
             'test_utils_get_resource_id')
-
+        current_ctx.set(ctx=ctx)
         ctx.node.properties['resource_id'] = ''
 
-        resource_id = utils.get_resource_id(ctx=ctx)
+        resource_id = utils.get_resource_id()
 
         self.assertEquals('None-test_utils_get_resource_id', resource_id)
 
@@ -233,11 +234,11 @@ class EC2UtilsUnitTests(EC2LocalTestUtils):
 
         ctx = self.mock_cloudify_context(
             'test_utils_get_resource_id_from_key_path')
-
+        current_ctx.set(ctx=ctx)
         ctx.node.properties['private_key_path'] = \
             '~/.ssh/test_utils_get_resource_id_from_key_path.pem'
 
-        resource_id = utils.get_resource_id(ctx=ctx)
+        resource_id = utils.get_resource_id()
 
         self.assertEquals(
             'test_utils_get_resource_id_from_key_path', resource_id)
@@ -259,24 +260,24 @@ class EC2UtilsUnitTests(EC2LocalTestUtils):
 
         ctx = self.mock_cloudify_context(
             'test_utils_log_available_resources')
-
+        current_ctx.set(ctx=ctx)
         client = self._get_ec2_client()
 
         key_pairs = client.get_all_key_pairs()
 
-        utils.log_available_resources(key_pairs, ctx.logger)
+        utils.log_available_resources(key_pairs)
 
     def test_utils_get_external_resource_id_or_raise_no_id(self):
 
         ctx = self.mock_cloudify_context(
             'test_utils_get_external_resource_id_or_raise_no_id')
-
+        current_ctx.set(ctx=ctx)
         ctx.instance.runtime_properties['prop'] = None
 
         ex = self.assertRaises(
             NonRecoverableError,
             utils.get_external_resource_id_or_raise,
-            'test_operation', ctx.instance, ctx.logger)
+            'test_operation', ctx.instance)
 
         self.assertIn(
             'Cannot test_operation because {0} is not assigned'
@@ -287,12 +288,12 @@ class EC2UtilsUnitTests(EC2LocalTestUtils):
 
         ctx = self.mock_cloudify_context(
             'test_utils_get_external_resource_id_or_raise')
-
+        current_ctx.set(ctx=ctx)
         ctx.instance.runtime_properties[EXTERNAL_RESOURCE_ID] = \
             'test_utils_get_external_resource_id_or_raise'
 
         output = utils.get_external_resource_id_or_raise(
-            'test_operation', ctx.instance, ctx.logger)
+            'test_operation', ctx.instance)
 
         self.assertEquals(
             'test_utils_get_external_resource_id_or_raise', output)
@@ -301,11 +302,10 @@ class EC2UtilsUnitTests(EC2LocalTestUtils):
 
         ctx = self.mock_cloudify_context(
             'test_utils_set_external_resource_id_cloudify')
-
+        current_ctx.set(ctx=ctx)
         utils.set_external_resource_id(
             'id-value',
             ctx.instance,
-            ctx.logger,
             external=False)
 
         self.assertEquals(
@@ -316,11 +316,10 @@ class EC2UtilsUnitTests(EC2LocalTestUtils):
 
         ctx = self.mock_cloudify_context(
             'test_utils_set_external_resource_id_external')
-
+        current_ctx.set(ctx=ctx)
         utils.set_external_resource_id(
             'id-value',
-            ctx.instance,
-            ctx.logger)
+            ctx.instance)
 
         self.assertEquals(
             'id-value',
@@ -330,14 +329,13 @@ class EC2UtilsUnitTests(EC2LocalTestUtils):
 
         ctx = self.mock_cloudify_context(
             'test_utils_unassign_runtime_property_from_resource')
-
+        current_ctx.set(ctx=ctx)
         ctx.instance.runtime_properties[EXTERNAL_RESOURCE_ID] = \
             'test_utils_unassign_runtime_property_from_resource'
 
         utils.unassign_runtime_property_from_resource(
             EXTERNAL_RESOURCE_ID,
-            ctx.instance,
-            ctx.logger)
+            ctx.instance)
 
         self.assertNotIn(
             EXTERNAL_RESOURCE_ID,
@@ -347,32 +345,32 @@ class EC2UtilsUnitTests(EC2LocalTestUtils):
 
         ctx = self.mock_cloudify_context(
             'test_utils_use_external_resource_not_external')
-
+        current_ctx.set(ctx=ctx)
         self.assertEquals(
             False,
-            utils.use_external_resource(ctx.node.properties, ctx.logger))
+            utils.use_external_resource(ctx.node.properties))
 
     def test_utils_use_external_resource_external(self):
 
         ctx = self.mock_cloudify_context(
             'test_utils_use_external_resource_external')
-
+        current_ctx.set(ctx=ctx)
         ctx.node.properties['use_external_resource'] = True
         ctx.node.properties['resource_id'] = \
             'test_utils_use_external_resource_external'
 
         self.assertEquals(
             True,
-            utils.use_external_resource(ctx.node.properties, ctx.logger))
+            utils.use_external_resource(ctx.node.properties))
 
     def test_get_target_external_resource_ids(self):
 
         ctx = self.mock_cloudify_context(
             'get_target_external_resource_ids')
-
+        current_ctx.set(ctx=ctx)
         output = utils.get_target_external_resource_ids(
             'instance_connected_to_keypair',
-            ctx.instance, ctx.logger)
+            ctx.instance)
 
         self.assertEquals(0, len(output))
 
@@ -380,12 +378,12 @@ class EC2UtilsUnitTests(EC2LocalTestUtils):
 
         ctx = self.mock_cloudify_context(
             'get_target_external_resource_ids')
-
+        current_ctx.set(ctx=ctx)
         delattr(ctx.instance, 'relationships')
 
         output = utils.get_target_external_resource_ids(
             'instance_connected_to_keypair',
-            ctx.instance, ctx.logger)
+            ctx.instance)
 
         self.assertEquals(0, len(output))
 
@@ -457,12 +455,12 @@ class EC2SecurityGroupUnitTests(EC2LocalTestUtils):
 
         ctx = self.mock_cloudify_context(
             'test_delete_external_securitygroup_external')
-
+        current_ctx.set(ctx=ctx)
         ctx.node.properties['use_external_resource'] = True
         ctx.instance.runtime_properties[EXTERNAL_RESOURCE_ID] = \
             'sg-blahblah'
 
-        output = securitygroup._delete_external_securitygroup(ctx=ctx)
+        output = securitygroup._delete_external_securitygroup()
         self.assertEqual(True, output)
         self.assertNotIn(
             EXTERNAL_RESOURCE_ID, ctx.instance.runtime_properties)
@@ -471,17 +469,17 @@ class EC2SecurityGroupUnitTests(EC2LocalTestUtils):
 
         ctx = self.mock_cloudify_context(
             'test_delete_external_securitygroup_not_external')
-
+        current_ctx.set(ctx=ctx)
         ctx.node.properties['use_external_resource'] = False
 
-        output = securitygroup._delete_external_securitygroup(ctx=ctx)
+        output = securitygroup._delete_external_securitygroup()
         self.assertEqual(False, output)
 
     def test_create_external_securitygroup_external(self):
 
         ctx = self.mock_cloudify_context(
             'test_create_external_securitygroup_external')
-
+        current_ctx.set(ctx=ctx)
         client = self._get_ec2_client()
         group = client.create_security_group(
             'test_create_external_securitygroup_external',
@@ -490,7 +488,7 @@ class EC2SecurityGroupUnitTests(EC2LocalTestUtils):
         ctx.node.properties['use_external_resource'] = True
         ctx.node.properties['resource_id'] = group.id
 
-        output = securitygroup._create_external_securitygroup(group.name, ctx=ctx)
+        output = securitygroup._create_external_securitygroup(group.name)
         self.assertEqual(True, output)
         self.assertEqual(
             ctx.instance.runtime_properties[EXTERNAL_RESOURCE_ID],
@@ -501,25 +499,24 @@ class EC2SecurityGroupUnitTests(EC2LocalTestUtils):
 
         ctx = self.mock_cloudify_context(
             'test_create_external_securitygroup_external_bad_id')
-
+        current_ctx.set(ctx=ctx)
         ctx.node.properties['use_external_resource'] = True
         ctx.node.properties['resource_id'] = 'sg-73cd3f1e'
 
         ex = self.assertRaises(
             NonRecoverableError,
             securitygroup._create_external_securitygroup,
-            'sg-73cd3f1e',
-            ctx=ctx)
+            'sg-73cd3f1e')
         self.assertIn('security group does not exist', ex.message)
 
     def test_create_external_securitygroup_not_external(self):
 
         ctx = self.mock_cloudify_context(
             'test_create_external_securitygroup_not_external')
-
+        current_ctx.set(ctx=ctx)
         ctx.node.properties['use_external_resource'] = False
 
-        output = securitygroup._delete_external_securitygroup(ctx=ctx)
+        output = securitygroup._delete_external_securitygroup()
         self.assertEqual(False, output)
 
     def test_authorize_by_id(self):
@@ -595,11 +592,10 @@ class EC2KeyPairUnitTests(EC2LocalTestUtils):
 
         ctx = self.mock_cloudify_context(
             'test_get_path_to_key_folder_no_private_key_path')
-
+        current_ctx.set(ctx=ctx)
         ex = self.assertRaises(
             NonRecoverableError,
-            keypair._get_path_to_key_file,
-            ctx.node.properties)
+            keypair._get_path_to_key_file)
 
         self.assertIn(
             'private_key_path not set',
@@ -610,7 +606,7 @@ class EC2KeyPairUnitTests(EC2LocalTestUtils):
 
         ctx = self.mock_cloudify_context(
             'test_get_path_to_key_folder')
-
+        current_ctx.set(ctx=ctx)
         ctx.node.properties['private_key_path'] = \
             '~/.ssh/test_get_path_to_key_folder.pem'
 
@@ -620,9 +616,7 @@ class EC2KeyPairUnitTests(EC2LocalTestUtils):
 
         key_directory, key_filename = os.path.split(full_key_path)
 
-        output = keypair._get_path_to_key_folder(
-            ctx.node.properties
-        )
+        output = keypair._get_path_to_key_folder()
 
         self.assertEqual(key_directory, output)
 
@@ -630,11 +624,10 @@ class EC2KeyPairUnitTests(EC2LocalTestUtils):
 
         ctx = self.mock_cloudify_context(
             'test_get_path_to_key_folder_no_private_key_path')
-
+        current_ctx.set(ctx=ctx)
         ex = self.assertRaises(
             NonRecoverableError,
-            keypair._get_path_to_key_file,
-            ctx.node.properties)
+            keypair._get_path_to_key_file)
 
         self.assertIn(
             'private_key_path not set',
@@ -645,7 +638,7 @@ class EC2KeyPairUnitTests(EC2LocalTestUtils):
 
         ctx = self.mock_cloudify_context(
             'test_get_path_to_key_folder')
-
+        current_ctx.set(ctx=ctx)
         ctx.node.properties['private_key_path'] = \
             '~/.ssh/test_get_path_to_key_folder.pem'
 
@@ -653,9 +646,7 @@ class EC2KeyPairUnitTests(EC2LocalTestUtils):
             ctx.node.properties['private_key_path']
         )
 
-        output = keypair._get_path_to_key_file(
-            ctx.node.properties
-        )
+        output = keypair._get_path_to_key_file()
 
         self.assertEqual(full_key_path, output)
 
@@ -712,11 +703,11 @@ class EC2ElasticIPUnitTests(EC2LocalTestUtils):
 
         ctx = self.mock_relationship_context(
             'test_disassociate_external_elasticip_or_instance')
-
+        current_ctx.set(ctx=ctx)
         ctx.source.node.properties['use_external_resource'] = False
 
         output = \
-            elasticip._disassociate_external_elasticip_or_instance(ctx=ctx)
+            elasticip._disassociate_external_elasticip_or_instance()
 
         self.assertEqual(False, output)
 
@@ -724,14 +715,14 @@ class EC2ElasticIPUnitTests(EC2LocalTestUtils):
 
         ctx = self.mock_relationship_context(
             'test_disassociate_external_elasticip_or_instance_external')
-
+        current_ctx.set(ctx=ctx)
         ctx.source.node.properties['use_external_resource'] = True
         ctx.target.node.properties['use_external_resource'] = True
         ctx.source.instance.runtime_properties['public_ip_address'] = \
             '127.0.0.1'
 
         output = \
-            elasticip._disassociate_external_elasticip_or_instance(ctx=ctx)
+            elasticip._disassociate_external_elasticip_or_instance()
 
         self.assertEqual(True, output)
         self.assertNotIn(
@@ -742,12 +733,12 @@ class EC2ElasticIPUnitTests(EC2LocalTestUtils):
 
         ctx = self.mock_relationship_context(
             'test_associate_external_elasticip_or_instance')
-
+        current_ctx.set(ctx=ctx)
         ctx.source.node.properties['use_external_resource'] = False
 
         output = \
             elasticip._associate_external_elasticip_or_instance(
-                '127.0.0.1', ctx=ctx)
+                '127.0.0.1')
 
         self.assertEqual(False, output)
 
@@ -755,7 +746,7 @@ class EC2ElasticIPUnitTests(EC2LocalTestUtils):
 
         ctx = self.mock_relationship_context(
             'test_associate_external_elasticip_or_instance_external')
-
+        current_ctx.set(ctx=ctx)
         client = self._get_ec2_client()
         address_object = client.allocate_address()
 
@@ -766,7 +757,7 @@ class EC2ElasticIPUnitTests(EC2LocalTestUtils):
 
         output = \
             elasticip._associate_external_elasticip_or_instance(
-                address_object.public_ip, ctx=ctx)
+                address_object.public_ip)
 
         self.assertEqual(True, output)
 
@@ -782,11 +773,11 @@ class EC2ElasticIPUnitTests(EC2LocalTestUtils):
 
         ctx = self.mock_cloudify_context(
             'test_release_external_elasticip')
-
+        current_ctx.set(ctx=ctx)
         ctx.node.properties['use_external_resource'] = False
 
         output = \
-            elasticip._release_external_elasticip(ctx=ctx)
+            elasticip._release_external_elasticip()
 
         self.assertEqual(False, output)
 
@@ -794,13 +785,13 @@ class EC2ElasticIPUnitTests(EC2LocalTestUtils):
 
         ctx = self.mock_cloudify_context(
             'test_release_external_elasticip')
-
+        current_ctx.set(ctx=ctx)
         ctx.node.properties['use_external_resource'] = True
         ctx.instance.runtime_properties[EXTERNAL_RESOURCE_ID] = \
             '127.0.0.1'
 
         output = \
-            elasticip._release_external_elasticip(ctx=ctx)
+            elasticip._release_external_elasticip()
 
         self.assertEqual(True, output)
         self.assertNotIn(
@@ -811,11 +802,11 @@ class EC2ElasticIPUnitTests(EC2LocalTestUtils):
 
         ctx = self.mock_cloudify_context(
             'test_allocate_external_elasticip')
-
+        current_ctx.set(ctx=ctx)
         ctx.node.properties['use_external_resource'] = False
 
         output = \
-            elasticip._allocate_external_elasticip(ctx=ctx)
+            elasticip._allocate_external_elasticip()
 
         self.assertEqual(False, output)
 
@@ -823,7 +814,7 @@ class EC2ElasticIPUnitTests(EC2LocalTestUtils):
 
         ctx = self.mock_cloudify_context(
             'test_allocate_external_elasticip_external')
-
+        current_ctx.set(ctx=ctx)
         client = self._get_ec2_client()
         address_object = client.allocate_address()
 
@@ -831,7 +822,7 @@ class EC2ElasticIPUnitTests(EC2LocalTestUtils):
         ctx.node.properties['resource_id'] = address_object.public_ip
 
         output = \
-            elasticip._allocate_external_elasticip(ctx=ctx)
+            elasticip._allocate_external_elasticip()
 
         self.assertEqual(True, output)
         self.assertIn(
@@ -847,13 +838,13 @@ class EC2ElasticIPUnitTests(EC2LocalTestUtils):
 
         ctx = self.mock_cloudify_context(
             'test_allocate_external_elasticip_external')
-
+        current_ctx.set(ctx=ctx)
         ctx.node.properties['use_external_resource'] = True
         ctx.node.properties['resource_id'] = '127.0.0.1'
 
         ex = self.assertRaises(
             NonRecoverableError,
-            elasticip._allocate_external_elasticip, ctx=ctx)
+            elasticip._allocate_external_elasticip)
 
         self.assertIn(
             'the given elasticip does not exist in the account',
@@ -880,11 +871,34 @@ class EC2InstanceUnitTests(EC2LocalTestUtils):
 
         ctx = self.mock_cloudify_context(
             'test_instance_external_invalid_instance')
-
+        current_ctx.set(ctx=ctx)
         ctx.node.properties['use_external_resource'] = True
         ctx.node.properties['resource_id'] = 'i-00z0zz0z'
 
         ex = self.assertRaises(
-            NonRecoverableError, instance._create_external_instance, ctx=ctx)
+            NonRecoverableError, instance._create_external_instance)
 
         self.assertIn('is not in this account', ex.message)
+
+    def test_get_instance_keypair(self):
+
+        ctx = self.mock_cloudify_context(
+            'test_get_instance_keypair')
+        current_ctx.set(ctx=ctx)
+        output = instance._get_instance_keypair()
+        self.assertEqual([], output)
+
+    def test_get_instance_parameters(self):
+
+        ctx = self.mock_cloudify_context(
+            'test_get_instance_parameters')
+        current_ctx.set(ctx=ctx)
+        ctx.node.properties['image_id'] = 'abc'
+        ctx.node.properties['instance_type'] = 'efg'
+        ctx.node.properties['parameters']['image_id'] = 'abcd'
+        ctx.node.properties['parameters']['key_name'] = 'xyz'
+        parameters = instance._get_instance_parameters()
+        self.assertIn('abcd', parameters['image_id'])
+        self.assertIn('xyz', parameters['key_name'])
+        self.assertIn('efg', parameters['instance_type'])
+
