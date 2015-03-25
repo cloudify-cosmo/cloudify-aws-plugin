@@ -420,16 +420,22 @@ def _get_instance_parameters():
     :returns parameters dictionary
     """
 
+    provider_variables = utils.get_provider_variables()
+
     attached_group_ids = \
         utils.get_target_external_resource_ids(
             constants.INSTANCE_SECURITY_GROUP_RELATIONSHIP,
             ctx.instance)
 
+    if 'agents_security_group' in provider_variables:
+        attached_group_ids.append(
+            provider_variables['agents_security_group'])
+
     parameters = {
         'image_id': ctx.node.properties['image_id'],
         'instance_type': ctx.node.properties['instance_type'],
         'security_group_ids': attached_group_ids,
-        'key_name': _get_instance_keypair()
+        'key_name': _get_instance_keypair(provider_variables)
     }
 
     parameters.update(ctx.node.properties['parameters'])
@@ -437,7 +443,7 @@ def _get_instance_parameters():
     return parameters
 
 
-def _get_instance_keypair():
+def _get_instance_keypair(provider_variables):
     """Gets the instance key pair. If more or less than one is provided,
     this will raise an error.
 
@@ -446,7 +452,9 @@ def _get_instance_keypair():
         utils.get_target_external_resource_ids(
             constants.INSTANCE_KEYPAIR_RELATIONSHIP, ctx.instance)
 
-    if len(list_of_keypairs) > 1:
+    if not list_of_keypairs and 'agents_keypair' in provider_variables:
+        list_of_keypairs.append(provider_variables['agents_keypair'])
+    elif len(list_of_keypairs) > 1:
         raise NonRecoverableError(
             'Only one keypair may be attached to an instance.')
 

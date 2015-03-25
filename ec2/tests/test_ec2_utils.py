@@ -14,7 +14,9 @@
 #    * limitations under the License.
 
 # Built-in Imports
+import os
 import testtools
+import json
 
 # Third Party Imports
 from moto import mock_ec2
@@ -68,3 +70,37 @@ class TestUtils(testtools.TestCase):
         ctx = self.mock_ctx('test_log_available_resources')
         current_ctx.set(ctx=ctx)
         utils.log_available_resources(list_of_resources)
+
+    def test_get_provider_variable_from_file(self):
+
+        ctx = self.mock_ctx('test_get_provider_variable_from_file')
+        current_ctx.set(ctx=ctx)
+
+        provider_context_json = {
+            "agents_keypair": "agents",
+            "agents_security_group": "agents"
+        }
+
+        with open(os.path.expanduser('~/.aws_config'), 'w') \
+                as provider_context_file:
+            json.dump(
+                provider_context_json,
+                provider_context_file)
+
+        output = utils._get_provider_variable_from_file(
+            'agents_keypair')
+        self.assertIn('agents', output)
+        output = utils._get_provider_variable_from_file(
+            'agents_security_group')
+        self.assertIn('agents', output)
+
+    def test_get_provider_context_empty_file(self):
+        ctx = self.mock_ctx('test_get_provider_context')
+        current_ctx.set(ctx=ctx)
+
+        with open(os.path.expanduser('~/.aws_config'), 'w') \
+                as provider_context_file:
+            provider_context_file.write('')
+
+        self.assertEqual({}, utils._get_provider_context(
+            os.path.expanduser('~/.aws_config')))

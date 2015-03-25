@@ -47,3 +47,6 @@ SECURITY_GROUP_REQUIRED_PROPERTIES = ['description', 'rules']
 
 # keypair module constants
 KEYPAIR_REQUIRED_PROPERTIES = ['private_key_path']
+
+# Config
+AWS_CONFIG_PATH = '~/.aws_config'
