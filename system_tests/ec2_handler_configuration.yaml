@@ -10,11 +10,11 @@ handler: ec2_handler
 
 ######################################################
 # full path to manager blueprint inputs (or provider cloudify-config)
-inputs: resources/inputs.yaml
+inputs: system_tests/resources/inputs.yaml
 
 ######################################################
 # full path to manager blueprint (not required for providers)
-manager_blueprint: resources/manager_blueprint.yaml
+manager_blueprint: system_tests/resources/manager-blueprint.yaml
 
 ######################################################
 # name of handler_properties entry in suites.yaml.

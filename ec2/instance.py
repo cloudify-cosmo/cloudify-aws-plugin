@@ -206,19 +206,48 @@ def _unassign_runtime_properties(runtime_properties, ctx_instance):
 
 
 def _run_instances_if_needed(ec2_client, instance_parameters):
+
     if ctx.operation.retry_number == 0:
+
         try:
             reservation = ec2_client.run_instances(**instance_parameters)
         except (boto.exception.EC2ResponseError,
                 boto.exception.BotoServerError) as e:
             raise NonRecoverableError('{0}'.format(str(e)))
+        ctx.instance.runtime_properties['reservation_id'] = reservation.id
         return reservation.instances[0].id
+
     elif constants.EXTERNAL_RESOURCE_ID not in ctx.instance.runtime_properties:
+
+        instances = _get_instance_id_from_reservation_id(ec2_client)
+
+        if not instances:
+            raise NonRecoverableError(
+                'Instance failed for an unknown reason. Node ID: {0}. '
+                .format(ctx.instance.id))
+        elif len(instances) != 1:
+            raise NonRecoverableError(
+                'More than one instance was created by the install workflow. '
+                'Unable to handle request.')
+
+        return instances[0].id
+
+    return ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
+
+
+def _get_instance_id_from_reservation_id(ec2_client):
+
+    try:
+        instances = ec2_client.get_all_instances(
+            filters={
+                'reservation-id':
+                    ctx.instance.runtime_properties['reservation_id']
+            })
+    except (boto.exception.EC2ResponseError,
+            boto.exception.BotoServerError) as e:
         raise NonRecoverableError(
-            'Instance failed for an unknown reason. Node ID: {0}.'
-            .format(ctx.instance.id))
-    else:
-        return ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
+            '{1}'.format(str(e)))
+    return instances
 
 
 def _create_external_instance():
@@ -297,8 +326,11 @@ def _get_all_instances(list_of_instance_ids=None):
     except boto.exception.BotoServerError as e:
         raise NonRecoverableError('{0}'.format(str(e)))
 
-    instances = [instance for res in reservations
-                 for instance in res.instances]
+    instances = []
+
+    for reservation in reservations:
+        for instance in reservation.instances:
+            instances.append(instance)
 
     return instances
 
@@ -358,9 +390,14 @@ def _get_instance_attribute(attribute):
     instance_object = _get_instance_from_id(instance_id)
 
     if instance_object is None:
-        raise NonRecoverableError(
-            'Unable to get instance attibute {0}, because no instance with id '
-            '{1} exists in this account.'.format(attribute, instance_id))
+        ec2_client = connection.EC2ConnectionClient().client()
+        instances = _get_instance_id_from_reservation_id(ec2_client)
+        if len(instances) != 1:
+            raise NonRecoverableError(
+                'Unable to get instance attibute {0}, because '
+                'no instance with id {1} exists in this account.'
+                .format(attribute, instance_id))
+        instance_object = instances[0]
 
     attribute = getattr(instance_object, attribute)
     return attribute

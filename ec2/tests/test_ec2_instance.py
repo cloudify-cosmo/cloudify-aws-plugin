@@ -142,6 +142,7 @@ class TestInstance(testtools.TestCase):
         ctx = self.mock_ctx('test_start_bad_id')
 
         ctx.instance.runtime_properties['aws_resource_id'] = 'bad_id'
+        ctx.instance.runtime_properties['reservation_id'] = 'r-54ce20b4'
         ex = self.assertRaises(NonRecoverableError,
                                instance.start, ctx=ctx)
         self.assertIn('no instance with id bad_id exists in this account',

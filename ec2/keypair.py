@@ -38,14 +38,14 @@ def creation_validation(**_):
 
     key_file = _get_path_to_key_file()
     key_file_in_filesystem = _search_for_key_file(key_file)
-    key_pair_in_account = _get_key_pair_by_id(
-        ctx.node.properties['resource_id'])
 
     if ctx.node.properties['use_external_resource']:
         if not key_file_in_filesystem:
             raise NonRecoverableError(
                 'External resource, but the key file does not exist locally.')
-        if not key_pair_in_account:
+        try:
+            _get_key_pair_by_id(ctx.node.properties['resource_id'])
+        except NonRecoverableError:
             raise NonRecoverableError(
                 'External resource, '
                 'but the key pair does not exist in the account.')
@@ -55,7 +55,11 @@ def creation_validation(**_):
             raise NonRecoverableError(
                 'Not external resource, '
                 'but the key file exists locally.')
-        if key_pair_in_account:
+        try:
+            _get_key_pair_by_id(ctx.node.properties['resource_id'])
+        except NonRecoverableError:
+            pass
+        else:
             raise NonRecoverableError(
                 'Not external resource, '
                 'but the key pair exists in the account.')
