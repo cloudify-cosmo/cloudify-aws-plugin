@@ -165,19 +165,23 @@ def get_resource_id():
 
 def get_provider_variables():
 
-    return {
-        "agents_keypair": _get_provider_variable('agents_keypair'),
+    provider_context = {
+        "agents_keypair": _get_variable('agents_keypair'),
         "agents_security_group":
-            _get_provider_variable('agents_security_group'),
-        "manager_keypair": _get_provider_variable('manager_keypair'),
+            _get_variable('agents_security_group'),
+        "manager_keypair": _get_variable('manager_keypair'),
         "manager_security_group":
-            _get_provider_variable('manager_security_group'),
-        "manager_resource_id": _get_provider_variable('manager_resource_id'),
-        "manager_ip_address": _get_provider_variable('manager_ip_address')
+            _get_variable('manager_security_group'),
+        "manager_resource_id": _get_variable('manager_resource_id'),
+        "manager_ip_address": _get_variable('manager_ip_address')
     }
 
+    ctx.logger.info(provider_context)
 
-def _get_provider_variable(variable_name):
+    return provider_context
+
+
+def _get_variable(variable_name):
 
     if variable_name in os.environ:
         return os.environ[variable_name]
