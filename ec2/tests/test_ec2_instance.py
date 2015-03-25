@@ -44,6 +44,7 @@ class TestInstance(testtools.TestCase):
             'resource_id': '',
             'image_id': TEST_AMI_IMAGE_ID,
             'instance_type': TEST_INSTANCE_TYPE,
+            'cloudify_agent': {},
             'parameters': {
                 'security_group_ids': ['sg-73cd3f1e'],
                 'instance_initiated_shutdown_behavior': 'stop'

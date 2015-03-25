@@ -178,12 +178,16 @@ def get_provider_variables():
 
 
 def _get_provider_variable(variable_name):
+
     if variable_name in os.environ:
         return os.environ[variable_name]
-    elif not _get_provider_variable_from_file(variable_name):
+
+    variable_from_file = _get_provider_variable_from_file(variable_name)
+
+    if not variable_from_file:
         return None
-    else:
-        return _get_provider_variable_from_file(variable_name)
+
+    return variable_from_file
 
 
 def _get_provider_variable_from_file(variable_name):
@@ -199,14 +203,12 @@ def _get_provider_variable_from_file(variable_name):
 
 def _get_provider_context_file_path():
 
-    if 'cloudify_agent' in ctx.node.properties and \
-            'home_dir' in ctx.node.properties['cloudify_agent']:
+    if 'home_dir' in ctx.node.properties['cloudify_agent']:
         return os.path.join(
-            os.path.expanduser(
-                ctx.node.properties['cloudify_agent']['home_dir']),
+            ctx.node.properties['cloudify_agent']['home_dir'],
             os.path.split(constants.AWS_CONFIG_PATH)[-1])
-    else:
-        return os.path.expanduser(constants.AWS_CONFIG_PATH)
+
+    return os.path.expanduser(constants.AWS_CONFIG_PATH)
 
 
 def _get_provider_context(aws_configuration):
