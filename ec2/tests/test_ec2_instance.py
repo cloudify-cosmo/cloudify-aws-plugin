@@ -44,6 +44,7 @@ class TestInstance(testtools.TestCase):
             'resource_id': '',
             'image_id': TEST_AMI_IMAGE_ID,
             'instance_type': TEST_INSTANCE_TYPE,
+            'cloudify_agent': {},
             'parameters': {
                 'security_group_ids': ['sg-73cd3f1e'],
                 'instance_initiated_shutdown_behavior': 'stop'
@@ -142,6 +143,7 @@ class TestInstance(testtools.TestCase):
         ctx = self.mock_ctx('test_start_bad_id')
 
         ctx.instance.runtime_properties['aws_resource_id'] = 'bad_id'
+        ctx.instance.runtime_properties['reservation_id'] = 'r-54ce20b4'
         ex = self.assertRaises(NonRecoverableError,
                                instance.start, ctx=ctx)
         self.assertIn('no instance with id bad_id exists in this account',
