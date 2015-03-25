@@ -5,7 +5,7 @@ tosca_definitions_version: cloudify_dsl_1_1
 imports:
   - http://www.getcloudify.org/spec/cloudify/3.2m6/types.yaml
   - http://www.getcloudify.org/spec/fabric-plugin/1.2m6/plugin.yaml
-  - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-aws-plugin/master/plugin.yaml
+  - https://github.com/cloudify-cosmo/cloudify-aws-plugin/tree/support_provider_context
 
 inputs:
 
