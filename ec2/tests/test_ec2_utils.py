@@ -102,9 +102,5 @@ class TestUtils(testtools.TestCase):
                 as provider_context_file:
             provider_context_file.write('')
 
-        self.assertEqual({},
-            utils._get_provider_context(
-                os.path.expanduser('~/.aws_config')))
-
-
-        
+        self.assertEqual({}, utils._get_provider_context(
+            os.path.expanduser('~/.aws_config')))

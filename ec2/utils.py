@@ -196,6 +196,7 @@ def _get_provider_variable_from_file(variable_name):
 
     return None
 
+
 def _get_provider_context_file_path():
 
     if 'cloudify_agent' in ctx.node.properties and \
@@ -206,6 +207,7 @@ def _get_provider_context_file_path():
             os.path.split(constants.AWS_CONFIG_PATH)[-1])
     else:
         return os.path.expanduser(constants.AWS_CONFIG_PATH)
+
 
 def _get_provider_context(aws_configuration):
 
