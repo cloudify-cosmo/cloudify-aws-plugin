@@ -427,7 +427,8 @@ def _get_instance_parameters():
             constants.INSTANCE_SECURITY_GROUP_RELATIONSHIP,
             ctx.instance)
 
-    if 'agents_security_group' in provider_variables:
+    if 'agents_security_group' in provider_variables and \
+            provider_variables['agents_security_group'] is not None:
         attached_group_ids.append(
             provider_variables['agents_security_group'])
 
@@ -452,7 +453,8 @@ def _get_instance_keypair(provider_variables):
         utils.get_target_external_resource_ids(
             constants.INSTANCE_KEYPAIR_RELATIONSHIP, ctx.instance)
 
-    if not list_of_keypairs and 'agents_keypair' in provider_variables:
+    if not list_of_keypairs and 'agents_keypair' in provider_variables \
+            and provider_variables['agents_keypair'] is not None:
         list_of_keypairs.append(provider_variables['agents_keypair'])
     elif len(list_of_keypairs) > 1:
         raise NonRecoverableError(

@@ -93,6 +93,7 @@ class TestUtils(testtools.TestCase):
         output = utils._get_provider_variable_from_file(
             'agents_security_group')
         self.assertIn('agents', output)
+        os.remove(os.path.expanduser('~/.aws_config'))
 
     def test_get_provider_context_empty_file(self):
         ctx = self.mock_ctx('test_get_provider_context')
@@ -104,3 +105,4 @@ class TestUtils(testtools.TestCase):
 
         self.assertEqual({}, utils._get_provider_context(
             os.path.expanduser('~/.aws_config')))
+        os.remove(os.path.expanduser('~/.aws_config'))

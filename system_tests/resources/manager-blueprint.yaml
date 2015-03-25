@@ -157,6 +157,10 @@ node_templates:
     type: cloudify.nodes.CloudifyManager
     properties:
       cloudify_packages:
+        agents:
+          ubuntu_agent_url: http://gigaspaces-repository-eu.s3.amazonaws.com/org/cloudify3/3.2.0/m6-RELEASE/cloudify-ubuntu-agent_3.2.0-m6-b176_amd64.deb
+          centos_agent_url: http://gigaspaces-repository-eu.s3.amazonaws.com/org/cloudify3/3.2.0/m6-RELEASE/cloudify-centos-final-agent_3.2.0-m6-b176_amd64.deb
+          windows_agent_url: http://gigaspaces-repository-eu.s3.amazonaws.com/org/cloudify3/3.2.0/m6-RELEASE/cloudify-windows-agent_3.2.0-m6-b176_amd64.deb
         docker:
            docker_url: http://gigaspaces-repository-eu.s3.amazonaws.com/org/cloudify3/3.2.0/m6-RELEASE/cloudify-docker_3.2.0-m6-b176.tar
 
@@ -189,8 +193,8 @@ node_templates:
             task_name: configure_manager
             task_properties:
               config_path: { get_input: boto_config }
-              agents_security_group: { get_attribute: [ management_security_group, aws_resource_id ] }
-              agents_keypair: { get_attribute: [ management_keypair, aws_resource_id ] }
+              agents_security_group: { get_attribute: [ agents_security_group, aws_resource_id ] }
+              agents_keypair: { get_attribute: [ agent_keypair, aws_resource_id ] }
             fabric_env:
               user: { get_input: manager_server_user }
               key_filename: { get_property: [ management_keypair, private_key_path ] }
@@ -201,7 +205,7 @@ node_templates:
             task_mapping: cloudify_cli.bootstrap.tasks.bootstrap_docker
             task_properties:
               cloudify_packages: { get_property: [manager, cloudify_packages] }
-              agent_local_key_path: { get_attribute: [agent_keypair, key_path] }
+              agent_local_key_path: { get_attribute: [agent_keypair, private_key_path] }
               provider_context: { get_attribute: [manager, provider_context] }
             fabric_env:
               user: { get_input: manager_server_user }

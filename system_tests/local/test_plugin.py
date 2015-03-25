@@ -885,8 +885,12 @@ class EC2InstanceUnitTests(EC2LocalTestUtils):
         ctx = self.mock_cloudify_context(
             'test_get_instance_keypair')
         current_ctx.set(ctx=ctx)
-        output = instance._get_instance_keypair()
-        self.assertEqual([], output)
+        provider_variables = {
+            'agents_keypair': '',
+            'agents_security_group': ''
+        }
+        output = instance._get_instance_keypair(provider_variables)
+        self.assertEqual('', output)
 
     def test_get_instance_parameters(self):
 

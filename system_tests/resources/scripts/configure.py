@@ -15,6 +15,7 @@
 
 import os
 import json
+import tempfile
 import fabric.api
 from ec2 import configure
 from ec2 import constants
@@ -28,6 +29,7 @@ def upload_credentials(config_path):
     fabric.api.put(temp, config_path)
 
 def set_provider_context(agents_security_group, agents_keypair):
+    temp_config = tempfile.mktemp()
 
     provider_context_json = {
         "agents_keypair": agents_keypair,
@@ -37,7 +39,7 @@ def set_provider_context(agents_security_group, agents_keypair):
     os.environ['agents_keypair'] = agents_keypair
     os.environ['agents_security_group'] = agents_security_group
 
-    with open(
-            os.path.expanduser(constants.AWS_CONFIG_PATH), 'w') \
-        as provider_context_file:
-            json.dump(provider_context_json, provider_context_file)
+    with open(temp_config, 'w') as provider_context_file:
+        json.dump(provider_context_json, provider_context_file)
+
+    fabric.api.put(temp_config, constants.AWS_CONFIG_PATH)
