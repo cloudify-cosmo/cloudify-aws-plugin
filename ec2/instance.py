@@ -245,8 +245,7 @@ def _get_instance_id_from_reservation_id(ec2_client):
             })
     except (boto.exception.EC2ResponseError,
             boto.exception.BotoServerError) as e:
-        raise NonRecoverableError(
-            '{1}'.format(str(e)))
+        raise NonRecoverableError('{0}'.format(str(e)))
     return instances
 
 
@@ -389,7 +388,8 @@ def _get_instance_attribute(attribute):
         ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
     instance_object = _get_instance_from_id(instance_id)
 
-    if instance_object is None:
+    if not instance_object \
+            and not ctx.node.properties['use_external_resource']:
         ec2_client = connection.EC2ConnectionClient().client()
         instances = _get_instance_id_from_reservation_id(ec2_client)
         if len(instances) != 1:
@@ -397,6 +397,10 @@ def _get_instance_attribute(attribute):
                 'Unable to get instance attibute {0}, because '
                 'no instance with id {1} exists in this account.'
                 .format(attribute, instance_id))
+        else:
+            raise NonRecoverableError(
+                'External resource, but the supplied '
+                'instance id {0} is not in the account.'.format(instance_id))
         instance_object = instances[0]
 
     attribute = getattr(instance_object, attribute)
@@ -427,8 +431,7 @@ def _get_instance_parameters():
             constants.INSTANCE_SECURITY_GROUP_RELATIONSHIP,
             ctx.instance)
 
-    if 'agents_security_group' in provider_variables and \
-            provider_variables['agents_security_group'] is not None:
+    if provider_variables.get('agents_security_group'):
         attached_group_ids.append(
             provider_variables['agents_security_group'])
 
@@ -453,11 +456,10 @@ def _get_instance_keypair(provider_variables):
         utils.get_target_external_resource_ids(
             constants.INSTANCE_KEYPAIR_RELATIONSHIP, ctx.instance)
 
-    if not list_of_keypairs and 'agents_keypair' in provider_variables \
-            and provider_variables['agents_keypair'] is not None:
+    if not list_of_keypairs and provider_variables.get('agents_keypair'):
         list_of_keypairs.append(provider_variables['agents_keypair'])
     elif len(list_of_keypairs) > 1:
         raise NonRecoverableError(
             'Only one keypair may be attached to an instance.')
 
-    return list_of_keypairs[0] if list_of_keypairs else list_of_keypairs
+    return list_of_keypairs[0] if list_of_keypairs else None
