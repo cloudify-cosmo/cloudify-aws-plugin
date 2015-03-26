@@ -397,11 +397,11 @@ def _get_instance_attribute(attribute):
                 'Unable to get instance attibute {0}, because '
                 'no instance with id {1} exists in this account.'
                 .format(attribute, instance_id))
-        else:
-            raise NonRecoverableError(
-                'External resource, but the supplied '
-                'instance id {0} is not in the account.'.format(instance_id))
         instance_object = instances[0]
+    elif not instance_object:
+        raise NonRecoverableError(
+            'External resource, but the supplied '
+            'instance id {0} is not in the account.'.format(instance_id))
 
     attribute = getattr(instance_object, attribute)
     return attribute
