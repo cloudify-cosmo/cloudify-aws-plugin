@@ -204,11 +204,6 @@ def _get_provider_config():
 
 def _expanded_config_path():
 
-    expanded_default_path = \
-        os.path.expanduser(constants.AWS_DEFAULT_CONFIG_PATH)
-
-    config_path = os.getenv(
+    return os.getenv(
         constants.AWS_CONFIG_PATH_ENV_VAR,
-        expanded_default_path)
-
-    return config_path
+        os.path.expanduser(constants.AWS_DEFAULT_CONFIG_PATH))

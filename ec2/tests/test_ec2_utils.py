@@ -75,12 +75,13 @@ class TestUtils(testtools.TestCase):
         utils.log_available_resources(list_of_resources)
 
     def test_get_provider_variable(self):
+        ctx = self.mock_ctx('test_get_provider_variables')
+        temporary_file = tempfile.mktemp()
+        os.environ[constants.AWS_CONFIG_PATH_ENV_VAR] = temporary_file
+
         def os_environ_cleanup():
             del os.environ[constants.AWS_CONFIG_PATH_ENV_VAR]
         self.addCleanup(os_environ_cleanup)
-        temporary_file = tempfile.mktemp()
-        ctx = self.mock_ctx('test_get_provider_variables')
-        os.environ[constants.AWS_CONFIG_PATH_ENV_VAR] = temporary_file
         current_ctx.set(ctx=ctx)
 
         provider_context_json = {
