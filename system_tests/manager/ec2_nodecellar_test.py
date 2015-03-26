@@ -17,7 +17,7 @@ import os
 from cosmo_tester.test_suites.test_blueprints import nodecellar_test
 
 EXTERNAL_RESOURCE_ID = 'aws_resource_id'
-CLOUDIFY_EC2_NODECELLAR = '/home/trammell/Environments/cfy3v2m6/' \
+CLOUDIFY_EC2_NODECELLAR = '~/Environments/' \
     'cloudify-nodecellar-example'
 
 
@@ -25,7 +25,6 @@ class EC2NodeCellarTest(nodecellar_test.NodecellarAppTest):
 
     def test_ec2_nodecellar(self):
         self._test_nodecellar_impl('ec2-blueprint.yaml')
-
         self.modify_blueprint()
 
         before, after = self.upload_deploy_and_execute_install(
@@ -47,7 +46,7 @@ class EC2NodeCellarTest(nodecellar_test.NodecellarAppTest):
         }
 
     def _test_nodecellar_impl(self, blueprint_file):
-        self.repo_dir = CLOUDIFY_EC2_NODECELLAR
+        self.repo_dir = os.path.expanduser(CLOUDIFY_EC2_NODECELLAR)
         self.blueprint_yaml = os.path.join(self.repo_dir, blueprint_file)
 
     @property
