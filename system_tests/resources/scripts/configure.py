@@ -21,8 +21,8 @@ from ec2 import configure
 from ec2 import constants
 
 def configure_manager(config_path, agents_security_group, agents_keypair):
-    upload_credentials(config_path)
-    set_provider_context(agents_security_group, agents_keypair)
+    _upload_credentials(config_path)
+    _set_provider_context(agents_security_group, agents_keypair)
 
 def _upload_credentials(config_path):
     temp = configure.BotoConfig().get_temp_file()
