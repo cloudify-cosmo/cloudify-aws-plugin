@@ -45,12 +45,12 @@ def creation_validation(**_):
                 'External resource, but the key file does not exist locally.')
         try:
             _get_key_pair_by_id(ctx.node.properties['resource_id'])
-        except NonRecoverableError:
+        except NonRecoverableError as e:
             raise NonRecoverableError(
                 'External resource, '
-                'but the key pair does not exist in the account.')
-
-    if not ctx.node.properties['use_external_resource']:
+                'but the key pair does not exist in the account: '
+                '{0}'.format(str(e)))
+    else:
         if key_file_in_filesystem:
             raise NonRecoverableError(
                 'Not external resource, '

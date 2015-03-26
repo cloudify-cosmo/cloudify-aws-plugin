@@ -155,6 +155,9 @@ class TestKeyPair(testtools.TestCase):
         self.assertIn(
             'the key pair does not exist in the account',
             ex.message)
+        self.assertIn(
+            'InvalidKeyPair.NotFound',
+            ex.message)
         os.remove(key_path)
 
     @mock_ec2
