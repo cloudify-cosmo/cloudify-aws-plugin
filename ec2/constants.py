@@ -49,4 +49,5 @@ SECURITY_GROUP_REQUIRED_PROPERTIES = ['description', 'rules']
 KEYPAIR_REQUIRED_PROPERTIES = ['private_key_path']
 
 # config
+AWS_CONFIG_PATH_ENV_VAR = 'AWS_CONFIG_PATH'
 AWS_DEFAULT_CONFIG_PATH = '~/aws_config.json'

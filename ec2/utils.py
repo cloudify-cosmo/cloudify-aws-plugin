@@ -165,14 +165,7 @@ def get_resource_id():
 
 def get_provider_variables():
 
-    if 'provider_config_path' in ctx.node.properties['cloudify_agent']:
-        provider_config_path = \
-            _expand_config_path(
-                ctx.node.properties['cloudify_agent']['provider_config_path'])
-    else:
-        provider_config_path = _expand_config_path()
-
-    provider_config = _get_provider_config(provider_config_path)
+    provider_config = _get_provider_config()
 
     provider_context = {
         "agents_keypair":
@@ -192,27 +185,36 @@ def get_provider_variables():
     return provider_context
 
 
-def _expand_config_path(
-        relative_config_path=constants.AWS_DEFAULT_CONFIG_PATH):
+def _get_provider_config():
 
-    if 'home_dir' in ctx.node.properties['cloudify_agent']:
-        return os.path.join(
-            ctx.node.properties['cloudify_agent']['home_dir'],
-            os.path.split(relative_config_path)[-1])
+    config_path = _expanded_config_path()
 
-    return os.path.expanduser(relative_config_path)
-
-
-def _get_provider_config(provider_config_path):
-
-    if os.path.exists(provider_config_path):
+    if os.path.exists(config_path):
         try:
-            with open(provider_config_path) as outfile:
+            with open(config_path) as outfile:
                 return json.load(outfile)
         except ValueError:
             ctx.logger.debug(
                 'AWS provider configuration {0} does not contain a JSON '
                 'object. This may or may not be intentional.'
-                .format(provider_config_path))
+                .format(config_path))
 
     return {}
+
+
+def _expanded_config_path():
+
+    if 'home_dir' in ctx.node.properties['cloudify_agent']:
+        expanded_default_path = \
+            os.path.join(
+                ctx.node.properties['cloudify_agent']['home_dir'],
+                os.path.split(constants.AWS_DEFAULT_CONFIG_PATH)[-1])
+    else:
+        expanded_default_path = \
+            os.path.expanduser(constants.AWS_DEFAULT_CONFIG_PATH)
+
+    config_path = os.getenv(
+        constants.AWS_CONFIG_PATH_ENV_VAR,
+        expanded_default_path)
+
+    return config_path

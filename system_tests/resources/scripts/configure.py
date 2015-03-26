@@ -28,8 +28,7 @@ def _upload_credentials(config_path):
     temp = configure.BotoConfig().get_temp_file()
     fabric.api.put(temp, config_path)
 
-def _set_provider_config(agents_security_group, agents_keypair,
-                         relative_config_path=constants.AWS_CONFIG_PATH):
+def _set_provider_config(agents_security_group, agents_keypair):
 
     temp_config = tempfile.mktemp()
 
@@ -41,4 +40,4 @@ def _set_provider_config(agents_security_group, agents_keypair,
     with open(temp_config, 'w') as provider_context_file:
         json.dump(provider_context_json, provider_context_file)
 
-    fabric.api.put(temp_config, relative_config_path)
+    fabric.api.put(temp_config, constants.AWS_DEFAULT_CONFIG_PATH)

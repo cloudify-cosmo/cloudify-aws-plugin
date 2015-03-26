@@ -24,6 +24,7 @@ from moto import mock_ec2
 
 # Cloudify Imports is imported and used in operations
 from ec2 import utils
+from ec2 import constants
 from cloudify.state import current_ctx
 from cloudify.mocks import MockCloudifyContext
 from cloudify.exceptions import NonRecoverableError
@@ -76,8 +77,7 @@ class TestUtils(testtools.TestCase):
     def test_get_provider_variable(self):
         temporary_file = tempfile.mktemp()
         ctx = self.mock_ctx('test_get_provider_variables')
-        ctx.node.properties['cloudify_agent']['provider_config_path'] = \
-            temporary_file
+        os.environ[constants.AWS_CONFIG_PATH_ENV_VAR] = temporary_file
         current_ctx.set(ctx=ctx)
 
         provider_context_json = {
@@ -94,31 +94,6 @@ class TestUtils(testtools.TestCase):
         provider_context = \
             utils.get_provider_variables()
 
-        self.assertIn('agents', provider_context['agents_keypair'])
-        self.assertIn('agents', provider_context['agents_security_group'])
-
-    def test_expand_config_path(self):
-        temporary_file = tempfile.mktemp()
-        ctx = self.mock_ctx('test_expand_config_path')
-        ctx.node.properties['cloudify_agent']['home_dir'] = \
-            '/home/ubuntu'
-        ctx.node.properties['cloudify_agent']['provider_config_path'] = \
-            temporary_file
-        current_ctx.set(ctx=ctx)
-        output = utils._expand_config_path(temporary_file)
-        self.assertEqual(
-            output,
-            os.path.join('/home/ubuntu',
-                         os.path.split(temporary_file)[-1]))
-
-    def test_get_provider_config(self):
-        temporary_file = tempfile.mktemp()
-        ctx = self.mock_ctx('test_get_provider_config')
-        ctx.node.properties['cloudify_agent']['provider_config_path'] = \
-            temporary_file
-        current_ctx.set(ctx=ctx)
-        with open(temporary_file, 'w') \
-                as outfile:
-            outfile.write('')
-        self.assertEqual({},
-                         utils._get_provider_config(temporary_file))
+        self.assertEqual('agents', provider_context['agents_keypair'])
+        self.assertEqual('agents', provider_context['agents_security_group'])
+        del os.environ[constants.AWS_CONFIG_PATH_ENV_VAR]
