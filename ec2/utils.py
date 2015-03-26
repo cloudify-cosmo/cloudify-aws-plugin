@@ -204,14 +204,8 @@ def _get_provider_config():
 
 def _expanded_config_path():
 
-    if 'home_dir' in ctx.node.properties['cloudify_agent']:
-        expanded_default_path = \
-            os.path.join(
-                ctx.node.properties['cloudify_agent']['home_dir'],
-                os.path.split(constants.AWS_DEFAULT_CONFIG_PATH)[-1])
-    else:
-        expanded_default_path = \
-            os.path.expanduser(constants.AWS_DEFAULT_CONFIG_PATH)
+    expanded_default_path = \
+        os.path.expanduser(constants.AWS_DEFAULT_CONFIG_PATH)
 
     config_path = os.getenv(
         constants.AWS_CONFIG_PATH_ENV_VAR,
