@@ -276,3 +276,17 @@ class TestInstance(testtools.TestCase):
         output = instance._get_all_instances(
             list_of_instance_ids='test_get_all_instances_bad_id')
         self.assertIsNone(output)
+
+    def test_get_instance_attribute_no_instance(self):
+            ctx = self.mock_ctx('test_get_private_dns_name')
+            current_ctx.set(ctx=ctx)
+            with mock_ec2():
+                ctx.instance.runtime_properties['aws_resource_id'] = \
+                    'i-4339wSD9'
+                ctx.node.properties['use_external_resource'] = True
+                ex = self.assertRaises(
+                    NonRecoverableError,
+                    instance._get_instance_attribute,
+                    'state_code')
+                self.assertIn(
+                    'External resource, but the supplied', ex.message)
