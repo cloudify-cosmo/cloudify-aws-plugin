@@ -205,7 +205,7 @@ node_templates:
             task_mapping: cloudify_cli.bootstrap.tasks.bootstrap_docker
             task_properties:
               cloudify_packages: { get_property: [manager, cloudify_packages] }
-              agent_local_key_path: { get_attribute: [agent_keypair, private_key_path] }
+              agent_local_key_path: { get_property: [agent_keypair, private_key_path] }
               provider_context: { get_attribute: [manager, provider_context] }
             fabric_env:
               user: { get_input: manager_server_user }
