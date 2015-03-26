@@ -165,66 +165,54 @@ def get_resource_id():
 
 def get_provider_variables():
 
-    provider_context = {
-        "agents_keypair": _get_variable('agents_keypair'),
-        "agents_security_group":
-            _get_variable('agents_security_group'),
-        "manager_keypair": _get_variable('manager_keypair'),
-        "manager_security_group":
-            _get_variable('manager_security_group'),
-        "manager_resource_id": _get_variable('manager_resource_id'),
-        "manager_ip_address": _get_variable('manager_ip_address')
-    }
+    if 'provider_config_path' in ctx.node.properties['cloudify_agent']:
+        provider_config_path = \
+            _expand_config_path(
+                ctx.node.properties['cloudify_agent']['provider_config_path'])
+    else:
+        provider_config_path = _expand_config_path()
 
-    ctx.logger.info(provider_context)
+    provider_config = _get_provider_config(provider_config_path)
+
+    provider_context = {
+        "agents_keypair":
+            provider_config.get('agents_keypair'),
+        "agents_security_group":
+            provider_config.get('agents_security_group'),
+        "manager_keypair":
+            provider_config.get('manager_keypair'),
+        "manager_security_group":
+            provider_config.get('manager_security_group'),
+        "manager_resource_id":
+            provider_config.get('manager_resource_id'),
+        "manager_ip_address":
+            provider_config.get('manager_ip_address')
+    }
 
     return provider_context
 
 
-def _get_variable(variable_name):
-
-    if variable_name in os.environ:
-        return os.environ[variable_name]
-
-    variable_from_file = _get_provider_variable_from_file(variable_name)
-
-    if not variable_from_file:
-        return None
-
-    return variable_from_file
-
-
-def _get_provider_variable_from_file(variable_name):
-
-    aws_configuration = _get_provider_context_file_path()
-    provider_context = _get_provider_context(aws_configuration)
-
-    if variable_name in provider_context:
-        return provider_context[variable_name]
-
-    return None
-
-
-def _get_provider_context_file_path():
+def _expand_config_path(
+        relative_config_path=constants.AWS_DEFAULT_CONFIG_PATH):
 
     if 'home_dir' in ctx.node.properties['cloudify_agent']:
         return os.path.join(
             ctx.node.properties['cloudify_agent']['home_dir'],
-            os.path.split(constants.AWS_CONFIG_PATH)[-1])
+            os.path.split(relative_config_path)[-1])
 
-    return os.path.expanduser(constants.AWS_CONFIG_PATH)
+    return os.path.expanduser(relative_config_path)
 
 
-def _get_provider_context(aws_configuration):
+def _get_provider_config(provider_config_path):
 
-    if os.path.exists(aws_configuration):
+    if os.path.exists(provider_config_path):
         try:
-            with open(aws_configuration) as provider_context_file:
-                return json.load(provider_context_file)
+            with open(provider_config_path) as outfile:
+                return json.load(outfile)
         except ValueError:
             ctx.logger.debug(
                 'AWS provider configuration {0} does not contain a JSON '
                 'object. This may or may not be intentional.'
-                .format(aws_configuration))
+                .format(provider_config_path))
 
     return {}

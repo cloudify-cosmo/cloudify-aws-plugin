@@ -24,20 +24,19 @@ def configure_manager(config_path, agents_security_group, agents_keypair):
     upload_credentials(config_path)
     set_provider_context(agents_security_group, agents_keypair)
 
-def upload_credentials(config_path):
+def _upload_credentials(config_path):
     temp = configure.BotoConfig().get_temp_file()
     fabric.api.put(temp, config_path)
 
-def set_provider_context(agents_security_group, agents_keypair):
+def _set_provider_config(agents_security_group, agents_keypair,
+                         relative_config_path=constants.AWS_CONFIG_PATH):
+
     temp_config = tempfile.mktemp()
 
     provider_context_json = {
         "agents_keypair": agents_keypair,
         "agents_security_group": agents_security_group
     }
-
-    os.environ['agents_keypair'] = agents_keypair
-    os.environ['agents_security_group'] = agents_security_group
 
     with open(temp_config, 'w') as provider_context_file:
         json.dump(provider_context_json, provider_context_file)

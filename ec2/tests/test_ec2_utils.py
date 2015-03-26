@@ -15,8 +15,9 @@
 
 # Built-in Imports
 import os
-import testtools
 import json
+import tempfile
+import testtools
 
 # Third Party Imports
 from moto import mock_ec2
@@ -72,9 +73,11 @@ class TestUtils(testtools.TestCase):
         current_ctx.set(ctx=ctx)
         utils.log_available_resources(list_of_resources)
 
-    def test_get_provider_variable_from_file(self):
-
-        ctx = self.mock_ctx('test_get_provider_variable_from_file')
+    def test_get_provider_variable(self):
+        temporary_file = tempfile.mktemp()
+        ctx = self.mock_ctx('test_get_provider_variables')
+        ctx.node.properties['cloudify_agent']['provider_config_path'] = \
+            temporary_file
         current_ctx.set(ctx=ctx)
 
         provider_context_json = {
@@ -82,28 +85,40 @@ class TestUtils(testtools.TestCase):
             "agents_security_group": "agents"
         }
 
-        with open(os.path.expanduser('~/.aws_config.json'), 'w') \
-                as provider_context_file:
+        with open(temporary_file, 'w') \
+                as outfile:
             json.dump(
                 provider_context_json,
-                provider_context_file)
+                outfile)
 
-        output = utils._get_provider_variable_from_file(
-            'agents_keypair')
-        self.assertIn('agents', output)
-        output = utils._get_provider_variable_from_file(
-            'agents_security_group')
-        self.assertIn('agents', output)
-        os.remove(os.path.expanduser('~/.aws_config.json'))
+        provider_context = \
+            utils.get_provider_variables()
 
-    def test_get_provider_context_empty_file(self):
-        ctx = self.mock_ctx('test_get_provider_context')
+        self.assertIn('agents', provider_context['agents_keypair'])
+        self.assertIn('agents', provider_context['agents_security_group'])
+
+    def test_expand_config_path(self):
+        temporary_file = tempfile.mktemp()
+        ctx = self.mock_ctx('test_expand_config_path')
+        ctx.node.properties['cloudify_agent']['home_dir'] = \
+            '/home/ubuntu'
+        ctx.node.properties['cloudify_agent']['provider_config_path'] = \
+            temporary_file
         current_ctx.set(ctx=ctx)
+        output = utils._expand_config_path(temporary_file)
+        self.assertEqual(
+            output,
+            os.path.join('/home/ubuntu',
+                         os.path.split(temporary_file)[-1]))
 
-        with open(os.path.expanduser('~/.aws_config.json'), 'w') \
-                as provider_context_file:
-            provider_context_file.write('')
-
-        self.assertEqual({}, utils._get_provider_context(
-            os.path.expanduser('~/.aws_config.json')))
-        os.remove(os.path.expanduser('~/.aws_config.json'))
+    def test_get_provider_config(self):
+        temporary_file = tempfile.mktemp()
+        ctx = self.mock_ctx('test_get_provider_config')
+        ctx.node.properties['cloudify_agent']['provider_config_path'] = \
+            temporary_file
+        current_ctx.set(ctx=ctx)
+        with open(temporary_file, 'w') \
+                as outfile:
+            outfile.write('')
+        self.assertEqual({},
+                         utils._get_provider_config(temporary_file))
