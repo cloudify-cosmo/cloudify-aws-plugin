@@ -31,7 +31,7 @@ properties: aws_ec2
 # if specified, tests will run using an existing manager,
 # otherwise, bootstrap will be called in the beginning of
 # each test suite and teardown at the end of it.
-# manager_ip: 54.163.237.81
+# manager_ip:
 
 ######################################################
 # this feature is used extensively in suites.yaml
