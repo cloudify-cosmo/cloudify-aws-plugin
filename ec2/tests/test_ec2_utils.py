@@ -14,13 +14,17 @@
 #    * limitations under the License.
 
 # Built-in Imports
-import testtools
+import os
+import json
+import tempfile
 
 # Third Party Imports
+import testtools
 from moto import mock_ec2
 
 # Cloudify Imports is imported and used in operations
 from ec2 import utils
+from ec2 import constants
 from cloudify.state import current_ctx
 from cloudify.mocks import MockCloudifyContext
 from cloudify.exceptions import NonRecoverableError
@@ -39,6 +43,7 @@ class TestUtils(testtools.TestCase):
             'resource_id': '',
             'image_id': TEST_AMI_IMAGE_ID,
             'instance_type': TEST_INSTANCE_TYPE,
+            'cloudify_agent': {},
             'parameters': {
                 'security_group_ids': ['sg-73cd3f1e'],
                 'instance_initiated_shutdown_behavior': 'stop'
@@ -68,3 +73,30 @@ class TestUtils(testtools.TestCase):
         ctx = self.mock_ctx('test_log_available_resources')
         current_ctx.set(ctx=ctx)
         utils.log_available_resources(list_of_resources)
+
+    def test_get_provider_variable(self):
+        ctx = self.mock_ctx('test_get_provider_variables')
+        temporary_file = tempfile.mktemp()
+        os.environ[constants.AWS_CONFIG_PATH_ENV_VAR] = temporary_file
+
+        def os_environ_cleanup():
+            del os.environ[constants.AWS_CONFIG_PATH_ENV_VAR]
+        self.addCleanup(os_environ_cleanup)
+        current_ctx.set(ctx=ctx)
+
+        provider_context_json = {
+            "agents_keypair": "agents",
+            "agents_security_group": "agents"
+        }
+
+        with open(temporary_file, 'w') \
+                as outfile:
+            json.dump(
+                provider_context_json,
+                outfile)
+
+        provider_context = \
+            utils.get_provider_variables()
+
+        self.assertEqual('agents', provider_context['agents_keypair'])
+        self.assertEqual('agents', provider_context['agents_security_group'])

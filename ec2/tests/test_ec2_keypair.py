@@ -153,6 +153,9 @@ class TestKeyPair(testtools.TestCase):
         ex = self.assertRaises(
             NonRecoverableError, keypair.creation_validation, ctx=ctx)
         self.assertIn(
+            'the key pair does not exist in the account',
+            ex.message)
+        self.assertIn(
             'InvalidKeyPair.NotFound',
             ex.message)
         os.remove(key_path)
@@ -176,7 +179,7 @@ class TestKeyPair(testtools.TestCase):
         ex = self.assertRaises(
             NonRecoverableError, keypair.creation_validation, ctx=ctx)
         self.assertIn(
-            'InvalidKeyPair.NotFound',
+            'but the key file exists locally',
             ex.message)
         os.remove(key_path)
 
