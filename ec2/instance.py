@@ -388,20 +388,20 @@ def _get_instance_attribute(attribute):
         ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
     instance_object = _get_instance_from_id(instance_id)
 
-    if not instance_object \
-            and not ctx.node.properties['use_external_resource']:
-        ec2_client = connection.EC2ConnectionClient().client()
-        instances = _get_instance_id_from_reservation_id(ec2_client)
-        if len(instances) != 1:
+    if not instance_object:
+        if not ctx.node.properties['use_external_resource']:
+            ec2_client = connection.EC2ConnectionClient().client()
+            instances = _get_instance_id_from_reservation_id(ec2_client)
+            if len(instances) != 1:
+                raise NonRecoverableError(
+                    'Unable to get instance attibute {0}, because '
+                    'no instance with id {1} exists in this account.'
+                    .format(attribute, instance_id))
+            instance_object = instances[0]
+        else:
             raise NonRecoverableError(
-                'Unable to get instance attibute {0}, because '
-                'no instance with id {1} exists in this account.'
-                .format(attribute, instance_id))
-        instance_object = instances[0]
-    elif not instance_object:
-        raise NonRecoverableError(
-            'External resource, but the supplied '
-            'instance id {0} is not in the account.'.format(instance_id))
+                'External resource, but the supplied '
+                'instance id {0} is not in the account.'.format(instance_id))
 
     attribute = getattr(instance_object, attribute)
     return attribute

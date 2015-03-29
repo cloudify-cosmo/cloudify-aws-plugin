@@ -17,26 +17,12 @@ import os
 from cosmo_tester.test_suites.test_blueprints import nodecellar_test
 
 EXTERNAL_RESOURCE_ID = 'aws_resource_id'
-CLOUDIFY_EC2_NODECELLAR = '~/Environments/' \
-    'cloudify-nodecellar-example'
 
 
 class EC2NodeCellarTest(nodecellar_test.NodecellarAppTest):
 
     def test_ec2_nodecellar(self):
         self._test_nodecellar_impl('ec2-blueprint.yaml')
-
-        self.modify_blueprint()
-
-        before, after = self.upload_deploy_and_execute_install(
-            inputs=self.get_inputs()
-        )
-
-        self.post_install_assertions(before, after)
-
-        self.execute_uninstall()
-
-        self.post_uninstall_assertions()
 
     def get_inputs(self):
 
@@ -45,10 +31,6 @@ class EC2NodeCellarTest(nodecellar_test.NodecellarAppTest):
             'size': self.env.medium_instance_type,
             'agent_user': 'ubuntu'
         }
-
-    def _test_nodecellar_impl(self, blueprint_file):
-        self.repo_dir = os.path.expanduser(CLOUDIFY_EC2_NODECELLAR)
-        self.blueprint_yaml = os.path.join(self.repo_dir, blueprint_file)
 
     @property
     def host_expected_runtime_properties(self):
