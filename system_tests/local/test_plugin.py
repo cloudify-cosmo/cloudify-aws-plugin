@@ -890,7 +890,7 @@ class EC2InstanceUnitTests(EC2LocalTestUtils):
             'agents_security_group': ''
         }
         output = instance._get_instance_keypair(provider_variables)
-        self.assertEqual('', output)
+        self.assertEqual(None, output)
 
     def test_get_instance_parameters(self):
 
