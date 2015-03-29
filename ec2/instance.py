@@ -219,7 +219,7 @@ def _run_instances_if_needed(ec2_client, instance_parameters):
 
     elif constants.EXTERNAL_RESOURCE_ID not in ctx.instance.runtime_properties:
 
-        instances = _get_instance_id_from_reservation_id(ec2_client)
+        instances = _get_instances_from_reservation_id(ec2_client)
 
         if not instances:
             raise NonRecoverableError(
@@ -235,10 +235,10 @@ def _run_instances_if_needed(ec2_client, instance_parameters):
     return ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
 
 
-def _get_instance_id_from_reservation_id(ec2_client):
+def _get_instances_from_reservation_id(ec2_client):
 
     try:
-        instances = ec2_client.get_all_instances(
+        reservations = ec2_client.get_all_instances(
             filters={
                 'reservation-id':
                     ctx.instance.runtime_properties['reservation_id']
@@ -246,7 +246,11 @@ def _get_instance_id_from_reservation_id(ec2_client):
     except (boto.exception.EC2ResponseError,
             boto.exception.BotoServerError) as e:
         raise NonRecoverableError('{0}'.format(str(e)))
-    return instances
+
+    if len(reservations) < 1:
+        return None
+
+    return reservations[0].instances
 
 
 def _create_external_instance():
@@ -391,11 +395,16 @@ def _get_instance_attribute(attribute):
     if not instance_object:
         if not ctx.node.properties['use_external_resource']:
             ec2_client = connection.EC2ConnectionClient().client()
-            instances = _get_instance_id_from_reservation_id(ec2_client)
-            if len(instances) != 1:
+            instances = _get_instances_from_reservation_id(ec2_client)
+            if not instances:
                 raise NonRecoverableError(
                     'Unable to get instance attibute {0}, because '
                     'no instance with id {1} exists in this account.'
+                    .format(attribute, instance_id))
+            elif len(instances) != 1:
+                raise NonRecoverableError(
+                    'Unable to get instance attibute {0}, because more '
+                    'than one instance with id {1} exists in this account.'
                     .format(attribute, instance_id))
             instance_object = instances[0]
         else:

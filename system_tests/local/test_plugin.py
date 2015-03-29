@@ -387,6 +387,7 @@ class EC2UtilsUnitTests(EC2LocalTestUtils):
 
         self.assertEquals(0, len(output))
 
+
 class EC2SecurityGroupUnitTests(EC2LocalTestUtils):
 
     def test_get_all_security_groups(self):
@@ -531,12 +532,13 @@ class EC2SecurityGroupUnitTests(EC2LocalTestUtils):
                 'from_port': 22,
                 'to_port': 22,
                 'cidr_ip': '0.0.0.0/0'
-             }
+            }
         ]
         securitygroup._authorize_by_id(
             client, group.id, rules
         )
-        groups_from_test = client.get_all_security_groups(groupnames=[group.name])
+        groups_from_test = \
+            client.get_all_security_groups(groupnames=[group.name])
         self.assertEqual(group.id, groups_from_test[0].id)
         self.assertEqual(
             str(groups_from_test[0].rules[0]),
@@ -553,7 +555,7 @@ class EC2SecurityGroupUnitTests(EC2LocalTestUtils):
                 'from_port': 22,
                 'to_port': 22,
                 'cidr_ip': '0.0.0.0/0'
-             }
+            }
         ]
 
         ex = self.assertRaises(
@@ -666,7 +668,6 @@ class EC2KeyPairUnitTests(EC2LocalTestUtils):
         client = self._get_ec2_client()
         kp = client.create_key_pair(
             'test_get_key_pair_by_id')
-
 
         output = keypair._get_key_pair_by_id(kp.name)
         self.assertEqual(kp.name, output.name)
@@ -905,4 +906,3 @@ class EC2InstanceUnitTests(EC2LocalTestUtils):
         self.assertIn('abcd', parameters['image_id'])
         self.assertIn('xyz', parameters['key_name'])
         self.assertIn('efg', parameters['instance_type'])
-
