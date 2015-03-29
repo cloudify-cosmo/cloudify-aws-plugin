@@ -15,14 +15,16 @@
 
 # Built-in Imports
 import os
-import testtools
 import json
+import tempfile
 
 # Third Party Imports
+import testtools
 from moto import mock_ec2
 
 # Cloudify Imports is imported and used in operations
 from ec2 import utils
+from ec2 import constants
 from cloudify.state import current_ctx
 from cloudify.mocks import MockCloudifyContext
 from cloudify.exceptions import NonRecoverableError
@@ -72,9 +74,14 @@ class TestUtils(testtools.TestCase):
         current_ctx.set(ctx=ctx)
         utils.log_available_resources(list_of_resources)
 
-    def test_get_provider_variable_from_file(self):
+    def test_get_provider_variable(self):
+        ctx = self.mock_ctx('test_get_provider_variables')
+        temporary_file = tempfile.mktemp()
+        os.environ[constants.AWS_CONFIG_PATH_ENV_VAR] = temporary_file
 
-        ctx = self.mock_ctx('test_get_provider_variable_from_file')
+        def os_environ_cleanup():
+            del os.environ[constants.AWS_CONFIG_PATH_ENV_VAR]
+        self.addCleanup(os_environ_cleanup)
         current_ctx.set(ctx=ctx)
 
         provider_context_json = {
@@ -82,28 +89,14 @@ class TestUtils(testtools.TestCase):
             "agents_security_group": "agents"
         }
 
-        with open(os.path.expanduser('~/.aws_config.json'), 'w') \
-                as provider_context_file:
+        with open(temporary_file, 'w') \
+                as outfile:
             json.dump(
                 provider_context_json,
-                provider_context_file)
+                outfile)
 
-        output = utils._get_provider_variable_from_file(
-            'agents_keypair')
-        self.assertIn('agents', output)
-        output = utils._get_provider_variable_from_file(
-            'agents_security_group')
-        self.assertIn('agents', output)
-        os.remove(os.path.expanduser('~/.aws_config.json'))
+        provider_context = \
+            utils.get_provider_variables()
 
-    def test_get_provider_context_empty_file(self):
-        ctx = self.mock_ctx('test_get_provider_context')
-        current_ctx.set(ctx=ctx)
-
-        with open(os.path.expanduser('~/.aws_config.json'), 'w') \
-                as provider_context_file:
-            provider_context_file.write('')
-
-        self.assertEqual({}, utils._get_provider_context(
-            os.path.expanduser('~/.aws_config.json')))
-        os.remove(os.path.expanduser('~/.aws_config.json'))
+        self.assertEqual('agents', provider_context['agents_keypair'])
+        self.assertEqual('agents', provider_context['agents_security_group'])

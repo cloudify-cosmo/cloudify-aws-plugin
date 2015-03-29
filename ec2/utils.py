@@ -165,66 +165,45 @@ def get_resource_id():
 
 def get_provider_variables():
 
-    provider_context = {
-        "agents_keypair": _get_variable('agents_keypair'),
-        "agents_security_group":
-            _get_variable('agents_security_group'),
-        "manager_keypair": _get_variable('manager_keypair'),
-        "manager_security_group":
-            _get_variable('manager_security_group'),
-        "manager_resource_id": _get_variable('manager_resource_id'),
-        "manager_ip_address": _get_variable('manager_ip_address')
-    }
+    provider_config = _get_provider_config()
 
-    ctx.logger.info(provider_context)
+    provider_context = {
+        "agents_keypair":
+            provider_config.get('agents_keypair'),
+        "agents_security_group":
+            provider_config.get('agents_security_group'),
+        "manager_keypair":
+            provider_config.get('manager_keypair'),
+        "manager_security_group":
+            provider_config.get('manager_security_group'),
+        "manager_resource_id":
+            provider_config.get('manager_resource_id'),
+        "manager_ip_address":
+            provider_config.get('manager_ip_address')
+    }
 
     return provider_context
 
 
-def _get_variable(variable_name):
+def _get_provider_config():
 
-    if variable_name in os.environ:
-        return os.environ[variable_name]
+    config_path = _expanded_config_path()
 
-    variable_from_file = _get_provider_variable_from_file(variable_name)
-
-    if not variable_from_file:
-        return None
-
-    return variable_from_file
-
-
-def _get_provider_variable_from_file(variable_name):
-
-    aws_configuration = _get_provider_context_file_path()
-    provider_context = _get_provider_context(aws_configuration)
-
-    if variable_name in provider_context:
-        return provider_context[variable_name]
-
-    return None
-
-
-def _get_provider_context_file_path():
-
-    if 'home_dir' in ctx.node.properties['cloudify_agent']:
-        return os.path.join(
-            ctx.node.properties['cloudify_agent']['home_dir'],
-            os.path.split(constants.AWS_CONFIG_PATH)[-1])
-
-    return os.path.expanduser(constants.AWS_CONFIG_PATH)
-
-
-def _get_provider_context(aws_configuration):
-
-    if os.path.exists(aws_configuration):
+    if os.path.exists(config_path):
         try:
-            with open(aws_configuration) as provider_context_file:
-                return json.load(provider_context_file)
+            with open(config_path) as outfile:
+                return json.load(outfile)
         except ValueError:
             ctx.logger.debug(
                 'AWS provider configuration {0} does not contain a JSON '
                 'object. This may or may not be intentional.'
-                .format(aws_configuration))
+                .format(config_path))
 
     return {}
+
+
+def _expanded_config_path():
+
+    return os.getenv(
+        constants.AWS_CONFIG_PATH_ENV_VAR,
+        os.path.expanduser(constants.AWS_DEFAULT_CONFIG_PATH))
