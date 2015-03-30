@@ -26,7 +26,7 @@ from cosmo_tester.framework.handlers import (
     BaseCloudifyInputsConfigReader)
 from cosmo_tester.framework.util import get_actual_keypath
 
-MANAGER_BLUEPRINT = 'ec2/ec2-docker.yaml'
+MANAGER_BLUEPRINT = 'ec2/ec2-manager-blueprint.yaml'
 
 
 class EC2CleanupContext(BaseHandler.CleanupContext):
