@@ -13,10 +13,6 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
-# Built-in Imports
-import os
-import json
-import tempfile
 
 # Third Party Imports
 import testtools
@@ -24,7 +20,6 @@ from moto import mock_ec2
 
 # Cloudify Imports is imported and used in operations
 from ec2 import utils
-from ec2 import constants
 from cloudify.state import current_ctx
 from cloudify.mocks import MockCloudifyContext
 from cloudify.exceptions import NonRecoverableError
@@ -50,9 +45,17 @@ class TestUtils(testtools.TestCase):
             }
         }
 
+        provider_context={
+            'resources': {
+                'agents_security_group': 'agents',
+                'agents_keypair': 'agents'
+            }
+        }
+
         ctx = MockCloudifyContext(
             node_id=test_node_id,
-            properties=test_properties
+            properties=test_properties,
+            provider_context=provider_context
         )
 
         return ctx
@@ -76,27 +79,7 @@ class TestUtils(testtools.TestCase):
 
     def test_get_provider_variable(self):
         ctx = self.mock_ctx('test_get_provider_variables')
-        temporary_file = tempfile.mktemp()
-        os.environ[constants.AWS_CONFIG_PATH_ENV_VAR] = temporary_file
-
-        def os_environ_cleanup():
-            del os.environ[constants.AWS_CONFIG_PATH_ENV_VAR]
-        self.addCleanup(os_environ_cleanup)
         current_ctx.set(ctx=ctx)
-
-        provider_context_json = {
-            "resources": {
-                "agents_keypair": "agents",
-                "agents_security_group": "agents"
-            }
-        }
-
-        with open(temporary_file, 'w') \
-                as outfile:
-            json.dump(
-                provider_context_json,
-                outfile)
-
         provider_context = \
             utils.get_provider_variables()
 
