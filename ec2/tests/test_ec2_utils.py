@@ -47,8 +47,12 @@ class TestUtils(testtools.TestCase):
 
         provider_context = {
             'resources': {
-                'agents_security_group': 'agents',
-                'agents_keypair': 'agents'
+                'agents_security_group': {
+                    'id': 'agents'
+                },
+                'agents_keypair': {
+                    'id': 'agents'
+                }
             }
         }
 

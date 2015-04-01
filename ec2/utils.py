@@ -166,11 +166,12 @@ def get_provider_variables():
 
     provider_config = ctx.provider_context.get('resources', {})
 
+    agents_keypair = provider_config.get('agents_keypair', {})
+    agents_security_group = provider_config.get('agents_security_group', {})
+
     provider_context = {
-        "agents_keypair":
-            provider_config.get('agents_keypair'),
-        "agents_security_group":
-            provider_config.get('agents_security_group'),
+        "agents_keypair": agents_keypair.get('id'),
+        "agents_security_group": agents_security_group.get('id')
     }
 
     return provider_context
