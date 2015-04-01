@@ -45,7 +45,7 @@ class TestUtils(testtools.TestCase):
             }
         }
 
-        provider_context={
+        provider_context = {
             'resources': {
                 'agents_security_group': 'agents',
                 'agents_keypair': 'agents'
