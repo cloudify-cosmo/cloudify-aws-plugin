@@ -85,8 +85,10 @@ class TestUtils(testtools.TestCase):
         current_ctx.set(ctx=ctx)
 
         provider_context_json = {
-            "agents_keypair": "agents",
-            "agents_security_group": "agents"
+            "resources": {
+                "agents_keypair": "agents",
+                "agents_security_group": "agents"
+            }
         }
 
         with open(temporary_file, 'w') \
