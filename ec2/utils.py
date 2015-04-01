@@ -15,7 +15,6 @@
 
 # Built-in Imports
 import os
-import json
 
 # Cloudify Imports
 from ec2 import constants
@@ -165,46 +164,13 @@ def get_resource_id():
 
 def get_provider_variables():
 
-    provider_config = _get_provider_config()
+    provider_config = ctx.provider_context.get('resources', {})
 
     provider_context = {
         "agents_keypair":
             provider_config.get('agents_keypair'),
         "agents_security_group":
             provider_config.get('agents_security_group'),
-        "manager_keypair":
-            provider_config.get('manager_keypair'),
-        "manager_security_group":
-            provider_config.get('manager_security_group'),
-        "manager_resource_id":
-            provider_config.get('manager_resource_id'),
-        "manager_ip_address":
-            provider_config.get('manager_ip_address')
     }
 
     return provider_context
-
-
-def _get_provider_config():
-
-    config_path = _expanded_config_path()
-
-    if os.path.exists(config_path):
-        try:
-            with open(config_path) as outfile:
-                context = json.load(outfile)
-                return context['resources']
-        except ValueError:
-            ctx.logger.debug(
-                'AWS provider configuration {0} does not contain a JSON '
-                'object. This may or may not be intentional.'
-                .format(config_path))
-
-    return {}
-
-
-def _expanded_config_path():
-
-    return os.getenv(
-        constants.AWS_CONFIG_PATH_ENV_VAR,
-        os.path.expanduser(constants.AWS_DEFAULT_CONFIG_PATH))
