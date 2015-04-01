@@ -192,7 +192,8 @@ def _get_provider_config():
     if os.path.exists(config_path):
         try:
             with open(config_path) as outfile:
-                return json.load(outfile)
+                context = json.load(outfile)
+                return context['resources']
         except ValueError:
             ctx.logger.debug(
                 'AWS provider configuration {0} does not contain a JSON '
