@@ -134,7 +134,7 @@ def _create_group_rules(group_object):
     for rule in ctx.node.properties['rules']:
         if 'src_group' in rule and 'cidr_ip' not in rule:
             _authorize_src_group(group_object, rule)
-        elif 'cidr_ip' in rule:
+        elif 'cidr_ip' in rule and 'src_group' not in rule:
             _authorize_cidr_ip(group_object, rule)
         else:
             raise NonRecoverableError(

@@ -261,7 +261,35 @@ class TestSecurityGroup(testtools.TestCase):
         group = ec2_client.create_security_group(
             'test_create_group_rules_no_src_group_id_or_cidr',
             'this is test')
-        self.assertRaises(
+        ex = self.assertRaises(
             NonRecoverableError,
             securitygroup._create_group_rules,
             group)
+        self.assertIn(
+            'You need to pass either src_group_id OR cidr_ip.',
+            ex.message)
+
+    @mock_ec2
+    def test_create_group_rules_both_src_group_id_or_cidr(self):
+
+        ec2_client = connection.EC2ConnectionClient().client()
+        group = ec2_client.create_security_group(
+            'test_create_group_rules_both_src_group_id_or_cidr',
+            'this is test')
+        test_properties = self.get_mock_properties()
+        ctx = self.security_group_mock(
+            'test_create_group_rules_both_src_group_id_or_cidr',
+            test_properties)
+        current_ctx.set(ctx=ctx)
+        group_object = ec2_client.create_security_group(
+            'dummy',
+            'this is test')
+        ctx.node.properties['rules'][0]['src_group'] = group_object
+        print ctx.node.properties['rules']
+        ex = self.assertRaises(
+            NonRecoverableError,
+            securitygroup._create_group_rules,
+            group)
+        self.assertIn(
+            'You need to pass either src_group_id OR cidr_ip.',
+            ex.message)
