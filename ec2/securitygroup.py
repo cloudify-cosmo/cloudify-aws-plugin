@@ -77,7 +77,7 @@ def create(**_):
             boto.exception.BotoServerError) as e:
         raise NonRecoverableError('{0}'.format(str(e)))
 
-    _authorize_by_id(group_object)
+    _create_group_rules(group_object)
     utils.set_external_resource_id(
         group_object.id, ctx.instance, external=False)
 
@@ -123,7 +123,7 @@ def _delete_security_group(group_id):
         raise NonRecoverableError('{0}'.format(str(e)))
 
 
-def _authorize_by_id(group_object):
+def _create_group_rules(group_object):
     """For each rule listed in the blueprint,
     this will add the rule to the group with the given id.
     :param group: The group object that you want to add rules to.
@@ -132,33 +132,27 @@ def _authorize_by_id(group_object):
     """
 
     for rule in ctx.node.properties['rules']:
-        if 'src_group_id' in rule:
+        if 'src_group' in rule and 'cidr_ip' not in rule:
             _authorize_src_group(group_object, rule)
-        elif 'ip_protocol' in rule \
-                and 'from_port' in rule \
-                and 'to_port' in rule \
-                and 'cidr_ip' in rule:
+        elif 'cidr_ip' in rule:
             _authorize_cidr_ip(group_object, rule)
         else:
             raise NonRecoverableError(
-                'You need to pass in either src_group_id OR '
-                'ip_protocol, from_port, to_port, and cidr_ip. '
-                'In other words, either you are authorizing another '
-                'group or you are authorizing some ip-based rule.'
-            )
+                'You need to pass either src_group_id OR cidr_ip.')
 
 
 def _authorize_cidr_ip(group_object, rule):
 
     try:
         group_object.authorize(
-            ip_protocol=rule['ip_protocol'],
-            from_port=rule['from_port'],
-            to_port=rule['to_port'],
+            ip_protocol=rule.get('ip_protocol'),
+            from_port=rule.get('from_port'),
+            to_port=rule.get('to_port'),
             cidr_ip=rule['cidr_ip']
         )
     except (boto.exception.EC2ResponseError,
-            boto.exception.BotoServerError) as e:
+            boto.exception.BotoServerError,
+            KeyError) as e:
         raise NonRecoverableError('{0}'.format(str(e)))
     except Exception as e:
         _delete_security_group(group_object.id)
@@ -170,9 +164,15 @@ def _authorize_src_group(group_object, rule):
     src_group_object = _get_security_group_from_id(rule['src_group_id'])
 
     try:
-        group_object.authorize(src_group=src_group_object)
+        group_object.authorize(
+            ip_protocol=rule.get('ip_protocol'),
+            from_port=rule.get('from_port'),
+            to_port=rule.get('to_port'),
+            src_group=src_group_object
+        )
     except (boto.exception.EC2ResponseError,
-            boto.exception.BotoServerError) as e:
+            boto.exception.BotoServerError,
+            KeyError) as e:
         raise NonRecoverableError('{0}'.format(str(e)))
     except Exception as e:
         _delete_security_group(group_object.id)

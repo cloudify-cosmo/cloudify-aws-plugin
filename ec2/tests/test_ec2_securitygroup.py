@@ -200,20 +200,20 @@ class TestSecurityGroup(testtools.TestCase):
             ex.message)
 
     @mock_ec2
-    def test_authorize_by_id(self):
+    def test_create_group_rules(self):
 
         ec2_client = connection.EC2ConnectionClient().client()
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
-            'test_authorize_by_id', test_properties)
+            'test_create_group_rules', test_properties)
         current_ctx.set(ctx=ctx)
-        group = ec2_client.create_security_group('test_authorize_by_id',
+        group = ec2_client.create_security_group('test_create_group_rules',
                                                  'this is test')
-        securitygroup._authorize_by_id(group)
+        securitygroup._create_group_rules(group)
         self.assertNotEqual(
             group.rules,
             ec2_client.get_all_security_groups(
-                groupnames='test_authorize_by_id')[0].rules)
+                groupnames='test_create_group_rules')[0].rules)
 
     def test_get_security_group_from_name(self):
 
@@ -249,19 +249,19 @@ class TestSecurityGroup(testtools.TestCase):
         self.assertEqual(output[0].id, group.id)
 
     @mock_ec2
-    def test_authorize_by_id_no_src_group_id_or_ip_protocol(self):
+    def test_create_group_rules_no_src_group_id_or_cidr(self):
 
         ec2_client = connection.EC2ConnectionClient().client()
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
-            'test_authorize_by_id_no_src_group_id_or_ip_protocol',
+            'test_create_group_rules_no_src_group_id_or_cidr',
             test_properties)
         current_ctx.set(ctx=ctx)
-        del ctx.node.properties['rules'][0]['ip_protocol']
+        del ctx.node.properties['rules'][0]['cidr_ip']
         group = ec2_client.create_security_group(
-            'test_authorize_by_id_no_src_group_id_or_ip_protocol',
+            'test_create_group_rules_no_src_group_id_or_cidr',
             'this is test')
         self.assertRaises(
             NonRecoverableError,
-            securitygroup._authorize_by_id,
+            securitygroup._create_group_rules,
             group)

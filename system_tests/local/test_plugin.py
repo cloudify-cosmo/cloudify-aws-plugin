@@ -520,10 +520,10 @@ class EC2SecurityGroupUnitTests(EC2LocalTestUtils):
         output = securitygroup._delete_external_securitygroup()
         self.assertEqual(False, output)
 
-    def test_authorize_by_id_ruleset(self):
+    def test_create_group_rules_ruleset(self):
 
         ctx = self.mock_cloudify_context(
-            'test_authorize_by_id_ruleset')
+            'test_create_group_rules_ruleset')
         ctx.node.properties['rules'] = [
             {
                 'ip_protocol': 'tcp',
@@ -537,9 +537,9 @@ class EC2SecurityGroupUnitTests(EC2LocalTestUtils):
 
         client = self._get_ec2_client()
         group = client.create_security_group(
-            'test_authorize_by_id',
+            'test_create_group_rules',
             'some description')
-        securitygroup._authorize_by_id(group)
+        securitygroup._create_group_rules(group)
         groups_from_test = \
             client.get_all_security_groups(groupnames=[group.name])
         self.assertEqual(group.id, groups_from_test[0].id)
