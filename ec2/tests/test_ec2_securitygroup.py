@@ -132,7 +132,7 @@ class TestSecurityGroup(testtools.TestCase):
         ec2_client.delete_security_group(group_id=group.id)
         ex = self.assertRaises(
             NonRecoverableError, securitygroup.delete, ctx=ctx)
-        self.assertIn('InvalidGroup.NotFound', ex.message)
+        self.assertIn('does not exist in the account', ex.message)
 
     @mock_ec2
     def test_delete_existing(self):
@@ -209,8 +209,7 @@ class TestSecurityGroup(testtools.TestCase):
         current_ctx.set(ctx=ctx)
         group = ec2_client.create_security_group('test_authorize_by_id',
                                                  'this is test')
-        rules = ctx.node.properties['rules']
-        securitygroup._authorize_by_id(ec2_client, group.id, rules)
+        securitygroup._authorize_by_id(group)
         self.assertNotEqual(
             group.rules,
             ec2_client.get_all_security_groups(
@@ -248,3 +247,21 @@ class TestSecurityGroup(testtools.TestCase):
         output = securitygroup._get_all_security_groups(
             list_of_group_ids=group.id)
         self.assertEqual(output[0].id, group.id)
+
+    @mock_ec2
+    def test_authorize_by_id_no_src_group_id_or_ip_protocol(self):
+
+        ec2_client = connection.EC2ConnectionClient().client()
+        test_properties = self.get_mock_properties()
+        ctx = self.security_group_mock(
+            'test_authorize_by_id_no_src_group_id_or_ip_protocol',
+            test_properties)
+        current_ctx.set(ctx=ctx)
+        del ctx.node.properties['rules'][0]['ip_protocol']
+        group = ec2_client.create_security_group(
+            'test_authorize_by_id_no_src_group_id_or_ip_protocol',
+            'this is test')
+        self.assertRaises(
+            NonRecoverableError,
+            securitygroup._authorize_by_id,
+            group)
