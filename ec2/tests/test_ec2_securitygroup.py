@@ -248,6 +248,7 @@ class TestSecurityGroup(testtools.TestCase):
             list_of_group_ids=group.id)
         self.assertEqual(output[0].id, group.id)
 
+
     @mock_ec2
     def test_create_group_rules_no_src_group_id_or_cidr(self):
 
@@ -270,7 +271,7 @@ class TestSecurityGroup(testtools.TestCase):
             ex.message)
 
     @mock_ec2
-    def test_create_group_rules_both_src_group_id_or_cidr(self):
+    def test_create_group_rules_both_src_group_id_cidr(self):
 
         ec2_client = connection.EC2ConnectionClient().client()
         group = ec2_client.create_security_group(
@@ -284,7 +285,7 @@ class TestSecurityGroup(testtools.TestCase):
         group_object = ec2_client.create_security_group(
             'dummy',
             'this is test')
-        ctx.node.properties['rules'][0]['src_group'] = group_object
+        ctx.node.properties['rules'][0]['src_group_id'] = group_object
         print ctx.node.properties['rules']
         ex = self.assertRaises(
             NonRecoverableError,
@@ -293,3 +294,25 @@ class TestSecurityGroup(testtools.TestCase):
         self.assertIn(
             'You need to pass either src_group_id OR cidr_ip.',
             ex.message)
+
+    @mock_ec2
+    def test_create_group_rules_src_group(self):
+
+        ec2_client = connection.EC2ConnectionClient().client()
+        test_properties = self.get_mock_properties()
+        ctx = self.security_group_mock(
+            'test_create_group_rules_src_group', test_properties)
+        group_object = ec2_client.create_security_group(
+            'dummy',
+            'this is test')
+        ctx.node.properties['rules'][0]['src_group_id'] = group_object.id
+        del ctx.node.properties['rules'][0]['cidr_ip']
+        current_ctx.set(ctx=ctx)
+        group = ec2_client.create_security_group(
+            'test_create_group_rules_src_group',
+            'this is test')
+        securitygroup._create_group_rules(group)
+        self.assertNotEqual(
+            group.rules,
+            ec2_client.get_all_security_groups(
+                groupnames='test_create_group_rules_src_group')[0].rules)

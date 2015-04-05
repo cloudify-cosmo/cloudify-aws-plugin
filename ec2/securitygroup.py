@@ -132,9 +132,9 @@ def _create_group_rules(group_object):
     """
 
     for rule in ctx.node.properties['rules']:
-        if 'src_group' in rule and 'cidr_ip' not in rule:
+        if 'src_group_id' in rule and 'cidr_ip' not in rule:
             _authorize_src_group(group_object, rule)
-        elif 'cidr_ip' in rule and 'src_group' not in rule:
+        elif 'cidr_ip' in rule and 'src_group_id' not in rule:
             _authorize_cidr_ip(group_object, rule)
         else:
             raise NonRecoverableError(
@@ -151,8 +151,7 @@ def _authorize_cidr_ip(group_object, rule):
             cidr_ip=rule['cidr_ip']
         )
     except (boto.exception.EC2ResponseError,
-            boto.exception.BotoServerError,
-            KeyError) as e:
+            boto.exception.BotoServerError) as e:
         raise NonRecoverableError('{0}'.format(str(e)))
     except Exception as e:
         _delete_security_group(group_object.id)
@@ -171,8 +170,7 @@ def _authorize_src_group(group_object, rule):
             src_group=src_group_object
         )
     except (boto.exception.EC2ResponseError,
-            boto.exception.BotoServerError,
-            KeyError) as e:
+            boto.exception.BotoServerError) as e:
         raise NonRecoverableError('{0}'.format(str(e)))
     except Exception as e:
         _delete_security_group(group_object.id)

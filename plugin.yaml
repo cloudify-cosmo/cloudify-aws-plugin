@@ -95,7 +95,7 @@ node_types:
       rules:
         default: []
         description: >
-          You need to pass in either src_group (security group ID) OR cidr_ip,
+          You need to pass in either src_group_id (security group ID) OR cidr_ip,
           and then the following three: ip_protocol, from_port and to_port.
     interfaces:
       cloudify.interfaces.lifecycle:
