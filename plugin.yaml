@@ -68,8 +68,7 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create: aws.ec2.elasticip.allocate
-        delete:
-          implementation: aws.ec2.elasticip.release
+        delete: aws.ec2.elasticip.release
       cloudify.interfaces.validation:
         creation: aws.ec2.elasticip.creation_validation
 
@@ -96,14 +95,13 @@ node_types:
       rules:
         default: []
         description: >
-          A list of rules, which are each a dictionary of key value pairs with the required
-          keys: ip_protocol (string), from_port (integer), to_port (integer), and 
-          cidr_ip (string).
+          You need to pass in either src_group_id OR ip_protocol, from_port, to_port,
+          and cidr_ip. In other words, either you are authorizing another group or you
+          are authorizing some ip-based rule.
     interfaces:
       cloudify.interfaces.lifecycle:
         create: aws.ec2.securitygroup.create
-        delete: 
-          implementation: aws.ec2.securitygroup.delete
+        delete: aws.ec2.securitygroup.delete
       cloudify.interfaces.validation:
         creation: aws.ec2.securitygroup.creation_validation
 
