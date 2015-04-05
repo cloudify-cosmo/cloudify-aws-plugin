@@ -233,6 +233,7 @@ class TestSecurityGroup(testtools.TestCase):
                 group.id)
             self.assertEqual(group.id, output.id)
 
+
     @mock_ec2
     def test_get_all_groups_deleted(self):
 
