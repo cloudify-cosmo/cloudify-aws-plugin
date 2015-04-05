@@ -95,9 +95,8 @@ node_types:
       rules:
         default: []
         description: >
-          You need to pass in either src_group_id OR ip_protocol, from_port, to_port,
-          and cidr_ip. In other words, either you are authorizing another group or you
-          are authorizing some ip-based rule.
+          You need to pass in either src_group (security group ID) OR cidr_ip,
+          and then the following three: ip_protocol, from_port and to_port.
     interfaces:
       cloudify.interfaces.lifecycle:
         create: aws.ec2.securitygroup.create
