@@ -233,7 +233,6 @@ class TestSecurityGroup(testtools.TestCase):
                 group.id)
             self.assertEqual(group.id, output.id)
 
-
     @mock_ec2
     def test_get_all_groups_deleted(self):
 
@@ -248,7 +247,6 @@ class TestSecurityGroup(testtools.TestCase):
         output = securitygroup._get_all_security_groups(
             list_of_group_ids=group.id)
         self.assertEqual(output[0].id, group.id)
-
 
     @mock_ec2
     def test_create_group_rules_no_src_group_id_or_cidr(self):
