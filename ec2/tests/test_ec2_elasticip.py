@@ -17,10 +17,10 @@
 import testtools
 
 # Third Party Imports
+from boto.ec2 import EC2Connection
 from moto import mock_ec2
 
 # Cloudify Imports is imported and used in operations
-from ec2 import connection
 from ec2 import elasticip
 from cloudify.state import current_ctx
 from cloudify.mocks import MockContext
@@ -38,6 +38,7 @@ class TestElasticIP(testtools.TestCase):
 
         test_node_id = test_name
         test_properties = {
+            'aws_configure': {},
             'use_external_resource': False,
             'resource_id': '',
             'image_id': TEST_AMI_IMAGE_ID,
@@ -58,6 +59,7 @@ class TestElasticIP(testtools.TestCase):
 
         test_node_id = test_name
         test_properties = {
+            'aws_configure': {},
             'use_external_resource': False,
             'resource_id': ''
         }
@@ -74,6 +76,7 @@ class TestElasticIP(testtools.TestCase):
         instance_context = MockContext({
             'node': MockContext({
                 'properties': {
+                    'aws_configure': {},
                     'use_external_resource': False,
                     'resource_id': ''
                 }
@@ -89,6 +92,7 @@ class TestElasticIP(testtools.TestCase):
         elasticip_context = MockContext({
             'node': MockContext({
                 'properties': {
+                    'aws_configure': {},
                     'use_external_resource': False,
                     'resource_id': '',
                 }
@@ -107,7 +111,7 @@ class TestElasticIP(testtools.TestCase):
         return relationship_context
 
     def get_client(self):
-        return connection.EC2ConnectionClient().client()
+        return EC2Connection()
 
     def allocate_address(self, client):
         return client.allocate_address(domain=None)
@@ -137,9 +141,9 @@ class TestElasticIP(testtools.TestCase):
     @mock_ec2
     def test_external_resource(self):
 
-        address = self.get_address()
-        ctx = self.mock_elastic_ip_node('test_allocate')
+        ctx = self.mock_elastic_ip_node('test_external_resource')
         current_ctx.set(ctx=ctx)
+        address = self.get_address()
         ctx.node.properties['use_external_resource'] = True
         ctx.node.properties['resource_id'] = address.public_ip
         elasticip.allocate(ctx=ctx)
@@ -312,6 +316,8 @@ class TestElasticIP(testtools.TestCase):
 
     @mock_ec2
     def test_get_all_addresses_bad(self):
+        ctx = self.mock_ctx('test_get_all_addresses_bad')
+        current_ctx.set(ctx=ctx)
 
         output = elasticip._get_all_addresses(
             address='127.0.0.1')

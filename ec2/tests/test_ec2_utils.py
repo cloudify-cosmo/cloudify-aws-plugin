@@ -34,6 +34,7 @@ class TestUtils(testtools.TestCase):
 
         test_node_id = test_name
         test_properties = {
+            'aws_configure': {},
             'use_external_resource': False,
             'resource_id': '',
             'image_id': TEST_AMI_IMAGE_ID,

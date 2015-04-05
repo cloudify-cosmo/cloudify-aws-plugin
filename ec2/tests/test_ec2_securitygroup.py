@@ -44,6 +44,7 @@ class TestSecurityGroup(testtools.TestCase):
     def get_mock_properties(self):
 
         test_properties = {
+            'aws_configure': {},
             'use_external_resource': False,
             'resource_id': 'test_security_group',
             'description': 'This is a test.',
@@ -202,11 +203,11 @@ class TestSecurityGroup(testtools.TestCase):
     @mock_ec2
     def test_authorize_by_id(self):
 
-        ec2_client = connection.EC2ConnectionClient().client()
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
             'test_authorize_by_id', test_properties)
         current_ctx.set(ctx=ctx)
+        ec2_client = connection.EC2ConnectionClient().client()
         group = ec2_client.create_security_group('test_authorize_by_id',
                                                  'this is test')
         rules = ctx.node.properties['rules']

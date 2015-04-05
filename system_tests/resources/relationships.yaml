@@ -50,6 +50,7 @@ node_templates:
     properties:
       resource_id: { get_input: resource_id_ip }
       use_external_resource: { get_input: external_ip }
+      aws_configure: {}
 
   pair_a_connected_instance:
     type: cloudify.aws.nodes.Instance
@@ -59,6 +60,7 @@ node_templates:
       use_external_resource: { get_input: external_vm }
       image_id: { get_input: image }
       instance_type: { get_input: size }
+      aws_configure: {}
     relationships:
       - type: cloudify.aws.relationships.instance_connected_to_elastic_ip
         target: pair_a_connected_elastic_ip
@@ -74,6 +76,7 @@ node_templates:
           from_port: 22
           to_port: 22
           cidr_ip: 0.0.0.0/0
+      aws_configure: {}
 
   pair_b_connected_instance:
     type: cloudify.aws.nodes.Instance
@@ -83,6 +86,7 @@ node_templates:
       use_external_resource: { get_input: external_vm }
       image_id: { get_input: image }
       instance_type: { get_input: size }
+      aws_configure: {}
     relationships:
       - type: cloudify.aws.relationships.instance_connected_to_security_group
         target: pair_b_connected_security_group

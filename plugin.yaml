@@ -37,6 +37,10 @@ node_types:
           although this field is listed as optional. A non-trivial use case requires
           that both the key_name parameter and the security_groups parameter be specified.
         default: {}
+      aws_configure:
+        description: >
+          A dictionary of values to pass to authenticate with the AWS API.
+        default: {}
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
@@ -65,11 +69,14 @@ node_types:
           resource, you should provide the name or the ID of the resource in Amazon AWS.
         type: string
         default: ''
+      aws_configure:
+        description: >
+          A dictionary of values to pass to authenticate with the AWS API.
+        default: {}
     interfaces:
       cloudify.interfaces.lifecycle:
         create: aws.ec2.elasticip.allocate
-        delete:
-          implementation: aws.ec2.elasticip.release
+        delete: aws.ec2.elasticip.release
       cloudify.interfaces.validation:
         creation: aws.ec2.elasticip.creation_validation
 
@@ -96,14 +103,16 @@ node_types:
       rules:
         default: []
         description: >
-          A list of rules, which are each a dictionary of key value pairs with the required
-          keys: ip_protocol (string), from_port (integer), to_port (integer), and 
-          cidr_ip (string).
+          You need to pass in either src_group_id (security group ID) OR cidr_ip,
+          and then the following three: ip_protocol, from_port and to_port.
+      aws_configure:
+        description: >
+          A dictionary of values to pass to authenticate with the AWS API.
+        default: {}
     interfaces:
       cloudify.interfaces.lifecycle:
         create: aws.ec2.securitygroup.create
-        delete: 
-          implementation: aws.ec2.securitygroup.delete
+        delete: aws.ec2.securitygroup.delete
       cloudify.interfaces.validation:
         creation: aws.ec2.securitygroup.creation_validation
 
@@ -128,6 +137,10 @@ node_types:
           this will be saved on the manager.
         type: string
         default: ''
+      aws_configure:
+        description: >
+          A dictionary of values to pass to authenticate with the AWS API.
+        default: {}
     interfaces:
       cloudify.interfaces.lifecycle:
         create: aws.ec2.keypair.create

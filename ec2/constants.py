@@ -14,6 +14,8 @@
 #    * limitations under the License.
 
 EXTERNAL_RESOURCE_ID = 'aws_resource_id'
+NODE_INSTANCE = 'node-instance'
+RELATIONSHIP_INSTANCE = 'relationship-instance'
 
 # instance module constants
 INSTANCE_STATE_STARTED = 16
