@@ -520,13 +520,11 @@ class EC2SecurityGroupUnitTests(EC2LocalTestUtils):
         output = securitygroup._delete_external_securitygroup()
         self.assertEqual(False, output)
 
-    def test_authorize_by_id(self):
+    def test_create_group_rules_ruleset(self):
 
-        client = self._get_ec2_client()
-        group = client.create_security_group(
-            'test_authorize_by_id',
-            'some description')
-        rules = [
+        ctx = self.mock_cloudify_context(
+            'test_create_group_rules_ruleset')
+        ctx.node.properties['rules'] = [
             {
                 'ip_protocol': 'tcp',
                 'from_port': 22,
@@ -534,9 +532,14 @@ class EC2SecurityGroupUnitTests(EC2LocalTestUtils):
                 'cidr_ip': '0.0.0.0/0'
             }
         ]
-        securitygroup._authorize_by_id(
-            client, group.id, rules
-        )
+
+        current_ctx.set(ctx=ctx)
+
+        client = self._get_ec2_client()
+        group = client.create_security_group(
+            'test_create_group_rules',
+            'some description')
+        securitygroup._create_group_rules(group)
         groups_from_test = \
             client.get_all_security_groups(groupnames=[group.name])
         self.assertEqual(group.id, groups_from_test[0].id)
@@ -546,36 +549,14 @@ class EC2SecurityGroupUnitTests(EC2LocalTestUtils):
         )
         group.delete()
 
-    def test_authorize_by_id_bad_id(self):
-
-        client = self._get_ec2_client()
-        rules = [
-            {
-                'ip_protocol': 'tcp',
-                'from_port': 22,
-                'to_port': 22,
-                'cidr_ip': '0.0.0.0/0'
-            }
-        ]
-
-        ex = self.assertRaises(
-            NonRecoverableError,
-            securitygroup._authorize_by_id,
-            client, 'sg-73cd3f1e', rules
-        )
-        self.assertIn('InvalidGroup.NotFound', ex.message)
-
     def test_delete_security_group_bad_group(self):
 
-        client = self._get_ec2_client()
-
         ex = self.assertRaises(
             NonRecoverableError,
-            securitygroup._delete_security_group,
-            'sg-73cd3f1e', client
-        )
+            securitygroup._delete_security_group, 'sg-73cd3f1e')
 
-        self.assertIn('InvalidGroup.NotFound', ex.message)
+        self.assertIn(
+            'because the group does not exist in the account', ex.message)
 
 
 class EC2KeyPairUnitTests(EC2LocalTestUtils):

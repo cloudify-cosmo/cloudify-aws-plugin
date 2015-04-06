@@ -77,7 +77,7 @@ def create(**_):
             boto.exception.BotoServerError) as e:
         raise NonRecoverableError('{0}'.format(str(e)))
 
-    _authorize_by_id(ec2_client, group_object.id, ctx.node.properties['rules'])
+    _create_group_rules(group_object)
     utils.set_external_resource_id(
         group_object.id, ctx.instance, external=False)
 
@@ -87,8 +87,6 @@ def delete(**_):
     """ Deletes an EC2 security group.
     """
 
-    ec2_client = connection.EC2ConnectionClient().client()
-
     group_id = utils.get_external_resource_id_or_raise(
         'delete security group', ctx.instance)
 
@@ -97,7 +95,7 @@ def delete(**_):
 
     ctx.logger.debug('Deleting Security Group: {0}'.format(group_id))
 
-    _delete_security_group(group_id, ec2_client)
+    _delete_security_group(group_id)
 
     utils.unassign_runtime_property_from_resource(
         constants.EXTERNAL_RESOURCE_ID, ctx.instance)
@@ -107,40 +105,63 @@ def delete(**_):
         .format(group_id))
 
 
-def _delete_security_group(group_id, ec2_client):
+def _delete_security_group(group_id):
     """Tries to delete a Security group
     """
 
+    group_to_delete = _get_security_group_from_id(group_id)
+
+    if not group_to_delete:
+        raise NonRecoverableError(
+            'Unable to delete security group {0}, because the group '
+            'does not exist in the account'.format(group_id))
+
     try:
-        ec2_client.delete_security_group(group_id=group_id)
+        group_to_delete.delete()
     except (boto.exception.EC2ResponseError,
             boto.exception.BotoServerError) as e:
         raise NonRecoverableError('{0}'.format(str(e)))
 
 
-def _authorize_by_id(ec2_client, group_id, rules):
-    """ For each rule listed in the blueprint,
-        this will add the rule to the group with the given id.
-
-    :param ec2_client: The EC2 Client object.
-    :param group: The group id that you want to add rules to.
-    :param rules: A list of rules.
-    :raises NonRecoverableError: if Boto or EC2 response is an error.
+def _create_group_rules(group_object):
+    """For each rule listed in the blueprint,
+    this will add the rule to the group with the given id.
+    :param group: The group object that you want to add rules to.
+    :raises NonRecoverableError: src_group_id OR ip_protocol,
+    from_port, to_port, and cidr_ip are not provided.
     """
 
-    for r in rules:
+    for rule in ctx.node.properties['rules']:
+
+        if 'src_group_id' in rule:
+
+            if 'cidr_ip' in rule:
+                raise NonRecoverableError(
+                    'You need to pass either src_group_id OR cidr_ip.')
+
+            src_group_object = \
+                _get_security_group_from_id(
+                    rule['src_group_id'])
+
+            if not src_group_object:
+                raise NonRecoverableError(
+                    'Supplied src_group_id {0} doesn ot exist in '
+                    'the given account.'.format(rule['src_group_id']))
+
+            del rule['src_group_id']
+            rule['src_group'] = src_group_object
+
+        elif 'cidr_ip' not in rule:
+            raise NonRecoverableError(
+                'You need to pass either src_group_id OR cidr_ip.')
+
         try:
-            ec2_client.authorize_security_group(
-                group_id=group_id,
-                ip_protocol=r['ip_protocol'],
-                from_port=r['from_port'],
-                to_port=r['to_port'],
-                cidr_ip=r['cidr_ip'])
+            group_object.authorize(**rule)
         except (boto.exception.EC2ResponseError,
                 boto.exception.BotoServerError) as e:
             raise NonRecoverableError('{0}'.format(str(e)))
         except Exception as e:
-            _delete_security_group(group_id, ec2_client)
+            _delete_security_group(group_object.id)
             raise
 
 
