@@ -14,7 +14,12 @@
 #    * limitations under the License.
 
 # Third-party Imports
+from boto.ec2 import get_region
 from boto.ec2 import EC2Connection
+
+# Cloudify Imports
+from ec2 import utils
+from ec2 import constants
 
 
 class EC2ConnectionClient():
@@ -25,7 +30,21 @@ class EC2ConnectionClient():
         self.connection = None
 
     def client(self):
-    	"""Represents the EC2Connection Client
+        """Represents the EC2Connection Client
         """
 
-        return EC2Connection()
+        aws_config_property = self._get_aws_config_property()
+
+        if not aws_config_property:
+            return EC2Connection()
+        elif 'region' in aws_config_property:
+            region_object = get_region(aws_config_property['region'])
+            aws_config = aws_config_property.copy()
+            aws_config['region'] = region_object
+
+        return EC2Connection(**aws_config)
+
+    def _get_aws_config_property(self):
+        node_properties = \
+            utils.get_instance_or_source_node_properties()
+        return node_properties[constants.AWS_CONFIG_PROPERTY]

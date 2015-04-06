@@ -175,3 +175,19 @@ def get_provider_variables():
     }
 
     return provider_context
+
+
+def get_instance_or_source_node_properties():
+
+        if ctx.type == constants.RELATIONSHIP_INSTANCE:
+            return ctx.source.node.properties
+        elif ctx.type == constants.NODE_INSTANCE:
+            return ctx.node.properties
+        else:
+            raise NonRecoverableError(
+                'Invalid use of ctx. '
+                'get_instance_or_source_node_properties '
+                'called in a context that is not {0} or {1}.'
+                .format(
+                    constants.RELATIONSHIP_INSTANCE,
+                    constants.NODE_INSTANCE))

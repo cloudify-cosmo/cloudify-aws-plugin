@@ -17,14 +17,29 @@
 import testtools
 
 # Third Party Imports
-from boto.ec2 import EC2Connection
 from moto import mock_ec2
+from boto.ec2 import EC2Connection
 
 # Cloudify Imports is imported and used in operations
+from ec2 import constants
 from ec2 import connection
+from cloudify.state import current_ctx
+from cloudify.mocks import MockCloudifyContext
 
 
 class TestConnection(testtools.TestCase):
+
+    def get_mock_context(self, test_name):
+        """ Creates a mock context."""
+
+        return MockCloudifyContext(
+            node_id=test_name,
+            properties={
+                constants.AWS_CONFIG_PROPERTY: {
+                    'region': 'dark-side-of-the-moon'
+                }
+            }
+        )
 
     @mock_ec2
     def test_connect(self):
@@ -32,7 +47,19 @@ class TestConnection(testtools.TestCase):
         in returned by the connect function
         """
 
+        ctx = self.get_mock_context('test_connect')
+        current_ctx.set(ctx=ctx)
+
         ec2_client = connection.EC2ConnectionClient().client()
         self.assertTrue(type(ec2_client), EC2Connection)
         self.assertEqual(ec2_client.DefaultRegionEndpoint,
                          'ec2.us-east-1.amazonaws.com')
+
+    @mock_ec2
+    def test_connect_bad_region(self):
+        ctx = self.get_mock_context('test_connect_bad_region')
+        current_ctx.set(ctx=ctx)
+        ec2_client = connection.EC2ConnectionClient().client()
+        self.assertEqual(
+            ec2_client.DefaultRegionName,
+            ec2_client.region.name)

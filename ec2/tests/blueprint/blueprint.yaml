@@ -53,6 +53,7 @@ node_templates:
         security_group_ids:
           - sg-73cd3f1e
         key_name: { get_input: agent_keypair_name }
+      aws_config: {}
     relationships:
       - target: agent_ip
         type: cloudify.aws.relationships.instance_connected_to_elastic_ip
@@ -79,6 +80,7 @@ node_templates:
           from_port: 5985
           to_port: 5985
           cidr_ip: 0.0.0.0/32
+      aws_config: {}
 
   agent_keypair:
     type: cloudify.aws.nodes.KeyPair
@@ -86,6 +88,7 @@ node_templates:
       use_external_resource: { get_input: use_existing_agent_keypair }
       resource_id: { get_input: agent_keypair_name }
       private_key_path: { get_input: path_to_key_file }
+      aws_config: {}
 
 plugins:
     ec2:
