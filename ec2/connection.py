@@ -41,6 +41,8 @@ class EC2ConnectionClient():
             region_object = get_region(aws_config_property['region'])
             aws_config = aws_config_property.copy()
             aws_config['region'] = region_object
+        else:
+            aws_config = aws_config_property.copy()
 
         return EC2Connection(**aws_config)
 
