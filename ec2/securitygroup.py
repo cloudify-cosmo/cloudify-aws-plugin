@@ -138,12 +138,20 @@ def _create_group_rules(group_object):
             if 'cidr_ip' in rule:
                 raise NonRecoverableError(
                     'You need to pass either src_group_id OR cidr_ip.')
+
             src_group_object = \
                 _get_security_group_from_id(
                     rule['src_group_id'])
+
+            if not src_group_object:
+                raise NonRecoverableError(
+                    'Supplied src_group_id {0} doesn ot exist in '
+                    'the given account.'.format(rule['src_group_id']))
+
             del rule['src_group_id']
-            rule.update({'src_group': src_group_object})
-        elif 'cidr_ip' not in rule and 'src_group_id' not in rule:
+            rule['src_group'] = src_group_object
+
+        elif 'cidr_ip' not in rule:
             raise NonRecoverableError(
                 'You need to pass either src_group_id OR cidr_ip.')
 
