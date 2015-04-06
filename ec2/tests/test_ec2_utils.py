@@ -20,6 +20,7 @@ from moto import mock_ec2
 
 # Cloudify Imports is imported and used in operations
 from ec2 import utils
+from ec2 import constants
 from cloudify.state import current_ctx
 from cloudify.mocks import MockCloudifyContext
 from cloudify.exceptions import NonRecoverableError
@@ -34,7 +35,7 @@ class TestUtils(testtools.TestCase):
 
         test_node_id = test_name
         test_properties = {
-            'aws_configure': {},
+            constants.AWS_CONFIG_PROPERTY: {},
             'use_external_resource': False,
             'resource_id': '',
             'image_id': TEST_AMI_IMAGE_ID,

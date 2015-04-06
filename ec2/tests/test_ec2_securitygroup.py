@@ -20,6 +20,7 @@ import testtools
 from moto import mock_ec2
 
 # Cloudify Imports is imported and used in operations
+from ec2 import constants
 from ec2 import connection
 from ec2 import securitygroup
 from cloudify.state import current_ctx
@@ -44,7 +45,7 @@ class TestSecurityGroup(testtools.TestCase):
     def get_mock_properties(self):
 
         test_properties = {
-            'aws_configure': {},
+            constants.AWS_CONFIG_PROPERTY: {},
             'use_external_resource': False,
             'resource_id': 'test_security_group',
             'description': 'This is a test.',

@@ -17,10 +17,11 @@
 import testtools
 
 # Third Party Imports
-from boto.ec2 import EC2Connection
 from moto import mock_ec2
+from boto.ec2 import EC2Connection
 
 # Cloudify Imports is imported and used in operations
+from ec2 import constants
 from ec2 import connection
 from cloudify.state import current_ctx
 from cloudify.mocks import MockCloudifyContext
@@ -34,7 +35,7 @@ class TestConnection(testtools.TestCase):
         return MockCloudifyContext(
             node_id=test_name,
             properties={
-                'aws_configure': {
+                constants.AWS_CONFIG_PROPERTY: {
                     'region': 'dark-side-of-the-moon'
                 }
             }

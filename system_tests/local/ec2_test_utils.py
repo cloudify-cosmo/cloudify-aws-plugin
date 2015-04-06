@@ -109,7 +109,7 @@ class EC2LocalTestUtils(testtools.TestCase):
 
         test_node_id = test_name
         test_properties = {
-            'aws_configure': {},
+            constants.AWS_CONFIG_PROPERTY: {},
             'use_external_resource': external_vm,
             'resource_id': resource_id_vm,
             'image_id': TEST_AMI,
@@ -141,7 +141,7 @@ class EC2LocalTestUtils(testtools.TestCase):
         instance_context = MockContext({
             'node': MockContext({
                 'properties': {
-                    'aws_configure': {},
+                    constants.AWS_CONFIG_PROPERTY: {},
                     'use_external_resource': False,
                     'resource_id': ''
                 }
@@ -157,7 +157,7 @@ class EC2LocalTestUtils(testtools.TestCase):
         elasticip_context = MockContext({
             'node': MockContext({
                 'properties': {
-                    'aws_configure': {},
+                    constants.AWS_CONFIG_PROPERTY: {},
                     'use_external_resource': False,
                     'resource_id': '',
                 }

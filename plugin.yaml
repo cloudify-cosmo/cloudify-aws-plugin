@@ -37,7 +37,7 @@ node_types:
           although this field is listed as optional. A non-trivial use case requires
           that both the key_name parameter and the security_groups parameter be specified.
         default: {}
-      aws_configure:
+      aws_config:
         description: >
           A dictionary of values to pass to authenticate with the AWS API.
         default: {}
@@ -69,7 +69,7 @@ node_types:
           resource, you should provide the name or the ID of the resource in Amazon AWS.
         type: string
         default: ''
-      aws_configure:
+      aws_config:
         description: >
           A dictionary of values to pass to authenticate with the AWS API.
         default: {}
@@ -105,7 +105,7 @@ node_types:
         description: >
           You need to pass in either src_group_id (security group ID) OR cidr_ip,
           and then the following three: ip_protocol, from_port and to_port.
-      aws_configure:
+      aws_config:
         description: >
           A dictionary of values to pass to authenticate with the AWS API.
         default: {}
@@ -137,7 +137,7 @@ node_types:
           this will be saved on the manager.
         type: string
         default: ''
-      aws_configure:
+      aws_config:
         description: >
           A dictionary of values to pass to authenticate with the AWS API.
         default: {}

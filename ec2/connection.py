@@ -18,9 +18,8 @@ from boto.ec2 import get_region
 from boto.ec2 import EC2Connection
 
 # Cloudify Imports
+from ec2 import utils
 from ec2 import constants
-from cloudify import ctx
-from cloudify.exceptions import NonRecoverableError
 
 
 class EC2ConnectionClient():
@@ -34,27 +33,18 @@ class EC2ConnectionClient():
         """Represents the EC2Connection Client
         """
 
-        node_properties = self._get_node_type()
+        aws_config_property = self._get_aws_config_property()
 
-        if not node_properties['aws_configure']:
+        if not aws_config_property:
             return EC2Connection()
-        elif 'region' in node_properties['aws_configure']:
-            region = get_region(node_properties['aws_configure']['region'])
-            aws_configure = node_properties['aws_configure'].copy()
-            aws_configure.update({'region': region})
+        elif 'region' in aws_config_property:
+            region_object = get_region(aws_config_property['region'])
+            aws_config = aws_config_property.copy()
+            aws_config['region'] = region_object
 
-        return EC2Connection(**aws_configure)
+        return EC2Connection(**aws_config)
 
-    def _get_node_type(self):
-
-        if ctx.type == constants.RELATIONSHIP_INSTANCE:
-            return ctx.source.node.properties
-        elif ctx.type == constants.NODE_INSTANCE:
-            return ctx.node.properties
-        else:
-            raise NonRecoverableError(
-                'Context is neither {0} nor {1}. '
-                'Cannot create EC2ConnectionClient.'
-                .format(
-                    constants.RELATIONSHIP_INSTANCE,
-                    constants.NODE_INSTANCE))
+    def _get_aws_config_property(self):
+        node_properties = \
+            utils.get_instance_or_source_node_properties()
+        return node_properties[constants.AWS_CONFIG_PROPERTY]

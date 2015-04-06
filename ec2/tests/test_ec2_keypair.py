@@ -21,6 +21,7 @@ import os
 from moto import mock_ec2
 
 # Cloudify Imports is imported and used in operations
+from ec2 import constants
 from ec2 import connection
 from ec2 import keypair
 from cloudify.state import current_ctx
@@ -43,7 +44,7 @@ class TestKeyPair(testtools.TestCase):
 
         test_node_id = test_name
         test_properties = {
-            'aws_configure': {},
+            constants.AWS_CONFIG_PROPERTY: {},
             'use_external_resource': False,
             'resource_id': '{0}'.format(test_name),
             'private_key_path': '~/.ssh/{0}.pem'.format(test_name)
