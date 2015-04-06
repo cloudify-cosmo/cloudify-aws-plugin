@@ -13,9 +13,6 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
-EXTERNAL_RESOURCE_ID = 'aws_resource_id'
-NODE_INSTANCE = 'node-instance'
-RELATIONSHIP_INSTANCE = 'relationship-instance'
 
 # instance module constants
 INSTANCE_STATE_STARTED = 16
@@ -53,3 +50,6 @@ KEYPAIR_REQUIRED_PROPERTIES = ['private_key_path']
 # config
 AWS_CONFIG_PATH_ENV_VAR = 'AWS_CONFIG_PATH'
 AWS_DEFAULT_CONFIG_PATH = '~/aws_config.json'
+EXTERNAL_RESOURCE_ID = 'aws_resource_id'
+NODE_INSTANCE = 'node-instance'
+RELATIONSHIP_INSTANCE = 'relationship-instance'
