@@ -22,7 +22,7 @@ EXTERNAL_RESOURCE_ID = 'aws_resource_id'
 class EC2NodeCellarTest(nodecellar_test.NodecellarAppTest):
 
     def test_ec2_nodecellar(self):
-        self._test_nodecellar_impl('ec2-blueprint.yaml')
+        self._test_nodecellar_impl('aws-blueprint.yaml')
 
     def get_inputs(self):
 
