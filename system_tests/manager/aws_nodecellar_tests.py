@@ -19,9 +19,9 @@ from cosmo_tester.test_suites.test_blueprints import nodecellar_test
 EXTERNAL_RESOURCE_ID = 'aws_resource_id'
 
 
-class EC2NodeCellarTest(nodecellar_test.NodecellarAppTest):
+class AWSNodeCellarTest(nodecellar_test.NodecellarAppTest):
 
-    def test_ec2_nodecellar(self):
+    def test_aws_nodecellar(self):
         self._test_nodecellar_impl('aws-blueprint.yaml')
 
     def get_inputs(self):
