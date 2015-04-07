@@ -49,8 +49,7 @@ KEYPAIR_REQUIRED_PROPERTIES = ['private_key_path']
 
 # config
 AWS_CONFIG_PROPERTY = 'aws_config'
-AWS_CONFIG_PATH_ENV_VAR = 'AWS_CONFIG_PATH'
-AWS_DEFAULT_CONFIG_PATH = '~/aws_config.json'
+AWS_DEFAULT_CONFIG_PATH = '~/.aws/credentials'
 EXTERNAL_RESOURCE_ID = 'aws_resource_id'
 NODE_INSTANCE = 'node-instance'
 RELATIONSHIP_INSTANCE = 'relationship-instance'
