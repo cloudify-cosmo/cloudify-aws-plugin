@@ -56,14 +56,3 @@ class TestConfigure(testtools.TestCase):
             configure.BotoConfig().get_config(
                 path=temp_config, profile_name='mock')
         self.assertEqual(configure_file, mock_config)
-
-    @mock_ec2
-    def test_configure_file_contents(self):
-
-        configure_file = configure.BotoConfig().get_temp_file()
-
-        self.get_file_as_string(configure_file)
-
-    def get_file_as_string(self, file_path):
-        with open(file_path, 'r') as configure_file:
-            return configure_file.read()
