@@ -16,6 +16,8 @@
 # Built-in Imports
 import testtools
 import tempfile
+from StringIO import StringIO
+from ConfigParser import ConfigParser
 
 # Third Party Imports
 from moto import mock_ec2
@@ -27,12 +29,19 @@ from ec2 import configure
 class TestConfigure(testtools.TestCase):
 
     def mock_profile_string(self):
-
-        return \
-            '[mock]\n' \
-            'aws_access_key_id = AKIAZ0ZZZZ0ZZZOZZZ0Z\n' \
-            'aws_secret_access_key = ' \
-            'zzZ/Z0Zzz00ZZzzZzZZZzzZ0ZZ/z+ZzZZZZZ+ZzZ'
+        creds = ConfigParser()
+        creds.add_section('mock')
+        creds.set(
+            'mock',
+            'aws_access_key_id',
+            'AKIAZ0ZZZZ0ZZZOZZZ0Z')
+        creds.set(
+            'mock',
+            'aws_secret_access_key',
+            'zzZ/Z0Zzz00ZZzzZzZZZzzZ0ZZ/z+ZzZZZZZ+ZzZ')
+        string = StringIO()
+        creds.write(string)
+        return string.getvalue()
 
     @mock_ec2
     def test_configure_provide_path(self):
