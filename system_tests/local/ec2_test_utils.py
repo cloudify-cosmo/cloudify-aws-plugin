@@ -21,6 +21,7 @@ import testtools
 from boto.ec2 import EC2Connection
 
 # Cloudify Imports
+from ec2 import constants
 from cloudify.workflows import local
 from cloudify.mocks import MockContext
 from cloudify.mocks import MockCloudifyContext
