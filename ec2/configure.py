@@ -51,11 +51,13 @@ class BotoConfig(object):
         return temp_config
 
     def create_creds_config(self, profile_name,
-                            aws_access_key_id, aws_secret_access_key):
+                            aws_access_key_id, aws_secret_access_key, region=None):
         creds = ConfigParser()
         creds.add_section(profile_name)
         creds.set(profile_name, 'aws_access_key_id', aws_access_key_id)
         creds.set(profile_name, 'aws_secret_access_key', aws_secret_access_key)
+        if region:
+            creds.set(profile_name, 'region', region)
         return creds
 
     def create_creds_string(self, credentials):
