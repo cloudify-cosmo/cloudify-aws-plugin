@@ -54,7 +54,8 @@ class BotoConfig(object):
                             aws_access_key_id, aws_secret_access_key,
                             profile_name='DEFAULT', region=None):
         creds = ConfigParser()
-        creds.add_section(profile_name)
+        if profile_name not 'DEFAULT':
+            creds.add_section(profile_name)
         creds.set(profile_name, 'aws_access_key_id', aws_access_key_id)
         creds.set(profile_name, 'aws_secret_access_key', aws_secret_access_key)
         if region:
