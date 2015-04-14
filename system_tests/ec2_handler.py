@@ -173,29 +173,10 @@ class EC2Handler(BaseHandler):
 
     def _client_credentials(self):
 
-        if getattr(self, 'aws_access_key_id', None) and \
-                getattr(self, 'aws_secret_access_key', None):
-            return {
-                'aws_access_key_id': self.aws_access_key_id,
-                'aws_secret_access_key': self.aws_secret_access_key
-            }
-        elif 'AWS_ACCESS_KEY_ID' in os.environ and \
-           'AWS_SECRET_ACCESS_KEY' in os.environ:
-            return {
-                'aws_access_key_id': os.environ('AWS_ACCESS_KEY_ID'),
-                'aws_secret_access_key': os.environ('AWS_SECRET_ACCESS_KEY')
-            }
-        elif config.get_value('Credentials', 'aws_access_key_id') and \
-                config.get_value('Credentials', 'aws_secret_access_key'):
-            return {
-                'aws_access_key_id': config.get_value(
-                    'Credentials', 'aws_access_key_id'),
-                'aws_secret_access_key': config.get_value(
-                    'Credentials', 'aws_secret_access_key')
-            }
-
-        raise RuntimeError(
-            'Unable to initialize EC2 (AWS) client.')
+        return {
+            'aws_access_key_id': self.env.aws_access_key_id,
+            'aws_secret_access_key': self.env.aws_secret_access_key
+        }
 
     def _security_groups(self, ec2_client):
         return [(security_group.id, security_group.id)
