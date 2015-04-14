@@ -28,7 +28,7 @@ class BotoConfig(object):
     """Functions that provide an interface into a boto or aws config.
     """
 
-    def get_config(self, path=None, profile_name='Credentials'):
+    def get_config(self, path=None, profile_name):
         """Gets a specifice configuration from a path to a aws or boto configuration
         and profile_name
 
@@ -92,7 +92,7 @@ class BotoConfig(object):
                                         aws_secret_access_key,
                                         profile_name=profile_name)
 
-    def _get_aws_credentials_name(self, credentials='Credentials'):
+    def _get_aws_credentials_name(self, credentials):
         """Gets the Profile Name.
 
         :param credentials: profile_name in an aws or boto configuration file
@@ -101,7 +101,7 @@ class BotoConfig(object):
 
         return config.get_value(credentials, '__name__')
 
-    def _get_aws_access_key_id(self, credentials='Credentials'):
+    def _get_aws_access_key_id(self, credentials):
         """Gets the AWS Access Key.
 
         :param credentials: profile_name in an aws or boto configuration file
@@ -110,7 +110,7 @@ class BotoConfig(object):
 
         return config.get(credentials, 'aws_access_key_id')
 
-    def _get_aws_secret_access_key(self, credentials='Credentials'):
+    def _get_aws_secret_access_key(self, credentials):
         """Gets the AWS Secret Access Key.
 
         :param credentials: profile_name in an aws or boto configuration file
