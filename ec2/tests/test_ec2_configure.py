@@ -32,7 +32,7 @@ class TestConfigure(testtools.TestCase):
             '[mock]\n' \
             'aws_access_key_id = AKIAZ0ZZZZ0ZZZOZZZ0Z\n' \
             'aws_secret_access_key = ' \
-            'zzZ/Z0Zzz00ZZzzZzZZZzzZ0ZZ/z+ZzZZZZZ+ZzZ'
+            'zzZ/Z0Zzz00ZZzzZzZZZzzZ0ZZ/z+ZzZZZZZ+ZzZ\n'
 
     @mock_ec2
     def test_configure_provide_path(self):
