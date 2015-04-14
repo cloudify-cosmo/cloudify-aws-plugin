@@ -56,11 +56,6 @@ class EC2CleanupContext(BaseHandler.CleanupContext):
 
 class CloudifyEC2InputsConfigReader(BaseCloudifyInputsConfigReader):
 
-    def __init__(self, cloudify_config, manager_blueprint_path, **kwargs):
-        super(CloudifyEC2InputsConfigReader, self).__init__(
-            cloudify_config, manager_blueprint_path=manager_blueprint_path,
-            **kwargs)
-
     @property
     def aws_access_key_id(self):
         return self.config['aws_access_key_id']
