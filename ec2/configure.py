@@ -88,9 +88,9 @@ class BotoConfig(object):
         aws_secret_access_key = \
             self._get_aws_secret_access_key(credentials=profile_name)
 
-        return self.create_creds_config(profile_name,
-                                        aws_access_key_id,
-                                        aws_secret_access_key)
+        return self.create_creds_config(aws_access_key_id,
+                                        aws_secret_access_key,
+                                        profile_name=profile_name)
 
     def _get_aws_credentials_name(self, credentials='Credentials'):
         """Gets the Profile Name.
