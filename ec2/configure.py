@@ -24,6 +24,7 @@ from boto import config
 # Cloudify Imports
 from ec2 import constants
 
+
 class BotoConfig(object):
     """Functions that provide an interface into a boto or aws config.
     """
@@ -67,7 +68,6 @@ class BotoConfig(object):
         credentials_string = StringIO()
         credentials.write(credentials_string)
         return credentials_string
-
 
     def _load_credentials_from_path(self, path, profile_name):
         """Gets the Profile Name AWS Access Key and AWS Secret Access Key
