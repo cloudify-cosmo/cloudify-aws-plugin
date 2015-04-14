@@ -1,0 +1,97 @@
+# DSL version, should appear in the main blueprint.yaml
+# and may appear in other imports. In such case, the versions must match
+tosca_definitions_version: cloudify_dsl_1_1
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/3.2m8/types.yaml
+  - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-aws-plugin/master/plugin.yaml
+
+inputs:
+
+  image:
+    type: string
+    default: ''
+
+  size:
+    type: string
+    default: ''
+
+  key_path:
+    type: string
+
+  external_ip:
+    type: boolean
+
+  external_sg:
+    type: boolean
+
+  external_kp:
+    type: boolean
+
+  external_vm:
+    type: boolean
+
+  resource_id_ip:
+    type: string
+
+  resource_id_sg:
+    type: string
+
+  resource_id_kp:
+    type: string
+
+  resource_id_vm:
+    type: string
+
+node_templates:
+
+  pair_a_connected_elastic_ip:
+    type: cloudify.aws.nodes.ElasticIP
+    properties:
+      resource_id: { get_input: resource_id_ip }
+      use_external_resource: { get_input: external_ip }
+      aws_config: {}
+
+  pair_a_connected_instance:
+    type: cloudify.aws.nodes.Instance
+    properties:
+      install_agent: false
+      resource_id: { get_input: resource_id_vm }
+      use_external_resource: { get_input: external_vm }
+      image_id: { get_input: image }
+      instance_type: { get_input: size }
+      aws_config: {}
+    relationships:
+      - type: cloudify.aws.relationships.instance_connected_to_elastic_ip
+        target: pair_a_connected_elastic_ip
+
+  pair_b_connected_security_group:
+    type: cloudify.aws.nodes.SecurityGroup
+    properties:
+      resource_id: { get_input: resource_id_sg }
+      use_external_resource: { get_input: external_sg }
+      description: Pair B Security Group
+      rules:
+        - ip_protocol: tcp
+          from_port: 22
+          to_port: 22
+          cidr_ip: 0.0.0.0/0
+      aws_config: {}
+
+  pair_b_connected_instance:
+    type: cloudify.aws.nodes.Instance
+    properties:
+      install_agent: false
+      resource_id: { get_input: resource_id_vm }
+      use_external_resource: { get_input: external_vm }
+      image_id: { get_input: image }
+      instance_type: { get_input: size }
+      aws_config: {}
+    relationships:
+      - type: cloudify.aws.relationships.instance_connected_to_security_group
+        target: pair_b_connected_security_group
+
+plugins:
+    ec2:
+        executor: central_deployment_agent
+        install: false
