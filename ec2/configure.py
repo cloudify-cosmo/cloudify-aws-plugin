@@ -15,6 +15,8 @@
 
 # Built-in Imports:
 import tempfile
+from StringIO import StringIO
+from ConfigParser import ConfigParser
 
 # Third-party Imports
 from boto import config
@@ -25,13 +27,6 @@ from boto import config
 class BotoConfig(object):
     """Functions that provide an interface into a boto or aws config.
     """
-
-    def get_temp_file(self):
-        temp_config = tempfile.mktemp()
-        config = self.get_config()
-        with open(temp_config, 'w') as temp_config_file:
-            temp_config_file.write(config)
-        return temp_config
 
     def get_config(self, path=None, profile_name='Credentials'):
         """Gets a specifice configuration from a path to a aws or boto configuration
@@ -45,12 +40,56 @@ class BotoConfig(object):
         """
 
         credentials = self._load_credentials_from_path(path, profile_name)
-        return '[{0}]\n' \
-               'aws_access_key_id = {1}\n' \
-               'aws_secret_access_key = {2}'.format(
-                   credentials['profile_name'],
-                   credentials['aws_access_key_id'],
-                   credentials['aws_secret_access_key'])
+        config = self.create_creds_string(credentials)
+        return config.getvalue()
+
+    def get_temp_file(self):
+        temp_config = tempfile.mktemp()
+        config = self.get_config()
+        with open(temp_config, 'w') as temp_config_file:
+            temp_config_file.write(config)
+        return temp_config
+
+    def create_creds_config(self, profile_name,
+                            aws_access_key_id, aws_secret_access_key,
+                            region=None):
+        creds = ConfigParser()
+        creds.add_section(profile_name)
+        creds.set(profile_name, 'aws_access_key_id', aws_access_key_id)
+        creds.set(profile_name, 'aws_secret_access_key', aws_secret_access_key)
+        if region:
+            creds.set(profile_name, 'region', region)
+        return creds
+
+    def create_creds_string(self, credentials):
+        credentials_string = StringIO()
+        credentials.write(credentials_string)
+        return credentials_string
+
+    def _load_credentials_from_path(self, path, profile_name):
+        """Gets the Profile Name AWS Access Key and AWS Secret Access Key
+        for a specified path to a configuraton file and profile_name.
+
+        :param path: path to a aws or boto configuration file
+        :param profile_name: a aws or boto configuration profile_name in a
+            configuration file
+        :returns dictionary containing profile_name aws_access_key_id
+            aws_secret_access_key
+        """
+
+        if path:
+            config.load_from_path(path)
+
+        profile_name = \
+            self._get_aws_credentials_name(credentials=profile_name)
+        aws_access_key_id = \
+            self._get_aws_access_key_id(credentials=profile_name)
+        aws_secret_access_key = \
+            self._get_aws_secret_access_key(credentials=profile_name)
+
+        return self.create_creds_config(profile_name,
+                                        aws_access_key_id,
+                                        aws_secret_access_key)
 
     def _get_aws_credentials_name(self, credentials='Credentials'):
         """Gets the Profile Name.
@@ -78,26 +117,3 @@ class BotoConfig(object):
         """
 
         return config.get(credentials, 'aws_secret_access_key')
-
-    def _load_credentials_from_path(self, path, profile_name):
-        """Gets the Profile Name AWS Access Key and AWS Secret Access Key
-        for a specified path to a configuraton file and profile_name.
-
-        :param path: path to a aws or boto configuration file
-        :param profile_name: a aws or boto configuration profile_name in a
-            configuration file
-        :returns dictionary containing profile_name aws_access_key_id
-            aws_secret_access_key
-        """
-
-        if path:
-            config.load_from_path(path)
-
-        return {
-            'profile_name': self._get_aws_credentials_name(
-                credentials=profile_name),
-            'aws_access_key_id': self._get_aws_access_key_id(
-                credentials=profile_name),
-            'aws_secret_access_key': self._get_aws_secret_access_key(
-                credentials=profile_name)
-        }
