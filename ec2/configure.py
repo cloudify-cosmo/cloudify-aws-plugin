@@ -22,13 +22,13 @@ from ConfigParser import ConfigParser
 from boto import config
 
 # Cloudify Imports
-
+from ec2 import constants
 
 class BotoConfig(object):
     """Functions that provide an interface into a boto or aws config.
     """
 
-    def get_config(self, path=None, profile_name):
+    def get_config(self, path=None, profile_name=constants.DEFAULT_PROFILE_NAME):
         """Gets a specifice configuration from a path to a aws or boto configuration
         and profile_name
 
