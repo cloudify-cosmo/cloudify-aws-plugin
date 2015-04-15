@@ -198,5 +198,6 @@ class EC2LocalTestUtils(TestCase):
 
     def _create_instance(self, ec2_client):
         new_reservation = ec2_client.run_instances(
-            image_id=self.env.ubuntu_trusty_image_id, instance_type=self.env.medium_instance_type)
+            image_id=self.env.ubuntu_trusty_image_id,
+            instance_type=self.env.medium_instance_type)
         return new_reservation.instances[0]

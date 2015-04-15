@@ -28,7 +28,7 @@ from cloudify.state import current_ctx
 from cloudify.exceptions import NonRecoverableError
 from ec2_test_utils import (
     EC2LocalTestUtils,
-    EXTERNAL_RESOURCE_ID, INSTANCE_TO_IP, INSTANCE_TO_SG,
+    EXTERNAL_RESOURCE_ID,
     SIMPLE_IP, SIMPLE_SG, SIMPLE_KP, SIMPLE_VM,
     PAIR_A_IP, PAIR_A_VM,
     PAIR_B_SG, PAIR_B_VM
@@ -37,7 +37,12 @@ from ec2_test_utils import (
 
 class TestWorkflowClean(EC2LocalTestUtils):
 
+    def tearDown(self):
+        super(TestWorkflowClean, self).tearDown()
+        self.localenv.execute('uninstall', task_retries=10)
+
     def test_simple_resources(self):
+        client = self._get_ec2_client()
 
         test_name = 'test_simple_resources'
 
@@ -55,30 +60,43 @@ class TestWorkflowClean(EC2LocalTestUtils):
             self.assertIn(EXTERNAL_RESOURCE_ID,
                           node_instance.runtime_properties)
 
-        # Test assertions for simple nodes
-        self.assertIsNotNone(
-            self._get_instance_node_id(
-                SIMPLE_IP, self.localenv.storage))
+        elastic_ip_node = \
+            self._get_instance_node(
+                SIMPLE_IP, self.localenv.storage)
+        elastic_ip_address = \
+            elastic_ip_node.runtime_properties[EXTERNAL_RESOURCE_ID]
+        elastic_ip_object_list = \
+            client.get_all_addresses(addresses=elastic_ip_address)
+        self.assertEqual(1, len(elastic_ip_object_list))
 
-        self.assertIsNotNone(
-            self._get_instance_node_id(
-                SIMPLE_SG, self.localenv.storage))
+        security_group_node = \
+            self._get_instance_node(SIMPLE_SG, self.localenv.storage)
+        security_group_id = \
+            security_group_node.runtime_properties[EXTERNAL_RESOURCE_ID]
+        security_group_object_list = \
+            client.get_all_security_groups(group_ids=security_group_id)
+        self.assertEqual(1, len(security_group_object_list))
 
-        self.assertIsNotNone(
-            self._get_instance_node_id(
-                SIMPLE_KP, self.localenv.storage))
+        key_pair_node = \
+            self._get_instance_node(SIMPLE_KP, self.localenv.storage)
+        key_pair_name = \
+            key_pair_node.runtime_properties[EXTERNAL_RESOURCE_ID]
+        key_pair_object_list = \
+            client.get_all_key_pairs(keynames=key_pair_name)
+        self.assertEqual(1, len(key_pair_object_list))
 
-        self.assertIsNotNone(
-            os.path.exists(
-                inputs['key_path']))
-
-        self.assertIsNotNone(
-            self._get_instance_node_id(
-                SIMPLE_VM, self.localenv.storage))
-
-        self.localenv.execute('uninstall', task_retries=10)
+        instance_node = \
+            self._get_instance_node(SIMPLE_VM, self.localenv.storage)
+        instance_id = \
+            instance_node.runtime_properties[EXTERNAL_RESOURCE_ID]
+        reservation_list = \
+            client.get_all_reservations(instance_ids=instance_id)
+        instance_list = reservation_list[0].instances
+        self.assertEqual(1, len(instance_list))
 
     def test_simple_relationships(self):
+
+        client = self._get_ec2_client()
 
         test_name = 'test_simple_relationships'
 
@@ -92,116 +110,47 @@ class TestWorkflowClean(EC2LocalTestUtils):
         self.localenv.execute('install', task_retries=10)
 
         instance_storage = self._get_instances(self.localenv.storage)
-
         self.assertEquals(4, len(instance_storage))
 
-        # Test assertions for pair a nodes
-        self.assertIsNotNone(
-            self._get_instance_node_id(
-                PAIR_A_IP, self.localenv.storage))
-
-        self.assertIsNotNone(
-            self._get_instance_node_id(
-                PAIR_A_VM, self.localenv.storage))
-
-        pair_a_vm_instance = \
+        instance_node = \
             self._get_instance_node(PAIR_A_VM, self.localenv.storage)
-
-        self.assertEquals(1, len(pair_a_vm_instance.relationships))
-
-        relationship_types = \
-            [relationship['type']
-             for relationship in pair_a_vm_instance.relationships]
-
-        self.assertIn(INSTANCE_TO_IP, relationship_types[0])
-
-        # Test assertions for pair b nodes
-        self.assertIsNotNone(
-            self._get_instance_node_id(
-                PAIR_B_SG, self.localenv.storage))
-
-        self.assertIsNotNone(
-            self._get_instance_node_id(
-                PAIR_B_VM, self.localenv.storage))
-
-        pair_b_vm_instance = \
-            self._get_instance_node(PAIR_B_VM, self.localenv.storage)
-
-        self.assertEquals(1, len(pair_b_vm_instance.relationships))
-
-        relationship_types = \
-            [relationship['type']
-             for relationship in pair_b_vm_instance.relationships]
-
-        self.assertIn(INSTANCE_TO_SG, relationship_types[0])
-
-        self.localenv.execute('uninstall', task_retries=10)
-
-    def test_external_resources(self):
-
-        test_name = 'test_external_resources'
-
-        client = self._get_ec2_client()
-
-        ip = self._create_elastic_ip(client)
-        kp = self._create_key_pair(client, test_name)
-        sg = self._create_security_group(client, test_name, 'test desc')
-        vm = self._create_instance(client)
-
-        inputs = self._get_inputs(
-            test_name=test_name,
-            resource_id_ip=ip.public_ip,
-            resource_id_kp=kp.name,
-            resource_id_sg=sg.id,
-            resource_id_vm=vm.id,
-            external_ip=True,
-            external_kp=True,
-            external_sg=True,
-            external_vm=True)
-
-        self._set_up(inputs=inputs)
-
-        self.localenv.execute('install', task_retries=10)
-
-        instance_storage = self._get_instances(self.localenv.storage)
+        instance_id = \
+            instance_node.runtime_properties[EXTERNAL_RESOURCE_ID]
+        reservation_list = \
+            client.get_all_reservations(instance_ids=instance_id)
+        instance_list_ip = reservation_list[0].instances
 
         self.assertEquals(4, len(instance_storage))
+        elastic_ip_node = \
+            self._get_instance_node(
+                PAIR_A_IP, self.localenv.storage)
+        elastic_ip_address = \
+            elastic_ip_node.runtime_properties[EXTERNAL_RESOURCE_ID]
+        elastic_ip_object_list = \
+            client.get_all_addresses(addresses=elastic_ip_address)
 
-        for node_instance in self._get_instances(self.localenv.storage):
-            self.assertIn(EXTERNAL_RESOURCE_ID,
-                          node_instance.runtime_properties)
+        self.assertEqual(
+            str(elastic_ip_object_list[0].instance_id),
+            str(instance_list_ip[0].id))
 
-        cfy_ip = self._get_instance_node(SIMPLE_IP, self.localenv.storage)
-        self.assertEquals(
-            ip.public_ip,
-            cfy_ip.runtime_properties[EXTERNAL_RESOURCE_ID])
+        instance_node = \
+            self._get_instance_node(PAIR_B_VM, self.localenv.storage)
+        instance_id = \
+            instance_node.runtime_properties[EXTERNAL_RESOURCE_ID]
+        reservation_list = \
+            client.get_all_reservations(instance_ids=instance_id)
+        instance_list = reservation_list[0].instances
 
-        cfy_kp = self._get_instance_node(SIMPLE_KP, self.localenv.storage)
-        self.assertEquals(
-            kp.name,
-            cfy_kp.runtime_properties[EXTERNAL_RESOURCE_ID])
-        key_pair_file = os.path.expanduser(inputs['key_path'])
+        security_group_node = \
+            self._get_instance_node(PAIR_B_SG, self.localenv.storage)
+        security_group_id = \
+            security_group_node.runtime_properties[EXTERNAL_RESOURCE_ID]
+        security_group_object_list = \
+            client.get_all_security_groups(group_ids=security_group_id)
 
-        cfy_sg = self._get_instance_node(SIMPLE_SG, self.localenv.storage)
-        self.assertEquals(
-            sg.id,
-            cfy_sg.runtime_properties[EXTERNAL_RESOURCE_ID])
-
-        cfy_vm = self._get_instance_node(SIMPLE_VM, self.localenv.storage)
-        self.assertEquals(
-            vm.id,
-            cfy_vm.runtime_properties[EXTERNAL_RESOURCE_ID])
-
-        self.assertIsNotNone(os.path.exists(key_pair_file))
-
-        self.localenv.execute('uninstall', task_retries=10)
-
-        ip.release()
-        kp.delete()
-        if os.path.exists(key_pair_file):
-            os.remove(key_pair_file)
-        sg.delete()
-        vm.terminate()
+        self.assertIn(
+            str(security_group_object_list[0].instances()[0].id),
+            str(instance_list[0].id))
 
 
 class EC2UtilsUnitTests(EC2LocalTestUtils):
@@ -919,8 +868,10 @@ class EC2InstanceUnitTests(EC2LocalTestUtils):
             'test_instance_get_image_id')
         current_ctx.set(ctx=ctx)
 
-        image_object = instance._get_image(TEST_AMI)
-        self.assertEqual(image_object.id, TEST_AMI)
+        image_object = instance._get_image(
+            self.env.ubuntu_trusty_image_id)
+        self.assertEqual(image_object.id,
+                         self.env.ubuntu_trusty_image_id)
 
     def test_instance_external_invalid_instance(self):
 
