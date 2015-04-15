@@ -15,7 +15,6 @@
 
 # Built-in Imports
 import os
-import testtools
 
 # Third party Imports
 from boto.ec2 import EC2Connection
@@ -32,8 +31,6 @@ IGNORED_LOCAL_WORKFLOW_MODULES = (
     'plugin_installer.tasks'
 )
 
-TEST_AMI = self.env.ubuntu_agent_ami
-TEST_SIZE = self.env.medium_instance_type
 INSTANCE_TO_IP = 'instance_connected_to_elastic_ip'
 INSTANCE_TO_SG = 'instance_connected_to_security_group'
 EXTERNAL_RESOURCE_ID = 'aws_resource_id'
@@ -59,7 +56,7 @@ class EC2LocalTestUtils(TestCase):
     def _set_up(self,
                 inputs=None,
                 directory='resources',
-                filename='simple.yaml'):
+                filename='simple-blueprint.yaml'):
 
         blueprint_path = os.path.join(
             os.path.dirname(
@@ -69,28 +66,22 @@ class EC2LocalTestUtils(TestCase):
             inputs = self._get_inputs()
 
         # setup local workflow execution environment
-        self.env = local.init_env(
+        self.localenv = local.init_env(
             blueprint_path,
             name=self._testMethodName,
             inputs=inputs,
             ignored_modules=IGNORED_LOCAL_WORKFLOW_MODULES)
 
     def _get_inputs(self,
-                    ami_image_id=TEST_AMI,
-                    instance_type=TEST_SIZE,
-                    resource_id_ip='',
-                    resource_id_kp='',
-                    resource_id_sg='',
-                    resource_id_vm='',
-                    external_ip=False,
-                    external_kp=False,
-                    external_sg=False,
-                    external_vm=False,
+                    resource_id_ip='', resource_id_kp='',
+                    resource_id_sg='', resource_id_vm='',
+                    external_ip=False, external_kp=False,
+                    external_sg=False, external_vm=False,
                     test_name='vanilla_test'):
 
         return {
-            'image': ami_image_id,
-            'size': instance_type,
+            'image': self.env.ubuntu_trusty_image_id,
+            'size': self.env.medium_instance_type,
             'key_path': '~/.ssh/{0}.pem'.format(test_name),
             'resource_id_ip': resource_id_ip,
             'resource_id_kp': resource_id_kp,
@@ -114,8 +105,8 @@ class EC2LocalTestUtils(TestCase):
             constants.AWS_CONFIG_PROPERTY: {},
             'use_external_resource': external_vm,
             'resource_id': resource_id_vm,
-            'image_id': TEST_AMI,
-            'instance_type': TEST_SIZE,
+            'image_id': self.env.ubuntu_trusty_image_id,
+            'instance_type': self.env.medium_instance_type,
             'cloudify_agent': {},
             'parameters': {
                 'security_group_ids': [resource_id_sg],
@@ -207,5 +198,5 @@ class EC2LocalTestUtils(TestCase):
 
     def _create_instance(self, ec2_client):
         new_reservation = ec2_client.run_instances(
-            image_id=TEST_AMI, instance_type=TEST_SIZE)
+            image_id=self.env.ubuntu_trusty_image_id, instance_type=self.env.medium_instance_type)
         return new_reservation.instances[0]

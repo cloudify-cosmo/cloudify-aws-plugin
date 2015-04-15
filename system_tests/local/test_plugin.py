@@ -27,7 +27,7 @@ from ec2 import (
 from cloudify.state import current_ctx
 from cloudify.exceptions import NonRecoverableError
 from ec2_test_utils import (
-    EC2LocalTestUtils, TEST_AMI,
+    EC2LocalTestUtils,
     EXTERNAL_RESOURCE_ID, INSTANCE_TO_IP, INSTANCE_TO_SG,
     SIMPLE_IP, SIMPLE_SG, SIMPLE_KP, SIMPLE_VM,
     PAIR_A_IP, PAIR_A_VM,
@@ -45,28 +45,28 @@ class TestWorkflowClean(EC2LocalTestUtils):
         self._set_up(inputs=inputs)
 
         # execute install workflow
-        self.env.execute('install', task_retries=10)
+        self.localenv.execute('install', task_retries=10)
 
-        instance_storage = self._get_instances(self.env.storage)
+        instance_storage = self._get_instances(self.localenv.storage)
 
         self.assertEquals(4, len(instance_storage))
 
-        for node_instance in self._get_instances(self.env.storage):
+        for node_instance in self._get_instances(self.localenv.storage):
             self.assertIn(EXTERNAL_RESOURCE_ID,
                           node_instance.runtime_properties)
 
         # Test assertions for simple nodes
         self.assertIsNotNone(
             self._get_instance_node_id(
-                SIMPLE_IP, self.env.storage))
+                SIMPLE_IP, self.localenv.storage))
 
         self.assertIsNotNone(
             self._get_instance_node_id(
-                SIMPLE_SG, self.env.storage))
+                SIMPLE_SG, self.localenv.storage))
 
         self.assertIsNotNone(
             self._get_instance_node_id(
-                SIMPLE_KP, self.env.storage))
+                SIMPLE_KP, self.localenv.storage))
 
         self.assertIsNotNone(
             os.path.exists(
@@ -74,9 +74,9 @@ class TestWorkflowClean(EC2LocalTestUtils):
 
         self.assertIsNotNone(
             self._get_instance_node_id(
-                SIMPLE_VM, self.env.storage))
+                SIMPLE_VM, self.localenv.storage))
 
-        self.env.execute('uninstall', task_retries=10)
+        self.localenv.execute('uninstall', task_retries=10)
 
     def test_simple_relationships(self):
 
@@ -86,26 +86,26 @@ class TestWorkflowClean(EC2LocalTestUtils):
 
         self._set_up(
             inputs=inputs,
-            filename='relationships.yaml')
+            filename='relationships-blueprint.yaml')
 
         # execute install workflow
-        self.env.execute('install', task_retries=10)
+        self.localenv.execute('install', task_retries=10)
 
-        instance_storage = self._get_instances(self.env.storage)
+        instance_storage = self._get_instances(self.localenv.storage)
 
         self.assertEquals(4, len(instance_storage))
 
         # Test assertions for pair a nodes
         self.assertIsNotNone(
             self._get_instance_node_id(
-                PAIR_A_IP, self.env.storage))
+                PAIR_A_IP, self.localenv.storage))
 
         self.assertIsNotNone(
             self._get_instance_node_id(
-                PAIR_A_VM, self.env.storage))
+                PAIR_A_VM, self.localenv.storage))
 
         pair_a_vm_instance = \
-            self._get_instance_node(PAIR_A_VM, self.env.storage)
+            self._get_instance_node(PAIR_A_VM, self.localenv.storage)
 
         self.assertEquals(1, len(pair_a_vm_instance.relationships))
 
@@ -118,14 +118,14 @@ class TestWorkflowClean(EC2LocalTestUtils):
         # Test assertions for pair b nodes
         self.assertIsNotNone(
             self._get_instance_node_id(
-                PAIR_B_SG, self.env.storage))
+                PAIR_B_SG, self.localenv.storage))
 
         self.assertIsNotNone(
             self._get_instance_node_id(
-                PAIR_B_VM, self.env.storage))
+                PAIR_B_VM, self.localenv.storage))
 
         pair_b_vm_instance = \
-            self._get_instance_node(PAIR_B_VM, self.env.storage)
+            self._get_instance_node(PAIR_B_VM, self.localenv.storage)
 
         self.assertEquals(1, len(pair_b_vm_instance.relationships))
 
@@ -135,7 +135,7 @@ class TestWorkflowClean(EC2LocalTestUtils):
 
         self.assertIn(INSTANCE_TO_SG, relationship_types[0])
 
-        self.env.execute('uninstall', task_retries=10)
+        self.localenv.execute('uninstall', task_retries=10)
 
     def test_external_resources(self):
 
@@ -161,40 +161,40 @@ class TestWorkflowClean(EC2LocalTestUtils):
 
         self._set_up(inputs=inputs)
 
-        self.env.execute('install', task_retries=10)
+        self.localenv.execute('install', task_retries=10)
 
-        instance_storage = self._get_instances(self.env.storage)
+        instance_storage = self._get_instances(self.localenv.storage)
 
         self.assertEquals(4, len(instance_storage))
 
-        for node_instance in self._get_instances(self.env.storage):
+        for node_instance in self._get_instances(self.localenv.storage):
             self.assertIn(EXTERNAL_RESOURCE_ID,
                           node_instance.runtime_properties)
 
-        cfy_ip = self._get_instance_node(SIMPLE_IP, self.env.storage)
+        cfy_ip = self._get_instance_node(SIMPLE_IP, self.localenv.storage)
         self.assertEquals(
             ip.public_ip,
             cfy_ip.runtime_properties[EXTERNAL_RESOURCE_ID])
 
-        cfy_kp = self._get_instance_node(SIMPLE_KP, self.env.storage)
+        cfy_kp = self._get_instance_node(SIMPLE_KP, self.localenv.storage)
         self.assertEquals(
             kp.name,
             cfy_kp.runtime_properties[EXTERNAL_RESOURCE_ID])
         key_pair_file = os.path.expanduser(inputs['key_path'])
 
-        cfy_sg = self._get_instance_node(SIMPLE_SG, self.env.storage)
+        cfy_sg = self._get_instance_node(SIMPLE_SG, self.localenv.storage)
         self.assertEquals(
             sg.id,
             cfy_sg.runtime_properties[EXTERNAL_RESOURCE_ID])
 
-        cfy_vm = self._get_instance_node(SIMPLE_VM, self.env.storage)
+        cfy_vm = self._get_instance_node(SIMPLE_VM, self.localenv.storage)
         self.assertEquals(
             vm.id,
             cfy_vm.runtime_properties[EXTERNAL_RESOURCE_ID])
 
         self.assertIsNotNone(os.path.exists(key_pair_file))
 
-        self.env.execute('uninstall', task_retries=10)
+        self.localenv.execute('uninstall', task_retries=10)
 
         ip.release()
         kp.delete()
