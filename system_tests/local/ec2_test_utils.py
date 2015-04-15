@@ -32,8 +32,8 @@ IGNORED_LOCAL_WORKFLOW_MODULES = (
     'plugin_installer.tasks'
 )
 
-TEST_AMI = 'ami-3cf8b154'
-TEST_SIZE = 'm3.medium'
+TEST_AMI = self.env.ubuntu_agent_ami
+TEST_SIZE = self.env.medium_instance_type
 INSTANCE_TO_IP = 'instance_connected_to_elastic_ip'
 INSTANCE_TO_SG = 'instance_connected_to_security_group'
 EXTERNAL_RESOURCE_ID = 'aws_resource_id'
