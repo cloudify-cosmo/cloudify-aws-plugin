@@ -288,3 +288,50 @@ class TestKeyPair(testtools.TestCase):
         ctx.instance.runtime_properties['aws_resource_id'] = kp.name
         keypair.delete(ctx=ctx)
         self.assertNotIn('aws_resource_id', ctx.instance.runtime_properties)
+
+    @mock_ec2
+    def test_get_path_to_key_file(self):
+
+        ctx = self.mock_ctx(
+            'test_get_path_to_key_folder')
+        current_ctx.set(ctx=ctx)
+        ctx.node.properties['private_key_path'] = \
+            '~/.ssh/test_get_path_to_key_folder.pem'
+
+        full_key_path = os.path.expanduser(
+            ctx.node.properties['private_key_path']
+        )
+
+        output = keypair._get_path_to_key_file()
+
+        self.assertEqual(full_key_path, output)
+
+    @mock_ec2
+    def test_get_path_to_key_folder(self):
+
+        ctx = self.mock_ctx(
+            'test_get_path_to_key_folder')
+        current_ctx.set(ctx=ctx)
+        ctx.node.properties['private_key_path'] = \
+            '~/.ssh/test_get_path_to_key_folder.pem'
+
+        full_key_path = os.path.expanduser(
+            ctx.node.properties['private_key_path']
+        )
+
+        key_directory, key_filename = os.path.split(full_key_path)
+
+        output = keypair._get_path_to_key_folder()
+
+        self.assertEqual(key_directory, output)
+
+    @mock_ec2
+    def test_search_for_key_file_no_file(self):
+
+        output = keypair._search_for_key_file(
+            '~/.ssh/test_search_for_key_file.pem')
+
+        self.assertEquals(
+            False,
+            output
+        )

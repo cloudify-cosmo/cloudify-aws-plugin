@@ -297,15 +297,29 @@ class TestInstance(testtools.TestCase):
         self.assertIsNone(output)
 
     def test_get_instance_attribute_no_instance(self):
-            ctx = self.mock_ctx('test_get_private_dns_name')
-            current_ctx.set(ctx=ctx)
-            with mock_ec2():
-                ctx.instance.runtime_properties['aws_resource_id'] = \
-                    'i-4339wSD9'
-                ctx.node.properties['use_external_resource'] = True
-                ex = self.assertRaises(
-                    NonRecoverableError,
-                    instance._get_instance_attribute,
-                    'state_code')
-                self.assertIn(
-                    'External resource, but the supplied', ex.message)
+        ctx = self.mock_ctx('test_get_private_dns_name')
+        current_ctx.set(ctx=ctx)
+        with mock_ec2():
+            ctx.instance.runtime_properties['aws_resource_id'] = \
+                'i-4339wSD9'
+            ctx.node.properties['use_external_resource'] = True
+            ex = self.assertRaises(
+                NonRecoverableError,
+                instance._get_instance_attribute,
+                'state_code')
+            self.assertIn(
+                'External resource, but the supplied', ex.message)
+
+    def test_get_instance_parameters(self):
+
+        ctx = self.mock_ctx(
+            'test_get_instance_parameters')
+        current_ctx.set(ctx=ctx)
+        ctx.node.properties['image_id'] = 'abc'
+        ctx.node.properties['instance_type'] = 'efg'
+        ctx.node.properties['parameters']['image_id'] = 'abcd'
+        ctx.node.properties['parameters']['key_name'] = 'xyz'
+        parameters = instance._get_instance_parameters()
+        self.assertIn('abcd', parameters['image_id'])
+        self.assertIn('xyz', parameters['key_name'])
+        self.assertIn('efg', parameters['instance_type'])

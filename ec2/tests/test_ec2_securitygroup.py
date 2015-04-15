@@ -317,3 +317,31 @@ class TestSecurityGroup(testtools.TestCase):
             group.rules,
             ec2_client.get_all_security_groups(
                 groupnames='test_create_group_rules_src_group')[0].rules)
+
+    @mock_ec2
+    def test_create_external_securitygroup_not_external(self):
+
+        test_properties = self.get_mock_properties()
+        ctx = self.security_group_mock(
+            'test_create_external_securitygroup_not_external',
+            test_properties)
+        current_ctx.set(ctx=ctx)
+
+        ctx.node.properties['use_external_resource'] = False
+
+        output = securitygroup._delete_external_securitygroup()
+        self.assertEqual(False, output)
+
+    @mock_ec2
+    def test_delete_external_securitygroup_not_external(self):
+
+        test_properties = self.get_mock_properties()
+        ctx = self.security_group_mock(
+            'test_delete_external_securitygroup_not_external',
+            test_properties)
+        current_ctx.set(ctx=ctx)
+
+        ctx.node.properties['use_external_resource'] = False
+
+        output = securitygroup._delete_external_securitygroup()
+        self.assertEqual(False, output)
