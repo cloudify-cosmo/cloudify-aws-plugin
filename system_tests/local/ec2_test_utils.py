@@ -25,6 +25,7 @@ from ec2 import constants
 from cloudify.workflows import local
 from cloudify.mocks import MockContext
 from cloudify.mocks import MockCloudifyContext
+from cosmo_tester.framework.testenv import TestCase
 
 IGNORED_LOCAL_WORKFLOW_MODULES = (
     'worker_installer.tasks',
@@ -46,7 +47,7 @@ PAIR_B_SG = 'pair_b_connected_security_group'
 PAIR_B_VM = 'pair_b_connected_instance'
 
 
-class EC2LocalTestUtils(testtools.TestCase):
+class EC2LocalTestUtils(TestCase):
 
     def setUp(self):
         super(EC2LocalTestUtils, self).setUp()
