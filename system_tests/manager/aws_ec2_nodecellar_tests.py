@@ -13,7 +13,6 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
-import os
 from cosmo_tester.test_suites.test_blueprints import nodecellar_test
 
 EXTERNAL_RESOURCE_ID = 'aws_resource_id'

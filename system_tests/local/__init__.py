@@ -12,3 +12,14 @@
 #    * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
+
+from cosmo_tester.framework.testenv import (initialize_without_bootstrap,
+                                            clear_environment)
+
+
+def setUp():
+    initialize_without_bootstrap()
+
+
+def tearDown():
+    clear_environment()
