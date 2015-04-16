@@ -77,6 +77,7 @@ class TestUtils(testtools.TestCase):
         self.assertIn(
             'is a required input', ex.message)
 
+    @mock_ec2
     def test_log_available_resources(self):
         list_of_resources = \
             ['Address:54.163.229.127', 'Address:107.22.223.114']
@@ -84,6 +85,7 @@ class TestUtils(testtools.TestCase):
         current_ctx.set(ctx=ctx)
         utils.log_available_resources(list_of_resources)
 
+    @mock_ec2
     def test_get_provider_variable(self):
         ctx = self.mock_ctx('test_get_provider_variables')
         current_ctx.set(ctx=ctx)
@@ -276,19 +278,6 @@ class TestUtils(testtools.TestCase):
 
     @mock_ec2
     def test_get_target_external_resource_ids(self):
-
-        ctx = self.mock_ctx(
-            'get_target_external_resource_ids')
-        current_ctx.set(ctx=ctx)
-
-        output = utils.get_target_external_resource_ids(
-            'instance_connected_to_keypair',
-            ctx.instance)
-
-        self.assertEquals(0, len(output))
-
-    @mock_ec2
-    def test_get_target_external_resource_ids_no_attr(self):
 
         ctx = self.mock_ctx(
             'get_target_external_resource_ids')

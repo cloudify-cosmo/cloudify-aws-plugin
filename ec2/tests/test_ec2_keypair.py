@@ -16,6 +16,7 @@
 # Built-in Imports
 import testtools
 import os
+import tempfile
 
 # Third Party Imports
 from moto import mock_ec2
@@ -34,20 +35,19 @@ class TestKeyPair(testtools.TestCase):
     def setUp(self):
         super(TestKeyPair, self).setUp()
         ctx = self.mock_ctx('setUp')
-        key_path = self.create_dummy_key_path(ctx=ctx)
-        try:
-            os.remove(key_path)
-        except:
-            pass
 
     def mock_ctx(self, test_name):
+
+        private_key_path = tempfile.mkdtemp()
 
         test_node_id = test_name
         test_properties = {
             constants.AWS_CONFIG_PROPERTY: {},
             'use_external_resource': False,
             'resource_id': '{0}'.format(test_name),
-            'private_key_path': '~/.ssh/{0}.pem'.format(test_name)
+            'private_key_path': '{0}/{1}.pem'.format(
+                private_key_path,
+                test_name)
         }
 
         ctx = MockCloudifyContext(
@@ -64,18 +64,18 @@ class TestKeyPair(testtools.TestCase):
 
     @mock_ec2
     def test_create(self):
-        """ This tests that the create keypair function
-            adds the key_pair_name to runtime properties.
+        """ This tests that the key pair name is added to the 
+        runtime_properties.
         """
         ctx = self.mock_ctx('test_create')
         current_ctx.set(ctx=ctx)
 
         key_path = self.create_dummy_key_path(ctx=ctx)
         keypair.create(ctx=ctx)
+        self.addCleanup(os.remove, key_path)
         self.assertIn('aws_resource_id',
                       ctx.instance.runtime_properties.keys())
         self.assertTrue(os.path.exists(key_path))
-        os.remove(key_path)
 
     @mock_ec2
     def test_key_pair_exists_error_create(self):
@@ -87,10 +87,10 @@ class TestKeyPair(testtools.TestCase):
 
         key_path = self.create_dummy_key_path(ctx=ctx)
         keypair.create(ctx=ctx)
+        self.addCleanup(os.remove, key_path)
         ex = self.assertRaises(NonRecoverableError, keypair.create,
                                ctx=ctx)
         self.assertIn('already exists', ex.message)
-        os.remove(key_path)
 
     @mock_ec2
     def test_delete(self):
@@ -109,19 +109,6 @@ class TestKeyPair(testtools.TestCase):
         self.assertEquals(None, ec2_client.get_key_pair(kp.name))
 
     @mock_ec2
-    def test_delete_deleted(self):
-        ctx = self.mock_ctx('test_delete_deleted')
-        current_ctx.set(ctx=ctx)
-
-        ec2_client = connection.EC2ConnectionClient().client()
-        kp = ec2_client.create_key_pair('test_delete_deleted')
-        ctx.instance.runtime_properties['aws_resource_id'] = kp.name
-        kp = ec2_client.delete_key_pair('test_delete_deleted')
-        ctx.instance.runtime_properties['key_path'] = \
-            self.create_dummy_key_path(ctx=ctx)
-        keypair.delete(ctx=ctx)
-
-    @mock_ec2
     def test_validation_use_external(self):
         ctx = self.mock_ctx('test_validation_use_external')
         current_ctx.set(ctx=ctx)
@@ -138,6 +125,9 @@ class TestKeyPair(testtools.TestCase):
 
     @mock_ec2
     def test_validation_use_external_not_in_account(self):
+        """ Tests that an error is raised if you use external,
+        but the key pair doesn't exist in your account.
+        """
 
         ctx = self.mock_ctx('test_validation_use_external_not_in_account')
         current_ctx.set(ctx=ctx)
@@ -151,6 +141,7 @@ class TestKeyPair(testtools.TestCase):
             'test_validation_use_external_not_in_account')
         key_path = \
             self.create_dummy_key_path(ctx=ctx)
+        self.addCleanup(os.remove, key_path)
         with open(key_path, 'w') as dummy_key:
             dummy_key.write('test')
         ex = self.assertRaises(
@@ -161,10 +152,13 @@ class TestKeyPair(testtools.TestCase):
         self.assertIn(
             'InvalidKeyPair.NotFound',
             ex.message)
-        os.remove(key_path)
 
     @mock_ec2
     def test_validation_file_exists(self):
+        """ Tests that an error is raised if you don't use
+        external, but the key does exist locally.
+        """
+
         ctx = self.mock_ctx('test_validation_file_exists')
         current_ctx.set(ctx=ctx)
 
@@ -177,6 +171,7 @@ class TestKeyPair(testtools.TestCase):
             'test_validation_file_exists')
         key_path = \
             self.create_dummy_key_path(ctx=ctx)
+        self.addCleanup(os.remove, key_path)
         with open(key_path, 'w') as dummy_key:
             dummy_key.write('test')
         ex = self.assertRaises(
@@ -184,10 +179,13 @@ class TestKeyPair(testtools.TestCase):
         self.assertIn(
             'but the key file exists locally',
             ex.message)
-        os.remove(key_path)
 
     @mock_ec2
     def test_validation_in_account(self):
+        """ Tests that an error is raised if you don't use
+        external, but the key does exist in your account.
+        """
+
         ctx = self.mock_ctx('test_validation_in_account')
         current_ctx.set(ctx=ctx)
 
@@ -207,6 +205,7 @@ class TestKeyPair(testtools.TestCase):
         """ This tests that the create keypair function
             adds the key_pair_name to runtime properties.
         """
+
         ctx = self.mock_ctx('test_save_keypair')
         current_ctx.set(ctx=ctx)
 
@@ -214,6 +213,7 @@ class TestKeyPair(testtools.TestCase):
         kp = ec2_client.create_key_pair('test_save_keypair')
         ctx.node.properties['resource_id'] = kp.name
         key_path = self.create_dummy_key_path(ctx=ctx)
+        self.addCleanup(os.remove, key_path)
         with open(key_path, 'w') as out:
             out.write('test_save_keypair')
         print ctx.node.properties
@@ -221,13 +221,13 @@ class TestKeyPair(testtools.TestCase):
                                keypair._save_key_pair, kp)
         self.assertIn(
             'already exists, it will not be overwritten', ex.message)
-        os.remove(key_path)
 
     @mock_ec2
     def test_create_use_external(self):
         """ This tests that the create keypair function
             adds the key_pair_name to runtime properties.
         """
+
         ctx = self.mock_ctx('test_create_use_external')
         current_ctx.set(ctx=ctx)
 
@@ -241,6 +241,10 @@ class TestKeyPair(testtools.TestCase):
 
     @mock_ec2
     def test_get_key_pair_by_id(self):
+        """ This tests that the _get_key_pair_by_id function
+        returns the same keypair object.
+        """
+
         ctx = self.mock_ctx('test_get_key_pair_by_id')
         current_ctx.set(ctx=ctx)
 
@@ -249,7 +253,13 @@ class TestKeyPair(testtools.TestCase):
         output = keypair._get_key_pair_by_id(kp.name)
         self.assertEqual(output.name, kp.name)
 
+    @mock_ec2
     def test_get_key_file_path_missing_property(self):
+        """ This tests that a not NonRecoverableError error is
+        raised by _get_path_to_key_file when the private_key_path
+        property is not set.
+        """
+
         ctx = self.mock_ctx('test_get_key_file_path_missing_property')
         current_ctx.set(ctx=ctx)
         del(ctx.node.properties['private_key_path'])
@@ -262,6 +272,10 @@ class TestKeyPair(testtools.TestCase):
 
     @mock_ec2
     def test_save_key_pair_missing_property(self):
+        """ This tests that _save_key_pair raises an error when
+        private_key_path is not set.
+        """
+
         ctx = self.mock_ctx('test_save_key_pair_missing_property')
         current_ctx.set(ctx=ctx)
         ec2_client = connection.EC2ConnectionClient().client()
@@ -277,6 +291,10 @@ class TestKeyPair(testtools.TestCase):
 
     @mock_ec2
     def test_delete_use_external(self):
+        """ This tests that delete function removes the
+        runtime_properties for external resource.
+        """
+
         ctx = self.mock_ctx('test_delete_use_external')
         current_ctx.set(ctx=ctx)
 
@@ -291,12 +309,15 @@ class TestKeyPair(testtools.TestCase):
 
     @mock_ec2
     def test_get_path_to_key_file(self):
+        """ This tests that the expected key path is returned
+        by _get_path_to_key_file.
+        """
 
         ctx = self.mock_ctx(
             'test_get_path_to_key_folder')
         current_ctx.set(ctx=ctx)
         ctx.node.properties['private_key_path'] = \
-            '~/.ssh/test_get_path_to_key_folder.pem'
+            '~/.ssh/test_get_path_to_key_file.pem'
 
         full_key_path = os.path.expanduser(
             ctx.node.properties['private_key_path']
@@ -308,6 +329,9 @@ class TestKeyPair(testtools.TestCase):
 
     @mock_ec2
     def test_get_path_to_key_folder(self):
+        """ This tests that the expected key path is returned
+        by _get_path_to_key_folder.
+        """
 
         ctx = self.mock_ctx(
             'test_get_path_to_key_folder')
@@ -327,6 +351,9 @@ class TestKeyPair(testtools.TestCase):
 
     @mock_ec2
     def test_search_for_key_file_no_file(self):
+        """ This tests that _search_for_key_file
+        returns false when it can't find the file.
+        """
 
         output = keypair._search_for_key_file(
             '~/.ssh/test_search_for_key_file.pem')
