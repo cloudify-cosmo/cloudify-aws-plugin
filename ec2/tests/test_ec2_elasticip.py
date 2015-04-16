@@ -236,7 +236,7 @@ class TestElasticIP(testtools.TestCase):
 
     @mock_ec2
     def test_bad_address_release(self):
-        """ tests that release raises an error when 
+        """ tests that release raises an error when
         the address does not exist in the users account.
         """
 

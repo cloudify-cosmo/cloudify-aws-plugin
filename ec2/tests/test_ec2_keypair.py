@@ -34,7 +34,6 @@ class TestKeyPair(testtools.TestCase):
 
     def setUp(self):
         super(TestKeyPair, self).setUp()
-        ctx = self.mock_ctx('setUp')
 
     def mock_ctx(self, test_name):
 
@@ -64,7 +63,7 @@ class TestKeyPair(testtools.TestCase):
 
     @mock_ec2
     def test_create(self):
-        """ This tests that the key pair name is added to the 
+        """ This tests that the key pair name is added to the
         runtime_properties.
         """
         ctx = self.mock_ctx('test_create')
