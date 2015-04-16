@@ -312,6 +312,7 @@ class TestInstance(testtools.TestCase):
             list_of_instance_ids='test_get_all_instances_bad_id')
         self.assertIsNone(output)
 
+    @mock_ec2
     def test_get_instance_attribute_no_instance(self):
         """ This tests that _get_instance_attribute raises an
         error when use_external_resource is true and there
@@ -320,17 +321,17 @@ class TestInstance(testtools.TestCase):
 
         ctx = self.mock_ctx('test_get_private_dns_name')
         current_ctx.set(ctx=ctx)
-        with mock_ec2():
-            ctx.instance.runtime_properties['aws_resource_id'] = \
-                'i-4339wSD9'
-            ctx.node.properties['use_external_resource'] = True
-            ex = self.assertRaises(
-                NonRecoverableError,
-                instance._get_instance_attribute,
-                'state_code')
-            self.assertIn(
-                'External resource, but the supplied', ex.message)
+        ctx.instance.runtime_properties['aws_resource_id'] = \
+            'i-4339wSD9'
+        ctx.node.properties['use_external_resource'] = True
+        ex = self.assertRaises(
+            NonRecoverableError,
+            instance._get_instance_attribute,
+            'state_code')
+        self.assertIn(
+            'External resource, but the supplied', ex.message)
 
+    @mock_ec2
     def test_get_instance_parameters(self):
         """ This tests that the _get_instance_parameters
         function returns a dict with the correct structure.
@@ -347,3 +348,19 @@ class TestInstance(testtools.TestCase):
         self.assertIn('abcd', parameters['image_id'])
         self.assertIn('xyz', parameters['key_name'])
         self.assertIn('efg', parameters['instance_type'])
+
+    @mock_ec2
+    def test_creation_validation_image_id(self):
+        """This tests that creation validation gets to image_id
+        it will return NonRecoverableError if the image_id
+        doesn't exist.
+        """
+
+        ctx = self.mock_ctx('test_creation_validation_image_id')
+        current_ctx.set(ctx=ctx)
+        ctx.node.properties['image_id'] = 'abc'
+        ctx.node.properties['instance_type'] = 'efg'
+        with self.assertRaisesRegexp(
+                NonRecoverableError,
+                'Invalid id:'):
+            instance.creation_validation(ctx=ctx)
