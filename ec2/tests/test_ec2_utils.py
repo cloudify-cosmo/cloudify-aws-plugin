@@ -15,9 +15,9 @@
 
 # Builtin Imports
 import tempfile
+import testtools
 
 # Third Party Imports
-import testtools
 from moto import mock_ec2
 from boto.ec2 import EC2Connection
 

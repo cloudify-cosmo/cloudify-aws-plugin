@@ -24,7 +24,6 @@ from boto.ec2 import EC2Connection
 
 # Cloudify Imports
 from cloudify.workflows import local
-from ec2 import connection
 import test_utils
 
 IGNORED_LOCAL_WORKFLOW_MODULES = (
