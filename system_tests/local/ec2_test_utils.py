@@ -81,7 +81,7 @@ class EC2LocalTestUtils(TestCase):
 
         return {
             'image': self.env.ubuntu_trusty_image_id,
-            'size': self.env.medium_instance_type,
+            'size': self.env.micro_instance_type,
             'key_path': '~/.ssh/{0}.pem'.format(test_name),
             'resource_id_ip': resource_id_ip,
             'resource_id_kp': resource_id_kp,
@@ -106,7 +106,7 @@ class EC2LocalTestUtils(TestCase):
             'use_external_resource': external_vm,
             'resource_id': resource_id_vm,
             'image_id': self.env.ubuntu_trusty_image_id,
-            'instance_type': self.env.medium_instance_type,
+            'instance_type': self.env.micro_instance_type,
             'cloudify_agent': {},
             'parameters': {
                 'security_group_ids': [resource_id_sg],
@@ -207,5 +207,5 @@ class EC2LocalTestUtils(TestCase):
     def _create_instance(self, ec2_client):
         new_reservation = ec2_client.run_instances(
             image_id=self.env.ubuntu_trusty_image_id,
-            instance_type=self.env.medium_instance_type)
+            instance_type=self.env.micro_instance_type)
         return new_reservation.instances[0]
