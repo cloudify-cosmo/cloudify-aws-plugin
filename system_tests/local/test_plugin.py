@@ -13,6 +13,9 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
+# Third Party
+from boto.exception import EC2ResponseError
+
 # Cloudify Imports
 from ec2 import (
     securitygroup,
@@ -35,7 +38,6 @@ class TestWorkflowClean(EC2LocalTestUtils):
 
     def tearDown(self):
         super(TestWorkflowClean, self).tearDown()
-        self.localenv.execute('uninstall', task_retries=10)
 
     def test_simple_resources(self):
         client = self._get_ec2_client()
@@ -90,6 +92,19 @@ class TestWorkflowClean(EC2LocalTestUtils):
         instance_list = reservation_list[0].instances
         self.assertEqual(1, len(instance_list))
 
+        self.localenv.execute('uninstall', task_retries=10)
+
+        with self.assertRaises(EC2ResponseError):
+            client.get_all_addresses(addresses=elastic_ip_address)
+        with self.assertRaises(EC2ResponseError):
+            client.get_all_security_groups(group_ids=security_group_id)
+        with self.assertRaises(EC2ResponseError):
+            client.get_all_key_pairs(keynames=key_pair_name)
+
+        client.get_all_reservations(instance_ids=instance_id)
+        instance_state = reservation_list[0].instances[0].update()
+        self.assertIn('terminated', instance_state)
+
     def test_simple_relationships(self):
 
         client = self._get_ec2_client()
@@ -110,10 +125,10 @@ class TestWorkflowClean(EC2LocalTestUtils):
 
         instance_node = \
             self._get_instance_node(PAIR_A_VM, self.localenv.storage)
-        instance_id = \
+        instance_id_a = \
             instance_node.runtime_properties[EXTERNAL_RESOURCE_ID]
         reservation_list = \
-            client.get_all_reservations(instance_ids=instance_id)
+            client.get_all_reservations(instance_ids=instance_id_a)
         instance_list_ip = reservation_list[0].instances
 
         self.assertEquals(4, len(instance_storage))
@@ -131,10 +146,10 @@ class TestWorkflowClean(EC2LocalTestUtils):
 
         instance_node = \
             self._get_instance_node(PAIR_B_VM, self.localenv.storage)
-        instance_id = \
+        instance_id_b = \
             instance_node.runtime_properties[EXTERNAL_RESOURCE_ID]
         reservation_list = \
-            client.get_all_reservations(instance_ids=instance_id)
+            client.get_all_reservations(instance_ids=instance_id_b)
         instance_list = reservation_list[0].instances
 
         security_group_node = \
@@ -147,6 +162,20 @@ class TestWorkflowClean(EC2LocalTestUtils):
         self.assertIn(
             str(security_group_object_list[0].instances()[0].id),
             str(instance_list[0].id))
+
+        self.localenv.execute('uninstall', task_retries=10)
+
+        with self.assertRaises(EC2ResponseError):
+            client.get_all_addresses(addresses=elastic_ip_address)
+        with self.assertRaises(EC2ResponseError):
+            client.get_all_security_groups(group_ids=security_group_id)
+
+        client.get_all_reservations(instance_ids=instance_id_a)
+        instance_state = reservation_list[0].instances[0].update()
+        self.assertIn('terminated', instance_state)
+        client.get_all_reservations(instance_ids=instance_id_b)
+        instance_state = reservation_list[0].instances[0].update()
+        self.assertIn('terminated', instance_state)
 
 
 class EC2SecurityGroupUnitTests(EC2LocalTestUtils):
