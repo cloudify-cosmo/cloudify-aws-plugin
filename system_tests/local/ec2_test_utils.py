@@ -180,8 +180,16 @@ class EC2LocalTestUtils(TestCase):
         instance_node = self._get_instance_node(node_name, storage)
         return instance_node.node_id
 
+    def _get_aws_config(self):
+
+        return {
+            'aws_access_key_id': self.env.aws_access_key_id,
+            'aws_secret_access_key': self.env.aws_secret_access_key
+        }
+
     def _get_ec2_client(self):
-        return EC2Connection()
+        aws_config = self._get_aws_config()
+        return EC2Connection(**aws_config)
 
     def _create_elastic_ip(self, ec2_client):
         new_address = ec2_client.allocate_address(domain=None)
