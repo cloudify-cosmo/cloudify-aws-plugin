@@ -133,6 +133,7 @@ class TestElasticIP(testtools.TestCase):
 
     @mock_ec2
     def test_allocate(self):
+        """ This tests that allocate adds the runtime_properties."""
 
         ctx = self.mock_ctx('test_allocate')
         current_ctx.set(ctx=ctx)
@@ -140,7 +141,43 @@ class TestElasticIP(testtools.TestCase):
         self.assertIn('aws_resource_id', ctx.instance.runtime_properties)
 
     @mock_ec2
+    def test_associate_external_elasticip_or_instance(self):
+        """ This tests that this function returns False
+        if use_external_resource is false.
+        """
+
+        ctx = self.mock_relationship_context(
+            'test_associate_external_elasticip_or_instance')
+        current_ctx.set(ctx=ctx)
+        ctx.source.node.properties['use_external_resource'] = False
+
+        output = \
+            elasticip._associate_external_elasticip_or_instance(
+                '127.0.0.1')
+
+        self.assertEqual(False, output)
+
+    @mock_ec2
+    def test_release_external_elasticip(self):
+        """ This tests that this function returns False
+        if use_external_resource is false.
+        """
+
+        ctx = self.mock_ctx(
+            'test_release_external_elasticip')
+        current_ctx.set(ctx=ctx)
+        ctx.node.properties['use_external_resource'] = False
+
+        output = \
+            elasticip._release_external_elasticip()
+
+        self.assertEqual(False, output)
+
+    @mock_ec2
     def test_external_resource(self):
+        """ This tests that allocate sets the aws_resource_id
+        runtime_properties
+        """
 
         ctx = self.mock_elastic_ip_node('test_external_resource')
         current_ctx.set(ctx=ctx)
@@ -151,7 +188,26 @@ class TestElasticIP(testtools.TestCase):
         self.assertIn('aws_resource_id', ctx.instance.runtime_properties)
 
     @mock_ec2
+    def test_allocate_external_elasticip(self):
+        """ This tests that this function returns False
+        if use_external_resource is false.
+        """
+
+        ctx = self.mock_ctx(
+            'test_allocate_external_elasticip')
+        current_ctx.set(ctx=ctx)
+        ctx.node.properties['use_external_resource'] = False
+
+        output = \
+            elasticip._allocate_external_elasticip()
+
+        self.assertEqual(False, output)
+
+    @mock_ec2
     def test_good_address_release(self):
+        """ This tests that release unsets the aws_resource_id
+        runtime_properties
+        """
 
         ctx = self.mock_ctx('test_good_address_delete')
         current_ctx.set(ctx=ctx)
@@ -163,7 +219,26 @@ class TestElasticIP(testtools.TestCase):
                          ctx.instance.runtime_properties.keys())
 
     @mock_ec2
+    def test_disassociate_external_elasticip_or_instance(self):
+        """ This tests that this function returns False
+        if use_external_resource is false.
+        """
+
+        ctx = self.mock_relationship_context(
+            'test_disassociate_external_elasticip_or_instance')
+        current_ctx.set(ctx=ctx)
+        ctx.source.node.properties['use_external_resource'] = False
+
+        output = \
+            elasticip._disassociate_external_elasticip_or_instance()
+
+        self.assertEqual(False, output)
+
+    @mock_ec2
     def test_bad_address_release(self):
+        """ tests that release raises an error when
+        the address does not exist in the users account.
+        """
 
         ctx = self.mock_ctx('test_bad_address_release')
         current_ctx.set(ctx=ctx)
@@ -177,6 +252,7 @@ class TestElasticIP(testtools.TestCase):
 
     @mock_ec2
     def test_good_address_associate(self):
+        """ Tests that associate runs when clean. """
 
         ctx = self.mock_relationship_context('test_good_address_associate')
         current_ctx.set(ctx=ctx)
@@ -190,6 +266,7 @@ class TestElasticIP(testtools.TestCase):
 
     @mock_ec2
     def test_good_address_disassociate(self):
+        """ Tests that disassociate runs when clean. """
 
         ctx = self.mock_relationship_context('test_good_address_detach')
         current_ctx.set(ctx=ctx)
@@ -238,7 +315,9 @@ class TestElasticIP(testtools.TestCase):
 
     @mock_ec2
     def test_validation(self):
-        """ Tests that the allocate function assigns the aws_resource_id.
+        """ Tests that creation_validation raises an error
+        the Elastic IP doesn't exist in the account and use_external_resource
+        is true.
         """
 
         ctx = self.mock_elastic_ip_node('test_allocate')
@@ -251,7 +330,9 @@ class TestElasticIP(testtools.TestCase):
 
     @mock_ec2
     def test_validation_not_external(self):
-        """ Tests that the allocate function assigns the aws_resource_id.
+        """ Tests that creation_validation raises an error
+        the Elastic IP exist in the account and use_external_resource
+        is false.
         """
 
         ctx = self.mock_elastic_ip_node('test_validation_not_external')
@@ -265,22 +346,13 @@ class TestElasticIP(testtools.TestCase):
 
     @mock_ec2
     def test_associate_no_instance_id(self):
+        """ Tests that associate will raise an error if aws_resource_id
+        runtime property is not set.
+        """
 
         ctx = self.mock_relationship_context('test_associate_no_instance_id')
         current_ctx.set(ctx=ctx)
         del(ctx.source.instance.runtime_properties['aws_resource_id'])
-        ex = self.assertRaises(
-            NonRecoverableError, elasticip.associate, ctx=ctx)
-        self.assertIn(
-            'Cannot associate elasticip because aws_resource_id is not',
-            ex.message)
-
-    @mock_ec2
-    def test_associate_no_elasticip_id(self):
-
-        ctx = self.mock_relationship_context('test_associate_no_elasticip_id')
-        current_ctx.set(ctx=ctx)
-        del(ctx.target.instance.runtime_properties['aws_resource_id'])
         ex = self.assertRaises(
             NonRecoverableError, elasticip.associate, ctx=ctx)
         self.assertIn(
@@ -302,6 +374,8 @@ class TestElasticIP(testtools.TestCase):
 
     @mock_ec2
     def test_release_existing(self):
+        """ Tests that release actually releases.
+        """
 
         ctx = self.mock_ctx('test_release_existing')
         current_ctx.set(ctx=ctx)
@@ -317,6 +391,9 @@ class TestElasticIP(testtools.TestCase):
 
     @mock_ec2
     def test_get_all_addresses_bad(self):
+        """ tests that _get_all_addresses returns None
+        for a bad address.
+        """
         ctx = self.mock_ctx('test_get_all_addresses_bad')
         current_ctx.set(ctx=ctx)
 
@@ -327,7 +404,7 @@ class TestElasticIP(testtools.TestCase):
     @mock_ec2
     def test_existing_address_associate(self):
         """ Tests that when an address that is in the user's
-            EC2 account is provided to the attach function
+            EC2 account is provided to the associate function
             no errors are raised
         """
 
@@ -350,6 +427,10 @@ class TestElasticIP(testtools.TestCase):
 
     @mock_ec2
     def test_existing_address_disassociate(self):
+        """ Tests that when an address that is in the user's
+            EC2 account is provided to the disassociate function
+            no errors are raised
+        """
 
         ctx = self.mock_relationship_context(
             'test_existing_address_disassociate')
@@ -372,6 +453,12 @@ class TestElasticIP(testtools.TestCase):
 
     @mock_ec2
     def test_disassociate_external_elasticip(self):
+        """ Tests that when an address that is in the user's
+            EC2 account is provided to the disassociate function
+            and use_external_resource is true
+            no errors are raised
+        """
+
         ctx = self.mock_relationship_context(
             'test_disassociate_external_elasticip')
         current_ctx.set(ctx=ctx)
