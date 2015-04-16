@@ -440,6 +440,7 @@ class TestElasticIP(testtools.TestCase):
             elasticip._disassociate_external_elasticip_or_instance()
         self.assertEqual(False, output)
 
+    @mock_ec2
     def test_get_all_addresses_bad_address(self):
         ctx = self.mock_relationship_context(
             'test_get_address_by_id')
