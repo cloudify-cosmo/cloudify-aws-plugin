@@ -315,8 +315,6 @@ class TestKeyPair(testtools.TestCase):
         ctx = self.mock_ctx(
             'test_get_path_to_key_folder')
         current_ctx.set(ctx=ctx)
-        ctx.node.properties['private_key_path'] = \
-            '~/.ssh/test_get_path_to_key_file.pem'
 
         full_key_path = os.path.expanduser(
             ctx.node.properties['private_key_path']
@@ -335,9 +333,6 @@ class TestKeyPair(testtools.TestCase):
         ctx = self.mock_ctx(
             'test_get_path_to_key_folder')
         current_ctx.set(ctx=ctx)
-        ctx.node.properties['private_key_path'] = \
-            '~/.ssh/test_get_path_to_key_folder.pem'
-
         full_key_path = os.path.expanduser(
             ctx.node.properties['private_key_path']
         )
@@ -355,7 +350,7 @@ class TestKeyPair(testtools.TestCase):
         """
 
         output = keypair._search_for_key_file(
-            '~/.ssh/test_search_for_key_file.pem')
+            'test_search_for_key_file.pem')
 
         self.assertEquals(
             False,

@@ -16,9 +16,11 @@
 # Built-in Imports
 import os
 import testtools
+import tempfile
 
 # Third-party Imports
 from moto import mock_ec2
+from boto.ec2 import EC2Connection
 
 # Cloudify Imports
 from cloudify.workflows import local
@@ -29,6 +31,8 @@ IGNORED_LOCAL_WORKFLOW_MODULES = (
     'worker_installer.tasks',
     'plugin_installer.tasks'
 )
+
+TEST_KEY_FOLDER = tempfile.mkdtemp()
 
 
 class TestWorkflowClean(testtools.TestCase):
@@ -47,7 +51,8 @@ class TestWorkflowClean(testtools.TestCase):
             'agent_security_group_name': 'test_group',
             'use_existing_agent_keypair': False,
             'agent_keypair_name': 'test_key',
-            'path_to_key_file': '~/.ssh/test_key.pem',
+            'path_to_key_file': '{0}/test_key.pem'.format(TEST_KEY_FOLDER)
+
         }
 
         # setup local workflow execution environment
@@ -82,7 +87,7 @@ class TestWorkflowClean(testtools.TestCase):
             workflows.
         """
 
-        path = os.path.expanduser('~/.ssh')
+        path = os.path.expanduser(TEST_KEY_FOLDER)
         file = os.path.join(path, '{0}{1}'.format('test_key', '.pem'))
         self.addCleanup(os.remove, file)
 
@@ -106,7 +111,7 @@ class TestWorkflowExternalResources(testtools.TestCase):
             'agent_security_group_name': 'test_group2',
             'use_existing_agent_keypair': True,
             'agent_keypair_name': 'test_key2',
-            'path_to_key_file': '~/.ssh/test_key2.pem',
+            'path_to_key_file': '{0}/test_key2.pem'.format(TEST_KEY_FOLDER)
         }
 
         # setup local workflow execution environment
@@ -119,12 +124,12 @@ class TestWorkflowExternalResources(testtools.TestCase):
         """ Tests the install workflow using the built in
             workflows.
         """
-        ec2_client = connection.EC2ConnectionClient().client()
+        ec2_client = EC2Connection()
         ec2_client.create_security_group('test_group2',
                                          'so hard to describe')
 
         kp = ec2_client.create_key_pair('test_key2')
-        kp.save('~/.ssh')
+        kp.save(TEST_KEY_FOLDER)
 
         # execute install workflow
         self.env.execute('install', task_retries=0)
@@ -136,7 +141,7 @@ class TestWorkflowExternalResources(testtools.TestCase):
         """
 
         def clean_up_keys():
-            path = os.path.expanduser('~/.ssh')
+            path = os.path.expanduser(TEST_KEY_FOLDER)
             files = ['test_key', 'test_key2']
             for names in files:
                 file = os.path.join(path, '{0}{1}'.format(names, '.pem'))

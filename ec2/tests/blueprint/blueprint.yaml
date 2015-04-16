@@ -38,7 +38,6 @@ inputs:
 
   path_to_key_file:
     type: string
-    default: ~/.ssh/keypair.pem
 
 node_templates:
 

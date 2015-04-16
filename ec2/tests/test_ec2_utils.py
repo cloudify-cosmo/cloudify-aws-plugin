@@ -13,6 +13,8 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
+# Builtin Imports
+import tempfile
 
 # Third Party Imports
 import testtools
@@ -129,9 +131,10 @@ class TestUtils(testtools.TestCase):
         ctx = self.mock_ctx(
             'test_utils_get_resource_id_from_key_path')
         current_ctx.set(ctx=ctx)
-
+        private_key_path = tempfile.mkdtemp()
         ctx.node.properties['private_key_path'] = \
-            '~/.ssh/test_utils_get_resource_id_from_key_path.pem'
+            '{0}/test_utils_get_resource_id_from_key_path.pem' \
+            .format(private_key_path)
 
         resource_id = utils.get_resource_id()
 
