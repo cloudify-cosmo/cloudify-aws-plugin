@@ -36,9 +36,6 @@ from ec2_test_utils import (
 
 class TestWorkflowClean(EC2LocalTestUtils):
 
-    def tearDown(self):
-        super(TestWorkflowClean, self).tearDown()
-
     def test_simple_resources(self):
         client = self._get_ec2_client()
 
