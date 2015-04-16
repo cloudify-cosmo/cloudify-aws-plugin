@@ -13,13 +13,10 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
-import os
 import copy
-import random
 from contextlib import contextmanager
 
 from boto.ec2 import EC2Connection
-from boto import config
 
 from cosmo_tester.framework.handlers import (
     BaseHandler,
