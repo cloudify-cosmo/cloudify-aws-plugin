@@ -63,7 +63,9 @@ class TestWorkflowClean(testtools.TestCase):
 
         # execute install workflow
         self.env.execute('install', task_retries=0)
+
         self.assertEquals(4, len(test_utils.get_instances(self.env.storage)))
+
         self.assertIsNotNone(
             test_utils.get_instance_node_id(
                 'agent_security_group', self.env.storage))
@@ -80,12 +82,12 @@ class TestWorkflowClean(testtools.TestCase):
             workflows.
         """
 
-        # execute install workflow
-        self.env.execute('uninstall', task_retries=0)
         path = os.path.expanduser('~/.ssh')
         file = os.path.join(path, '{0}{1}'.format('test_key', '.pem'))
-        if os.path.exists(file):
-            os.remove(file)
+        self.addCleanup(os.remove, file)
+
+        # execute install workflow
+        self.env.execute('uninstall', task_retries=0)
 
 
 class TestWorkflowExternalResources(testtools.TestCase):
@@ -133,11 +135,14 @@ class TestWorkflowExternalResources(testtools.TestCase):
             workflows.
         """
 
+        def clean_up_keys():
+            path = os.path.expanduser('~/.ssh')
+            files = ['test_key', 'test_key2']
+            for names in files:
+                file = os.path.join(path, '{0}{1}'.format(names, '.pem'))
+                if os.path.exists(file):
+                    os.remove(file)
+
+        self.addCleanup(clean_up_keys)
         # execute install workflow
         self.env.execute('uninstall', task_retries=0)
-        path = os.path.expanduser('~/.ssh')
-        files = ['test_key', 'test_key2']
-        for names in files:
-            file = os.path.join(path, '{0}{1}'.format(names, '.pem'))
-            if os.path.exists(file):
-                os.remove(file)
