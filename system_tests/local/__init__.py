@@ -13,12 +13,13 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
+from cosmo_tester.framework.testenv import (initialize_without_bootstrap,
+                                            clear_environment)
 
-def get_instances(storage):
-    return storage.get_node_instances()
+
+def setUp():
+    initialize_without_bootstrap()
 
 
-def get_instance_node_id(node_name, storage):
-    for instance in get_instances(storage):
-        if node_name in instance.node_id:
-            return node_name
+def tearDown():
+    clear_environment()

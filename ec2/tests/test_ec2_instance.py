@@ -1,5 +1,5 @@
 ########
-# Copyright (c) 2014 GigaSpaces Technologies Ltd. All rights reserved
+# Copyright (c) 2015 GigaSpaces Technologies Ltd. All rights reserved
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -67,7 +67,8 @@ class TestInstance(testtools.TestCase):
 
     @mock_ec2
     def test_run_instances_clean(self):
-        """ this tests that the instance create function works
+        """ this tests that the instance create function
+        adds the runtime_properties
         """
 
         ctx = self.mock_ctx('test_run_instances_clean')
@@ -79,7 +80,8 @@ class TestInstance(testtools.TestCase):
     @mock_ec2
     def test_stop_clean(self):
         """
-        this tests that the instance stop function works
+        this tests that the instance stop function stops the
+        isntance
         """
 
         ctx = self.mock_ctx('test_stop_clean')
@@ -102,7 +104,8 @@ class TestInstance(testtools.TestCase):
 
     @mock_ec2
     def test_start_clean(self):
-        """ this tests that the instance start function works
+        """ this tests that the instance start function
+        starts an instance.
         """
 
         ctx = self.mock_ctx('test_start_clean')
@@ -123,7 +126,7 @@ class TestInstance(testtools.TestCase):
     @mock_ec2
     def test_terminate_clean(self):
         """ this tests that the instance.terminate function
-            works
+            terminates the instance
         """
 
         ctx = self.mock_ctx('test_terminate_clean')
@@ -209,7 +212,8 @@ class TestInstance(testtools.TestCase):
 
     @mock_ec2
     def test_run_instances_external_resource(self):
-        """ this tests that the instance create function works
+        """ this tests that the instance create function adds
+        the runtime_properties
         """
         ctx = self.mock_ctx('test_run_instances_external_resource')
         current_ctx.set(ctx=ctx)
@@ -226,7 +230,9 @@ class TestInstance(testtools.TestCase):
 
     @mock_ec2
     def test_validation_external_resource(self):
-        """ this tests that the instance create function works
+        """ this tests that creation_validation raises an error
+        when a use_external_resource is true but a bad instance_id
+        is given.
         """
         ctx = self.mock_ctx('test_validation_external_resource')
         ctx.node.properties['use_external_resource'] = True
@@ -241,7 +247,9 @@ class TestInstance(testtools.TestCase):
 
     @mock_ec2
     def test_validation_no_external_resource_is(self):
-        """ this tests that the instance create function works
+        """ this tests that creation_validation raises an error
+        when a use_external_resource is false but a good instance_id
+        is given.
         """
         ctx = self.mock_ctx('test_validation_no_external_resource_is')
         current_ctx.set(ctx=ctx)
@@ -274,6 +282,10 @@ class TestInstance(testtools.TestCase):
 
     @mock_ec2
     def test_get_private_dns_name(self):
+        """ This checks that _get_instance_attribute
+        sets the correct runtime property and it is an FQDN
+        """
+
         ctx = self.mock_ctx('test_get_private_dns_name')
         current_ctx.set(ctx=ctx)
 
@@ -289,6 +301,10 @@ class TestInstance(testtools.TestCase):
 
     @mock_ec2
     def test_get_all_instances_bad_id(self):
+        """this checks that _get_all_instances returns None
+        when there is no such instance.
+        """
+
         ctx = self.mock_ctx('test_get_all_instances_bad_id')
         current_ctx.set(ctx=ctx)
 
@@ -296,16 +312,55 @@ class TestInstance(testtools.TestCase):
             list_of_instance_ids='test_get_all_instances_bad_id')
         self.assertIsNone(output)
 
+    @mock_ec2
     def test_get_instance_attribute_no_instance(self):
-            ctx = self.mock_ctx('test_get_private_dns_name')
-            current_ctx.set(ctx=ctx)
-            with mock_ec2():
-                ctx.instance.runtime_properties['aws_resource_id'] = \
-                    'i-4339wSD9'
-                ctx.node.properties['use_external_resource'] = True
-                ex = self.assertRaises(
-                    NonRecoverableError,
-                    instance._get_instance_attribute,
-                    'state_code')
-                self.assertIn(
-                    'External resource, but the supplied', ex.message)
+        """ This tests that _get_instance_attribute raises an
+        error when use_external_resource is true and there
+        is no such resource.
+        """
+
+        ctx = self.mock_ctx('test_get_private_dns_name')
+        current_ctx.set(ctx=ctx)
+        ctx.instance.runtime_properties['aws_resource_id'] = \
+            'i-4339wSD9'
+        ctx.node.properties['use_external_resource'] = True
+        ex = self.assertRaises(
+            NonRecoverableError,
+            instance._get_instance_attribute,
+            'state_code')
+        self.assertIn(
+            'External resource, but the supplied', ex.message)
+
+    @mock_ec2
+    def test_get_instance_parameters(self):
+        """ This tests that the _get_instance_parameters
+        function returns a dict with the correct structure.
+        """
+
+        ctx = self.mock_ctx(
+            'test_get_instance_parameters')
+        current_ctx.set(ctx=ctx)
+        ctx.node.properties['image_id'] = 'abc'
+        ctx.node.properties['instance_type'] = 'efg'
+        ctx.node.properties['parameters']['image_id'] = 'abcd'
+        ctx.node.properties['parameters']['key_name'] = 'xyz'
+        parameters = instance._get_instance_parameters()
+        self.assertIn('abcd', parameters['image_id'])
+        self.assertIn('xyz', parameters['key_name'])
+        self.assertIn('efg', parameters['instance_type'])
+
+    @mock_ec2
+    def test_creation_validation_image_id(self):
+        """This tests that creation validation gets to image_id
+        it will return NonRecoverableError if the image_id
+        doesn't exist.
+        """
+
+        ctx = self.mock_ctx('test_creation_validation_image_id')
+        current_ctx.set(ctx=ctx)
+        ctx.node.properties['image_id'] = 'abc'
+        ctx.node.properties['instance_type'] = 'efg'
+        with self.assertRaisesRegexp(
+                NonRecoverableError,
+                'Invalid id:'):
+            instance.creation_validation(ctx=ctx)

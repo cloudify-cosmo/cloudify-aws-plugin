@@ -14,11 +14,12 @@
 #    * limitations under the License.
 
 
-def get_instances(storage):
-    return storage.get_node_instances()
+from cosmo_tester.framework.testenv import bootstrap, teardown
 
 
-def get_instance_node_id(node_name, storage):
-    for instance in get_instances(storage):
-        if node_name in instance.node_id:
-            return node_name
+def setUp():
+    bootstrap()
+
+
+def tearDown():
+    teardown()
