@@ -69,6 +69,7 @@ class TestSecurityGroup(testtools.TestCase):
 
     @mock_ec2
     def test_create(self):
+        """This tests that create runs"""
 
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock('test_create', test_properties)
@@ -77,6 +78,7 @@ class TestSecurityGroup(testtools.TestCase):
 
     @mock_ec2
     def test_create_existing(self):
+        """This tests that create creates the runtime_properties"""
 
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
@@ -94,6 +96,7 @@ class TestSecurityGroup(testtools.TestCase):
 
     @mock_ec2
     def test_delete(self):
+        """This tests that delete removes the runtime_properties"""
 
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock('test_delete', test_properties)
@@ -107,6 +110,9 @@ class TestSecurityGroup(testtools.TestCase):
 
     @mock_ec2
     def test_create_duplicate(self):
+        """This tests that when you give a name of an existing
+        resource, a NonRecoverableError is raised.
+        """
 
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
@@ -122,6 +128,9 @@ class TestSecurityGroup(testtools.TestCase):
 
     @mock_ec2
     def test_delete_deleted(self):
+        """This tests that security group delete raises an
+        error when the group is already deleted.
+        """
 
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
@@ -138,7 +147,9 @@ class TestSecurityGroup(testtools.TestCase):
 
     @mock_ec2
     def test_delete_existing(self):
-
+        """This tests that security group delete removed the 
+        runtime_properties
+        """
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
             'test_delete_existing', test_properties)
@@ -156,6 +167,9 @@ class TestSecurityGroup(testtools.TestCase):
 
     @mock_ec2
     def test_use_external_not_existing(self):
+        """This tests that when use_external_resource is true
+        if such a security group not exists an error is raised.
+        """
 
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
@@ -170,6 +184,9 @@ class TestSecurityGroup(testtools.TestCase):
 
     @mock_ec2
     def test_creation_validation_existing(self):
+        """This tests that when use_external_resource is true
+        if such a security group not exists an error is raised.
+        """
 
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
@@ -184,6 +201,9 @@ class TestSecurityGroup(testtools.TestCase):
 
     @mock_ec2
     def test_creation_validation_not_existing(self):
+        """This tests that when use_external_resource is false
+        if such a security group exists an error is raised.
+        """
 
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
@@ -203,6 +223,10 @@ class TestSecurityGroup(testtools.TestCase):
 
     @mock_ec2
     def test_create_group_rules(self):
+        """ This tests that _create_group_rules creates
+        the rules and that they match on the way out
+        to what when in.
+        """
 
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
@@ -212,12 +236,15 @@ class TestSecurityGroup(testtools.TestCase):
         group = ec2_client.create_security_group('test_create_group_rules',
                                                  'this is test')
         securitygroup._create_group_rules(group)
-        self.assertNotEqual(
-            group.rules,
-            ec2_client.get_all_security_groups(
-                groupnames='test_create_group_rules')[0].rules)
+        self.assertEqual(
+            str(group.rules),
+            str(ec2_client.get_all_security_groups(
+                groupnames='test_create_group_rules')[0].rules))
 
     def test_get_security_group_from_name(self):
+        """This tests that _get_security_group_from_name
+        returns a securoty group from an ID as expected.
+        """
 
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
@@ -236,14 +263,17 @@ class TestSecurityGroup(testtools.TestCase):
             self.assertEqual(group.id, output.id)
 
     @mock_ec2
-    def test_get_all_groups_deleted(self):
+    def test_get_all_groups(self):
+        """ This tests that all created groups are returned
+        by _get_all_security_groups
+        """
 
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
-            'test_get_all_groups_deleted', test_properties)
+            'test_get_all_groups', test_properties)
         current_ctx.set(ctx=ctx)
         ec2_client = connection.EC2ConnectionClient().client()
-        group = ec2_client.create_security_group('test_get_all_groups_deleted',
+        group = ec2_client.create_security_group('test_get_all_groups',
                                                  'this is test')
         ctx.instance.runtime_properties['aws_resource_id'] = group.id
         output = securitygroup._get_all_security_groups(
@@ -252,6 +282,9 @@ class TestSecurityGroup(testtools.TestCase):
 
     @mock_ec2
     def test_create_group_rules_no_src_group_id_or_cidr(self):
+        """ This tests that either src_group_id or cidr_ip is
+        error is raised when both are given.
+        """
 
         ec2_client = connection.EC2ConnectionClient().client()
         test_properties = self.get_mock_properties()
@@ -273,6 +306,9 @@ class TestSecurityGroup(testtools.TestCase):
 
     @mock_ec2
     def test_create_group_rules_both_src_group_id_cidr(self):
+        """ This tests that either src_group_id or cidr_ip is
+        error is raised when neither is given.
+        """
 
         ec2_client = connection.EC2ConnectionClient().client()
         group = ec2_client.create_security_group(
@@ -298,6 +334,10 @@ class TestSecurityGroup(testtools.TestCase):
 
     @mock_ec2
     def test_create_group_rules_src_group(self):
+        """ This tests that _create_group_rules creates
+        the rules and that they match on the way out
+        to what when in.
+        """
 
         ec2_client = connection.EC2ConnectionClient().client()
         test_properties = self.get_mock_properties()
@@ -313,13 +353,16 @@ class TestSecurityGroup(testtools.TestCase):
             'test_create_group_rules_src_group',
             'this is test')
         securitygroup._create_group_rules(group)
-        self.assertNotEqual(
-            group.rules,
-            ec2_client.get_all_security_groups(
-                groupnames='test_create_group_rules_src_group')[0].rules)
+        self.assertEqual(
+            str(group.rules),
+            str(ec2_client.get_all_security_groups(
+                groupnames='test_create_group_rules_src_group')[0].rules))
 
     @mock_ec2
     def test_create_external_securitygroup_not_external(self):
+        """ This checks that _create_external_securitygroup
+        returns false when use_external_resource is false.
+        """
 
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
@@ -327,13 +370,18 @@ class TestSecurityGroup(testtools.TestCase):
             test_properties)
         current_ctx.set(ctx=ctx)
 
+        name = ctx.node.properties['resource_id']
         ctx.node.properties['use_external_resource'] = False
 
-        output = securitygroup._delete_external_securitygroup()
+        output = securitygroup._create_external_securitygroup(
+            name)
         self.assertEqual(False, output)
 
     @mock_ec2
     def test_delete_external_securitygroup_not_external(self):
+        """ This checks that _delete_external_securitygroup
+        returns false when use_external_resource is false.
+        """
 
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
