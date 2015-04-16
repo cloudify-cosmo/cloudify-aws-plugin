@@ -147,7 +147,7 @@ class TestSecurityGroup(testtools.TestCase):
 
     @mock_ec2
     def test_delete_existing(self):
-        """This tests that security group delete removed the 
+        """This tests that security group delete removed the
         runtime_properties
         """
         test_properties = self.get_mock_properties()
