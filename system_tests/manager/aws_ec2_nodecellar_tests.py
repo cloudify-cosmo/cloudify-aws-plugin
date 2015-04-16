@@ -27,7 +27,7 @@ class AWSNodeCellarTest(nodecellar_test.NodecellarAppTest):
 
         return {
             'image': self.env.ubuntu_agent_ami,
-            'size': self.env.medium_instance_type,
+            'size': self.env.micro_instance_type,
             'agent_user': 'ubuntu'
         }
 
