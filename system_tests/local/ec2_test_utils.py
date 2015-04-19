@@ -15,6 +15,7 @@
 
 # Built-in Imports
 import os
+import tempfile
 
 # Third party Imports
 from boto.ec2 import EC2Connection
@@ -196,8 +197,9 @@ class EC2LocalTestUtils(TestCase):
         return new_address
 
     def _create_key_pair(self, ec2_client, name):
+        private_key_path = tempfile.mkdtemp()
         new_key_pair = ec2_client.create_key_pair(name)
-        new_key_pair.save(os.path.expanduser('~/.ssh'))
+        new_key_pair.save(private_key_path)
         return new_key_pair
 
     def _create_security_group(self, ec2_client, name, description):
