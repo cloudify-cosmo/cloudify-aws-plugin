@@ -192,23 +192,26 @@ def _save_key_pair(key_pair_object):
 
     ctx.logger.debug('Attempting to save the key_pair_object.')
 
-    directory_path = _get_path_to_key_folder()
-
-    try:
-        key_pair_object.save(directory_path)
-    except (boto.exception.BotoClientError, OSError) as e:
+    if not key_pair_object.material:
         raise NonRecoverableError(
-            'Unable to save key pair: {0}'.format(str(e)))
+            'Cannot save key. KeyPair contains no material.')
 
-    key_file = _get_path_to_key_file()
+    file_path = _get_path_to_key_file()
+    if os.path.exists(file_path):
+        raise NonRecoverableError(
+            '{0} already exists, it will not be overwritten.'.format(
+                file_path))
+    fp = open(file_path, 'wb')
+    fp.write(key_pair_object.material)
+    fp.close()
 
-    _set_key_file_permissions(key_file)
+    _set_key_file_permissions(file_path)
 
 
 def _set_key_file_permissions(key_file):
 
     if os.access(key_file, os.W_OK):
-        os.chmod(key_file, 0400)
+        os.chmod(key_file, 0o600)
     else:
         ctx.logger.error(
             'Unable to set permissions key file: {0}.'.format(key_file))
@@ -246,25 +249,6 @@ def _get_path_to_key_file():
             'Unable to get key file path, private_key_path not set.')
 
     return os.path.expanduser(ctx.node.properties['private_key_path'])
-
-
-def _get_path_to_key_folder():
-    """Gets the path to the folder that the key file is located in.
-
-    :param node_properties: The properties dictionary in the ctx.node object.
-    :return directory_path: Path to the directory
-    :raises NonRecoverableError: If private_key_path is not set.
-    """
-
-    if 'private_key_path' not in ctx.node.properties:
-        raise NonRecoverableError(
-            'Unable to get key file path, private_key_path not set.')
-
-    full_path_to_file = _get_path_to_key_file()
-
-    directory_path, filename = os.path.split(full_path_to_file)
-
-    return directory_path
 
 
 def _search_for_key_file(path_to_key_file):
