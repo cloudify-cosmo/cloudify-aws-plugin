@@ -313,7 +313,7 @@ class TestKeyPair(testtools.TestCase):
         """
 
         ctx = self.mock_ctx(
-            'test_get_path_to_key_folder')
+            'test_get_path_to_key_file')
         current_ctx.set(ctx=ctx)
 
         full_key_path = os.path.expanduser(
@@ -323,25 +323,6 @@ class TestKeyPair(testtools.TestCase):
         output = keypair._get_path_to_key_file()
 
         self.assertEqual(full_key_path, output)
-
-    @mock_ec2
-    def test_get_path_to_key_folder(self):
-        """ This tests that the expected key path is returned
-        by _get_path_to_key_folder.
-        """
-
-        ctx = self.mock_ctx(
-            'test_get_path_to_key_folder')
-        current_ctx.set(ctx=ctx)
-        full_key_path = os.path.expanduser(
-            ctx.node.properties['private_key_path']
-        )
-
-        key_directory, key_filename = os.path.split(full_key_path)
-
-        output = keypair._get_path_to_key_folder()
-
-        self.assertEqual(key_directory, output)
 
     @mock_ec2
     def test_search_for_key_file_no_file(self):
@@ -356,3 +337,38 @@ class TestKeyPair(testtools.TestCase):
             False,
             output
         )
+
+    @mock_ec2
+    def test_file_already_exists(self):
+        """Tests that if a file already exists at 
+        private_key_path, then an error is raised.
+        """
+
+        temp_key = tempfile.mktemp()
+        self.addCleanup(os.remove, temp_key)
+        with open(temp_key, 'w') as outfile:
+            outfile.write('')
+        ctx = self.mock_ctx('test_file_already_exists')
+        ctx.node.properties['private_key_path'] = temp_key
+        ctx.node.properties['resource_id'] = 'something_else'
+        current_ctx.set(ctx=ctx)
+        with self.assertRaisesRegexp(
+                NonRecoverableError,
+                '{0} already exists, it will not be overwritten'.format(
+                    temp_key)):
+            keypair.create(ctx=ctx)
+
+    @mock_ec2
+    def test_delete_different_resource_id_and_file_path(self):
+        temp_key = tempfile.mktemp()
+        ctx = self.mock_ctx(
+            'test_delete_different_resource_id_and_file_path')
+        ctx.node.properties['private_key_path'] = temp_key
+        ctx.node.properties['resource_id'] = 'something_else'
+        current_ctx.set(ctx=ctx)
+        keypair.create(ctx=ctx)
+        self.assertTrue(
+            os.path.exists(temp_key))
+        keypair.delete(ctx=ctx)
+        self.assertFalse(
+            os.path.exists(temp_key))
