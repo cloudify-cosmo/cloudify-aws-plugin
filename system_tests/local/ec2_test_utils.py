@@ -80,10 +80,14 @@ class EC2LocalTestUtils(TestCase):
                     external_sg=False, external_vm=False,
                     test_name='vanilla_test'):
 
+        private_key_path = tempfile.mkdtemp()
+
         return {
             'image': self.env.ubuntu_trusty_image_id,
             'size': self.env.micro_instance_type,
-            'key_path': '~/.ssh/{0}.pem'.format(test_name),
+            'key_path': '{0}/{1}.pem'.format(
+                private_key_path,
+                test_name),
             'resource_id_ip': resource_id_ip,
             'resource_id_kp': resource_id_kp,
             'resource_id_sg': resource_id_sg,
