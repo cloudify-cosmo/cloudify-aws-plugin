@@ -340,7 +340,7 @@ class TestKeyPair(testtools.TestCase):
 
     @mock_ec2
     def test_file_already_exists(self):
-        """Tests that if a file already exists at 
+        """Tests that if a file already exists at
         private_key_path, then an error is raised.
         """
 
@@ -360,6 +360,9 @@ class TestKeyPair(testtools.TestCase):
 
     @mock_ec2
     def test_delete_different_resource_id_and_file_path(self):
+        """ This makes sure that delete deletes when the resource_id and
+        the private_key_path differ.
+        """
         temp_key = tempfile.mktemp()
         ctx = self.mock_ctx(
             'test_delete_different_resource_id_and_file_path')
