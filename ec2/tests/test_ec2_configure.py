@@ -15,15 +15,8 @@
 
 # Built-in Imports
 import testtools
-import tempfile
 from StringIO import StringIO
 from ConfigParser import ConfigParser
-
-# Third Party Imports
-from moto import mock_ec2
-
-# Cloudify Imports is imported and used in operations
-from ec2 import configure
 
 
 class TestConfigure(testtools.TestCase):
