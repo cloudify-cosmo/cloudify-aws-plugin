@@ -14,14 +14,8 @@
 #    * limitations under the License.
 
 # Built-in Imports:
-import tempfile
 from StringIO import StringIO
 from ConfigParser import ConfigParser
-
-# Third-party Imports
-from boto import config
-
-# Cloudify Imports
 
 
 class BotoConfig(object):
