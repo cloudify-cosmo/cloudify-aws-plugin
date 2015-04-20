@@ -42,17 +42,3 @@ class TestConfigure(testtools.TestCase):
         string = StringIO()
         creds.write(string)
         return string.getvalue()
-
-    @mock_ec2
-    def test_configure_provide_path(self):
-
-        mock_config = self.mock_profile_string()
-
-        temp_config = tempfile.mktemp()
-        with open(temp_config, 'w') as temp_config_file:
-            temp_config_file.write(mock_config)
-
-        configure_file = \
-            configure.BotoConfig().get_config(
-                path=temp_config, profile_name='mock')
-        self.assertEqual(configure_file, mock_config)
