@@ -37,7 +37,7 @@ class EC2ConnectionClient():
 
         if not aws_config_property:
             return EC2Connection()
-        elif 'ec2_region_name' in aws_config_property:
+        elif aws_config_property.get('ec2_region_name'):
             region_object = \
                 get_region(aws_config_property['ec2_region_name'])
             aws_config = aws_config_property.copy()
