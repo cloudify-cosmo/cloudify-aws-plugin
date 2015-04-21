@@ -16,6 +16,7 @@
 import copy
 from contextlib import contextmanager
 
+from boto.ec2 import get_region
 from boto.ec2 import EC2Connection
 
 from cosmo_tester.framework.handlers import (
@@ -60,6 +61,10 @@ class CloudifyEC2InputsConfigReader(BaseCloudifyInputsConfigReader):
     @property
     def aws_secret_access_key(self):
         return self.config['aws_secret_access_key']
+
+    @property
+    def ec2_region_name(self):
+        return self.config['ec2_region_name']
 
     @property
     def management_user_name(self):
@@ -165,9 +170,12 @@ class EC2Handler(BaseHandler):
 
     def _client_credentials(self):
 
+        region = get_region(self.env.ec2_region_name)
+
         return {
             'aws_access_key_id': self.env.aws_access_key_id,
-            'aws_secret_access_key': self.env.aws_secret_access_key
+            'aws_secret_access_key': self.env.aws_secret_access_key,
+            'region': region
         }
 
     def _security_groups(self, ec2_client):
