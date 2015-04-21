@@ -43,8 +43,6 @@ class EC2ConnectionClient():
             aws_config = aws_config_property.copy()
             aws_config['region'] = region_object
             del(aws_config['ec2_region_name'])
-            if 'ec2_region_endpoint' in aws_config:
-                del(aws_config['ec2_region_endpoint'])
         else:
             aws_config = aws_config_property.copy()
 
