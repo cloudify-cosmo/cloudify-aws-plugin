@@ -174,7 +174,7 @@ class EC2Handler(BaseHandler):
 
         return {
             'aws_access_key_id': self.env.aws_access_key_id,
-            'aws_secret_access_key': self.env.aws_secret_access_key
+            'aws_secret_access_key': self.env.aws_secret_access_key,
             'region': region
         }
 

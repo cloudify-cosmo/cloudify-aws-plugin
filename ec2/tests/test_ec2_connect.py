@@ -37,7 +37,6 @@ class TestConnection(testtools.TestCase):
             properties={
                 constants.AWS_CONFIG_PROPERTY: {
                     'ec2_region_name': 'dark-side-of-the-moon',
-                    'ec2_region_endpoint': 'ec2.us-east-1.amazonaws.com'
                 }
             }
         )
