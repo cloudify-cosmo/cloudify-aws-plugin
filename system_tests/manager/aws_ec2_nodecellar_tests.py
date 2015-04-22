@@ -26,7 +26,7 @@ class AWSNodeCellarTest(nodecellar_test.NodecellarAppTest):
     def get_inputs(self):
 
         return {
-            'image': self.env.ubuntu_agent_ami,
+            'image': self.env.ubuntu_trusty_image_id,
             'size': self.env.micro_instance_type,
             'agent_user': 'ubuntu'
         }
