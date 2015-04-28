@@ -107,7 +107,8 @@ class EC2LocalTestUtils(TestCase):
 
         test_node_id = test_name
         test_properties = {
-            constants.AWS_CONFIG_PROPERTY: {},
+            constants.AWS_CONFIG_PROPERTY: 
+                self._get_aws_config(),
             'use_external_resource': external_vm,
             'resource_id': resource_id_vm,
             'image_id': self.env.ubuntu_trusty_image_id,
