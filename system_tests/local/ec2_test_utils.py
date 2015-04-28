@@ -188,9 +188,12 @@ class EC2LocalTestUtils(TestCase):
 
     def _get_aws_config(self):
 
+        region = get_region(self.env.ec2_region_name)
+
         return {
             'aws_access_key_id': self.env.aws_access_key_id,
-            'aws_secret_access_key': self.env.aws_secret_access_key
+            'aws_secret_access_key': self.env.aws_secret_access_key,
+            'region': region
         }
 
     def _get_ec2_client(self):
