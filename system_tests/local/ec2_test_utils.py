@@ -141,7 +141,8 @@ class EC2LocalTestUtils(TestCase):
         instance_context = MockContext({
             'node': MockContext({
                 'properties': {
-                    constants.AWS_CONFIG_PROPERTY: {},
+                    constants.AWS_CONFIG_PROPERTY: 
+                        self._get_aws_config(),
                     'use_external_resource': False,
                     'resource_id': ''
                 }
@@ -157,7 +158,8 @@ class EC2LocalTestUtils(TestCase):
         elasticip_context = MockContext({
             'node': MockContext({
                 'properties': {
-                    constants.AWS_CONFIG_PROPERTY: {},
+                    constants.AWS_CONFIG_PROPERTY: 
+                        self._get_aws_config(),
                     'use_external_resource': False,
                     'resource_id': '',
                 }

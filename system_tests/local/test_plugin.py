@@ -375,7 +375,7 @@ class EC2ElasticIPUnitTests(EC2LocalTestUtils):
     def test_get_address_object_by_id(self):
 
         ctx = self.mock_relationship_context(
-            'test_get_address_by_id')
+            'test_get_address_object_by_id')
         current_ctx.set(ctx=ctx)
 
         client = self._get_ec2_client()
