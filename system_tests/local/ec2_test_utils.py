@@ -18,6 +18,7 @@ import os
 import tempfile
 
 # Third party Imports
+from boto.ec2 import get_region
 from boto.ec2 import EC2Connection
 
 # Cloudify Imports
