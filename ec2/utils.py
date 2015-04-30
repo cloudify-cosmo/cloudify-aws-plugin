@@ -22,6 +22,11 @@ from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
 
 
+def general_creation_validation()
+    return ctx.node.properties['resource_id'] if \
+        ctx.node.properties['resource_id'] else None
+
+
 def validate_node_property(key, ctx_node_properties):
     """Checks if the node property exists in the blueprint.
 
