@@ -29,7 +29,7 @@ from cloudify.decorators import operation
 def creation_validation(**_):
     """ This checks that all user supplied info is valid """
 
-    if not utils.resource_id_in_node_properties():
+    if not ctx.node.properties['resource_id']:
         address = None
     else:
         address = _get_address_by_id(
