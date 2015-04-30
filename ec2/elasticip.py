@@ -29,8 +29,11 @@ from cloudify.decorators import operation
 def creation_validation(**_):
     """ This checks that all user supplied info is valid """
 
-    address = _get_address_by_id(
-        ctx.node.properties['resource_id'])
+    if not utils.resource_id_in_node_properties():
+        address = None
+    else:
+        address = _get_address_by_id(
+            ctx.node.properties['resource_id'])
 
     if ctx.node.properties['use_external_resource'] and not address:
         raise NonRecoverableError(
