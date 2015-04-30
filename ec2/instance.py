@@ -32,10 +32,7 @@ def creation_validation(**_):
     for property_key in constants.INSTANCE_REQUIRED_PROPERTIES:
         utils.validate_node_property(property_key, ctx.node.properties)
 
-    if not utils.resource_id_in_node_properties():
-        instance = None
-    else:
-        instance = _get_instance_from_id(utils.get_resource_id())
+    instance = _get_instance_from_id(utils.get_resource_id())
 
     if ctx.node.properties['use_external_resource'] and not instance:
         raise NonRecoverableError(
