@@ -22,7 +22,7 @@ from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
 
 
-def general_creation_validation():
+def resource_id_in_node_properties():
     return ctx.node.properties['resource_id'] if \
         ctx.node.properties['resource_id'] else None
 
