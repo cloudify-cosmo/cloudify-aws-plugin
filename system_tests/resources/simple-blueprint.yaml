@@ -43,6 +43,9 @@ inputs:
   resource_id_vm:
     type: string
 
+  aws_config:
+    default: {}
+
 node_templates:
 
   simple_elastic_ip:
@@ -50,7 +53,7 @@ node_templates:
     properties:
       resource_id: { get_input: resource_id_ip }
       use_external_resource: { get_input: external_ip }
-      aws_config: {}
+      aws_config: { get_input: aws_config }
 
   simple_security_group:
     type: cloudify.aws.nodes.SecurityGroup
@@ -59,7 +62,7 @@ node_templates:
       use_external_resource: { get_input: external_sg }
       description: Simple Security Group
       rules: []
-      aws_config: {}
+      aws_config: { get_input: aws_config }
 
   simple_key_pair:
     type: cloudify.aws.nodes.KeyPair
@@ -67,7 +70,7 @@ node_templates:
       resource_id: { get_input: resource_id_kp }
       use_external_resource: { get_input: external_kp }
       private_key_path: { get_input: key_path }
-      aws_config: {}
+      aws_config: { get_input: aws_config }
 
   simple_instance:
     type: cloudify.aws.nodes.Instance
@@ -77,7 +80,7 @@ node_templates:
       use_external_resource: { get_input: external_vm }
       image_id: { get_input: image }
       instance_type: { get_input: size }
-      aws_config: {}
+      aws_config: { get_input: aws_config }
 
 plugins:
     ec2:

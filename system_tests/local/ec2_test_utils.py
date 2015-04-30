@@ -96,7 +96,9 @@ class EC2LocalTestUtils(TestCase):
             'external_ip': external_ip,
             'external_kp': external_kp,
             'external_sg': external_sg,
-            'external_vm': external_vm
+            'external_vm': external_vm,
+            constants.AWS_CONFIG_PROPERTY: 
+                self._get_aws_config()
         }
 
     def mock_cloudify_context(self, test_name, external_vm=False,
