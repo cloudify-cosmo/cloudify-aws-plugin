@@ -24,6 +24,9 @@ from cosmo_tester.framework.handlers import (
     BaseCloudifyInputsConfigReader)
 
 
+KEYS_TO_NOT_REMOVE_ON_CLEANUP = u'shared-systemt-tests-key'
+
+
 class EC2CleanupContext(BaseHandler.CleanupContext):
 
     def __init__(self, context_name, env):
@@ -53,19 +56,17 @@ class EC2CleanupContext(BaseHandler.CleanupContext):
 
     @classmethod
     def clean_all(cls, env):
-        hardcoded_resources_to_not_remove = u'shared-systemt-tests-key'
-        total_resources = env.handler.ec2_infra_state()
-        cls.logger.info("Current resources in account: " + str(total_resources))
-        cls.logger.info("Hardcoded resources to not remove: " + str(hardcoded_resources_to_not_remove))
-        resources_to_be_removed = total_resources
-        resources_to_be_removed['key_pairs'].pop(hardcoded_resources_to_not_remove)
+        resources_to_be_removed = env.handler.ec2_infra_state()
+        cls.logger.info("Current resources in account: " + str(resources_to_be_removed))
+        cls.logger.info("Hardcoded resources to not remove: " + str(KEYS_TO_NOT_REMOVE_ON_CLEANUP))
+        resources_to_be_removed['key_pairs'].pop(KEYS_TO_NOT_REMOVE_ON_CLEANUP)
         cls.logger.info("resources_to_be_removed: " + str(resources_to_be_removed))
-        env.handler.remove_ec2_resources(resources_to_be_removed)
-        total_resources = env.handler.ec2_infra_state()
-        cls.logger.info("Current resources in account: " + str(total_resources))
-
-
-
+        failed = env.handler.remove_ec2_resources(resources_to_be_removed)
+        assert len(failed['instances']) == 0
+        assert len(failed['key_pairs']) == 0
+        assert len(failed['elasticips']) == 0
+        assert len(failed['security_groups']) == 1
+        # This is the default security group which cannot be removed by a user.
 
 
 class CloudifyEC2InputsConfigReader(BaseCloudifyInputsConfigReader):
