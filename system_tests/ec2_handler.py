@@ -51,6 +51,11 @@ class EC2CleanupContext(BaseHandler.CleanupContext):
         return self.env.handler.ec2_infra_state_delta(
             before=self.before_run, after=current_state)
 
+    @staticmethod
+    def clean_all(env):
+        
+        pass
+
 
 class CloudifyEC2InputsConfigReader(BaseCloudifyInputsConfigReader):
 
