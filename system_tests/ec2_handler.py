@@ -51,10 +51,21 @@ class EC2CleanupContext(BaseHandler.CleanupContext):
         return self.env.handler.ec2_infra_state_delta(
             before=self.before_run, after=current_state)
 
-    @staticmethod
-    def clean_all(env):
-        
-        pass
+    @classmethod
+    def clean_all(cls, env):
+        hardcoded_resources_to_not_remove = u'shared-systemt-tests-key'
+        total_resources = env.handler.ec2_infra_state()
+        cls.logger.info("Current resources in account: " + str(total_resources))
+        cls.logger.info("Hardcoded resources to not remove: " + str(hardcoded_resources_to_not_remove))
+        resources_to_be_removed = total_resources
+        resources_to_be_removed['key_pairs'].pop(hardcoded_resources_to_not_remove)
+        cls.logger.info("resources_to_be_removed: " + str(resources_to_be_removed))
+        env.handler.remove_ec2_resources(resources_to_be_removed)
+        total_resources = env.handler.ec2_infra_state()
+        cls.logger.info("Current resources in account: " + str(total_resources))
+
+
+
 
 
 class CloudifyEC2InputsConfigReader(BaseCloudifyInputsConfigReader):
@@ -163,13 +174,14 @@ class EC2Handler(BaseHandler):
             if elasticip_id in resources_to_remove['elasticips']:
                 with self._handled_exception(
                         elasticip_id, failed, 'elasticips'):
-                    ec2_client.release_address(elasticip_id)
+                    ec2_client.get_all_addresses(elasticip_id)[0].release()
 
         for security_group_id, _ in security_groups:
             if security_group_id in resources_to_remove['security_groups']:
                 with self._handled_exception(
                         security_group_id, failed, 'security_groups'):
-                    ec2_client.delete_security_group(security_group_id)
+                    ec2_client.get_all_security_groups(
+                        group_ids=[security_group_id])[0].delete()
 
         return failed
 
@@ -214,3 +226,5 @@ class EC2Handler(BaseHandler):
             failed[resource_group][resource_id] = ex
 
 handler = EC2Handler
+
+
