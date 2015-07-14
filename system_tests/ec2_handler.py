@@ -24,7 +24,6 @@ from cosmo_tester.framework.handlers import (
     BaseCloudifyInputsConfigReader)
 
 
-
 class EC2CleanupContext(BaseHandler.CleanupContext):
 
     def __init__(self, context_name, env):
