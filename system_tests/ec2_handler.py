@@ -57,7 +57,7 @@ class EC2CleanupContext(BaseHandler.CleanupContext):
         resources_to_be_removed = env.handler.ec2_infra_state()
         cls.logger.info("Current resources in account: {0}".format(resources_to_be_removed))
         if env.use_existing_manager_keypair:
-            resources_to_be_removed['key_pairs'].pop(env.manager_keypair_name, None)
+            resources_to_be_removed['key_pairs'].pop(env.management_keypair_name, None)
         if env.use_existing_agent_keypair:
             resources_to_be_removed['key_pairs'].pop(env.agent_keypair_name, None)
         cls.logger.info("resources_to_be_removed: {0}".format(resources_to_be_removed))
@@ -119,14 +119,6 @@ class CloudifyEC2InputsConfigReader(BaseCloudifyInputsConfigReader):
     @property
     def management_security_group(self):
         return self.config['mananger_security_group_name']
-
-    @property
-    def manager_keypair_name(self):
-        return self.config['manager_keypair_name']
-
-    @property
-    def agent_keypair_name(self):
-        return self.config['agent_keypair_name']
 
     @property
     def use_existing_manager_keypair(self):
@@ -248,5 +240,3 @@ class EC2Handler(BaseHandler):
             failed[resource_group][resource_id] = ex
 
 handler = EC2Handler
-
-
