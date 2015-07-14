@@ -51,6 +51,27 @@ class EC2CleanupContext(BaseHandler.CleanupContext):
         return self.env.handler.ec2_infra_state_delta(
             before=self.before_run, after=current_state)
 
+    @classmethod
+    def clean_all(cls, env):
+        resources_to_be_removed = env.handler.ec2_infra_state()
+        cls.logger.info("Current resources in account: {0}".format(resources_to_be_removed))
+        if env.use_existing_manager_keypair:
+            resources_to_be_removed['key_pairs'].pop(env.management_keypair_name, None)
+        if env.use_existing_agent_keypair:
+            resources_to_be_removed['key_pairs'].pop(env.agent_keypair_name, None)
+        cls.logger.info("resources_to_be_removed: {0}".format(resources_to_be_removed))
+        failed = env.handler.remove_ec2_resources(resources_to_be_removed)
+        errorflag = not(
+            (len(failed['instances']) == 0) and
+            (len(failed['key_pairs']) == 0) and
+            (len(failed['elasticips']) == 0) and
+            # This is the default security group which cannot be removed by a user.
+            (len(failed['security_groups']) == 1) )
+        if errorflag:
+            raise Exception(
+                "Unable to clean up Environment, "
+                "resources remaining: {0}".format(failed))
+
 
 class CloudifyEC2InputsConfigReader(BaseCloudifyInputsConfigReader):
 
@@ -97,6 +118,14 @@ class CloudifyEC2InputsConfigReader(BaseCloudifyInputsConfigReader):
     @property
     def management_security_group(self):
         return self.config['mananger_security_group_name']
+
+    @property
+    def use_existing_manager_keypair(self):
+        return self.config['use_existing_manager_keypair']
+
+    @property
+    def use_existing_agent_keypair(self):
+        return self.config['use_existing_agent_keypair']
 
 
 class EC2Handler(BaseHandler):
@@ -158,13 +187,14 @@ class EC2Handler(BaseHandler):
             if elasticip_id in resources_to_remove['elasticips']:
                 with self._handled_exception(
                         elasticip_id, failed, 'elasticips'):
-                    ec2_client.release_address(elasticip_id)
+                    ec2_client.get_all_addresses(elasticip_id)[0].release()
 
         for security_group_id, _ in security_groups:
             if security_group_id in resources_to_remove['security_groups']:
                 with self._handled_exception(
                         security_group_id, failed, 'security_groups'):
-                    ec2_client.delete_security_group(security_group_id)
+                    ec2_client.get_all_security_groups(
+                        group_ids=[security_group_id])[0].delete()
 
         return failed
 
