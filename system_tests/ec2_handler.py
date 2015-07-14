@@ -24,8 +24,6 @@ from cosmo_tester.framework.handlers import (
     BaseCloudifyInputsConfigReader)
 
 
-KEYS_TO_NOT_REMOVE_ON_CLEANUP = u'shared-systemt-tests-key'
-
 
 class EC2CleanupContext(BaseHandler.CleanupContext):
 
@@ -57,16 +55,23 @@ class EC2CleanupContext(BaseHandler.CleanupContext):
     @classmethod
     def clean_all(cls, env):
         resources_to_be_removed = env.handler.ec2_infra_state()
-        cls.logger.info("Current resources in account: " + str(resources_to_be_removed))
-        cls.logger.info("Hardcoded resources to not remove: " + str(KEYS_TO_NOT_REMOVE_ON_CLEANUP))
-        resources_to_be_removed['key_pairs'].pop(KEYS_TO_NOT_REMOVE_ON_CLEANUP)
-        cls.logger.info("resources_to_be_removed: " + str(resources_to_be_removed))
+        cls.logger.info("Current resources in account: {0}".format(resources_to_be_removed))
+        if env.use_existing_manager_keypair:
+            resources_to_be_removed['key_pairs'].pop(env.manager_keypair_name, None)
+        if env.use_existing_agent_keypair:
+            resources_to_be_removed['key_pairs'].pop(env.agent_keypair_name, None)
+        cls.logger.info("resources_to_be_removed: {0}".format(resources_to_be_removed))
         failed = env.handler.remove_ec2_resources(resources_to_be_removed)
-        assert len(failed['instances']) == 0
-        assert len(failed['key_pairs']) == 0
-        assert len(failed['elasticips']) == 0
-        assert len(failed['security_groups']) == 1
-        # This is the default security group which cannot be removed by a user.
+        errorflag = not(
+            (len(failed['instances']) == 0) and
+            (len(failed['key_pairs']) == 0) and
+            (len(failed['elasticips']) == 0) and
+            # This is the default security group which cannot be removed by a user.
+            (len(failed['security_groups']) == 1) )
+        if errorflag:
+            raise Exception(
+                "Unable to clean up Environment, "
+                "resources remaining: {0}".format(failed))
 
 
 class CloudifyEC2InputsConfigReader(BaseCloudifyInputsConfigReader):
@@ -114,6 +119,22 @@ class CloudifyEC2InputsConfigReader(BaseCloudifyInputsConfigReader):
     @property
     def management_security_group(self):
         return self.config['mananger_security_group_name']
+
+    @property
+    def manager_keypair_name(self):
+        return self.config['manager_keypair_name']
+
+    @property
+    def agent_keypair_name(self):
+        return self.config['agent_keypair_name']
+
+    @property
+    def use_existing_manager_keypair(self):
+        return self.config['use_existing_manager_keypair']
+
+    @property
+    def use_existing_agent_keypair(self):
+        return self.config['use_existing_agent_keypair']
 
 
 class EC2Handler(BaseHandler):
