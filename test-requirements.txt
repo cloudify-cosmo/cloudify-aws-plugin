@@ -2,4 +2,4 @@ testtools
 nose
 nose-cov
 testfixtures
-moto
+moto==0.4.4
