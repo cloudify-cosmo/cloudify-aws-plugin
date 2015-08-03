@@ -23,65 +23,70 @@ from moto import mock_ec2
 from boto.ec2 import EC2Connection
 
 # Cloudify Imports
-from cloudify.workflows import local
+from cloudify.test_utils import workflow_test
 import test_utils
-
-IGNORED_LOCAL_WORKFLOW_MODULES = (
-    'worker_installer.tasks',
-    'plugin_installer.tasks'
-)
 
 TEST_KEY_FOLDER = tempfile.mkdtemp()
 
 
+clean_resources_inputs = {
+    'agent_server_name': 'test_instance',
+    'image_id': 'ami-e214778a',
+    'flavor_id': 't1.micro',
+    'use_existing_agent_group': False,
+    'agent_security_group_name': 'test_group',
+    'use_existing_agent_keypair': False,
+    'agent_keypair_name': 'test_key',
+    'path_to_key_file': '{0}/test_key.pem'.format(TEST_KEY_FOLDER)
+}
+
+external_resources_inputs = {
+    'agent_server_name': 'test_instance',
+    'image_id': 'ami-e214778a',
+    'flavor_id': 't1.micro',
+    'use_existing_agent_group': True,
+    'agent_security_group_name': 'test_group2',
+    'use_existing_agent_keypair': True,
+    'agent_keypair_name': 'test_key2',
+    'path_to_key_file': '{0}/test_key2.pem'.format(TEST_KEY_FOLDER)
+}
+
+
 class TestWorkflowClean(testtools.TestCase):
 
-    def setUp(self):
-        super(TestWorkflowClean, self).setUp()
-        # build blueprint path
-        blueprint_path = os.path.join(os.path.dirname(__file__),
-                                      'blueprint', 'blueprint.yaml')
+    blueprint_path = os.path.join('blueprint', 'blueprint.yaml')
 
-        inputs = {
-            'agent_server_name': 'test_instance',
-            'image_id': 'ami-e214778a',
-            'flavor_id': 't1.micro',
-            'use_existing_agent_group': False,
-            'agent_security_group_name': 'test_group',
-            'use_existing_agent_keypair': False,
-            'agent_keypair_name': 'test_key',
-            'path_to_key_file': '{0}/test_key.pem'.format(TEST_KEY_FOLDER)
-
-        }
-
-        # setup local workflow execution environment
-        self.env = local.init_env(
-            blueprint_path, name=self._testMethodName, inputs=inputs,
-            ignored_modules=IGNORED_LOCAL_WORKFLOW_MODULES)
-
+    @workflow_test(blueprint_path,
+                   init_args={'inputs': clean_resources_inputs},
+                   plugin_auto_copy=True)
     @mock_ec2
-    def test_install_workflow(self):
+    def test_install_workflow(self, cfy_local):
         """ Tests the install workflow using the built in
             workflows.
         """
 
         # execute install workflow
-        self.env.execute('install', task_retries=0)
+        cfy_local.execute('install', task_retries=0)
 
-        self.assertEquals(4, len(test_utils.get_instances(self.env.storage)))
+        self.assertEquals(4, len(test_utils.get_instances(cfy_local.storage)))
 
         self.assertIsNotNone(
             test_utils.get_instance_node_id(
-                'agent_security_group', self.env.storage))
+                'agent_security_group', cfy_local.storage))
         self.assertIsNotNone(
-            test_utils.get_instance_node_id('agent_keypair', self.env.storage))
+            test_utils.get_instance_node_id('agent_keypair',
+                                            cfy_local.storage))
         self.assertIsNotNone(
-            test_utils.get_instance_node_id('agent_server', self.env.storage))
+            test_utils.get_instance_node_id('agent_server', cfy_local.storage))
         self.assertIsNotNone(
-            test_utils.get_instance_node_id('agent_ip', self.env.storage))
+            test_utils.get_instance_node_id('agent_ip',
+                                            cfy_local.storage))
 
+    @workflow_test(blueprint_path,
+                   init_args={'inputs': clean_resources_inputs},
+                   plugin_auto_copy=True)
     @mock_ec2
-    def test_uninstall_workflow(self):
+    def test_uninstall_workflow(self, cfy_local):
         """ Tests the uninstall workflow using the built in
             workflows.
         """
@@ -91,35 +96,18 @@ class TestWorkflowClean(testtools.TestCase):
         self.addCleanup(os.remove, file)
 
         # execute install workflow
-        self.env.execute('uninstall', task_retries=0)
+        cfy_local.execute('uninstall', task_retries=0)
 
 
 class TestWorkflowExternalResources(testtools.TestCase):
 
-    def setUp(self):
-        super(TestWorkflowExternalResources, self).setUp()
-        # build blueprint path
-        blueprint_path = os.path.join(os.path.dirname(__file__),
-                                      'blueprint', 'blueprint.yaml')
+    blueprint_path = os.path.join('blueprint', 'blueprint.yaml')
 
-        inputs = {
-            'agent_server_name': 'test_instance',
-            'image_id': 'ami-e214778a',
-            'flavor_id': 't1.micro',
-            'use_existing_agent_group': True,
-            'agent_security_group_name': 'test_group2',
-            'use_existing_agent_keypair': True,
-            'agent_keypair_name': 'test_key2',
-            'path_to_key_file': '{0}/test_key2.pem'.format(TEST_KEY_FOLDER)
-        }
-
-        # setup local workflow execution environment
-        self.env = local.init_env(
-            blueprint_path, name=self._testMethodName, inputs=inputs,
-            ignored_modules=IGNORED_LOCAL_WORKFLOW_MODULES)
-
+    @workflow_test(blueprint_path,
+                   init_args={'inputs': clean_resources_inputs},
+                   plugin_auto_copy=True)
     @mock_ec2
-    def test_install_workflow(self):
+    def test_install_workflow(self, cfy_local):
         """ Tests the install workflow using the built in
             workflows.
         """
@@ -131,10 +119,13 @@ class TestWorkflowExternalResources(testtools.TestCase):
         kp.save(TEST_KEY_FOLDER)
 
         # execute install workflow
-        self.env.execute('install', task_retries=0)
+        cfy_local.execute('install', task_retries=0)
 
+    @workflow_test(blueprint_path,
+                   init_args={'inputs': clean_resources_inputs},
+                   plugin_auto_copy=True)
     @mock_ec2
-    def test_uninstall_workflow(self):
+    def test_uninstall_workflow(self, cfy_local):
         """ Tests the uninstall workflow using the built in
             workflows.
         """
@@ -149,4 +140,4 @@ class TestWorkflowExternalResources(testtools.TestCase):
 
         self.addCleanup(clean_up_keys)
         # execute install workflow
-        self.env.execute('uninstall', task_retries=0)
+        cfy_local.execute('uninstall', task_retries=0)
