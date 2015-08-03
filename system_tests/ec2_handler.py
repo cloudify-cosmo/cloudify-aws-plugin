@@ -25,7 +25,6 @@ from cosmo_tester.framework.handlers import (
 
 
 class EC2CleanupContext(BaseHandler.CleanupContext):
-
     def __init__(self, context_name, env):
         super(EC2CleanupContext, self).__init__(context_name, env)
         self.before_run = self.env.handler.ec2_infra_state()
@@ -54,19 +53,25 @@ class EC2CleanupContext(BaseHandler.CleanupContext):
     @classmethod
     def clean_all(cls, env):
         resources_to_be_removed = env.handler.ec2_infra_state()
-        cls.logger.info("Current resources in account: {0}".format(resources_to_be_removed))
+        cls.logger.info(
+            "Current resources in account:"
+            " {0}".format(resources_to_be_removed))
         if env.use_existing_manager_keypair:
-            resources_to_be_removed['key_pairs'].pop(env.management_keypair_name, None)
+            resources_to_be_removed['key_pairs'].pop(
+                env.management_keypair_name, None)
         if env.use_existing_agent_keypair:
-            resources_to_be_removed['key_pairs'].pop(env.agent_keypair_name, None)
-        cls.logger.info("resources_to_be_removed: {0}".format(resources_to_be_removed))
+            resources_to_be_removed['key_pairs'].pop(env.agent_keypair_name,
+                                                     None)
+        cls.logger.info(
+            "resources_to_be_removed: {0}".format(resources_to_be_removed))
         failed = env.handler.remove_ec2_resources(resources_to_be_removed)
-        errorflag = not(
+        errorflag = not (
             (len(failed['instances']) == 0) and
             (len(failed['key_pairs']) == 0) and
             (len(failed['elasticips']) == 0) and
-            # This is the default security group which cannot be removed by a user.
-            (len(failed['security_groups']) == 1) )
+            # This is the default security group which cannot
+            # be removed by a user.
+            (len(failed['security_groups']) == 1))
         if errorflag:
             raise Exception(
                 "Unable to clean up Environment, "
@@ -74,7 +79,6 @@ class EC2CleanupContext(BaseHandler.CleanupContext):
 
 
 class CloudifyEC2InputsConfigReader(BaseCloudifyInputsConfigReader):
-
     @property
     def aws_access_key_id(self):
         return self.config['aws_access_key_id']
@@ -129,7 +133,6 @@ class CloudifyEC2InputsConfigReader(BaseCloudifyInputsConfigReader):
 
 
 class EC2Handler(BaseHandler):
-
     CleanupContext = EC2CleanupContext
     CloudifyConfigReader = CloudifyEC2InputsConfigReader
 
@@ -237,5 +240,6 @@ class EC2Handler(BaseHandler):
             yield
         except BaseException, ex:
             failed[resource_group][resource_id] = ex
+
 
 handler = EC2Handler
