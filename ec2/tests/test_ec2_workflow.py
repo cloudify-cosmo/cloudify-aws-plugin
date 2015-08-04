@@ -58,7 +58,7 @@ class TestWorkflowClean(testtools.TestCase):
 
     @workflow_test(blueprint_path,
                    init_args={'inputs': clean_resources_inputs},
-                   plugin_auto_copy=True)
+                   copy_plugin_yaml=True)
     @mock_ec2
     def test_install_workflow(self, cfy_local):
         """ Tests the install workflow using the built in
@@ -84,7 +84,7 @@ class TestWorkflowClean(testtools.TestCase):
 
     @workflow_test(blueprint_path,
                    init_args={'inputs': clean_resources_inputs},
-                   plugin_auto_copy=True)
+                   copy_plugin_yaml=True)
     @mock_ec2
     def test_uninstall_workflow(self, cfy_local):
         """ Tests the uninstall workflow using the built in
@@ -105,7 +105,7 @@ class TestWorkflowExternalResources(testtools.TestCase):
 
     @workflow_test(blueprint_path,
                    init_args={'inputs': clean_resources_inputs},
-                   plugin_auto_copy=True)
+                   copy_plugin_yaml=True)
     @mock_ec2
     def test_install_workflow(self, cfy_local):
         """ Tests the install workflow using the built in
@@ -123,7 +123,7 @@ class TestWorkflowExternalResources(testtools.TestCase):
 
     @workflow_test(blueprint_path,
                    init_args={'inputs': clean_resources_inputs},
-                   plugin_auto_copy=True)
+                   copy_plugin_yaml=True)
     @mock_ec2
     def test_uninstall_workflow(self, cfy_local):
         """ Tests the uninstall workflow using the built in
