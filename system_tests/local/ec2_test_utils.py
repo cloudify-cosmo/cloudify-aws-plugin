@@ -30,7 +30,9 @@ from cosmo_tester.framework.testenv import TestCase
 
 IGNORED_LOCAL_WORKFLOW_MODULES = (
     'worker_installer.tasks',
-    'plugin_installer.tasks'
+    'plugin_installer.tasks',
+    'cloudify_agent.operations',
+    'cloudify_agent.installer.operations',
 )
 
 INSTANCE_TO_IP = 'instance_connected_to_elastic_ip'
@@ -97,7 +99,7 @@ class EC2LocalTestUtils(TestCase):
             'external_kp': external_kp,
             'external_sg': external_sg,
             'external_vm': external_vm,
-            constants.AWS_CONFIG_PROPERTY: 
+            constants.AWS_CONFIG_PROPERTY:
                 self._get_aws_config()
         }
 
@@ -110,7 +112,7 @@ class EC2LocalTestUtils(TestCase):
 
         test_node_id = test_name
         test_properties = {
-            constants.AWS_CONFIG_PROPERTY: 
+            constants.AWS_CONFIG_PROPERTY:
                 self._get_aws_config(),
             'use_external_resource': external_vm,
             'resource_id': resource_id_vm,
@@ -143,7 +145,7 @@ class EC2LocalTestUtils(TestCase):
         instance_context = MockContext({
             'node': MockContext({
                 'properties': {
-                    constants.AWS_CONFIG_PROPERTY: 
+                    constants.AWS_CONFIG_PROPERTY:
                         self._get_aws_config(),
                     'use_external_resource': False,
                     'resource_id': ''
@@ -160,7 +162,7 @@ class EC2LocalTestUtils(TestCase):
         elasticip_context = MockContext({
             'node': MockContext({
                 'properties': {
-                    constants.AWS_CONFIG_PROPERTY: 
+                    constants.AWS_CONFIG_PROPERTY:
                         self._get_aws_config(),
                     'use_external_resource': False,
                     'resource_id': '',
