@@ -49,7 +49,6 @@ PAIR_B_VM = 'pair_b_connected_instance'
 
 
 class EC2LocalTestUtils(TestCase):
-
     def setUp(self):
         super(EC2LocalTestUtils, self).setUp()
         self._set_up()
