@@ -37,7 +37,7 @@ class AWSNodeCellarTest(nodecellar_test.NodecellarAppTest):
 
     @property
     def entrypoint_node_name(self):
-        return 'nodecellar_elasticip'
+        return 'nodecellar_ip'
 
     @property
     def entrypoint_property_name(self):
