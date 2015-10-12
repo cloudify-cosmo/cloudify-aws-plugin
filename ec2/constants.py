@@ -53,3 +53,10 @@ AWS_DEFAULT_CONFIG_PATH = '~/.boto'
 EXTERNAL_RESOURCE_ID = 'aws_resource_id'
 NODE_INSTANCE = 'node-instance'
 RELATIONSHIP_INSTANCE = 'relationship-instance'
+AWS_CONFIG_PATH_ENV_VAR_NAME = "AWS_CONFIG_PATH"
+
+# Boto config schema (section > options)
+BOTO_CONFIG_SCHEMA = {
+    'Credentials': ['aws_access_key_id', 'aws_secret_access_key'],
+    'Boto': ['ec2_region_name', 'ec2_region_endpoint']
+}
