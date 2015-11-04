@@ -6,6 +6,8 @@ plugins:
   aws:
     executor: central_deployment_agent
     source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/1.3rc1.zip
+    package_name: cloudify-aws-plugin
+    package_version: 1.3rc1
 
 node_types:
   cloudify.aws.nodes.Instance:
