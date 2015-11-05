@@ -44,6 +44,10 @@ INSTANCE_KEYPAIR_RELATIONSHIP = 'instance_connected_to_keypair'
 # securitygroup module constants
 SECURITY_GROUP_REQUIRED_PROPERTIES = ['description', 'rules']
 
+# ebs module constants
+VOLUME_REQUIRED_PROPERTIES = ['size', 'zone', 'device']
+VOLUME_SNAPSHOT_ATTRIBUTE = 'snapshots_ids'
+
 # keypair module constants
 KEYPAIR_REQUIRED_PROPERTIES = ['private_key_path']
 

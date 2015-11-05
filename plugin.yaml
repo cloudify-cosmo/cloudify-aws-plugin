@@ -118,6 +118,51 @@ node_types:
       cloudify.interfaces.validation:
         creation: aws.ec2.securitygroup.creation_validation
 
+  cloudify.aws.nodes.Volume:
+    derived_from: cloudify.nodes.Volume
+    properties:
+      use_external_resource:
+        description: >
+          Indicate whether the resource exists or if Cloudify should create the resource.
+        type: boolean
+        default: false
+      resource_id:
+        description: >
+          Either the name or ID of the resource in Cloudify. If this is an existing
+          resource, you should provide the name or the ID of the resource in Amazon AWS.
+        type: string
+        default: ''
+      size:
+        description: >
+          The size of the volume in GB.
+        type: string
+      zone:
+        description: >
+          A string representing the AWS availability zone.
+        type: string
+      device:
+        description: >
+          The device on the instance
+        type: string
+      aws_config:
+        description: >
+          A dictionary of values to pass to authenticate with the AWS API.
+        default: {}
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.ec2.ebs.create
+          inputs:
+            args:
+              default: {}
+        delete:
+          implementation: aws.ec2.ebs.delete
+          inputs:
+            args:
+              default: {}
+      cloudify.interfaces.validation:
+        creation: aws.ec2.ebs.creation_validation
+
   cloudify.aws.nodes.KeyPair:
     derived_from: cloudify.nodes.Root
     properties:
@@ -163,3 +208,14 @@ relationships:
 
   cloudify.aws.relationships.instance_connected_to_security_group:
     derived_from: cloudify.relationships.connected_to
+
+  cloudify.aws.relationships.volume_connected_to_instance:
+    derived_from: cloudify.relationships.connected_to
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish: aws.ec2.ebs.attach
+        unlink:
+          implementation: aws.ec2.ebs.detach
+          inputs:
+            args:
+              default: {}
