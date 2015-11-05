@@ -22,7 +22,8 @@ INSTANCE_STATE_STOPPED = 80
 INSTANCE_REQUIRED_PROPERTIES = ['image_id', 'instance_type']
 
 INSTANCE_INTERNAL_ATTRIBUTES = \
-    ['private_dns_name', 'public_dns_name', 'public_ip_address', 'ip']
+    ['private_dns_name', 'public_dns_name',
+     'public_ip_address', 'ip', 'placement']
 
 RUN_INSTANCE_PARAMETERS = {
     'image_id': None, 'key_name': None, 'security_groups': None,
@@ -43,6 +44,13 @@ INSTANCE_KEYPAIR_RELATIONSHIP = 'instance_connected_to_keypair'
 
 # securitygroup module constants
 SECURITY_GROUP_REQUIRED_PROPERTIES = ['description', 'rules']
+
+# ebs module constants
+VOLUME_REQUIRED_PROPERTIES = ['size', 'zone', 'device']
+VOLUME_SNAPSHOT_ATTRIBUTE = 'snapshots_ids'
+VOLUME_AVAILABLE = 'available'
+VOLUME_CREATING = 'creating'
+VOLUME_IN_USE = 'in-use'
 
 # keypair module constants
 KEYPAIR_REQUIRED_PROPERTIES = ['private_key_path']
