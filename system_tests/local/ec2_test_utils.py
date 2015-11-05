@@ -42,10 +42,15 @@ SIMPLE_IP = 'simple_elastic_ip'
 SIMPLE_SG = 'simple_security_group'
 SIMPLE_KP = 'simple_key_pair'
 SIMPLE_VM = 'simple_instance'
+SIMPLE_VOL = 'simple_volume'
 PAIR_A_IP = 'pair_a_connected_elastic_ip'
 PAIR_A_VM = 'pair_a_connected_instance'
 PAIR_B_SG = 'pair_b_connected_security_group'
 PAIR_B_VM = 'pair_b_connected_instance'
+PAIR_C_VOL = 'pair_c_connected_volume'
+PAIR_C_VM = 'pair_c_connected_instance'
+TEST_SIZE = 2
+TEST_DEVICE = '/dev/xvdf'
 
 
 class EC2LocalTestUtils(TestCase):
@@ -80,6 +85,7 @@ class EC2LocalTestUtils(TestCase):
                     resource_id_sg='', resource_id_vm='',
                     external_ip=False, external_kp=False,
                     external_sg=False, external_vm=False,
+                    resource_id_vol='', external_vol=False,
                     test_name='vanilla_test'):
 
         private_key_path = tempfile.mkdtemp()
@@ -90,20 +96,27 @@ class EC2LocalTestUtils(TestCase):
             'key_path': '{0}/{1}.pem'.format(
                 private_key_path,
                 test_name),
+            'vol_size': TEST_SIZE,
+            'vol_zone': self.env.availability_zone,
+            'vol_device': TEST_DEVICE,
             'resource_id_ip': resource_id_ip,
             'resource_id_kp': resource_id_kp,
             'resource_id_sg': resource_id_sg,
             'resource_id_vm': resource_id_vm,
+            'resource_id_vol': resource_id_vol,
             'external_ip': external_ip,
             'external_kp': external_kp,
             'external_sg': external_sg,
             'external_vm': external_vm,
+            'external_vol': external_vol,
             constants.AWS_CONFIG_PROPERTY:
                 self._get_aws_config()
         }
 
-    def mock_cloudify_context(self, test_name, external_vm=False,
-                              resource_id_vm='', resource_id_sg='',
+    def mock_cloudify_context(self, test_name,
+                              external_vm=False,
+                              resource_id_vm='',
+                              resource_id_sg='',
                               resource_id_kp=''):
         """ Creates a mock context for the instance
             tests
@@ -133,8 +146,12 @@ class EC2LocalTestUtils(TestCase):
             operation=operation
         )
 
-        ctx.instance.relationships = \
-            [self.mock_relationship_context(test_name)]
+        if 'volume' in test_node_id:
+            ctx.instance.relationships = \
+                [self.mock_volume_relationship_context(test_name)]
+        else:
+            ctx.instance.relationships = \
+                [self.mock_relationship_context(test_name)]
 
         return ctx
 
@@ -176,6 +193,50 @@ class EC2LocalTestUtils(TestCase):
         relationship_context = MockCloudifyContext(
             node_id=testname, source=instance_context,
             target=elasticip_context)
+
+        return relationship_context
+
+    def mock_volume_relationship_context(self, testname):
+
+        instance_context = MockContext({
+            'node': MockContext({
+                'properties': {
+                    constants.AWS_CONFIG_PROPERTY:
+                        self._get_aws_config(),
+                    'use_external_resource': False,
+                    'resource_id': ''
+                }
+            }),
+            'instance': MockContext({
+                'runtime_properties': {
+                    'aws_resource_id': 'i-abc1234',
+                    'public_ip_address': '127.0.0.1'
+                }
+            })
+        })
+
+        volume_context = MockContext({
+            'node': MockContext({
+                'properties': {
+                    constants.AWS_CONFIG_PROPERTY:
+                        self._get_aws_config(),
+                    'use_external_resource': False,
+                    'resource_id': '',
+                    'zone': self.env.availability_zone,
+                    'size': TEST_SIZE,
+                    'device': TEST_DEVICE,
+                }
+            }),
+            'instance': MockContext({
+                'runtime_properties': {
+                    'aws_resource_id': ''
+                }
+            })
+        })
+
+        relationship_context = MockCloudifyContext(
+            node_id=testname, source=volume_context,
+            target=instance_context)
 
         return relationship_context
 
@@ -224,3 +285,11 @@ class EC2LocalTestUtils(TestCase):
             image_id=self.env.ubuntu_trusty_image_id,
             instance_type=self.env.micro_instance_type)
         return new_reservation.instances[0]
+
+    def _create_volume(self, ec2_client,
+                       size=TEST_SIZE,
+                       zone=None):
+        if not zone:
+            zone = self.env.availability_zone
+        new_volume = ec2_client.create_volume(size, zone)
+        return new_volume

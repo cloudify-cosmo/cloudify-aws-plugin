@@ -122,6 +122,63 @@ node_types:
       cloudify.interfaces.validation:
         creation: aws.ec2.securitygroup.creation_validation
 
+  cloudify.aws.nodes.Volume:
+    derived_from: cloudify.nodes.Volume
+    properties:
+      use_external_resource:
+        description: >
+          Indicate whether the resource exists or if Cloudify should create the resource,
+          true if you are bringing an existing resource, false if you want cloudify to create it.
+        type: boolean
+        default: false
+        required: true
+      resource_id:
+        description: >
+          The AWS resource ID of the external resource, if use_external_resource is true.
+          Otherwise it is an empty string.
+        type: string
+        default: ''
+        required: true
+      size:
+        description: >
+          The size of the volume in GB.
+        type: string
+        required: true
+      zone:
+        description: >
+          A string representing the AWS availability zone.
+        type: string
+        required: true
+      device:
+        description: >
+          The device on the instance
+        type: string
+        required: true
+      aws_config:
+        description: >
+          A dictionary of values to pass to authenticate with the AWS API.
+        default: {}
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.ec2.ebs.create
+          inputs:
+            args:
+              default: {}
+        delete:
+          implementation: aws.ec2.ebs.delete
+          inputs:
+            args:
+              default: {}
+      cloudify.interfaces.validation:
+        creation: aws.ec2.ebs.creation_validation
+      cloudify.interfaces.aws.snapshot:
+        create:
+          implementation: aws.ec2.ebs.create_snapshot
+          inputs:
+            args:
+              default: {}
+
   cloudify.aws.nodes.KeyPair:
     derived_from: cloudify.nodes.Root
     properties:
@@ -167,3 +224,14 @@ relationships:
 
   cloudify.aws.relationships.instance_connected_to_security_group:
     derived_from: cloudify.relationships.connected_to
+
+  cloudify.aws.relationships.volume_connected_to_instance:
+    derived_from: cloudify.relationships.connected_to
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish: aws.ec2.ebs.attach
+        unlink:
+          implementation: aws.ec2.ebs.detach
+          inputs:
+            args:
+              default: {}
