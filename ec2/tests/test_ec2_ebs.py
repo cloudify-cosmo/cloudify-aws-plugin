@@ -37,6 +37,7 @@ TEST_DEVICE = '/dev/null'
 BAD_VOLUME_ID = 'vol-a51c05d7'
 BAD_INSTANCE_ID = 'i-4339wSD9'
 
+
 class TestEBS(testtools.TestCase):
 
     def mock_ctx(self, test_name):
@@ -461,7 +462,6 @@ class TestEBS(testtools.TestCase):
             no errors are raised
         """
 
-        ctx = self.mock_relationship_context('test_bad_volume_id_throws_error')
         ex = self.assertRaises(
             NonRecoverableError,
             ebs._get_volumes_from_id, BAD_VOLUME_ID + 'a')
@@ -476,8 +476,10 @@ class TestEBS(testtools.TestCase):
 
         ctx = self.mock_relationship_context('test_bad_volume_detach')
         current_ctx.set(ctx=ctx)
-        ctx.source.instance.runtime_properties['aws_resource_id'] = BAD_VOLUME_ID
-        ctx.source.instance.runtime_properties['instance_id'] = BAD_INSTANCE_ID
+        ctx.source.instance.runtime_properties['aws_resource_id'] = \
+            BAD_VOLUME_ID
+        ctx.source.instance.runtime_properties['instance_id'] = \
+            BAD_INSTANCE_ID
         args = dict(force=True)
         ex = self.assertRaises(NonRecoverableError,
                                ebs.detach, args, ctx=ctx)
@@ -492,9 +494,10 @@ class TestEBS(testtools.TestCase):
 
         ctx = self.mock_relationship_context('test_bad_volume_detach')
         current_ctx.set(ctx=ctx)
-        ctx.source.instance.runtime_properties['aws_resource_id'] = BAD_VOLUME_ID
-        ctx.source.instance.runtime_properties['instance_id'] = BAD_INSTANCE_ID
-        args = dict(force=True)
+        ctx.source.instance.runtime_properties['aws_resource_id'] = \
+            BAD_VOLUME_ID
+        ctx.source.instance.runtime_properties['instance_id'] = \
+            BAD_INSTANCE_ID
         ex = self.assertRaises(NonRecoverableError,
                                ebs.attach, ctx=ctx)
         self.assertIn('not found in account', ex.message)
@@ -509,4 +512,5 @@ class TestEBS(testtools.TestCase):
         args = dict()
         ebs.create_snapshot(args, ctx=ctx)
         self.assertIn(
-            constants.VOLUME_SNAPSHOT_ATTRIBUTE, ctx.instance.runtime_properties)
+            constants.VOLUME_SNAPSHOT_ATTRIBUTE,
+            ctx.instance.runtime_properties)

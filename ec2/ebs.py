@@ -30,6 +30,7 @@ from cloudify.decorators import operation
 
 snapshot_attribute = constants.VOLUME_SNAPSHOT_ATTRIBUTE
 
+
 @operation
 def creation_validation(**_):
     """ This validates all EBS volume Nodes before bootstrap.
@@ -82,6 +83,7 @@ def create(args, **_):
 
     utils.set_external_resource_id(
         new_volume.id, ctx.instance, external=False)
+
 
 @operation
 def delete(**_):
@@ -140,8 +142,8 @@ def attach(**_):
             boto.exception.BotoServerError) as e:
         raise NonRecoverableError('{0}'.format(str(e)))
 
-    ctx.source.instance.runtime_properties\
-        ['instance_id'] = instance_id
+    ctx.source.instance.runtime_properties['instance_id'] = \
+        instance_id
     ctx.logger.info(
         'Attached EBS volume {0} with instance {1}.'
         .format(volume_id, instance_id))
@@ -298,8 +300,8 @@ def _attach_external_volume_or_instance(instance_id):
                 ctx.target.node.properties):
         return False
 
-    ctx.source.instance.runtime_properties\
-        ['instance_id'] = instance_id
+    ctx.source.instance.runtime_properties['instance_id'] = \
+        instance_id
     ctx.logger.info(
         'Either instance or volume is an external resource so not '
         'performing attach operation.')
