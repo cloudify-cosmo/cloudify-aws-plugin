@@ -19,6 +19,15 @@ inputs:
   key_path:
     type: string
 
+  vol_size:
+    type: string
+
+  vol_zone:
+    type: string
+
+  vol_device:
+    type: string
+
   external_ip:
     type: boolean
 
@@ -31,6 +40,9 @@ inputs:
   external_vm:
     type: boolean
 
+  external_vol:
+    type: boolean
+
   resource_id_ip:
     type: string
 
@@ -41,6 +53,9 @@ inputs:
     type: string
 
   resource_id_vm:
+    type: string
+
+  resource_id_vol:
     type: string
 
   aws_config:
@@ -94,7 +109,91 @@ node_templates:
       - type: cloudify.aws.relationships.instance_connected_to_security_group
         target: pair_b_connected_security_group
 
+  pair_c_connected_volume:
+    type: cloudify.aws.nodes.Volume
+    properties:
+      resource_id: { get_input: resource_id_vol }
+      use_external_resource: { get_input: external_vol }
+      size: { get_input: vol_size }
+      zone: { get_input: vol_zone }
+      device: { get_input: vol_device }
+      aws_config: { get_input: aws_config }
+    relationships:
+      - type: cloudify.aws.relationships.volume_connected_to_instance
+        target: pair_c_connected_instance
+
+  pair_c_connected_instance:
+    type: cloudify.aws.nodes.Instance
+    properties:
+      install_agent: false
+      resource_id: { get_input: resource_id_vm }
+      use_external_resource: { get_input: external_vm }
+      image_id: { get_input: image }
+      instance_type: { get_input: size }
+      aws_config: { get_input: aws_config }
+
+
 plugins:
     ec2:
         executor: central_deployment_agent
         install: false
+
+node_types:
+
+  cloudify.aws.nodes.Volume:
+    derived_from: cloudify.nodes.Volume
+    properties:
+      use_external_resource:
+        description: >
+          Indicate whether the resource exists or if Cloudify should create the resource.
+        type: boolean
+        default: false
+      resource_id:
+        description: >
+          Either the name or ID of the resource in Cloudify. If this is an existing
+          resource, you should provide the name or the ID of the resource in Amazon AWS.
+        type: string
+        default: ''
+      size:
+        description: >
+          The size of the volume in GB.
+        type: string
+      zone:
+        description: >
+          A string representing the AWS availability zone.
+        type: string
+      device:
+        description: >
+          The device on the instance
+        type: string
+      aws_config:
+        description: >
+          A dictionary of values to pass to authenticate with the AWS API.
+        default: {}
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.ec2.ebs.create
+          inputs:
+            args:
+              default: {}
+        delete:
+          implementation: aws.ec2.ebs.delete
+          inputs:
+            args:
+              default: {}
+      cloudify.interfaces.validation:
+        creation: aws.ec2.ebs.creation_validation
+
+relationships:
+
+  cloudify.aws.relationships.volume_connected_to_instance:
+    derived_from: cloudify.relationships.connected_to
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish: aws.ec2.ebs.attach
+        unlink:
+          implementation: aws.ec2.ebs.detach
+          inputs:
+            args:
+              default: {}
