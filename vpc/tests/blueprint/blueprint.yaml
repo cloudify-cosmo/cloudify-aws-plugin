@@ -1,0 +1,257 @@
+# DSL version, should appear in the main blueprint.yaml
+# and may appear in other imports. In such case, the versions must match
+tosca_definitions_version: cloudify_dsl_1_2
+
+imports:
+  - types.yaml
+  - plugin.yaml
+
+dsl_definitions:
+
+  aws_config: &AWS_CONFIG
+    ec2_region_name: us-east-1
+    ec2_region_endpoint: ec2.us-east-1.amazonaws.com
+
+inputs:
+
+  existing_vpc_id:
+    type: string
+
+  existing_subnet_id:
+    type: string
+
+  existing_internet_gateway_id:
+    type: string
+
+  existing_vpn_gateway_id:
+    type: string
+
+  existing_network_acl_id:
+    type: string
+
+  existing_dhcp_options_id:
+    type: string
+
+  existing_customer_gateway_id:
+    type: string
+
+  existing_route_table_id:
+    type: string
+
+node_templates:
+
+  new_vpc:
+    type: cloudify.aws.nodes.VPC
+    properties:
+      aws_config: *AWS_CONFIG
+      cidr_block: 10.0.0.0/24
+
+  existing_vpc:
+    type: cloudify.aws.nodes.VPC
+    properties:
+      aws_config: *AWS_CONFIG
+      use_external_resource: true
+      resource_id: { get_input: existing_vpc_id }
+      cidr_block: 11.0.0.0/24
+
+  new_subnet:
+    type: cloudify.aws.nodes.Subnet
+    properties:
+      aws_config: *AWS_CONFIG
+      cidr_block: 10.0.0.0/25
+    relationships:
+      - type: cloudify.aws.relationships.subnet_contained_in_vpc
+        target: new_vpc
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.vpc.subnet.create_subnet
+
+  existing_subnet:
+    type: cloudify.aws.nodes.Subnet
+    properties:
+      aws_config: *AWS_CONFIG
+      use_external_resource: true
+      resource_id: { get_input: existing_subnet_id }
+      cidr_block: 11.0.0.0/25
+    relationships:
+      - type: cloudify.aws.relationships.subnet_contained_in_vpc
+        target: existing_vpc
+
+  new_internet_gateway:
+    type: cloudify.aws.nodes.InternetGateway
+    properties:
+      aws_config: *AWS_CONFIG
+    relationships:
+      - type: cloudify.aws.relationships.gateway_connected_to_vpc
+        target: new_vpc
+
+  existing_internet_gateway:
+    type: cloudify.aws.nodes.InternetGateway
+    properties:
+      aws_config: *AWS_CONFIG
+      use_external_resource: true
+      resource_id: { get_input: existing_internet_gateway_id }
+    relationships:
+      - type: cloudify.aws.relationships.gateway_connected_to_vpc
+        target: existing_vpc
+
+  new_vpn_gateway:
+    type: cloudify.aws.nodes.VPNGateway
+    properties:
+      aws_config: *AWS_CONFIG
+    relationships:
+      - type: cloudify.aws.relationships.gateway_connected_to_vpc
+        target: new_vpc
+
+  existing_vpn_gateway:
+    type: cloudify.aws.nodes.VPNGateway
+    properties:
+      aws_config: *AWS_CONFIG
+      use_external_resource: true
+      resource_id: { get_input: existing_vpn_gateway_id }
+    relationships:
+      - type: cloudify.aws.relationships.gateway_connected_to_vpc
+        target: existing_vpc
+
+  new_customer_gateway:
+    type: cloudify.aws.nodes.CustomerGateway
+    properties:
+      aws_config: *AWS_CONFIG
+      ip_address: 10.0.0.7
+      bgp_asn: 65534
+    relationships:
+      - type: cloudify.aws.relationships.customer_gateway_connected_to_vpn_gateway
+        target: new_vpn_gateway
+
+  existing_customer_gateway:
+    type: cloudify.aws.nodes.CustomerGateway
+    properties:
+      aws_config: *AWS_CONFIG
+      use_external_resource: true
+      resource_id: { get_input: existing_customer_gateway_id }
+      ip_address: 11.0.0.7
+      bgp_asn: 65000
+    relationships:
+      - type: cloudify.aws.relationships.customer_gateway_connected_to_vpn_gateway
+        target: existing_vpn_gateway
+
+  new_access_control_list:
+    type: cloudify.aws.nodes.ACL
+    properties:
+      aws_config: *AWS_CONFIG
+      acl_network_entries:
+        - rule_number: 1
+          protocol: tcp
+          rule_action: ALLOW
+          cidr_block: 10.0.0.0/25
+          egress: ''
+          icmp_code: ''
+          icmp_type: ''
+          port_range_from: 80
+          port_range_to: 80
+    relationships:
+      - type: cloudify.aws.relationships.network_acl_contained_in_vpc
+        target: new_vpc
+      - type: cloudify.aws.relationships.network_acl_associated_with_subnet
+        target: new_subnet
+
+  existing_access_control_list:
+    type: cloudify.aws.nodes.ACL
+    properties:
+      aws_config: *AWS_CONFIG
+      use_external_resource: true
+      resource_id: { get_input: existing_network_acl_id }
+      aws_config: *AWS_CONFIG
+      acl_network_entries:
+        - rule_number: 1
+          protocol: tcp
+          rule_action: ALLOW
+          cidr_block: 11.0.0.0/25
+          egress: ''
+          icmp_code: ''
+          icmp_type: ''
+          port_range_from: 80
+          port_range_to: 80
+    relationships:
+      - type: cloudify.aws.relationships.network_acl_contained_in_vpc
+        target: existing_vpc
+      - type: cloudify.aws.relationships.network_acl_associated_with_subnet
+        target: existing_subnet
+
+  new_dhcp_options:
+    type: cloudify.aws.nodes.DHCPOptions
+    properties:
+      aws_config: *AWS_CONFIG
+      domain_name: example.com
+      domain_name_servers:
+        - 0.asia.pool.ntp.org
+        - 1.asia.pool.ntp.org
+        - 2.asia.pool.ntp.org
+        - 3.asia.pool.ntp.org
+    relationships:
+      - type: cloudify.aws.relationships.dhcp_options_associated_with_vpc
+        target: new_vpc
+
+  existing_dhcp_options:
+    type: cloudify.aws.nodes.DHCPOptions
+    properties:
+      aws_config: *AWS_CONFIG
+      use_external_resource: true
+      resource_id: { get_input: existing_dhcp_options_id }
+      netbios_name_servers:
+        - WAT
+        - ISNETBIOS
+      netbios_node_type: 2
+    relationships:
+      - type: cloudify.aws.relationships.dhcp_options_associated_with_vpc
+        target: existing_vpc
+
+  new_route_table:
+    type: cloudify.aws.nodes.RouteTable
+    properties:
+      aws_config: *AWS_CONFIG
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.vpc.routetable.create_route_table
+          inputs:
+            routes:
+              - destination_cidr_block: { get_property: [ new_subnet, cidr_block ] }
+                gateway_id: { get_attribute: [ new_internet_gateway, aws_resource_id ] }
+    relationships:
+      - type: cloudify.aws.relationships.routetable_contained_in_vpc
+        target: new_vpc
+      - type: cloudify.aws.relationships.routetable_associated_with_subnet
+        target: new_subnet
+      - type: cloudify.aws.relationships.route_table_to_gateway
+        target: new_internet_gateway
+      - type: cloudify.aws.relationships.route_table_of_source_vpc_connected_to_target_peer_vpc
+        target: existing_vpc
+        target_interfaces:
+          cloudify.interfaces.relationship_lifecycle:
+            preconfigure:
+              implementation: aws.vpc.vpc.create_vpc_peering_connection
+              inputs:
+                target_account_id: '234567890123'
+                routes:
+                    - destination_cidr_block: { get_property: [ existing_vpc, cidr_block ] }
+
+  existing_route_table:
+    type: cloudify.aws.nodes.RouteTable
+    properties:
+      aws_config: *AWS_CONFIG
+      use_external_resource: true
+      resource_id: { get_input: existing_route_table_id }
+    relationships:
+      - type: cloudify.aws.relationships.routetable_contained_in_vpc
+        target: existing_vpc
+      - type: cloudify.aws.relationships.routetable_associated_with_subnet
+        target: existing_subnet
+      - type: cloudify.aws.relationships.route_table_to_gateway
+        target: existing_internet_gateway
+
+plugins:
+    ec2:
+        executor: central_deployment_agent
+        install: false

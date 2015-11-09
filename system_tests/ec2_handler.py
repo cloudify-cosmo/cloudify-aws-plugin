@@ -18,6 +18,7 @@ from contextlib import contextmanager
 
 from boto.ec2 import get_region
 from boto.ec2 import EC2Connection
+from boto.vpc import VPCConnection
 
 from cosmo_tester.framework.handlers import (
     BaseHandler,
@@ -140,16 +141,29 @@ class EC2Handler(BaseHandler):
         credentials = self._client_credentials()
         return EC2Connection(**credentials)
 
+    def vpc_client(self):
+        credentials = self._client_credentials()
+        return VPCConnection(**credentials)
+
     def ec2_infra_state(self):
 
         ec2_client = self.ec2_client()
+        vpc_client = self.vpc_client()
 
         return {
             'instances': dict(self._instances(ec2_client)),
             'key_pairs': dict(self._key_pairs(ec2_client)),
             'elasticips': dict(self._elasticips(ec2_client)),
             'security_groups': dict(self._security_groups(ec2_client)),
-            'volumes': dict(self._volumes(ec2_client))
+            'volumes': dict(self._volumes(ec2_client)),
+            'vpcs': dict(self._vpcs(vpc_client)),
+            'subnets': dict(self._subnets(vpc_client)),
+            'internet_gateways': dict(self._internet_gateways(vpc_client)),
+            'vpn_gateways': dict(self._vpn_gateways(vpc_client)),
+            'customer_gateways': dict(self._customer_gateways(vpc_client)),
+            'network_acls': dict(self._network_acls(vpc_client)),
+            'dhcp_options_sets': dict(self._dhcp_options_sets(vpc_client)),
+            'route_tables': dict(self._route_tables(vpc_client))
         }
 
     def ec2_infra_state_delta(self, before, after):
@@ -164,19 +178,36 @@ class EC2Handler(BaseHandler):
     def remove_ec2_resources(self, resources_to_remove):
 
         ec2_client = self.ec2_client()
+        vpc_client = self.vpc_client()
 
         instances = self._instances(ec2_client)
         key_pairs = self._key_pairs(ec2_client)
         elasticips = self._elasticips(ec2_client)
         security_groups = self._security_groups(ec2_client)
         volumes = self._volumes(ec2_client)
+        vpcs = self._vpcs(vpc_client)
+        subnets = self._subnets(vpc_client)
+        internet_gateways = self._internet_gateways(vpc_client)
+        vpn_gateways = self._vpn_gateways(vpc_client)
+        customer_gateways = self._customer_gateways(vpc_client)
+        network_acls = self._network_acls(vpc_client)
+        dhcp_options_sets = self._dhcp_options_sets(vpc_client)
+        route_tables = self._route_tables(vpc_client)
 
         failed = {
             'instances': {},
             'key_pairs': {},
             'elasticips': {},
             'security_groups': {},
-            'volumes': {}
+            'volumes': {},
+            'vpcs': {},
+            'subnets': {},
+            'internet_gateways': {},
+            'vpn_gateways': {},
+            'customer_gateways': {},
+            'network_acls': {},
+            'dhcp_options_sets': {},
+            'route_tables': {}
         }
 
         for instance_id, _ in instances:
@@ -207,6 +238,57 @@ class EC2Handler(BaseHandler):
                 with self._handled_exception(
                         volume_id, failed, 'volumes'):
                     ec2_client.get_all_volumes(volume_id)[0].delete()
+
+        for vpc_id, _ in vpcs:
+            if vpc_id in resources_to_remove['vpcs']:
+                with self._handled_exception(vpc_id, failed, 'vpcs'):
+                    vpc_client.delete_vpc(vpc_id)
+
+        for subnet_id, _ in subnets:
+            if subnet_id in resources_to_remove['subnets']:
+                with self._handled_exception(subnet_id, failed, 'subnets'):
+                    vpc_client.delete_subnet(subnet_id)
+
+        for internet_gateway_id, _ in internet_gateways:
+            if internet_gateway_id in resources_to_remove['internet_gateways']:
+                with self._handled_exception(internet_gateway_id,
+                                             failed,
+                                             'internet_gateways'):
+                    vpc_client.delete_internet_gateway(internet_gateway_id)
+
+        for vpn_gateway_id, _ in vpn_gateways:
+            if vpn_gateway_id in resources_to_remove['vpn_gateways']:
+                with self._handled_exception(vpn_gateway_id,
+                                             failed,
+                                             'vpn_gateways'):
+                    vpc_client.delete_vpn_gateway(vpn_gateway_id)
+
+        for customer_gateway_id, _ in customer_gateways:
+            if customer_gateway_id in resources_to_remove['customer_gateways']:
+                with self._handled_exception(customer_gateway_id,
+                                             failed,
+                                             'customer_gateways'):
+                    vpc_client.delete_customer_gateway(customer_gateway_id)
+
+        for network_acl_id, _ in network_acls:
+            if network_acl_id in resources_to_remove['network_acls']:
+                with self._handled_exception(network_acl_id,
+                                             failed,
+                                             'network_acls'):
+                    vpc_client.delete_network_acl(network_acl_id)
+
+        for dhcp_options_set_id, _ in dhcp_options_sets:
+            if dhcp_options_set_id in resources_to_remove['dhcp_options_sets']:
+                with self._handled_exception(dhcp_options_set_id,
+                                             failed,
+                                             'dhcp_options_sets'):
+                    vpc_client.delete_dhcp_options(dhcp_options_set_id)
+
+        for route_table_id, _ in route_tables:
+            if route_table_id in resources_to_remove['route_tables']:
+                with self._handled_exception(route_table_id, failed,
+                                             'route_tables'):
+                    vpc_client.delete_route_table(route_table_id)
 
         return failed
 
@@ -240,6 +322,38 @@ class EC2Handler(BaseHandler):
     def _volumes(self, ec2_client):
         return [(vol.id, vol.id)
                 for vol in ec2_client.get_all_volumes()]
+
+    def _vpcs(self, vpc_client):
+        return [(vpc.id, vpc.id)
+                for vpc in vpc_client.get_all_vpcs()]
+
+    def _subnets(self, vpc_client):
+        return [(subnet.id, subnet.id)
+                for subnet in vpc_client.get_all_subnets()]
+
+    def _internet_gateways(self, vpc_client):
+        return [(internet_gateway.id, internet_gateway.id)
+                for internet_gateway in vpc_client.get_all_internet_gateways()]
+
+    def _vpn_gateways(self, vpc_client):
+        return [(vpn_gateway.id, vpn_gateway.id)
+                for vpn_gateway in vpc_client.get_all_vpn_gateways()]
+
+    def _customer_gateways(self, vpc_client):
+        return [(customer_gateway.id, customer_gateway.id)
+                for customer_gateway in vpc_client.get_all_customer_gateways()]
+
+    def _network_acls(self, vpc_client):
+        return [(network_acl.id, network_acl.id)
+                for network_acl in vpc_client.get_all_network_acls()]
+
+    def _dhcp_options_sets(self, vpc_client):
+        return [(dhcp_options_set.id, dhcp_options_set.id)
+                for dhcp_options_set in vpc_client.get_all_dhcp_options()]
+
+    def _route_tables(self, vpc_client):
+        return [(route_table.id, route_table.id)
+                for route_table in vpc_client.get_all_route_tables()]
 
     def _remove_keys(self, dct, keys):
         for key in keys:
