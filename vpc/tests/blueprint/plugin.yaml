@@ -68,7 +68,6 @@ data_types:
         type: string
         required: false
 
-
   cloudify.datatypes.aws.NetworkAclEntry:
     properties:
       rule_number:
