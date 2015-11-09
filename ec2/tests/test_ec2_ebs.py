@@ -271,6 +271,8 @@ class TestEBS(testtools.TestCase):
         instance_id = self.get_instance_id()
         ctx.source.instance.runtime_properties['aws_resource_id'] = \
             volume.id
+        ctx.target.instance.runtime_properties['placement'] = \
+            TEST_ZONE
         ctx.target.instance.runtime_properties['aws_resource_id'] = \
             instance_id
         ebs.attach(ctx=ctx)
@@ -396,6 +398,8 @@ class TestEBS(testtools.TestCase):
         ctx.source.node.properties['resource_id'] = volume.id
         ctx.source.instance.runtime_properties['aws_resource_id'] = \
             volume.id
+        ctx.target.instance.runtime_properties['placement'] = \
+            TEST_ZONE
         ctx.target.node.properties['use_external_resource'] = True
         ctx.target.node.properties['resource_id'] = volume.id
         ctx.target.instance.runtime_properties['aws_resource_id'] = \
@@ -456,18 +460,6 @@ class TestEBS(testtools.TestCase):
         self.assertEqual(False, output)
 
     @mock_ec2
-    def test_bad_volume_id_throws_error(self):
-        """ Tests that when an address that is in the user's
-            EC2 account is provided to the attach function
-            no errors are raised
-        """
-
-        ex = self.assertRaises(
-            NonRecoverableError,
-            ebs._get_volumes_from_id, BAD_VOLUME_ID + 'a')
-        self.assertIn('is not a valid Volume ID', ex.message)
-
-    @mock_ec2
     def test_bad_volume_detach(self):
         """ Tests that NonRecoverableError: Invalid Address is
             raised when an address that is not in the user's
@@ -498,6 +490,8 @@ class TestEBS(testtools.TestCase):
             BAD_VOLUME_ID
         ctx.source.instance.runtime_properties['instance_id'] = \
             BAD_INSTANCE_ID
+        ctx.target.instance.runtime_properties['placement'] = \
+            TEST_ZONE
         ex = self.assertRaises(NonRecoverableError,
                                ebs.attach, ctx=ctx)
         self.assertIn('not found in account', ex.message)

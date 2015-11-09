@@ -22,7 +22,8 @@ INSTANCE_STATE_STOPPED = 80
 INSTANCE_REQUIRED_PROPERTIES = ['image_id', 'instance_type']
 
 INSTANCE_INTERNAL_ATTRIBUTES = \
-    ['private_dns_name', 'public_dns_name', 'public_ip_address', 'ip']
+    ['private_dns_name', 'public_dns_name',
+     'public_ip_address', 'ip', 'placement']
 
 RUN_INSTANCE_PARAMETERS = {
     'image_id': None, 'key_name': None, 'security_groups': None,
