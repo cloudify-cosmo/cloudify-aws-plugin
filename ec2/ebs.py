@@ -14,7 +14,6 @@
 #    * limitations under the License.
 
 # Built in Imports
-import re
 import datetime
 
 # Third-party Imports
@@ -27,8 +26,6 @@ from ec2 import connection
 from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
 from cloudify.decorators import operation
-
-snapshot_attribute = constants.VOLUME_SNAPSHOT_ATTRIBUTE
 
 
 @operation
@@ -67,16 +64,15 @@ def create(args, **_):
 
     ctx.logger.debug('Creating EBS volume')
 
-    if not args:
-        args = dict(
-            size=ctx.node.properties['size'],
-            zone=ctx.node.properties['zone']
-        )
+    create_volume_args = dict(
+        size=ctx.node.properties['size'],
+        zone=ctx.node.properties['zone']
+    )
 
-    args.update(args)
+    create_volume_args.update(args)
 
     try:
-        new_volume = ec2_client.create_volume(**args)
+        new_volume = ec2_client.create_volume(**create_volume_args)
     except (boto.exception.EC2ResponseError,
             boto.exception.BotoServerError) as e:
         raise NonRecoverableError('{0}'.format(str(e)))
@@ -100,12 +96,15 @@ def delete(**_):
 
     _delete_volume(volume_id)
 
-    utils.unassign_runtime_property_from_resource(
-        constants.EXTERNAL_RESOURCE_ID, ctx.instance)
-
-    ctx.logger.info(
-        'Attempted to delete EBS volume: {0}.'
-        .format(volume_id))
+    if not _get_volumes([volume_id]):
+        utils.unassign_runtime_property_from_resource(
+            constants.EXTERNAL_RESOURCE_ID, ctx.instance)
+        ctx.logger.info(
+            'Deleted EBS volume: {0}.'
+            .format(volume_id))
+    else:
+        return ctx.operation.retry(
+            message='Waiting volume to be deleted. Retrying...')
 
 
 @operation
@@ -121,6 +120,13 @@ def attach(**_):
         utils.get_external_resource_id_or_raise(
             'attach volume', ctx.target.instance)
 
+    if ctx.source.node.properties['zone'] not in \
+            ctx.target.instance.runtime_properties['placement']:
+        raise NonRecoverableError(
+            'Volume Zone {0} and Instance Placement do not match.'
+            .format(ctx.source.node.properties['zone'],
+                    ctx.target.instance.runtime_properties['placement']))
+
     if _attach_external_volume_or_instance(instance_id):
         return
 
@@ -129,6 +135,11 @@ def attach(**_):
     if not volume_object:
         raise NonRecoverableError(
             'EBS volume {0} not found in account.'.format(volume_id))
+
+    if not _validate_volume_status('available', volume_object):
+        return ctx.operation.retry(
+            message='Volume not in status "available", retrying...'
+                    .format(volume_id))
 
     ctx.logger.debug(
         'Attempting to attach volume {0} to instance {1}.'
@@ -220,10 +231,13 @@ def create_snapshot(args, **_):
     ctx.logger.info(
         'Created snapshot of EBS volume {0}.'.format(volume_id))
 
-    if snapshot_attribute not in ctx.instance.runtime_properties:
-        ctx.instance.runtime_properties[snapshot_attribute] = list()
+    if constants.VOLUME_SNAPSHOT_ATTRIBUTE not in \
+            ctx.instance.runtime_properties:
+        ctx.instance.runtime_properties[constants.VOLUME_SNAPSHOT_ATTRIBUTE] = \
+            list()
 
-    ctx.instance.runtime_properties[snapshot_attribute].append(new_snapshot.id)
+    ctx.instance.runtime_properties[
+        constants.VOLUME_SNAPSHOT_ATTRIBUTE].append(new_snapshot.id)
 
 
 def _delete_volume(volume_id):
@@ -238,10 +252,14 @@ def _delete_volume(volume_id):
             'does not exist in the account'.format(volume_id))
 
     try:
-        volume_to_delete.delete()
+        delete_output = volume_to_delete.delete()
     except (boto.exception.EC2ResponseError,
             boto.exception.BotoServerError) as e:
         raise NonRecoverableError('{0}'.format(str(e)))
+
+    if not delete_output:
+        raise NonRecoverableError(
+            'Delete volume {0} returned False.'.format(volume_id))
 
 
 def _create_external_volume():
@@ -338,13 +356,23 @@ def _get_volumes_from_id(volume_id):
     :returns The boto EBS volume object.
     """
 
-    if not re.match('^vol\-[0-9a-z]{8}$', volume_id):
-        raise NonRecoverableError(
-            '{0} is not a valid Volume ID.'.format(volume_id))
-
     volumes = _get_volumes(list_of_volume_ids=volume_id)
 
     return volumes[0] if volumes else volumes
+
+
+def _validate_volume_status(status, volume):
+    """ Check if the desired status string matches the volume's status
+
+    :param status: a string ('available', 'creating', 'in-use')
+    :param volume: a volume object
+    :return: boolean
+    """
+
+    if status not in volume.update():
+        return False
+
+    return True
 
 
 def _get_volumes(list_of_volume_ids):
