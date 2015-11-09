@@ -215,7 +215,6 @@ class TestKeyPair(testtools.TestCase):
         self.addCleanup(os.remove, key_path)
         with open(key_path, 'w') as out:
             out.write('test_save_keypair')
-        print ctx.node.properties
         ex = self.assertRaises(NonRecoverableError,
                                keypair._save_key_pair, kp)
         self.assertIn(

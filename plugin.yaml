@@ -5,44 +5,160 @@
 plugins:
   aws:
     executor: central_deployment_agent
-    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/1.3.zip
+    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/1.3.post1.CFY-4485.zip
     package_name: cloudify-aws-plugin
-    package_version: '1.3'
+    package_version: '1.3.post1.CFY-4485'
+
+data_types:
+
+  cloudify.datatypes.aws.Config:
+    properties:
+      aws_access_key_id:
+        description: >
+          The ID of your AWS ACCESS KEY.
+        type: string
+        required: false
+      aws_secret_access_key:
+        description: >
+          The ID of your AWS SECRET KEY.
+        type: string
+        required: false
+      ec2_region_name:
+        description: >
+          The EC2 Region RegionName, such as us-east-1.
+          (Not us-east-1b, which is an availability zone, or US East, which is a Region.)
+        type: string
+        required: false
+      ec2_region_endpoint:
+        description: >
+          The endpoint for the given region.
+        type: string
+        required: false
+
+  cloudify.datatypes.aws.Route:
+    properties:
+      route_table_id:
+        description: >
+          In most cases, leave this blank, because the route table is implicit from the node or relationship that is creating the route.
+        type: string
+        required: false
+      destination_cidr_block:
+        description: >
+          This is the cidr_block that you want to route traffic for to the device.
+        type: string
+        required: true
+      gateway_id:
+        description: >
+          The id of the gateway (either internet gateway, customer gateway, or vpn gateway).
+        type: string
+        required: false
+      instance_id:
+        description: >
+          The id of the instance (if you are routing to a NAT instance).
+        type: string
+        required: false
+      interface_id:
+        description: >
+          The id of an attached network interface.
+        type: string
+        required: false
+      vpc_peering_connection_id:
+        description: >
+          The id of a VPC peering connection.
+        type: string
+        required: false
+
+
+  cloudify.datatypes.aws.NetworkAclEntry:
+    properties:
+      rule_number:
+        description: >
+          Some number to identify this rule. Cannot duplicate an existing rule number.
+        type: integer
+        required: true
+      protocol:
+        description: >
+          The Assigned Internet Protocol Number for the protocol (e.g. 1 is ICMP, 6 is TCP, and 17 is UDP).
+        type: integer
+        required: true
+      rule_action:
+        description: Either ALLOW or DENY.
+        type: string
+        required: true
+      cidr_block:
+        description: >
+          The cidr_block.
+        type: string
+        required: true
+      egress:
+        description: >
+          Whether the rule applies to egress traffic from the subnet.
+        type: boolean
+        default: false
+        required: false
+      icmp_type:
+        description: >
+          If in protocol you chose 1 for ICMP, the ICMP type, -1 for all ICMP types.
+        type: integer
+        required: false
+      icmp_code:
+        description: >
+          If in protocol you chose 1 for ICMP, the ICMP code, -1 for all ICMP codes.
+        type: integer
+        required: false
+      port_range_from:
+        description: >
+          The first port in the range.
+        type: integer
+        required: true
+      port_range_to:
+        description: >
+          The last port in the range.
+        type: integer
+        required: true
+
 
 node_types:
+
   cloudify.aws.nodes.Instance:
     derived_from: cloudify.nodes.Compute
     properties:
       use_external_resource:
         description: >
-          Indicate whether the resource exists or if Cloudify should create the resource.
+          Indicate whether the resource exists or if Cloudify should create the resource,
+          true if you are bringing an existing resource, false if you want cloudify to create it.
         type: boolean
         default: false
+        required: true
       resource_id:
         description: >
-          If this is an existing resource, you should provide the ID of the resource in Amazon AWS.
-          If this a new resource, make this the name.
+          The AWS resource ID of the external resource, if use_external_resource is true.
+          Otherwise it is an empty string.
         type: string
         default: ''
+        required: true
       image_id:
         description: >
           The ID of the AMI image in your Amazon account.
         type: string
+        required: true
       instance_type:
         description: >
           The instance's size.
         type: string
+        required: true
       parameters:
         description: >
           The key value pair parameters allowed by Amazon API to the
           ec2.connection.EC2Connection.run_instances command. It should be mentioned that
           although this field is listed as optional. A non-trivial use case requires
           that both the key_name parameter and the security_groups parameter be specified.
-        default: {}
+        required: false
       aws_config:
         description: >
           A dictionary of values to pass to authenticate with the AWS API.
-        default: {}
+        type: cloudify.datatypes.aws.Config
+        required: false
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
@@ -62,19 +178,27 @@ node_types:
     properties:
       use_external_resource:
         description: >
-          Indicate whether the resource exists or if Cloudify should create the resource.
+          Indicate whether the resource exists or if Cloudify should create the resource,
+          true if you are bringing an existing resource, false if you want cloudify to create it.
         type: boolean
         default: false
+        required: true
       resource_id:
         description: >
-          Either the name or ID of the resource in Cloudify. If this is an existing
-          resource, you should provide the name or the ID of the resource in Amazon AWS.
+          The AWS resource ID of the external resource, if use_external_resource is true.
+          Otherwise it is an empty string.
         type: string
         default: ''
+        required: true
+      domain:
+        description: >
+          Set this to 'VPC' if you want to use VPC.
+        required: false
       aws_config:
         description: >
           A dictionary of values to pass to authenticate with the AWS API.
-        default: {}
+        type: cloudify.datatypes.aws.Config
+        required: false
     interfaces:
       cloudify.interfaces.lifecycle:
         create: aws.ec2.elasticip.allocate
@@ -87,21 +211,24 @@ node_types:
     properties:
       use_external_resource:
         description: >
-          Indicate whether the resource exists or if Cloudify should create the resource.
+          Indicate whether the resource exists or if Cloudify should create the resource,
+          true if you are bringing an existing resource, false if you want cloudify to create it.
         type: boolean
         default: false
+        required: true
       resource_id:
         description: >
-          Either the name or ID of the resource in Cloudify. If this is an existing
-          resource, you should provide the name or the ID of the resource in Amazon AWS.
+          The AWS resource ID of the external resource, if use_external_resource is true.
+          Otherwise it is an empty string.
         type: string
         default: ''
+        required: true
       description:
         description: >
           The description field that is required for every security group that you create
           in Amazon.
         type: string
-        default: ''
+        required: true
       rules:
         default: []
         description: >
@@ -110,7 +237,8 @@ node_types:
       aws_config:
         description: >
           A dictionary of values to pass to authenticate with the AWS API.
-        default: {}
+        type: cloudify.datatypes.aws.Config
+        required: false
     interfaces:
       cloudify.interfaces.lifecycle:
         create: aws.ec2.securitygroup.create
@@ -128,27 +256,310 @@ node_types:
         default: false
       resource_id:
         description: >
-          Either the name or ID of the resource in Cloudify. If this is an existing
-          resource, you should provide the name or the ID of the resource in Amazon AWS.
+          The AWS resource ID of the external resource, if use_external_resource is true.
+          If use_external_resource is false, this will be the keys name and ID in AWS.
+          If left blank, the plugin will set a name for you.
+          Otherwise it is an empty string.
         type: string
         default: ''
+        required: true
       private_key_path:
         description: >
           The path where the key should be saved on the machine. If this is a bootstrap
           process, this refers to the local computer. If this will run on the manager,
           this will be saved on the manager.
         type: string
-        default: ''
+        required: true
       aws_config:
         description: >
           A dictionary of values to pass to authenticate with the AWS API.
-        default: {}
+        type: cloudify.datatypes.aws.Config
+        required: false
     interfaces:
       cloudify.interfaces.lifecycle:
         create: aws.ec2.keypair.create
         delete: aws.ec2.keypair.delete
       cloudify.interfaces.validation:
         creation: aws.ec2.keypair.creation_validation
+
+  cloudify.aws.nodes.VPC:
+    derived_from: cloudify.nodes.Network
+    properties:
+      use_external_resource:
+        description: >
+          Indicate whether the resource exists or if Cloudify should create the resource,
+          true if you are bringing an existing resource, false if you want cloudify to create it.
+        type: boolean
+        default: false
+        required: true
+      resource_id:
+        description: >
+          The AWS resource ID of the external resource, if use_external_resource is true.
+          Otherwise it is an empty string.
+        type: string
+        default: ''
+        required: true
+      cidr_block:
+        description: >
+          The CIDR Block that you will split this VPCs subnets across.
+        type: string
+        required: true
+      instance_tenancy:
+        description: >
+          Default or dedicated.
+        type: string
+        default: default
+        required: false
+      aws_config:
+        description: >
+          A dictionary of values to pass to authenticate with the AWS API.
+        type: cloudify.datatypes.aws.Config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: aws.vpc.vpc.create_vpc
+        delete: aws.vpc.vpc.delete
+      cloudify.interfaces.validation:
+        creation: aws.vpc.vpc.creation_validation
+
+  cloudify.aws.nodes.Subnet:
+    derived_from: cloudify.nodes.Subnet
+    properties:
+      use_external_resource:
+        description: >
+          Indicate whether the resource exists or if Cloudify should create the resource,
+          true if you are bringing an existing resource, false if you want cloudify to create it.
+        type: boolean
+        default: false
+        required: true
+      resource_id:
+        description: >
+          The AWS resource ID of the external resource, if use_external_resource is true.
+          Otherwise it is an empty string.
+        type: string
+        default: ''
+        required: true
+      cidr_block:
+        description: >
+          The CIDR Block that instances will be on.
+        type: string
+        required: true
+      availability_zone:
+        description: >
+          The availability zone that you want your subnet in.
+        default: ''
+        required: false
+      aws_config:
+        description: >
+          A dictionary of values to pass to authenticate with the AWS API.
+        type: cloudify.datatypes.aws.Config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: aws.vpc.subnet.create_subnet
+        delete: aws.vpc.subnet.delete_subnet
+      cloudify.interfaces.validation:
+        creation: aws.vpc.subnet.creation_validation
+
+  cloudify.aws.nodes.Gateway:
+    derived_from: cloudify.nodes.Root
+    properties:
+      use_external_resource:
+        description: >
+          Indicate whether the resource exists or if Cloudify should create the resource,
+          true if you are bringing an existing resource, false if you want cloudify to create it.
+        type: boolean
+        default: false
+        required: true
+      resource_id:
+        description: >
+          The AWS resource ID of the external resource, if use_external_resource is true.
+          Otherwise it is an empty string.
+        type: string
+        default: ''
+        required: true
+      aws_config:
+        description: >
+          A dictionary of values to pass to authenticate with the AWS API.
+        type: cloudify.datatypes.aws.Config
+        required: false
+    interfaces:
+      cloudify.interfaces.validation:
+        creation: aws.vpc.gateway.creation_validation
+
+  cloudify.aws.nodes.InternetGateway:
+    derived_from: cloudify.aws.nodes.Gateway
+    properties:
+      cidr_block:
+        description: >
+          The cidr_block that you want this internet gateway to service. Default is for all internet traffic.
+        default: '0.0.0.0/0'
+        required: true
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: aws.vpc.gateway.create_internet_gateway
+        delete: aws.vpc.gateway.delete_internet_gateway
+
+  cloudify.aws.nodes.VPNGateway:
+    derived_from: cloudify.aws.nodes.Gateway
+    properties:
+      type:
+        description: >
+          Type of VPN Connection. Only valid value currently is ipsec.1
+        default: ipsec.1
+        required: true
+      availability_zone:
+        description: >
+          The Availability Zone where you want the VPN gateway.
+        default: ''
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: aws.vpc.gateway.create_vpn_gateway
+        delete: aws.vpc.gateway.delete_vpn_gateway
+
+  cloudify.aws.nodes.CustomerGateway:
+    derived_from: cloudify.aws.nodes.Gateway
+    properties:
+      type:
+        description: >
+          Type of VPN Connection. Only valid value currently is ipsec.1
+        default: ipsec.1
+        required: true
+      ip_address:
+        description: >
+          Internet-routable IP address for customers gateway. Must be a static address
+        required: true
+      bgp_asn:
+        description: >
+          Customer gateways Border Gateway Protocol (BGP) Autonomous System Number (ASN)
+        required: true
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: aws.vpc.gateway.create_customer_gateway
+        delete: aws.vpc.gateway.delete_customer_gateway
+
+  cloudify.aws.nodes.ACL:
+    derived_from: cloudify.nodes.Root
+    properties:
+      use_external_resource:
+        description: >
+          Indicate whether the resource exists or if Cloudify should create the resource,
+          true if you are bringing an existing resource, false if you want cloudify to create it.
+        type: boolean
+        default: false
+        required: true
+      resource_id:
+        description: >
+          The AWS resource ID of the external resource, if use_external_resource is true.
+          Otherwise it is an empty string.
+        type: string
+        default: ''
+        required: true
+      acl_network_entries:
+        description: >
+          A list of rules of data type cloudify.datatypes.aws.NetworkAclEntry (see above).
+        default: []
+        required: false
+      aws_config:
+        description: >
+          A dictionary of values to pass to authenticate with the AWS API.
+        type: cloudify.datatypes.aws.Config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: aws.vpc.networkacl.create_network_acl
+        delete: aws.vpc.networkacl.delete_network_acl
+      cloudify.interfaces.validation:
+        creation: aws.vpc.networkacl.creation_validation
+
+  cloudify.aws.nodes.DHCPOptions:
+    derived_from: cloudify.nodes.Root
+    properties:
+      use_external_resource:
+        description: >
+          Indicate whether the resource exists or if Cloudify should create the resource,
+          true if you are bringing an existing resource, false if you want cloudify to create it.
+        type: boolean
+        default: false
+        required: true
+      resource_id:
+        description: >
+          The AWS resource ID of the external resource, if use_external_resource is true.
+          Otherwise it is an empty string.
+        type: string
+        default: ''
+        required: true
+      domain_name:
+        description: >
+          A domain name.
+        required: false
+      domain_name_servers:
+        description: >
+          A list of up to four DNS servers.
+        default: []
+        required: false
+      ntp_servers:
+        description: >
+          A list of up to four NTP servers.
+        default: []
+        required: false
+      netbios_name_servers:
+        description: >
+          A list of up to four netbios servers.
+        default: []
+        required: false
+      netbios_node_type:
+        description: >
+          netbios type. recommended two.
+        default: ''
+        required: false
+      aws_config:
+        description: >
+          A dictionary of values to pass to authenticate with the AWS API.
+        type: cloudify.datatypes.aws.Config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: aws.vpc.dhcp.create_dhcp_options
+        delete: aws.vpc.dhcp.delete_dhcp_options
+      cloudify.interfaces.validation:
+        creation: aws.vpc.dhcp.creation_validation
+
+  cloudify.aws.nodes.RouteTable:
+    derived_from: cloudify.nodes.Root
+    properties:
+      use_external_resource:
+        description: >
+          Indicate whether the resource exists or if Cloudify should create the resource,
+          true if you are bringing an existing resource, false if you want cloudify to create it.
+        type: boolean
+        default: false
+        required: true
+      resource_id:
+        description: >
+          The AWS resource ID of the external resource, if use_external_resource is true.
+          Otherwise it is an empty string.
+        type: string
+        default: ''
+        required: true
+      aws_config:
+        description: >
+          A dictionary of values to pass to authenticate with the AWS API.
+        type: cloudify.datatypes.aws.Config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.vpc.routetable.create_route_table
+          inputs:
+            routes:
+              description: >
+                A list of cloudify.datatypes.aws.Route.
+              default: []
+        delete: aws.vpc.routetable.delete_route_table
+      cloudify.interfaces.validation:
+        creation: aws.vpc.routetable.creation_validation
 
 relationships:
   cloudify.aws.relationships.instance_connected_to_elastic_ip:
@@ -163,3 +574,94 @@ relationships:
 
   cloudify.aws.relationships.instance_connected_to_security_group:
     derived_from: cloudify.relationships.connected_to
+
+  cloudify.aws.relationships.subnet_contained_in_vpc:
+    derived_from: cloudify.relationships.contained_in
+
+  cloudify.aws.relationships.routetable_contained_in_vpc:
+    derived_from: cloudify.relationships.contained_in
+
+  cloudify.aws.relationships.routetable_associated_with_subnet:
+    derived_from: cloudify.relationships.connected_to
+    target_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish:
+          implementation: aws.vpc.routetable.associate_route_table
+        unlink:
+          implementation: aws.vpc.routetable.disassociate_route_table
+
+  cloudify.aws.relationships.route_table_to_gateway:
+    derived_from: cloudify.relationships.connected_to
+    target_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish:
+          implementation: aws.vpc.routetable.create_route_to_gateway
+        unlink:
+          implementation: aws.vpc.routetable.delete_route_from_gateway
+
+  cloudify.aws.relationships.gateway_connected_to_vpc:
+    derived_from: cloudify.relationships.connected_to
+    target_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish: aws.vpc.gateway.attach_gateway
+        unlink: aws.vpc.gateway.detach_gateway
+
+  cloudify.aws.relationships.network_acl_contained_in_vpc:
+    derived_from: cloudify.relationships.contained_in
+
+  cloudify.aws.relationships.network_acl_associated_with_subnet:
+    derived_from: cloudify.relationships.connected_to
+    target_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish: aws.vpc.networkacl.associate_network_acl
+        unlink: aws.vpc.networkacl.disassociate_network_acl
+
+  cloudify.aws.relationships.route_table_of_source_vpc_connected_to_target_peer_vpc:
+    derived_from: cloudify.relationships.connected_to
+    target_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        preconfigure:
+          implementation: aws.vpc.vpc.create_vpc_peering_connection
+          inputs:
+            target_account_id:
+              description: >
+                The 12 digit account ID that the target VPC belongs to.
+            routes:
+              description: >
+                A list of cloudify.datatypes.aws.Route for assignment to the source Route Table.
+              default: []
+        postconfigure:
+          implementation: aws.vpc.vpc.accept_vpc_peering_connection
+        unlink:
+          implementation: aws.vpc.vpc.delete_vpc_peering_connection
+
+  cloudify.aws.relationships.dhcp_options_associated_with_vpc:
+    derived_from: cloudify.relationships.connected_to
+    target_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish:
+          implementation: aws.vpc.dhcp.associate_dhcp_options
+        unlink:
+          implementation: aws.vpc.dhcp.restore_dhcp_options
+
+  cloudify.aws.relationships.customer_gateway_connected_to_vpn_gateway:
+    derived_from: cloudify.relationships.connected_to
+    target_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish:
+          implementation: aws.vpc.gateway.create_vpn_connection
+          inputs:
+            routes:
+              description: >
+                A list of static routes to add to this vpn_connection.
+                The routes will be of type cloudify.datatypes.aws.Route.
+                However, you can only provide the destination_cidr_block and a vpn_connection_id.
+              default: []
+        unlink:
+          implementation: aws.vpc.gateway.delete_vpn_connection
+
+  cloudify.aws.relationships.instance_contained_in_subnet:
+    derived_from: cloudify.relationships.contained_in
+
+  cloudify.aws.relationships.security_group_contained_in_vpc:
+    derived_from: cloudify.relationships.contained_in
