@@ -47,6 +47,7 @@ class TestInstance(testtools.TestCase):
             'image_id': TEST_AMI_IMAGE_ID,
             'instance_type': TEST_INSTANCE_TYPE,
             'cloudify_agent': {},
+            'agent_config': {},
             'parameters': {
                 'security_group_ids': ['sg-73cd3f1e'],
                 'instance_initiated_shutdown_behavior': 'stop'
@@ -62,7 +63,7 @@ class TestInstance(testtools.TestCase):
             properties=test_properties,
             operation=operation
         )
-
+        ctx.node.type_hierarchy = ['cloudify.nodes.Compute']
         return ctx
 
     @mock_ec2
@@ -76,6 +77,62 @@ class TestInstance(testtools.TestCase):
         instance.run_instances(ctx=ctx)
         self.assertIn('aws_resource_id',
                       ctx.instance.runtime_properties.keys())
+
+    @mock_ec2
+    def test_with_userdata_clean(self):
+        """ this tests that handle user data returns the expected output
+        """
+
+        ctx = self.mock_ctx('test_with_userdata_clean')
+        ctx.agent.init_script = lambda: 'SCRIPT'
+        ctx.node.properties['agent_config']['install_method'] = 'init_script'
+        current_ctx.set(ctx=ctx)
+        handle_userdata_output = \
+            instance._handle_userdata(ctx.node.properties['parameters'])
+        expected_userdata = 'SCRIPT'
+        self.assertIn(expected_userdata,
+                      handle_userdata_output.get('user_data'))
+
+    @mock_ec2
+    def test_with_existing_userdata_clean(self):
+        """ this tests that handle user data returns the expected output when existing
+        """
+
+        ctx = self.mock_ctx('test_with_existing_userdata_clean')
+        ctx.agent.init_script = lambda: 'EXISTING'
+        current_ctx.set(ctx=ctx)
+        handle_userdata_output = \
+            instance._handle_userdata(ctx.node.properties['parameters'])
+        expected_userdata = 'EXISTING'
+        self.assertIn(
+            expected_userdata, handle_userdata_output.get('user_data'))
+
+    @mock_ec2
+    def test_with_both_userdata_clean(self):
+        """ this tests that handle user data returns the expected output when merging
+        """
+
+        ctx = self.mock_ctx('test_with_existing_userdata_clean')
+        ctx.agent.init_script = lambda: '#! SCRIPT'
+        ctx.node.properties['agent_config']['install_method'] = 'init_script'
+        ctx.node.properties['parameters']['user_data'] = '#! EXISTING'
+        current_ctx.set(ctx=ctx)
+        handle_userdata_output = \
+            instance._handle_userdata(ctx.node.properties['parameters'])
+        self.assertTrue(handle_userdata_output['user_data'].startswith(
+            'Content-Type: multi'))
+
+    @mock_ec2
+    def test_without_userdata_clean(self):
+        """ this tests that handle user data returns the expected output
+        when there is no init script specified in agent config
+        """
+
+        ctx = self.mock_ctx('test_run_instances_with_user_data_clean')
+        current_ctx.set(ctx=ctx)
+        handle_userdata_output = \
+            instance._handle_userdata(ctx.node.properties['parameters'])
+        self.assertNotIn('user_data', handle_userdata_output)
 
     @mock_ec2
     def test_stop_clean(self):

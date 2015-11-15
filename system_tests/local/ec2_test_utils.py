@@ -58,7 +58,7 @@ class EC2LocalTestUtils(TestCase):
 
     def _set_up(self,
                 inputs=None,
-                directory='resources',
+                directory='manager/resources',
                 filename='simple-blueprint.yaml'):
 
         blueprint_path = os.path.join(
@@ -118,10 +118,9 @@ class EC2LocalTestUtils(TestCase):
             'image_id': self.env.ubuntu_trusty_image_id,
             'instance_type': self.env.micro_instance_type,
             'cloudify_agent': {},
-            'parameters': {
-                'security_group_ids': [resource_id_sg],
-                'key_name': resource_id_kp
-            }
+            'parameters': {'security_group_ids': [resource_id_sg],
+                           'key_name': resource_id_kp
+                           }
         }
 
         operation = {
