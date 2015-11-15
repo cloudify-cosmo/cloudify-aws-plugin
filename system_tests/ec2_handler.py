@@ -121,7 +121,7 @@ class CloudifyEC2InputsConfigReader(BaseCloudifyInputsConfigReader):
 
     @property
     def management_security_group(self):
-        return self.config['mananger_security_group_name']
+        return self.config['manager_security_group_name']
 
     @property
     def use_existing_manager_keypair(self):
