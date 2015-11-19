@@ -21,6 +21,7 @@ from ec2 import utils
 from ec2 import constants
 from ec2 import connection
 from cloudify import ctx
+from cloudify import compute
 from cloudify.exceptions import NonRecoverableError
 from cloudify.decorators import operation
 
@@ -64,7 +65,7 @@ def run_instances(**_):
 
     instance_parameters = _get_instance_parameters()
 
-    ctx.logger.debug(
+    ctx.logger.info(
         'Attempting to create EC2 Instance with these API parameters: {0}.'
         .format(instance_parameters))
 
@@ -233,6 +234,27 @@ def _run_instances_if_needed(ec2_client, instance_parameters):
         return instances[0].id
 
     return ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
+
+
+def _handle_userdata(parameters):
+
+    existing_userdata = parameters.get('user_data')
+    install_agent_userdata = ctx.agent.init_script()
+
+    if not (existing_userdata or install_agent_userdata):
+        return parameters
+
+    if not existing_userdata:
+        final_userdata = install_agent_userdata
+    elif not install_agent_userdata:
+        final_userdata = existing_userdata
+    else:
+        final_userdata = compute.create_multi_mimetype_userdata(
+            [existing_userdata, install_agent_userdata])
+
+    parameters['user_data'] = final_userdata
+
+    return parameters
 
 
 def _get_instances_from_reservation_id(ec2_client):
@@ -452,6 +474,7 @@ def _get_instance_parameters():
     }
 
     parameters.update(ctx.node.properties['parameters'])
+    parameters = _handle_userdata(parameters)
 
     return parameters
 
