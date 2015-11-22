@@ -5,9 +5,9 @@
 plugins:
   aws:
     executor: central_deployment_agent
-    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/1.3.zip
-    package_name: cloudify-aws-plugin
-    package_version: '1.3'
+   source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/1.3rc1.zip
+   package_name: cloudify-aws-plugin
+   package_version: 1.3
 
 node_types:
   cloudify.aws.nodes.Instance:
@@ -70,6 +70,10 @@ node_types:
           Either the name or ID of the resource in Cloudify. If this is an existing
           resource, you should provide the name or the ID of the resource in Amazon AWS.
         type: string
+        default: ''
+      domain:
+        description: >
+          Set this to 'VPC' if you want to use VPC.
         default: ''
       aws_config:
         description: >
@@ -150,12 +154,174 @@ node_types:
       cloudify.interfaces.validation:
         creation: aws.ec2.keypair.creation_validation
 
+  cloudify.aws.nodes.VPC:
+    derived_from: cloudify.nodes.Root
+    properties:
+      use_external_resource:
+        description: >
+          Indicate whether the resource exists or if Cloudify should create the resource.
+        type: boolean
+        default: false
+      resource_id:
+        description: >
+          Either the name or ID of the resource in Cloudify. If this is an existing
+          resource, you should provide the name or the ID of the resource in Amazon AWS.
+        type: string
+        default: ''
+      cidr_block:
+        description: >
+          The CIDR Block that you will split this VPCs subnets across.
+        type: string
+        default: ''
+      instance_tenancy:
+        description: >
+          Default or dedicated.
+        type: string
+        default: default
+      enable_vpc_classic_link:
+        description: >
+          If you want at some point to allow attach classic instances to this VPC, say so now.
+        type: boolean
+        default: false
+      account_id:
+        description: >
+          The 12-digit account id.
+        default: ''
+      aws_config:
+        description: >
+          A dictionary of values to pass to authenticate with the AWS API.
+        default: {}
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: aws.vpc.vpc.create_vpc
+        delete: aws.vpc.vpc.delete
+      cloudify.interfaces.validation:
+        creation: aws.vpc.vpc.creation_validation
+
+  cloudify.aws.nodes.Subnet:
+    derived_from: cloudify.nodes.Network
+    properties:
+      use_external_resource:
+        description: >
+          Indicate whether the resource exists or if Cloudify should create the resource.
+        type: boolean
+        default: false
+      resource_id:
+        description: >
+          Either the name or ID of the resource in Cloudify. If this is an existing
+          resource, you should provide the name or the ID of the resource in Amazon AWS.
+        type: string
+        default: ''
+      cidr_block:
+        description: >
+          The CIDR Block that instances will be on.
+        type: string
+        default: ''
+      aws_config:
+        description: >
+          A dictionary of values to pass to authenticate with the AWS API.
+        default: {}
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.vpc.subnet.create_subnet
+          inputs:
+            args:
+              default: {}
+        delete: aws.vpc.subnet.delete_subnet
+      cloudify.interfaces.validation:
+        creation: aws.vpc.subnet.creation_validation
+
+  cloudify.aws.nodes.Gateway:
+    derived_from: cloudify.nodes.Root
+    properties:
+      use_external_resource:
+        description: >
+          Indicate whether the resource exists or if Cloudify should create the resource.
+        type: boolean
+        default: false
+      resource_id:
+        description: >
+          Either the name or ID of the resource in Cloudify. If this is an existing
+          resource, you should provide the name or the ID of the resource in Amazon AWS.
+        default: ''
+      aws_config:
+        description: >
+          A dictionary of values to pass to authenticate with the AWS API.
+        default: {}
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: aws.vpc.gateway.create
+        delete: aws.vpc.gateway.delete
+      cloudify.interfaces.validation:
+        creation: aws.vpc.gateway.creation_validation
+
+  cloudify.aws.nodes.InternetGateway:
+    derived_from: cloudify.aws.nodes.Gateway
+
+  cloudify.aws.nodes.VPNGateway:
+    derived_from: cloudify.aws.nodes.Gateway
+    properties:
+      type:
+        description: >
+          Type of VPN Connection. Only valid value currently is ipsec.1
+        default: ipsec.1
+      availability_zone:
+        description: >
+          The Availability Zone where you want the VPN gateway.
+        default: ''
+
+  cloudify.aws.nodes.CustomerGateway:
+    derived_from: cloudify.aws.nodes.VPNGateway
+    properties:
+      ip_address:
+        description: >
+          Internet-routable IP address for customers gateway. Must be a static address
+      bgp_asn:
+        description: >
+          Customer gateways Border Gateway Protocol (BGP) Autonomous System Number (ASN)
+
+  cloudify.aws.nodes.DHCPOptionSet:
+    derived_from: cloudify.nodes.Root
+    properties:
+      domain_name:
+        description: >
+          Some domain name.
+        default: ''
+      domain_name_servers:
+        description: >
+          Up to four DNS servers.
+        default: ''
+      ntp_servers:
+        description: >
+          Up to four NTP servers.
+        default: ''
+      netbios_name_servers:
+        description: >
+          Up to four Netbios servers.
+        default: ''
+      netbios_node_type:
+        description: >
+          Netbios type. Recommended 2.
+        default: ''
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: aws.vpc.dchp.create_dchp_optons
+        delete: aws.vpc.dchp.delete_dchp_optons
+      cloudify.interfaces.validation:
+        creation: aws.vpc.dchp.creation_validation
+
+
 relationships:
   cloudify.aws.relationships.instance_connected_to_elastic_ip:
     derived_from: cloudify.relationships.connected_to
     source_interfaces:
       cloudify.interfaces.relationship_lifecycle:
-        establish: aws.ec2.elasticip.associate
+        establish:
+          implementation: aws.ec2.elasticip.associate
+          inputs:
+            args:
+              default: {}
         unlink: aws.ec2.elasticip.disassociate
 
   cloudify.aws.relationships.instance_connected_to_keypair:
@@ -163,3 +329,52 @@ relationships:
 
   cloudify.aws.relationships.instance_connected_to_security_group:
     derived_from: cloudify.relationships.connected_to
+
+  cloudify.aws.relationships.subnet_contained_in_vpc:
+    derived_from: cloudify.relationships.contained_in
+
+  cloudify.aws.relationships.instance_connected_to_vpc:
+    derived_from: cloudify.relationships.contained_in
+    target_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish:
+          implementation: aws.vpc.attach_classic_instance
+          inputs:
+            args:
+              default: {}
+        unlink: aws.vpc.detach_classic_instance
+
+  cloudify.aws.relationships.gateway_connected_to_vpc:
+    derived_from: cloudify.relationships.connected_to
+    target_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish: aws.vpc.gateway.attach_gateway
+        unlink: aws.vpc.gateway.detach_gateway
+
+  cloudify.aws.relationships.vpc_connected_to_peer:
+    derived_from: cloudify.relationships.connected_to
+    target_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish:
+          implement: aws.vpc.vpc.create_vpc_peering_connection
+          inputs:
+            source:
+              description: >
+                a dictionary that contains one variable named
+                accept_from_target which should be a boolean,
+                and a dictionary of routes with the inputs to
+                a create_route operation.
+              default:
+                accept_from_target: true
+                routes: {}
+            target:
+              description: >
+                a dictionary that contains one variable named
+                accept_from_target which should be a boolean,
+                and a dictionary of routes with the inputs to
+                a create_route operation.
+              default:
+                accept_from_source: true
+                routes: {}
+        unlink:
+          implement: aws.vpc.vpc.delete_vpc_peering_connection

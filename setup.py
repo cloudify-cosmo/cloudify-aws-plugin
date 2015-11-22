@@ -29,11 +29,14 @@ setup(
     description='Cloudify plugin for AWS infrastructure.',
 
     # This must correspond to the actual packages in the plugin.
-    packages=['ec2'],
+    packages=[
+        'ec2',
+        'vpc'
+    ],
 
     license='LICENSE',
     install_requires=[
         'cloudify-plugins-common>=3.3',
-        'boto==2.34.0'
+        'boto==2.38.0'
     ]
 )
