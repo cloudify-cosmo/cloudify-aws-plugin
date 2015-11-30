@@ -34,11 +34,3 @@ class AWSNodeCellarTest(nodecellar_test.NodecellarAppTest):
     @property
     def host_expected_runtime_properties(self):
         return ['ip']
-
-    @property
-    def entrypoint_node_name(self):
-        return 'nodecellar_ip'
-
-    @property
-    def entrypoint_property_name(self):
-        return EXTERNAL_RESOURCE_ID
