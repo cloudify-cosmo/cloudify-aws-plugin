@@ -24,6 +24,10 @@ node_types:
           If this a new resource, make this the name.
         type: string
         default: ''
+      name:
+        description: >
+          Optional field if you want to add a specific name to the instance.
+        default: ''
       image_id:
         description: >
           The ID of the AMI image in your Amazon account.
