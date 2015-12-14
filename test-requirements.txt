@@ -3,3 +3,4 @@ nose
 nose-cov
 testfixtures
 moto==0.4.4
+mock

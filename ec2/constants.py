@@ -44,6 +44,14 @@ INSTANCE_KEYPAIR_RELATIONSHIP = 'instance_connected_to_keypair'
 # securitygroup module constants
 SECURITY_GROUP_REQUIRED_PROPERTIES = ['description', 'rules']
 
+# ELB Default Values
+HEALTH_CHECK_INTERVAL = 30
+HEALTH_CHECK_HEALTHY_THRESHOLD = 3
+HEALTH_CHECK_TIMEOUT = 5
+HEALTH_CHECK_UNHEALTHY_THRESHOLD = 5
+
+ELB_REQUIRED_PROPERTIES = ['elb_name', 'zones', 'listeners']
+
 # keypair module constants
 KEYPAIR_REQUIRED_PROPERTIES = ['private_key_path']
 
