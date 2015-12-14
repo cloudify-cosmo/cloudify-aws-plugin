@@ -20,6 +20,7 @@ import tempfile
 # Third party Imports
 from boto.ec2 import get_region
 from boto.ec2 import EC2Connection
+from boto.ec2.elb import ELBConnection
 
 # Cloudify Imports
 from ec2 import constants
@@ -42,10 +43,18 @@ SIMPLE_IP = 'simple_elastic_ip'
 SIMPLE_SG = 'simple_security_group'
 SIMPLE_KP = 'simple_key_pair'
 SIMPLE_VM = 'simple_instance'
+SIMPLE_LB = 'simple_load_balancer'
 PAIR_A_IP = 'pair_a_connected_elastic_ip'
 PAIR_A_VM = 'pair_a_connected_instance'
 PAIR_B_SG = 'pair_b_connected_security_group'
 PAIR_B_VM = 'pair_b_connected_instance'
+PAIR_C_LB = 'pair_c_connected_elb'
+PAIR_C_VM = 'pair_c_connected_instance'
+
+DEFAULT_LISTENER = [[80, 8080, 'http']]
+DEFAULT_EXTERNAL_ELB_NAME = 'myelb'
+DEFAULT_ZONES = ['us-east-1b']
+DEFAULT_HEALTH_CHECK = [{'target': 'HTTP:8080/health'}]
 
 
 class EC2LocalTestUtils(TestCase):
@@ -98,6 +107,10 @@ class EC2LocalTestUtils(TestCase):
             'external_kp': external_kp,
             'external_sg': external_sg,
             'external_vm': external_vm,
+            'elb_name': DEFAULT_EXTERNAL_ELB_NAME,
+            'zones': DEFAULT_ZONES,
+            'listeners': DEFAULT_LISTENER,
+            'health_checks': DEFAULT_HEALTH_CHECK,
             constants.AWS_CONFIG_PROPERTY:
                 self._get_aws_config()
         }
@@ -179,6 +192,46 @@ class EC2LocalTestUtils(TestCase):
 
         return relationship_context
 
+    def mock_elb_relationship_context(self, testname):
+        instance_context = MockContext({
+            'node': MockContext({
+                'properties': {
+                    constants.AWS_CONFIG_PROPERTY:
+                        self._get_aws_config(),
+                    'use_external_resource': False,
+                    'resource_id': ''
+                }
+            }),
+            'instance': MockContext({
+                'runtime_properties': {
+                    'aws_resource_id': 'i-abc1234',
+                    'public_ip_address': '127.0.0.1'
+                }
+            })
+        })
+
+        elb_context = MockContext({
+            'node': MockContext({
+                'properties': {
+                    constants.AWS_CONFIG_PROPERTY:
+                        self._get_aws_config(),
+                    'use_external_resource': False,
+                    'resource_id': '',
+                }
+            }),
+            'instance': MockContext({
+                'runtime_properties': {
+                    'aws_resource_id': ''
+                }
+            })
+        })
+
+        relationship_context = MockCloudifyContext(
+            node_id=testname, source=instance_context,
+            target=elb_context)
+
+        return relationship_context
+
     def _get_instances(self, storage):
         return storage.get_node_instances()
 
@@ -204,6 +257,11 @@ class EC2LocalTestUtils(TestCase):
     def _get_ec2_client(self):
         aws_config = self._get_aws_config()
         return EC2Connection(**aws_config)
+
+    def _get_elb_client(self):
+        aws_config = self._get_aws_config()
+        aws_config.pop('region')
+        return ELBConnection(**aws_config)
 
     def _create_elastic_ip(self, ec2_client):
         new_address = ec2_client.allocate_address(domain=None)

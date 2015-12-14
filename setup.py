@@ -34,6 +34,6 @@ setup(
     license='LICENSE',
     install_requires=[
         'cloudify-plugins-common>=3.3',
-        'boto==2.34.0'
+        'boto==2.38.0'
     ]
 )

@@ -20,6 +20,7 @@ import ConfigParser
 # Third-party Imports
 from boto.ec2 import get_region
 from boto.ec2 import EC2Connection
+from boto.ec2.elb import ELBConnection
 
 # Cloudify Imports
 from ec2 import utils
@@ -118,3 +119,37 @@ class EC2ConnectionClient():
                                       format(invalid_options))
 
         return config
+
+
+class ELBConnectionClient(EC2ConnectionClient):
+
+    def client(self):
+        """Represents the ELBConnection Client
+        """
+
+        aws_config_property = (self._get_aws_config_property() or
+                               self._get_aws_config_from_file())
+        if not aws_config_property:
+            return ELBConnection()
+        elif aws_config_property.get('elb_region_name'):
+            region_object = \
+                get_region(aws_config_property['elb_region_name'])
+            aws_config = aws_config_property.copy()
+            if region_object and 'elb_region_endpoint' in aws_config_property:
+                region_object.endpoint = \
+                    aws_config_property['elb_region_endpoint']
+            aws_config['region'] = region_object
+        else:
+            aws_config = aws_config_property.copy()
+
+        if 'ec2_region_name' in aws_config:
+            del(aws_config['ec2_region_name'])
+        if 'region' in aws_config:
+            del(aws_config['region'])
+
+        # for backward compatibility,
+        # delete this key before passing config to Boto
+        if 'ec2_region_endpoint' in aws_config:
+            del(aws_config["ec2_region_endpoint"])
+
+        return ELBConnection(**aws_config)
