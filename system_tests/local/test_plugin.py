@@ -21,16 +21,19 @@ from ec2 import (
     securitygroup,
     keypair,
     elasticip,
-    instance
+    instance,
+    constants
 )
 from cloudify.state import current_ctx
 from cloudify.exceptions import NonRecoverableError
 from ec2_test_utils import (
     EC2LocalTestUtils,
     EXTERNAL_RESOURCE_ID,
-    SIMPLE_IP, SIMPLE_SG, SIMPLE_KP, SIMPLE_VM,
+    SIMPLE_IP, SIMPLE_SG, SIMPLE_KP,
+    SIMPLE_VOL, SIMPLE_VM,
     PAIR_A_IP, PAIR_A_VM,
-    PAIR_B_SG, PAIR_B_VM
+    PAIR_B_SG, PAIR_B_VM,
+    PAIR_C_VOL, PAIR_C_VM
 )
 
 
@@ -49,7 +52,7 @@ class TestWorkflowClean(EC2LocalTestUtils):
 
         instance_storage = self._get_instances(self.localenv.storage)
 
-        self.assertEquals(4, len(instance_storage))
+        self.assertEquals(5, len(instance_storage))
 
         for node_instance in self._get_instances(self.localenv.storage):
             self.assertIn(EXTERNAL_RESOURCE_ID,
@@ -63,6 +66,15 @@ class TestWorkflowClean(EC2LocalTestUtils):
         elastic_ip_object_list = \
             client.get_all_addresses(addresses=elastic_ip_address)
         self.assertEqual(1, len(elastic_ip_object_list))
+
+        volume_node = \
+            self._get_instance_node(
+                SIMPLE_VOL, self.localenv.storage)
+        volume_id = \
+            volume_node.runtime_properties[EXTERNAL_RESOURCE_ID]
+        volume_object_list = \
+            client.get_all_volumes(volume_ids=[volume_id])
+        self.assertEqual(1, len(volume_object_list))
 
         security_group_node = \
             self._get_instance_node(SIMPLE_SG, self.localenv.storage)
@@ -89,6 +101,25 @@ class TestWorkflowClean(EC2LocalTestUtils):
         instance_list = reservation_list[0].instances
         self.assertEqual(1, len(instance_list))
 
+        self.localenv.execute('execute_operation',
+                              parameters={
+                                  'operation':
+                                  'cloudify.interfaces.aws.snapshot.create',
+                                  'node_ids': SIMPLE_VOL
+                              },
+                              task_retries=10)
+
+        instance_node = \
+            self._get_instance_node(
+                SIMPLE_VOL, self.localenv.storage)
+        snapshot_id = \
+            instance_node.runtime_properties[
+                constants.VOLUME_SNAPSHOT_ATTRIBUTE]
+        all_snapshots = client.get_all_snapshots(snapshot_id)
+        self.assertIn(snapshot_id[0],
+                      [snapshot.id for snapshot in all_snapshots])
+        client.delete_snapshot(snapshot_id=snapshot_id[0])
+
         self.localenv.execute('uninstall', task_retries=10)
 
         with self.assertRaises(EC2ResponseError):
@@ -97,6 +128,8 @@ class TestWorkflowClean(EC2LocalTestUtils):
             client.get_all_security_groups(group_ids=security_group_id)
         with self.assertRaises(EC2ResponseError):
             client.get_all_key_pairs(keynames=key_pair_name)
+        with self.assertRaises(EC2ResponseError):
+            client.get_all_volumes(volume_ids=[volume_id])
 
         client.get_all_reservations(instance_ids=instance_id)
         instance_state = reservation_list[0].instances[0].update()
@@ -118,7 +151,7 @@ class TestWorkflowClean(EC2LocalTestUtils):
         self.localenv.execute('install', task_retries=10)
 
         instance_storage = self._get_instances(self.localenv.storage)
-        self.assertEquals(4, len(instance_storage))
+        self.assertEquals(6, len(instance_storage))
 
         instance_node = \
             self._get_instance_node(PAIR_A_VM, self.localenv.storage)
@@ -128,7 +161,6 @@ class TestWorkflowClean(EC2LocalTestUtils):
             client.get_all_reservations(instance_ids=instance_id_a)
         instance_list_ip = reservation_list[0].instances
 
-        self.assertEquals(4, len(instance_storage))
         elastic_ip_node = \
             self._get_instance_node(
                 PAIR_A_IP, self.localenv.storage)
@@ -160,17 +192,58 @@ class TestWorkflowClean(EC2LocalTestUtils):
             str(security_group_object_list[0].instances()[0].id),
             str(instance_list[0].id))
 
+        instance_node = \
+            self._get_instance_node(PAIR_C_VM, self.localenv.storage)
+        instance_id_c = \
+            instance_node.runtime_properties[EXTERNAL_RESOURCE_ID]
+        reservation_list = \
+            client.get_all_reservations(instance_ids=instance_id_c)
+        instance_list = reservation_list[0].instances
+
+        volume_node = \
+            self._get_instance_node(
+                PAIR_C_VOL, self.localenv.storage)
+        volume_id = \
+            volume_node.runtime_properties[EXTERNAL_RESOURCE_ID]
+        volume_object_list = \
+            client.get_all_volumes(volume_ids=[volume_id])
+
+        attachment = volume_object_list[0].attach_data
+
+        self.assertIn(
+            str(attachment.instance_id),
+            str(instance_list[0].id))
+
         self.localenv.execute('uninstall', task_retries=10)
 
         with self.assertRaises(EC2ResponseError):
             client.get_all_addresses(addresses=elastic_ip_address)
         with self.assertRaises(EC2ResponseError):
             client.get_all_security_groups(group_ids=security_group_id)
+        with self.assertRaises(EC2ResponseError):
+            client.get_all_volumes(volume_ids=volume_id)
+
+        try:
+            output = client.get_all_volumes(volume_ids=[volume_id])
+        except EC2ResponseError:
+            self.assertTrue(True)
+        else:
+            print output
+            if volume_id not in [vol.id for vol in output]:
+                self.assertTrue(True)
+            else:
+                for vol in output:
+                    if vol.id in volume_id:
+                        self.assertNotIn(vol.status,
+                                         ['available', 'in-use'])
 
         client.get_all_reservations(instance_ids=instance_id_a)
         instance_state = reservation_list[0].instances[0].update()
         self.assertIn('terminated', instance_state)
         client.get_all_reservations(instance_ids=instance_id_b)
+        instance_state = reservation_list[0].instances[0].update()
+        self.assertIn('terminated', instance_state)
+        client.get_all_reservations(instance_ids=instance_id_c)
         instance_state = reservation_list[0].instances[0].update()
         self.assertIn('terminated', instance_state)
 

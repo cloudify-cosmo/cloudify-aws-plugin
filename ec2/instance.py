@@ -188,6 +188,9 @@ def _assign_runtime_properties_to_instance(runtime_properties):
         elif 'public_ip_address' is property_name:
             ctx.instance.runtime_properties[property_name] = \
                 _get_instance_attribute('ip_address')
+        elif 'placement' is property_name:
+            ctx.instance.runtime_properties[property_name] = \
+                _get_instance_attribute('placement')
         else:
             attribute = _get_instance_attribute(property_name)
 

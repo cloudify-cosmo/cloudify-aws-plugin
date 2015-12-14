@@ -153,6 +153,7 @@ class TestInstance(testtools.TestCase):
         ctx.instance.runtime_properties['public_dns_name'] = '0.0.0.0'
         ctx.instance.runtime_properties['public_ip_address'] = '0.0.0.0'
         ctx.instance.runtime_properties['ip'] = '0.0.0.0'
+        ctx.instance.runtime_properties['placement'] = 'us-east-1b'
         instance.stop(ctx=ctx)
         reservations = ec2_client.get_all_reservations(instance_id)
         instance_object = reservations[0].instances[0]

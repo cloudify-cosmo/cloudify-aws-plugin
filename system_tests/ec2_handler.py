@@ -148,7 +148,8 @@ class EC2Handler(BaseHandler):
             'instances': dict(self._instances(ec2_client)),
             'key_pairs': dict(self._key_pairs(ec2_client)),
             'elasticips': dict(self._elasticips(ec2_client)),
-            'security_groups': dict(self._security_groups(ec2_client))
+            'security_groups': dict(self._security_groups(ec2_client)),
+            'volumes': dict(self._volumes(ec2_client))
         }
 
     def ec2_infra_state_delta(self, before, after):
@@ -168,12 +169,14 @@ class EC2Handler(BaseHandler):
         key_pairs = self._key_pairs(ec2_client)
         elasticips = self._elasticips(ec2_client)
         security_groups = self._security_groups(ec2_client)
+        volumes = self._volumes(ec2_client)
 
         failed = {
             'instances': {},
             'key_pairs': {},
             'elasticips': {},
-            'security_groups': {}
+            'security_groups': {},
+            'volumes': {}
         }
 
         for instance_id, _ in instances:
@@ -198,6 +201,12 @@ class EC2Handler(BaseHandler):
                         security_group_id, failed, 'security_groups'):
                     ec2_client.get_all_security_groups(
                         group_ids=[security_group_id])[0].delete()
+
+        for volume_id, _ in volumes:
+            if volume_id in resources_to_remove['volumes']:
+                with self._handled_exception(
+                        volume_id, failed, 'volumes'):
+                    ec2_client.get_all_volumes(volume_id)[0].delete()
 
         return failed
 
@@ -227,6 +236,10 @@ class EC2Handler(BaseHandler):
     def _elasticips(self, ec2_client):
         return [(address.public_ip, address.public_ip)
                 for address in ec2_client.get_all_addresses()]
+
+    def _volumes(self, ec2_client):
+        return [(vol.id, vol.id)
+                for vol in ec2_client.get_all_volumes()]
 
     def _remove_keys(self, dct, keys):
         for key in keys:
