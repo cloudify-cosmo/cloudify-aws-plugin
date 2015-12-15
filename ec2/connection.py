@@ -58,9 +58,6 @@ class EC2ConnectionClient():
 
         aws_config = self.aws_config_cleanup(aws_config)
 
-        if 'region' in aws_config:
-            del aws_config['region']
-
         return EC2Connection(**aws_config)
 
     def _get_aws_config_property(self):
