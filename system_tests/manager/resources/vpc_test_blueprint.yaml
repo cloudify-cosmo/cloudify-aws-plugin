@@ -1,0 +1,311 @@
+# DSL version, should appear in the main blueprint.yaml
+# and may appear in other imports. In such case, the versions must match
+tosca_definitions_version: cloudify_dsl_1_2
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/3.3/types.yaml
+  - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-aws-plugin/1.3.post1.CFY-4485/plugin.yaml
+
+inputs:
+
+  aws_config:
+    default: {}
+
+  create_new_resource:
+    type: boolean
+    default: false
+
+  vpc_two_create_new_resource:
+    type: boolean
+    default: false
+
+  vpc_id:
+    type: string
+    default: ''
+
+  subnet_id:
+    type: string
+    default: ''
+
+  internet_gateway_id:
+    type: string
+    default: ''
+
+  ami_id:
+    type: string
+    default: 'ami-3cf8b154'
+
+  instance_type:
+    type: string
+    default: 'm3.medium'
+
+  vpn_gateway_id:
+    type: string
+    default: ''
+
+  customer_gateway_id:
+    type: string
+    default: ''
+
+  acl_list_id:
+    type: string
+    default: ''
+
+  dhcp_options_id:
+    type: string
+    default: ''
+
+  route_table_id:
+    type: string
+    default: ''
+
+  availability_zone:
+    type: string
+    default: 'us-east-1e'
+
+  dhcp_options_domain_name:
+    type: string
+    default: 'ec2.internal'
+
+  dhcp_options_domain_name_servers:
+    default: 'AmazonProvidedDNS'
+
+node_templates:
+
+  vpc_one:
+    type: cloudify.aws.nodes.VPC
+    properties:
+      aws_config: { get_input: aws_config }
+      use_external_resource: { get_input: create_new_resource }
+      resource_id: { get_input: vpc_id }
+      cidr_block: 10.0.0.0/16
+
+  subnet_one:
+    type: cloudify.aws.nodes.Subnet
+    properties:
+      aws_config: { get_input: aws_config }
+      use_external_resource: { get_input: create_new_resource }
+      resource_id: { get_input: subnet_id }
+      cidr_block: 10.0.0.0/24
+      availability_zone: { get_input: availability_zone }
+    relationships:
+      - type: cloudify.aws.relationships.subnet_contained_in_vpc
+        target: vpc_one
+
+  vpc_two:
+    type: cloudify.aws.nodes.VPC
+    properties:
+      aws_config: { get_input: aws_config }
+      use_external_resource: { get_input: vpc_two_create_new_resource }
+      resource_id: { get_input: vpc_id }
+      cidr_block: 11.0.0.0/16
+
+  subnet_two:
+    type: cloudify.aws.nodes.Subnet
+    properties:
+      aws_config: { get_input: aws_config }
+      use_external_resource: { get_input: create_new_resource }
+      resource_id: { get_input: subnet_id }
+      cidr_block: 11.0.0.0/24
+      availability_zone: { get_input: availability_zone }
+    relationships:
+      - type: cloudify.aws.relationships.subnet_contained_in_vpc
+        target: vpc_two
+
+  internet_gateway_one:
+    type: cloudify.aws.nodes.InternetGateway
+    properties:
+      aws_config: { get_input: aws_config }
+      use_external_resource: { get_input: create_new_resource }
+      resource_id: { get_input: internet_gateway_id }
+    relationships:
+      - type: cloudify.aws.relationships.gateway_connected_to_vpc
+        target: vpc_one
+
+  security_group_one:
+    type: cloudify.aws.nodes.SecurityGroup
+    properties:
+      aws_config: { get_input: aws_config }
+      description: vpc system test security group
+      rules:
+        - ip_protocol: tcp
+          from_port: 22
+          to_port: 22
+          cidr_ip: 0.0.0.0/0
+    relationships:
+      - type: cloudify.aws.relationships.security_group_contained_in_vpc
+        target: vpc_one
+
+  security_group_two:
+    type: cloudify.aws.nodes.SecurityGroup
+    properties:
+      aws_config: { get_input: aws_config }
+      description: vpc system test security group two
+      rules:
+        - ip_protocol: tcp
+          from_port: 22
+          to_port: 22
+          cidr_ip: 0.0.0.0/0
+    relationships:
+      - type: cloudify.aws.relationships.security_group_contained_in_vpc
+        target: vpc_two
+
+  key_one:
+    type: cloudify.aws.nodes.KeyPair
+    properties:
+      aws_config: { get_input: aws_config }
+      private_key_path: ~/.ssh/vpc_system_test.pem
+
+  elastic_ip_one:
+    type: cloudify.aws.nodes.ElasticIP
+    properties:
+      aws_config: { get_input: aws_config }
+      domain: vpc
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: internet_gateway_one
+
+  ec2_instance_one:
+    type: cloudify.aws.nodes.Instance
+    properties:
+      aws_config: { get_input: aws_config }
+      image_id: { get_input: ami_id }
+      instance_type: { get_input: instance_type }
+      install_agent: false
+      parameters:
+        placement: { get_property: [ subnet_one, availability_zone ] }
+    relationships:
+      - type: cloudify.aws.relationships.instance_contained_in_subnet
+        target: subnet_one
+      - type: cloudify.aws.relationships.instance_connected_to_security_group
+        target: security_group_one
+      - type: cloudify.aws.relationships.instance_connected_to_keypair
+        target: key_one
+      - type: cloudify.aws.relationships.instance_connected_to_elastic_ip
+        target: elastic_ip_one
+
+  ec2_instance_two:
+    type: cloudify.aws.nodes.Instance
+    properties:
+      aws_config: { get_input: aws_config }
+      image_id: { get_input: ami_id }
+      instance_type: { get_input: instance_type }
+      install_agent: false
+      parameters:
+        placement: { get_property: [ subnet_one, availability_zone ] }
+    relationships:
+      - type: cloudify.aws.relationships.instance_contained_in_subnet
+        target: subnet_two
+      - type: cloudify.aws.relationships.instance_connected_to_security_group
+        target: security_group_two
+      - type: cloudify.aws.relationships.instance_connected_to_keypair
+        target: key_one
+
+  vpn_gateway_one:
+    type: cloudify.aws.nodes.VPNGateway
+    properties:
+      aws_config: { get_input: aws_config }
+      use_external_resource: { get_input: create_new_resource }
+      resource_id: { get_input: vpn_gateway_id }
+      availability_zone: { get_input: availability_zone }
+    relationships:
+      - type: cloudify.aws.relationships.gateway_connected_to_vpc
+        target: vpc_one
+
+  customer_gateway_one:
+    type: cloudify.aws.nodes.CustomerGateway
+    properties:
+      aws_config: { get_input: aws_config }
+      use_external_resource: { get_input: create_new_resource }
+      resource_id: { get_input: customer_gateway_id }
+      ip_address: 62.90.11.161
+      bgp_asn: 65534
+    relationships:
+      - type: cloudify.aws.relationships.customer_gateway_connected_to_vpn_gateway
+        target: vpn_gateway_one
+
+  acl_one:
+    type: cloudify.aws.nodes.ACL
+    properties:
+      aws_config: { get_input: aws_config }
+      use_external_resource: { get_input: create_new_resource }
+      resource_id: { get_input: acl_list_id }
+      acl_network_entries:
+        - rule_number: 101
+          protocol: 6
+          rule_action: ALLOW
+          cidr_block: 0.0.0.0/0
+          egress: ''
+          icmp_code: ''
+          icmp_type: ''
+          port_range_from: 0
+          port_range_to: 65535
+        - rule_number: 201
+          protocol: 6
+          rule_action: ALLOW
+          cidr_block: 0.0.0.0/0
+          egress: true
+          icmp_code: ''
+          icmp_type: ''
+          port_range_from: 0
+          port_range_to: 65535
+    relationships:
+      - type: cloudify.aws.relationships.network_acl_contained_in_vpc
+        target: vpc_one
+      - type: cloudify.aws.relationships.network_acl_associated_with_subnet
+        target: subnet_one
+
+  dhcp_options_one:
+    type: cloudify.aws.nodes.DHCPOptions
+    properties:
+      aws_config: { get_input: aws_config }
+      use_external_resource: { get_input: create_new_resource }
+      resource_id: { get_input: dhcp_options_id }
+      domain_name: { get_input: dhcp_options_domain_name }
+      domain_name_servers: { get_input: dhcp_options_domain_name_servers }
+    relationships:
+      - type: cloudify.aws.relationships.dhcp_options_associated_with_vpc
+        target: vpc_one
+
+  route_table_one:
+    type: cloudify.aws.nodes.RouteTable
+    properties:
+      aws_config: { get_input: aws_config }
+      use_external_resource: { get_input: create_new_resource }
+      resource_id: { get_input: route_table_id }
+    relationships:
+      - type: cloudify.aws.relationships.routetable_contained_in_vpc
+        target: vpc_one
+      - type: cloudify.aws.relationships.routetable_associated_with_subnet
+        target: subnet_one
+      - type: cloudify.aws.relationships.route_table_to_gateway
+        target: internet_gateway_one
+      - type: cloudify.aws.relationships.route_table_of_source_vpc_connected_to_target_peer_vpc
+        target: vpc_two
+        target_interfaces:
+          cloudify.interfaces.relationship_lifecycle:
+            preconfigure:
+              implementation: aws.vpc.vpc.create_vpc_peering_connection
+              inputs:
+                target_account_id: '535075449278'
+                routes:
+                    - destination_cidr_block: { get_property: [ vpc_two, cidr_block ] }
+      - type: cloudify.relationships.depends_on
+        target: route_table_two
+
+  route_table_two:
+    type: cloudify.aws.nodes.RouteTable
+    properties:
+      aws_config: { get_input: aws_config }
+      use_external_resource: { get_input: create_new_resource }
+      resource_id: { get_input: route_table_id }
+    relationships:
+      - type: cloudify.aws.relationships.routetable_contained_in_vpc
+        target: vpc_two
+      - type: cloudify.aws.relationships.routetable_associated_with_subnet
+        target: subnet_two
+
+plugins:
+    ec2:
+        executor: central_deployment_agent
+        install: false

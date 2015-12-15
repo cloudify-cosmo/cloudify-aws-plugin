@@ -4,7 +4,7 @@ tosca_definitions_version: cloudify_dsl_1_2
 
 imports:
   - http://www.getcloudify.org/spec/cloudify/3.3/types.yaml
-  - http://www.getcloudify.org/spec/aws-plugin/1.3/plugin.yaml
+  - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-aws-plugin/1.3.post1.CFY-4485/plugin.yaml
 
 inputs:
 
@@ -25,6 +25,15 @@ inputs:
   key_path:
     type: string
 
+  vol_size:
+    type: string
+
+  vol_zone:
+    type: string
+
+  vol_device:
+    type: string
+
   external_ip:
     type: boolean
 
@@ -35,6 +44,9 @@ inputs:
     type: boolean
 
   external_vm:
+    type: boolean
+
+  external_vol:
     type: boolean
 
   resource_id_ip:
@@ -68,6 +80,11 @@ inputs:
   complex_listeners:
      default: []
 
+  resource_id_vol:
+    type: string
+
+  aws_config:
+    default: {}
 
 node_templates:
 
@@ -129,6 +146,19 @@ node_templates:
       subnets: { get_input: subnets }
       complex_listeners: { get_input: complex_listeners }
 
+  pair_c_connected_volume:
+    type: cloudify.aws.nodes.Volume
+    properties:
+      resource_id: { get_input: resource_id_vol }
+      use_external_resource: { get_input: external_vol }
+      size: { get_input: vol_size }
+      zone: { get_input: vol_zone }
+      device: { get_input: vol_device }
+      aws_config: { get_input: aws_config }
+    relationships:
+      - type: cloudify.aws.relationships.volume_connected_to_instance
+        target: pair_c_connected_instance
+
   pair_c_connected_instance:
     type: cloudify.aws.nodes.Instance
     properties:
@@ -141,7 +171,6 @@ node_templates:
     relationships:
       - type: cloudify.aws.relationships.instance_connected_to_load_balancer
         target: pair_c_connected_elb
-
 
 plugins:
     ec2:

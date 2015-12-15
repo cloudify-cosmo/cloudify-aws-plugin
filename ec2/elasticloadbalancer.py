@@ -221,6 +221,10 @@ def _create_elb_params():
                    'zones': ctx.node.properties['zones']}
     if 'security_groups' in ctx.node.properties.keys():
         params_dict['security_groups'] = ctx.node.properties['security_groups']
+    if 'scheme' in ctx.node.properties.keys():
+        params_dict['scheme'] = ctx.node.properties['scheme']
+    if 'subnets' in ctx.node.properties.keys():
+        params_dict['subnets'] = ctx.node.properties['subnets']
     return params_dict
 
 

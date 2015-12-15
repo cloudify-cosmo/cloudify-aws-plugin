@@ -22,7 +22,8 @@ INSTANCE_STATE_STOPPED = 80
 INSTANCE_REQUIRED_PROPERTIES = ['image_id', 'instance_type']
 
 INSTANCE_INTERNAL_ATTRIBUTES = \
-    ['private_dns_name', 'public_dns_name', 'public_ip_address', 'ip']
+    ['private_dns_name', 'public_dns_name',
+     'public_ip_address', 'ip', 'placement']
 
 RUN_INSTANCE_PARAMETERS = {
     'image_id': None, 'key_name': None, 'security_groups': None,
@@ -40,6 +41,8 @@ RUN_INSTANCE_PARAMETERS = {
 
 INSTANCE_SECURITY_GROUP_RELATIONSHIP = 'instance_connected_to_security_group'
 INSTANCE_KEYPAIR_RELATIONSHIP = 'instance_connected_to_keypair'
+INSTANCE_SUBNET_RELATIONSHIP = 'instance_contained_in_subnet'
+SECURITY_GROUP_VPC_RELATIONSHIP = 'security_group_contained_in_vpc'
 
 # securitygroup module constants
 SECURITY_GROUP_REQUIRED_PROPERTIES = ['description', 'rules']
@@ -52,8 +55,18 @@ HEALTH_CHECK_UNHEALTHY_THRESHOLD = 5
 
 ELB_REQUIRED_PROPERTIES = ['elb_name', 'zones', 'listeners']
 
+# ebs module constants
+VOLUME_REQUIRED_PROPERTIES = ['size', 'zone', 'device']
+VOLUME_SNAPSHOT_ATTRIBUTE = 'snapshots_ids'
+VOLUME_AVAILABLE = 'available'
+VOLUME_CREATING = 'creating'
+VOLUME_IN_USE = 'in-use'
+
 # keypair module constants
 KEYPAIR_REQUIRED_PROPERTIES = ['private_key_path']
+
+# elastic ip module contants
+ALLOCATION_ID = 'allocation_id'
 
 # config
 AWS_CONFIG_PROPERTY = 'aws_config'
