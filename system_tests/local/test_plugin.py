@@ -15,6 +15,7 @@
 
 # Third Party
 from boto.exception import EC2ResponseError
+from boto.exception import BotoServerError
 
 # Cloudify Imports
 from ec2 import (
@@ -30,10 +31,12 @@ from ec2_test_utils import (
     EC2LocalTestUtils,
     EXTERNAL_RESOURCE_ID,
     SIMPLE_IP, SIMPLE_SG, SIMPLE_KP,
-    SIMPLE_VOL, SIMPLE_VM,
+    SIMPLE_VM, SIMPLE_LB,
+    SIMPLE_VOL,
     PAIR_A_IP, PAIR_A_VM,
     PAIR_B_SG, PAIR_B_VM,
-    PAIR_C_VOL, PAIR_C_VM
+    PAIR_C_VOL, PAIR_C_VM,
+    PAIR_C_LB
 )
 
 
@@ -101,6 +104,18 @@ class TestWorkflowClean(EC2LocalTestUtils):
         instance_list = reservation_list[0].instances
         self.assertEqual(1, len(instance_list))
 
+        elb_client = self._get_elb_client()
+
+        elastic_load_balancer_node = \
+            self._get_instance_node(
+                SIMPLE_LB, self.localenv.storage)
+        elastic_load_balancer_name = \
+            elastic_load_balancer_node.runtime_properties[EXTERNAL_RESOURCE_ID]
+        elastic_lb_object_list = \
+            elb_client.get_all_load_balancers(
+                load_balancer_names=[elastic_load_balancer_name])
+        self.assertEqual(1, len(elastic_lb_object_list))
+
         self.localenv.execute('execute_operation',
                               parameters={
                                   'operation':
@@ -122,6 +137,9 @@ class TestWorkflowClean(EC2LocalTestUtils):
 
         self.localenv.execute('uninstall', task_retries=10)
 
+        with self.assertRaises(BotoServerError):
+            elb_client.get_all_load_balancers(
+                load_balancer_names=[elastic_load_balancer_name])
         with self.assertRaises(EC2ResponseError):
             client.get_all_addresses(addresses=elastic_ip_address)
         with self.assertRaises(EC2ResponseError):
@@ -138,6 +156,7 @@ class TestWorkflowClean(EC2LocalTestUtils):
     def test_simple_relationships(self):
 
         client = self._get_ec2_client()
+        elb_client = self._get_elb_client()
 
         test_name = 'test_simple_relationships'
 
@@ -168,6 +187,17 @@ class TestWorkflowClean(EC2LocalTestUtils):
             elastic_ip_node.runtime_properties[EXTERNAL_RESOURCE_ID]
         elastic_ip_object_list = \
             client.get_all_addresses(addresses=elastic_ip_address)
+
+        elastic_load_balancer_node = \
+            self._get_instance_node(
+                PAIR_C_LB, self.localenv.storage)
+        elastic_load_balancer_name = \
+            elastic_load_balancer_node.runtime_properties[EXTERNAL_RESOURCE_ID]
+        elastic_lb_object_list = \
+            elb_client.get_all_load_balancers(
+                load_balancer_names=[elastic_load_balancer_name])
+
+        self.assertEqual(1, len(elastic_lb_object_list))
 
         self.assertEqual(
             str(elastic_ip_object_list[0].instance_id),
@@ -215,7 +245,9 @@ class TestWorkflowClean(EC2LocalTestUtils):
             str(instance_list[0].id))
 
         self.localenv.execute('uninstall', task_retries=10)
-
+        with self.assertRaises(BotoServerError):
+            elb_client.get_all_load_balancers(
+                load_balancer_names=[elastic_load_balancer_name])
         with self.assertRaises(EC2ResponseError):
             client.get_all_addresses(addresses=elastic_ip_address)
         with self.assertRaises(EC2ResponseError):

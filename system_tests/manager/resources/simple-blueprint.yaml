@@ -8,6 +8,9 @@ imports:
 
 inputs:
 
+  aws_config:
+    default: {}
+
   image:
     type: string
 
@@ -53,11 +56,31 @@ inputs:
   resource_id_vm:
     type: string
 
+  elb_name:     
+    type: string
+
+  zones:     
+    type: string
+
+  listeners:     
+    type: string
+
+  health_checks:
   resource_id_vol:
     type: string
 
   aws_config:
     default: {}
+
+  scheme:
+    type: string
+    default: ''
+
+  subnets:
+     default: []
+
+  complex_listeners:
+     default: []
 
 node_templates:
 
@@ -93,6 +116,14 @@ node_templates:
       use_external_resource: { get_input: external_vm }
       image_id: { get_input: image }
       instance_type: { get_input: size }
+      aws_config: { get_input: aws_config }
+
+  simple_load_balancer:
+    type: cloudify.aws.nodes.ElasticLoadBalancer
+    properties:
+      elb_name: { get_input: elb_name }
+      zones: { get_input: zones }
+      listeners: { get_input: listeners }
       aws_config: { get_input: aws_config }
 
   simple_volume:
