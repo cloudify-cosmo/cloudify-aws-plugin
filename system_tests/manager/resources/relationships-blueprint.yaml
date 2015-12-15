@@ -19,6 +19,15 @@ inputs:
   key_path:
     type: string
 
+  vol_size:
+    type: string
+
+  vol_zone:
+    type: string
+
+  vol_device:
+    type: string
+
   external_ip:
     type: boolean
 
@@ -31,6 +40,9 @@ inputs:
   external_vm:
     type: boolean
 
+  external_vol:
+    type: boolean
+
   resource_id_ip:
     type: string
 
@@ -41,6 +53,9 @@ inputs:
     type: string
 
   resource_id_vm:
+    type: string
+
+  resource_id_vol:
     type: string
 
   aws_config:
@@ -93,6 +108,29 @@ node_templates:
     relationships:
       - type: cloudify.aws.relationships.instance_connected_to_security_group
         target: pair_b_connected_security_group
+
+  pair_c_connected_volume:
+    type: cloudify.aws.nodes.Volume
+    properties:
+      resource_id: { get_input: resource_id_vol }
+      use_external_resource: { get_input: external_vol }
+      size: { get_input: vol_size }
+      zone: { get_input: vol_zone }
+      device: { get_input: vol_device }
+      aws_config: { get_input: aws_config }
+    relationships:
+      - type: cloudify.aws.relationships.volume_connected_to_instance
+        target: pair_c_connected_instance
+
+  pair_c_connected_instance:
+    type: cloudify.aws.nodes.Instance
+    properties:
+      install_agent: false
+      resource_id: { get_input: resource_id_vm }
+      use_external_resource: { get_input: external_vm }
+      image_id: { get_input: image }
+      instance_type: { get_input: size }
+      aws_config: { get_input: aws_config }
 
 plugins:
     ec2:

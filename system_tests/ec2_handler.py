@@ -155,6 +155,7 @@ class EC2Handler(BaseHandler):
             'key_pairs': dict(self._key_pairs(ec2_client)),
             'elasticips': dict(self._elasticips(ec2_client)),
             'security_groups': dict(self._security_groups(ec2_client)),
+            'volumes': dict(self._volumes(ec2_client)),
             'vpcs': dict(self._vpcs(vpc_client)),
             'subnets': dict(self._subnets(vpc_client)),
             'internet_gateways': dict(self._internet_gateways(vpc_client)),
@@ -183,6 +184,7 @@ class EC2Handler(BaseHandler):
         key_pairs = self._key_pairs(ec2_client)
         elasticips = self._elasticips(ec2_client)
         security_groups = self._security_groups(ec2_client)
+        volumes = self._volumes(ec2_client)
         vpcs = self._vpcs(vpc_client)
         subnets = self._subnets(vpc_client)
         internet_gateways = self._internet_gateways(vpc_client)
@@ -197,6 +199,7 @@ class EC2Handler(BaseHandler):
             'key_pairs': {},
             'elasticips': {},
             'security_groups': {},
+            'volumes': {},
             'vpcs': {},
             'subnets': {},
             'internet_gateways': {},
@@ -229,6 +232,12 @@ class EC2Handler(BaseHandler):
                         security_group_id, failed, 'security_groups'):
                     ec2_client.get_all_security_groups(
                         group_ids=[security_group_id])[0].delete()
+
+        for volume_id, _ in volumes:
+            if volume_id in resources_to_remove['volumes']:
+                with self._handled_exception(
+                        volume_id, failed, 'volumes'):
+                    ec2_client.get_all_volumes(volume_id)[0].delete()
 
         for vpc_id, _ in vpcs:
             if vpc_id in resources_to_remove['vpcs']:
@@ -309,6 +318,10 @@ class EC2Handler(BaseHandler):
     def _elasticips(self, ec2_client):
         return [(address.public_ip, address.public_ip)
                 for address in ec2_client.get_all_addresses()]
+
+    def _volumes(self, ec2_client):
+        return [(vol.id, vol.id)
+                for vol in ec2_client.get_all_volumes()]
 
     def _vpcs(self, vpc_client):
         return [(vpc.id, vpc.id)
