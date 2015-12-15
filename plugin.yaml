@@ -136,7 +136,11 @@ node_types:
           Otherwise it is an empty string.
         type: string
         default: ''
-        required: true
+      name:
+        description: >
+          Optional field if you want to add a specific name to the instance.
+        default: ''
+        required: false
       image_id:
         description: >
           The ID of the AMI image in your Amazon account.
