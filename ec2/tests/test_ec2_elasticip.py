@@ -46,7 +46,8 @@ class TestElasticIP(testtools.TestCase):
             'instance_type': TEST_INSTANCE_TYPE,
             'parameters': {
                 'security_group_ids': ['sg-73cd3f1e']
-            }
+            },
+            'domain': '',
         }
 
         ctx = MockCloudifyContext(
@@ -62,7 +63,8 @@ class TestElasticIP(testtools.TestCase):
         test_properties = {
             constants.AWS_CONFIG_PROPERTY: {},
             'use_external_resource': False,
-            'resource_id': ''
+            'resource_id': '',
+            'domain': ''
         }
 
         ctx = MockCloudifyContext(
@@ -96,6 +98,7 @@ class TestElasticIP(testtools.TestCase):
                     constants.AWS_CONFIG_PROPERTY: {},
                     'use_external_resource': False,
                     'resource_id': '',
+                    'domain': '',
                 }
             }),
             'instance': MockContext({
@@ -136,6 +139,16 @@ class TestElasticIP(testtools.TestCase):
         """ This tests that allocate adds the runtime_properties."""
 
         ctx = self.mock_ctx('test_allocate')
+        current_ctx.set(ctx=ctx)
+        elasticip.allocate(ctx=ctx)
+        self.assertIn('aws_resource_id', ctx.instance.runtime_properties)
+
+    @mock_ec2
+    def test_allocate_backward_compatibility(self):
+        """ This tests that allocate adds the runtime_properties."""
+
+        ctx = self.mock_ctx('test_allocate')
+        del ctx.node.properties['domain']
         current_ctx.set(ctx=ctx)
         elasticip.allocate(ctx=ctx)
         self.assertIn('aws_resource_id', ctx.instance.runtime_properties)
@@ -214,6 +227,7 @@ class TestElasticIP(testtools.TestCase):
         address = self.get_address()
         ctx.instance.runtime_properties['aws_resource_id'] = \
             address.public_ip
+        ctx.instance.runtime_properties['allocation_id'] = 'random'
         elasticip.release(ctx=ctx)
         self.assertNotIn('aws_resource_id',
                          ctx.instance.runtime_properties.keys())
@@ -255,6 +269,36 @@ class TestElasticIP(testtools.TestCase):
         """ Tests that associate runs when clean. """
 
         ctx = self.mock_relationship_context('test_good_address_associate')
+        current_ctx.set(ctx=ctx)
+        address = self.get_address()
+        instance_id = self.get_instance_id()
+        ctx.target.instance.runtime_properties['aws_resource_id'] = \
+            address.public_ip
+        ctx.source.instance.runtime_properties['aws_resource_id'] = \
+            instance_id
+        elasticip.associate(ctx=ctx)
+
+    @mock_ec2
+    def test_good_address_associate_with_new_domain_property(self):
+        """ Tests that associate runs when clean. """
+
+        ctx = self.mock_relationship_context('test_good_address_associate')
+        ctx.source.node.properties['domain'] = ''
+        current_ctx.set(ctx=ctx)
+        address = self.get_address()
+        instance_id = self.get_instance_id()
+        ctx.target.instance.runtime_properties['aws_resource_id'] = \
+            address.public_ip
+        ctx.source.instance.runtime_properties['aws_resource_id'] = \
+            instance_id
+        elasticip.associate(ctx=ctx)
+
+    @mock_ec2
+    def test_good_address_associate_vpc_elastic_ip(self):
+        """ Tests that associate runs when clean. """
+
+        ctx = self.mock_relationship_context('test_good_address_associate')
+        ctx.source.node.properties['domain'] = 'vpc'
         current_ctx.set(ctx=ctx)
         address = self.get_address()
         instance_id = self.get_instance_id()
@@ -311,7 +355,7 @@ class TestElasticIP(testtools.TestCase):
         ctx.source.instance.runtime_properties['public_ip_address'] = '0.0.0.0'
         ex = self.assertRaises(NonRecoverableError,
                                elasticip.disassociate, ctx=ctx)
-        self.assertIn('InvalidAddress.NotFound', ex.message)
+        self.assertIn('no matching elastic ip in account', ex.message)
 
     @mock_ec2
     def test_validation(self):
