@@ -55,7 +55,7 @@ class TestWorkflowClean(EC2LocalTestUtils):
 
         instance_storage = self._get_instances(self.localenv.storage)
 
-        self.assertEquals(5, len(instance_storage))
+        self.assertEquals(6, len(instance_storage))
 
         for node_instance in self._get_instances(self.localenv.storage):
             self.assertIn(EXTERNAL_RESOURCE_ID,
@@ -170,7 +170,7 @@ class TestWorkflowClean(EC2LocalTestUtils):
         self.localenv.execute('install', task_retries=10)
 
         instance_storage = self._get_instances(self.localenv.storage)
-        self.assertEquals(6, len(instance_storage))
+        self.assertEquals(7, len(instance_storage))
 
         instance_node = \
             self._get_instance_node(PAIR_A_VM, self.localenv.storage)

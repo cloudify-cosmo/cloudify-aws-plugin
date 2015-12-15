@@ -21,6 +21,8 @@ import ConfigParser
 from boto.ec2 import get_region
 from boto.ec2 import EC2Connection
 from boto.ec2.elb import ELBConnection
+from boto.regioninfo import RegionInfo
+from boto.ec2.elb import connect_to_region as connect_to_elb_region
 
 # Cloudify Imports
 from ec2 import utils
@@ -54,13 +56,10 @@ class EC2ConnectionClient():
         else:
             aws_config = aws_config_property.copy()
 
-        if 'ec2_region_name' in aws_config:
-            del(aws_config['ec2_region_name'])
+        aws_config = self.aws_config_cleanup(aws_config)
 
-        # for backward compatibility,
-        # delete this key before passing config to Boto
-        if 'ec2_region_endpoint' in aws_config:
-            del(aws_config["ec2_region_endpoint"])
+        if 'region' in aws_config:
+            del aws_config['region']
 
         return EC2Connection(**aws_config)
 
@@ -120,6 +119,24 @@ class EC2ConnectionClient():
 
         return config
 
+    def aws_config_cleanup(self, aws_config):
+
+        # for backward compatibility,
+        # delete this key before passing config to Boto
+        if 'ec2_region_name' in aws_config:
+            del(aws_config['ec2_region_name'])
+
+        if 'ec2_region_endpoint' in aws_config:
+            del(aws_config["ec2_region_endpoint"])
+
+        if 'elb_region_name' in aws_config:
+            del(aws_config["elb_region_name"])
+
+        if 'elb_region_endpoint' in aws_config:
+            del(aws_config["elb_region_endpoint"])
+
+        return aws_config
+
 
 class ELBConnectionClient(EC2ConnectionClient):
 
@@ -131,25 +148,31 @@ class ELBConnectionClient(EC2ConnectionClient):
                                self._get_aws_config_from_file())
         if not aws_config_property:
             return ELBConnection()
-        elif aws_config_property.get('elb_region_name'):
+
+        aws_config = aws_config_property.copy()
+
+        if aws_config_property.get('elb_region_name') and \
+                aws_config_property.get('elb_region_endpoint'):
             region_object = \
                 get_region(aws_config_property['elb_region_name'])
-            aws_config = aws_config_property.copy()
-            if region_object and 'elb_region_endpoint' in aws_config_property:
-                region_object.endpoint = \
-                    aws_config_property['elb_region_endpoint']
+            region_object.endpoint = \
+                aws_config_property['elb_region_endpoint']
             aws_config['region'] = region_object
-        else:
-            aws_config = aws_config_property.copy()
+        elif aws_config_property.get('elb_region_name') and \
+                not aws_config_property.get('elb_region_endpoint'):
+            aws_config['region'] = aws_config_property['elb_region_name']
 
-        if 'ec2_region_name' in aws_config:
-            del(aws_config['ec2_region_name'])
+        aws_config = self.aws_config_cleanup(aws_config)
+
         if 'region' in aws_config:
-            del(aws_config['region'])
+            if type(aws_config['region']) is RegionInfo:
+                return ELBConnection(**aws_config)
+            elif type(aws_config['region']) is str:
+                elb_region = aws_config.pop('region')
+                return connect_to_elb_region(
+                    elb_region, **aws_config)
 
-        # for backward compatibility,
-        # delete this key before passing config to Boto
-        if 'ec2_region_endpoint' in aws_config:
-            del(aws_config["ec2_region_endpoint"])
-
-        return ELBConnection(**aws_config)
+        raise NonRecoverableError(
+            'Cannot connect to ELB endpoint. '
+            'You must either provide elb_region_name or both '
+            'elb_region_name and elb_region_endpoint.')

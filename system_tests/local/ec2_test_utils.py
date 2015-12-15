@@ -20,7 +20,7 @@ import tempfile
 # Third party Imports
 from boto.ec2 import get_region
 from boto.ec2 import EC2Connection
-from boto.ec2.elb import ELBConnection
+from boto.ec2.elb import connect_to_region as connect_to_elb_region
 
 # Cloudify Imports
 from ec2 import constants
@@ -305,22 +305,26 @@ class EC2LocalTestUtils(TestCase):
 
     def _get_aws_config(self):
 
-        region = get_region(self.env.ec2_region_name)
-
         return {
             'aws_access_key_id': self.env.aws_access_key_id,
             'aws_secret_access_key': self.env.aws_secret_access_key,
-            'region': region
+            'ec2_region_name': self.env.ec2_region_name,
+            'elb_region_name': self.env.ec2_region_name
         }
 
     def _get_ec2_client(self):
         aws_config = self._get_aws_config()
+        aws_config.pop('ec2_region_name')
+        aws_config.pop('elb_region_name')
+        aws_config['region'] = get_region(self.env.ec2_region_name)
         return EC2Connection(**aws_config)
 
     def _get_elb_client(self):
         aws_config = self._get_aws_config()
-        aws_config.pop('region')
-        return ELBConnection(**aws_config)
+        aws_config.pop('ec2_region_name')
+        aws_config.pop('elb_region_name')
+        elb_region = self.env.ec2_region_name
+        return connect_to_elb_region(elb_region, **aws_config)
 
     def _create_elastic_ip(self, ec2_client):
         new_address = ec2_client.allocate_address(domain=None)

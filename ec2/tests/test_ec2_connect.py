@@ -26,6 +26,7 @@ from ec2 import constants
 from ec2 import connection
 from cloudify.state import current_ctx
 from cloudify.mocks import MockCloudifyContext
+from cloudify.exceptions import NonRecoverableError
 
 
 class TestConnection(testtools.TestCase):
@@ -63,12 +64,28 @@ class TestConnection(testtools.TestCase):
         """
 
         ctx = self.get_mock_context('test_connect')
+        ctx.node.properties['aws_config'] = {
+            'elb_region_name': 'us-east-1',
+            'elb_region_endpoint':
+            'elasticloadbalancing.eu-east-1.amazonaws.com'
+        }
         current_ctx.set(ctx=ctx)
 
         elb_client = connection.ELBConnectionClient().client()
-        self.assertTrue(type(elb_client), )
         self.assertEqual(elb_client.DefaultRegionEndpoint,
                          'elasticloadbalancing.us-east-1.amazonaws.com')
+
+    @mock_elb
+    def test_connect_elb_bad(self):
+        """ this tests that a the correct region endpoint
+        in returned by the connect function
+        """
+
+        ctx = self.get_mock_context('test_connect')
+        current_ctx.set(ctx=ctx)
+        self.assertRaises(
+            NonRecoverableError,
+            connection.ELBConnectionClient().client)
 
     @mock_ec2
     def test_connect_bad_region(self):

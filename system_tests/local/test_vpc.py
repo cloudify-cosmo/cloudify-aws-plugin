@@ -19,6 +19,7 @@ from time import sleep
 
 # Third Party Imports
 from fabric import api as fabric_api
+from fabric.exceptions import CommandTimeout
 
 # Cloudify Imports
 from vpc import constants
@@ -102,27 +103,20 @@ class TestVpc(TestVpcBase):
 
         with fabric_api.settings(**connection):
             instance_one_assertion = fabric_api.run('uname -a')
+            fabric_api.put(
+                key_node.properties['private_key_path'], '~/.ssh/key.pem')
+            fabric_api.run('chmod 600 ~/.ssh/key.pem')
 
         try:
             with fabric_api.settings(**connection):
-                fabric_api.put(
-                    key_node.properties['private_key_path'],
-                    '~/.ssh/key.pem'
-                )
-                fabric_api.run('chmod 600 ~/.ssh/key.pem')
                 instance_two_assertion = \
                     fabric_api.run(
                         'ssh -o "StrictHostKeyChecking no" '
                         '-i ~/.ssh/key.pem ubuntu@{0} /bin/uname -a'
                         .format(ec2_instance_two[0].runtime_properties['ip']))
-        except SystemExit:
+        except CommandTimeout:
             sleep(10)
             with fabric_api.settings(**connection):
-                fabric_api.put(
-                    key_node.properties['private_key_path'],
-                    '~/.ssh/key.pem'
-                )
-                fabric_api.run('chmod 600 ~/.ssh/key.pem')
                 instance_two_assertion = \
                     fabric_api.run(
                         'ssh -o "StrictHostKeyChecking no" '
