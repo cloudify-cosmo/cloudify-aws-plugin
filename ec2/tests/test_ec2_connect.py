@@ -18,6 +18,7 @@ import testtools
 
 # Third Party Imports
 from moto import mock_ec2
+from moto import mock_elb
 from boto.ec2 import EC2Connection
 
 # Cloudify Imports is imported and used in operations
@@ -36,7 +37,7 @@ class TestConnection(testtools.TestCase):
             node_id=test_name,
             properties={
                 constants.AWS_CONFIG_PROPERTY: {
-                    'ec2_region_name': 'dark-side-of-the-moon',
+                    'ec2_region_name': 'dark-side-of-the-moon'
                 }
             }
         )
@@ -54,6 +55,20 @@ class TestConnection(testtools.TestCase):
         self.assertTrue(type(ec2_client), EC2Connection)
         self.assertEqual(ec2_client.DefaultRegionEndpoint,
                          'ec2.us-east-1.amazonaws.com')
+
+    @mock_elb
+    def test_connect_elb(self):
+        """ this tests that a the correct region endpoint
+        in returned by the connect function
+        """
+
+        ctx = self.get_mock_context('test_connect')
+        current_ctx.set(ctx=ctx)
+
+        elb_client = connection.ELBConnectionClient().client()
+        self.assertTrue(type(elb_client), )
+        self.assertEqual(elb_client.DefaultRegionEndpoint,
+                         'elasticloadbalancing.us-east-1.amazonaws.com')
 
     @mock_ec2
     def test_connect_bad_region(self):
