@@ -14,7 +14,6 @@
 #    * limitations under the License.
 
 import os
-import time
 
 from cosmo_tester.framework.testenv import TestCase
 
