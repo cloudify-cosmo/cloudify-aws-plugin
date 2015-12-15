@@ -94,7 +94,7 @@ def start(**_):
         return
 
     if _get_instance_state() == constants.INSTANCE_STATE_STARTED:
-        _instance_started_assign_runtime_properties(instance_id)
+        _instance_started_assign_runtime_properties_and_tag(instance_id)
         return
 
     ctx.logger.debug('Attempting to start instance: {0}.)'.format(instance_id))
@@ -108,7 +108,7 @@ def start(**_):
     ctx.logger.debug('Attempted to start instance {0}.'.format(instance_id))
 
     if _get_instance_state() == constants.INSTANCE_STATE_STARTED:
-        _instance_started_assign_runtime_properties(instance_id)
+        _instance_started_assign_runtime_properties_and_tag(instance_id)
     else:
         return ctx.operation.retry(
             message='Waiting server to be running. Retrying...')
@@ -197,10 +197,13 @@ def _assign_runtime_properties_to_instance(runtime_properties):
         ctx.logger.debug('Set {0}: {1}.'.format(property_name, attribute))
 
 
-def _instance_started_assign_runtime_properties(instance_id):
-        _assign_runtime_properties_to_instance(
-            runtime_properties=constants.INSTANCE_INTERNAL_ATTRIBUTES)
-        ctx.logger.info('Instance {0} is running.'.format(instance_id))
+def _instance_started_assign_runtime_properties_and_tag(instance_id):
+    if ctx.node.properties.get('name'):
+        _add_tag(instance_id, 'Name', ctx.node.properties['name'])
+
+    _assign_runtime_properties_to_instance(
+        runtime_properties=constants.INSTANCE_INTERNAL_ATTRIBUTES)
+    ctx.logger.info('Instance {0} is running.'.format(instance_id))
 
 
 def _unassign_runtime_properties(runtime_properties, ctx_instance):
@@ -301,7 +304,7 @@ def _start_external_instance(instance_id):
     ctx.logger.info(
         'Not starting instance {0}, because it is an external resource.'
         .format(instance_id))
-    _instance_started_assign_runtime_properties(instance_id)
+    _instance_started_assign_runtime_properties_and_tag(instance_id)
     return True
 
 
@@ -493,6 +496,20 @@ def _get_instance_keypair(provider_variables):
             'Only one keypair may be attached to an instance.')
 
     return list_of_keypairs[0] if list_of_keypairs else None
+
+
+def _add_tag(instance_id, tag_id, tag_content):
+
+    instance = _get_instance_from_id(instance_id)
+
+    try:
+        output = instance.add_tag(tag_id, tag_content)
+    except (boto.exception.EC2ResponseError,
+            boto.exception.BotoServerError) as e:
+        raise NonRecoverableError(
+            'unable to tag instance name: {0}'.format(str(e)))
+
+    return output
 
 
 def _get_instance_subnet(provider_variables):

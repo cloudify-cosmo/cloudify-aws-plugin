@@ -136,7 +136,11 @@ node_types:
           Otherwise it is an empty string.
         type: string
         default: ''
-        required: true
+      name:
+        description: >
+          Optional field if you want to add a specific name to the instance.
+        default: ''
+        required: false
       image_id:
         description: >
           The ID of the AMI image in your Amazon account.
@@ -153,6 +157,7 @@ node_types:
           ec2.connection.EC2Connection.run_instances command. It should be mentioned that
           although this field is listed as optional. A non-trivial use case requires
           that both the key_name parameter and the security_groups parameter be specified.
+        default: true
         required: false
       aws_config:
         description: >
