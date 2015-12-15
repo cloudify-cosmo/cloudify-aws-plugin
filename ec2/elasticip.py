@@ -57,11 +57,19 @@ def allocate(**_):
 
     ctx.logger.debug('Attempting to allocate elasticip.')
 
+    kw = {}
+    if ctx.node.properties.get('domain'):
+        kw['domain'] = ctx.node.properties['domain']
+
     try:
-        address_object = ec2_client.allocate_address(domain=None)
+        address_object = ec2_client.allocate_address(**kw)
     except (boto.exception.EC2ResponseError,
             boto.exception.BotoServerError) as e:
         raise NonRecoverableError('{0}'.format(str(e)))
+
+    if 'vpc' in address_object.domain:
+        ctx.instance.runtime_properties[constants.ALLOCATION_ID] = \
+            address_object.allocation_id
 
     utils.set_external_resource_id(
         address_object.public_ip, ctx.instance, external=False)
@@ -102,8 +110,11 @@ def release(**_):
     address = _get_address_object_by_id(address_object.public_ip)
 
     if not address:
-        utils.unassign_runtime_property_from_resource(
-            constants.EXTERNAL_RESOURCE_ID, ctx.instance)
+        for runtime_property in \
+                [constants.ALLOCATION_ID,
+                 constants.EXTERNAL_RESOURCE_ID]:
+            utils.unassign_runtime_property_from_resource(
+                runtime_property, ctx.instance)
     else:
         return ctx.operation.retry(
             message='Elastic IP not released. Retrying...')
@@ -127,13 +138,20 @@ def associate(**_):
     if _associate_external_elasticip_or_instance(elasticip):
         return
 
+    kw = dict(instance_id=instance_id, public_ip=elasticip)
+
+    if constants.ALLOCATION_ID in ctx.target.instance.runtime_properties:
+        kw.pop('public_ip')
+        kw.update(
+            {constants.ALLOCATION_ID:
+             ctx.target.instance.runtime_properties[constants.ALLOCATION_ID]})
+
     ctx.logger.debug(
-        'Attempting to associate elasticip {0} and instance {1}.'
-        .format(elasticip, instance_id))
+        'Attempting to associate: {0}'
+        .format(kw))
 
     try:
-        ec2_client.associate_address(
-            instance_id=instance_id, public_ip=elasticip)
+        ec2_client.associate_address(**kw)
     except (boto.exception.EC2ResponseError,
             boto.exception.BotoServerError) as e:
         raise NonRecoverableError('{0}'.format(str(e)))
@@ -161,10 +179,21 @@ def disassociate(**_):
     if _disassociate_external_elasticip_or_instance():
         return
 
+    elasticip_object = _get_address_object_by_id(elasticip)
+
+    if not elasticip_object:
+        raise NonRecoverableError(
+            'no matching elastic ip in account: {0}'.format(elasticip))
+
+    disassociate_args = dict(
+        public_ip=elasticip_object.public_ip,
+        association_id=elasticip_object.association_id
+    )
+
     ctx.logger.debug('Disassociating Elastic IP {0}'.format(elasticip))
 
     try:
-        ec2_client.disassociate_address(public_ip=elasticip)
+        ec2_client.disassociate_address(**disassociate_args)
     except (boto.exception.EC2ResponseError,
             boto.exception.BotoServerError) as e:
         raise NonRecoverableError('{0}'.format(str(e)))
@@ -302,7 +331,7 @@ def _get_all_addresses(address=None):
     except boto.exception.EC2ResponseError as e:
         if 'InvalidAddress.NotFound' in e:
             addresses = ec2_client.get_all_addresses()
-            utils.log_available_resources(addresses, ctx.logger)
+            utils.log_available_resources(addresses)
         return None
     except boto.exception.BotoServerError as e:
         raise NonRecoverableError('{0}'.format(str(e)))
