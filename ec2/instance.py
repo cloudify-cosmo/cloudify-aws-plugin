@@ -188,10 +188,6 @@ def _assign_runtime_properties_to_instance(runtime_properties):
         elif 'public_ip_address' is property_name:
             ctx.instance.runtime_properties[property_name] = \
                 _get_instance_attribute('ip_address')
-        else:
-            attribute = _get_instance_attribute(property_name)
-
-        ctx.logger.debug('Set {0}: {1}.'.format(property_name, attribute))
 
 
 def _instance_started_assign_runtime_properties(instance_id):
@@ -332,8 +328,6 @@ def _terminate_external_instance(instance_id):
 def _get_all_instances(list_of_instance_ids=None):
     """Returns a list of instance objects for a list of instance IDs.
 
-    :param ctx:  The Cloudify ctx context.
-    :param address_id: The ID of an EC2 Instance.
     :returns a list of instance objects.
     :raises NonRecoverableError: If Boto errors.
     """
@@ -364,7 +358,6 @@ def _get_instance_from_id(instance_id):
     """Gets the instance ID of a EC2 Instance
 
     :param instance_id: The ID of an EC2 Instance
-    :param ctx:  The Cloudify ctx context.
     :returns an ID of a an EC2 Instance or None.
     """
 
@@ -399,7 +392,6 @@ def _get_instance_attribute(attribute):
     """Gets an attribute from a boto object that represents an EC2 Instance.
 
     :param attribute: The named python attribute of a boto object.
-    :param ctx:  The Cloudify ctx context.
     :returns python attribute of a boto object representing an EC2 instance.
     :raises NonRecoverableError if constants.EXTERNAL_RESOURCE_ID not set
     :raises NonRecoverableError if no instance is found.
@@ -441,7 +433,6 @@ def _get_instance_attribute(attribute):
 def _get_instance_state():
     """Gets the instance state code of a EC2 Instance
 
-    :param ctx:  The Cloudify ctx context.
     :returns a state code from a boto object representing an EC2 Image.
     """
     state = _get_instance_attribute('state_code')
@@ -451,7 +442,6 @@ def _get_instance_state():
 def _get_instance_parameters():
     """The parameters to the run_instance boto call.
 
-    :param ctx:  The Cloudify ctx context.
     :returns parameters dictionary
     """
 
@@ -470,7 +460,8 @@ def _get_instance_parameters():
         'image_id': ctx.node.properties['image_id'],
         'instance_type': ctx.node.properties['instance_type'],
         'security_group_ids': attached_group_ids,
-        'key_name': _get_instance_keypair(provider_variables)
+        'key_name': _get_instance_keypair(provider_variables),
+        'subnet_id': _get_instance_subnet(provider_variables)
     }
 
     parameters.update(ctx.node.properties['parameters'])
@@ -495,3 +486,19 @@ def _get_instance_keypair(provider_variables):
             'Only one keypair may be attached to an instance.')
 
     return list_of_keypairs[0] if list_of_keypairs else None
+
+
+def _get_instance_subnet(provider_variables):
+
+    list_of_subnets = \
+        utils.get_target_external_resource_ids(
+            constants.INSTANCE_SUBNET_RELATIONSHIP, ctx.instance
+        )
+
+    if not list_of_subnets and provider_variables.get('agents_subnet'):
+        list_of_subnets.append(provider_variables['agents_subnet'])
+    elif len(list_of_subnets) > 1:
+        raise NonRecoverableError(
+            'instance may only be attached to one subnet')
+
+    return list_of_subnets[0] if list_of_subnets else None
