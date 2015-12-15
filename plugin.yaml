@@ -5,9 +5,9 @@
 plugins:
   aws:
     executor: central_deployment_agent
-    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/1.3.post1.CFY-4485.zip
+    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/1.3.1.zip
     package_name: cloudify-aws-plugin
-    package_version: '1.3.post1.CFY-4485'
+    package_version: '1.3.1'
 
 data_types:
 
@@ -157,6 +157,7 @@ node_types:
           ec2.connection.EC2Connection.run_instances command. It should be mentioned that
           although this field is listed as optional. A non-trivial use case requires
           that both the key_name parameter and the security_groups parameter be specified.
+        default: {}
         required: false
       aws_config:
         description: >
@@ -285,7 +286,8 @@ node_types:
       aws_config:
         description: >
           A dictionary of values to pass to authenticate with the AWS API.
-        default: {}
+        type: cloudify.datatypes.aws.Config
+        required: false
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
@@ -342,6 +344,97 @@ node_types:
         delete: aws.ec2.keypair.delete
       cloudify.interfaces.validation:
         creation: aws.ec2.keypair.creation_validation
+
+  cloudify.aws.nodes.ElasticLoadBalancer:
+    derived_from: cloudify.nodes.LoadBalancer
+    properties:
+      use_external_resource:
+        description: >
+          Indicate whether the resource exists or if Cloudify should create the resource,
+          true if you are bringing an existing resource, false if you want cloudify to create it.
+        type: boolean
+        default: false
+        required: true
+      resource_id:
+        description: >
+          The AWS resource ID of the external resource, if use_external_resource is true.
+          Otherwise it is an empty string.
+        type: string
+        default: ''
+        required: true
+      elb_name:
+        type: string
+        description: >
+          The mnemonic name associated with the new load balancer
+        required: true
+      zones:
+        description: >
+          zones (List of strings) - The names of the availability zone(s) to add.
+          example: ['us-east-1b','us-east-1b']
+        required: true
+      security_groups:
+        description: >
+          security_groups (list of strings) - The security groups assigned to your LoadBalancer
+          within your VPC.
+          example: ['sg-123456','sg-7891011']
+          FYI: security groups only supported with vpc
+        default: []
+        required: false
+      listeners:
+        description: >
+          listeners (List of tuples) - Each tuple contains three or four values, (LoadBalancerPortNumber,
+          InstancePortNumber, Protocol, [SSLCertificateId]) where LoadBalancerPortNumber and
+          InstancePortNumber are integer values between 1 and 65535, Protocol is a string containing
+          either 'TCP', 'SSL', 'HTTP', or 'HTTPS'; SSLCertificateID is the ARN of a AWS IAM certificate,
+          and must be specified when doing HTTPS.
+          example: [[80, 8080, 'http'], [443, 8443, 'tcp']]
+        required: true
+      health_checks:
+        description: >
+          list of healthchecks (dicts) to use as criteria for instance health
+          example: [{'target': 'HTTP:8080/health'}, {'target': 'HTTP:80/alive'}]
+        default: []
+        required: false
+      scheme:
+        type: string
+        description: >
+          The type of a LoadBalancer. By default, Elastic Load Balancing creates an internet-facing
+          LoadBalancer with a publicly resolvable DNS name, which resolves to public IP addresses.
+          Specify the value internal for this option to create an internal LoadBalancer with a DNS
+          name that resolves to private IP addresses.
+          This option is only available for LoadBalancers attached to an Amazon VPC.
+        default: ''
+        required: false
+      subnets:
+        description: >
+          list of strings - A list of subnet IDs in your VPC to attach to your LoadBalancer.
+          example:
+        default: []
+        required: false
+      complex_listeners:
+        description: >
+          List of tuples - Each tuple contains four or five values, (LoadBalancerPortNumber,
+          InstancePortNumber, Protocol, InstanceProtocol, SSLCertificateId).
+          Where:
+          LoadBalancerPortNumber and InstancePortNumber are integer values between 1 and 65535
+          Protocol and InstanceProtocol is a string containing either 'TCP', 'SSL', 'HTTP', or 'HTTPS'
+          SSLCertificateId is the ARN of an SSL certificate loaded into AWS IAM
+        default: []
+        required: false
+      aws_config:
+        description: >
+          A dictionary of values to pass to authenticate with the AWS API.
+        type: cloudify.datatypes.aws.Config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.ec2.elasticloadbalancer.create_elb
+        delete:
+          implementation: aws.ec2.elasticloadbalancer.delete_elb
+      cloudify.interfaces.validation:
+        creation:
+          implementation: aws.ec2.elasticloadbalancer.creation_validation
 
   cloudify.aws.nodes.VPC:
     derived_from: cloudify.nodes.Network
@@ -635,6 +728,13 @@ relationships:
 
   cloudify.aws.relationships.instance_connected_to_security_group:
     derived_from: cloudify.relationships.connected_to
+
+  cloudify.aws.relationships.instance_connected_to_load_balancer:
+    derived_from: cloudify.relationships.connected_to
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish: aws.ec2.elasticloadbalancer.add_instance_to_elb
+        unlink: aws.ec2.elasticloadbalancer.remove_instance_from_elb
 
   cloudify.aws.relationships.volume_connected_to_instance:
     derived_from: cloudify.relationships.connected_to

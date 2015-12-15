@@ -19,6 +19,7 @@ from contextlib import contextmanager
 from boto.ec2 import get_region
 from boto.ec2 import EC2Connection
 from boto.vpc import VPCConnection
+from boto.ec2.elb import connect_to_region as connect_to_elb_region
 
 from cosmo_tester.framework.handlers import (
     BaseHandler,
@@ -145,10 +146,17 @@ class EC2Handler(BaseHandler):
         credentials = self._client_credentials()
         return VPCConnection(**credentials)
 
+    def elb_client(self):
+        credentials = self._client_credentials()
+        credentials.pop('region')
+        elb_region = self.env.ec2_region_name
+        return connect_to_elb_region(elb_region, **credentials)
+
     def ec2_infra_state(self):
 
         ec2_client = self.ec2_client()
         vpc_client = self.vpc_client()
+        elb_client = self.elb_client()
 
         return {
             'instances': dict(self._instances(ec2_client)),
@@ -156,6 +164,8 @@ class EC2Handler(BaseHandler):
             'elasticips': dict(self._elasticips(ec2_client)),
             'security_groups': dict(self._security_groups(ec2_client)),
             'volumes': dict(self._volumes(ec2_client)),
+            'snapshots': dict(self._snapshots(ec2_client)),
+            'load_balancers': dict(self._elbs(elb_client)),
             'vpcs': dict(self._vpcs(vpc_client)),
             'subnets': dict(self._subnets(vpc_client)),
             'internet_gateways': dict(self._internet_gateways(vpc_client)),
@@ -179,12 +189,15 @@ class EC2Handler(BaseHandler):
 
         ec2_client = self.ec2_client()
         vpc_client = self.vpc_client()
+        elb_client = self.elb_client()
 
         instances = self._instances(ec2_client)
         key_pairs = self._key_pairs(ec2_client)
         elasticips = self._elasticips(ec2_client)
         security_groups = self._security_groups(ec2_client)
         volumes = self._volumes(ec2_client)
+        snapshots = self._snapshots(ec2_client)
+        load_balancers = self._elbs(elb_client)
         vpcs = self._vpcs(vpc_client)
         subnets = self._subnets(vpc_client)
         internet_gateways = self._internet_gateways(vpc_client)
@@ -200,6 +213,8 @@ class EC2Handler(BaseHandler):
             'elasticips': {},
             'security_groups': {},
             'volumes': {},
+            'snapshots': {},
+            'load_balancers': {},
             'vpcs': {},
             'subnets': {},
             'internet_gateways': {},
@@ -238,6 +253,18 @@ class EC2Handler(BaseHandler):
                 with self._handled_exception(
                         volume_id, failed, 'volumes'):
                     ec2_client.get_all_volumes(volume_id)[0].delete()
+
+        for snapshot_id, _ in snapshots:
+            if snapshot_id in resources_to_remove['snapshots']:
+                with self._handled_exception(
+                        snapshot_id, failed, 'snapshots'):
+                    ec2_client.get_all_snapshots(snapshot_id)[0].delete()
+
+        for elb_name, _ in load_balancers:
+            if elb_name in resources_to_remove['load_balancers']:
+                with self._handled_exception(
+                        elb_name, failed, 'load_balancers'):
+                    elb_client.get_all_load_balancers(elb_name)[0].delete()
 
         for vpc_id, _ in vpcs:
             if vpc_id in resources_to_remove['vpcs']:
@@ -322,6 +349,14 @@ class EC2Handler(BaseHandler):
     def _volumes(self, ec2_client):
         return [(vol.id, vol.id)
                 for vol in ec2_client.get_all_volumes()]
+
+    def _snapshots(self, ec2_client):
+        return [(ss.id, ss.id)
+                for ss in ec2_client.get_all_snapshots()]
+
+    def _elbs(self, elb_client):
+        return [(elb.name, elb.name)
+                for elb in elb_client.get_all_load_balancers()]
 
     def _vpcs(self, vpc_client):
         return [(vpc.id, vpc.id)

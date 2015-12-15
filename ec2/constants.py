@@ -47,6 +47,14 @@ SECURITY_GROUP_VPC_RELATIONSHIP = 'security_group_contained_in_vpc'
 # securitygroup module constants
 SECURITY_GROUP_REQUIRED_PROPERTIES = ['description', 'rules']
 
+# ELB Default Values
+HEALTH_CHECK_INTERVAL = 30
+HEALTH_CHECK_HEALTHY_THRESHOLD = 3
+HEALTH_CHECK_TIMEOUT = 5
+HEALTH_CHECK_UNHEALTHY_THRESHOLD = 5
+
+ELB_REQUIRED_PROPERTIES = ['elb_name', 'zones', 'listeners']
+
 # ebs module constants
 VOLUME_REQUIRED_PROPERTIES = ['size', 'zone', 'device']
 VOLUME_SNAPSHOT_ATTRIBUTE = 'snapshots_ids'
