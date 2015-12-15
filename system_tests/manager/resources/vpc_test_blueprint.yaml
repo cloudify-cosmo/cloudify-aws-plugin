@@ -290,7 +290,7 @@ node_templates:
                 target_account_id: '535075449278'
                 routes:
                     - destination_cidr_block: { get_property: [ vpc_two, cidr_block ] }
-      - type: cloudify.relationship.depends_on
+      - type: cloudify.relationships.depends_on
         target: route_table_two
 
   route_table_two:
