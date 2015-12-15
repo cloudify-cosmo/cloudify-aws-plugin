@@ -15,6 +15,7 @@
 
 # Third Party
 from boto.exception import EC2ResponseError
+from boto.exception import BotoServerError
 
 # Cloudify Imports
 from ec2 import (
@@ -28,9 +29,10 @@ from cloudify.exceptions import NonRecoverableError
 from ec2_test_utils import (
     EC2LocalTestUtils,
     EXTERNAL_RESOURCE_ID,
-    SIMPLE_IP, SIMPLE_SG, SIMPLE_KP, SIMPLE_VM,
+    SIMPLE_IP, SIMPLE_SG, SIMPLE_KP, SIMPLE_VM, SIMPLE_LB,
     PAIR_A_IP, PAIR_A_VM,
-    PAIR_B_SG, PAIR_B_VM
+    PAIR_B_SG, PAIR_B_VM,
+    PAIR_C_LB
 )
 
 
@@ -49,7 +51,7 @@ class TestWorkflowClean(EC2LocalTestUtils):
 
         instance_storage = self._get_instances(self.localenv.storage)
 
-        self.assertEquals(4, len(instance_storage))
+        self.assertEquals(5, len(instance_storage))
 
         for node_instance in self._get_instances(self.localenv.storage):
             self.assertIn(EXTERNAL_RESOURCE_ID,
@@ -89,8 +91,23 @@ class TestWorkflowClean(EC2LocalTestUtils):
         instance_list = reservation_list[0].instances
         self.assertEqual(1, len(instance_list))
 
+        elb_client = self._get_elb_client()
+
+        elastic_load_balancer_node = \
+            self._get_instance_node(
+                SIMPLE_LB, self.localenv.storage)
+        elastic_load_balancer_name = \
+            elastic_load_balancer_node.runtime_properties[EXTERNAL_RESOURCE_ID]
+        elastic_lb_object_list = \
+            elb_client.get_all_load_balancers(
+                load_balancer_names=[elastic_load_balancer_name])
+        self.assertEqual(1, len(elastic_lb_object_list))
+
         self.localenv.execute('uninstall', task_retries=10)
 
+        with self.assertRaises(BotoServerError):
+            elb_client.get_all_load_balancers(
+                load_balancer_names=[elastic_load_balancer_name])
         with self.assertRaises(EC2ResponseError):
             client.get_all_addresses(addresses=elastic_ip_address)
         with self.assertRaises(EC2ResponseError):
@@ -105,6 +122,7 @@ class TestWorkflowClean(EC2LocalTestUtils):
     def test_simple_relationships(self):
 
         client = self._get_ec2_client()
+        elb_client = self._get_elb_client()
 
         test_name = 'test_simple_relationships'
 
@@ -118,7 +136,7 @@ class TestWorkflowClean(EC2LocalTestUtils):
         self.localenv.execute('install', task_retries=10)
 
         instance_storage = self._get_instances(self.localenv.storage)
-        self.assertEquals(4, len(instance_storage))
+        self.assertEquals(6, len(instance_storage))
 
         instance_node = \
             self._get_instance_node(PAIR_A_VM, self.localenv.storage)
@@ -128,7 +146,6 @@ class TestWorkflowClean(EC2LocalTestUtils):
             client.get_all_reservations(instance_ids=instance_id_a)
         instance_list_ip = reservation_list[0].instances
 
-        self.assertEquals(4, len(instance_storage))
         elastic_ip_node = \
             self._get_instance_node(
                 PAIR_A_IP, self.localenv.storage)
@@ -136,6 +153,17 @@ class TestWorkflowClean(EC2LocalTestUtils):
             elastic_ip_node.runtime_properties[EXTERNAL_RESOURCE_ID]
         elastic_ip_object_list = \
             client.get_all_addresses(addresses=elastic_ip_address)
+
+        elastic_load_balancer_node = \
+            self._get_instance_node(
+                PAIR_C_LB, self.localenv.storage)
+        elastic_load_balancer_name = \
+            elastic_load_balancer_node.runtime_properties[EXTERNAL_RESOURCE_ID]
+        elastic_lb_object_list = \
+            elb_client.get_all_load_balancers(
+                load_balancer_names=[elastic_load_balancer_name])
+
+        self.assertEqual(1, len(elastic_lb_object_list))
 
         self.assertEqual(
             str(elastic_ip_object_list[0].instance_id),
@@ -161,7 +189,9 @@ class TestWorkflowClean(EC2LocalTestUtils):
             str(instance_list[0].id))
 
         self.localenv.execute('uninstall', task_retries=10)
-
+        with self.assertRaises(BotoServerError):
+            elb_client.get_all_load_balancers(
+                load_balancer_names=[elastic_load_balancer_name])
         with self.assertRaises(EC2ResponseError):
             client.get_all_addresses(addresses=elastic_ip_address)
         with self.assertRaises(EC2ResponseError):

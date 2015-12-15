@@ -150,6 +150,86 @@ node_types:
       cloudify.interfaces.validation:
         creation: aws.ec2.keypair.creation_validation
 
+  cloudify.aws.nodes.ElasticLoadBalancer:
+    derived_from: cloudify.nodes.LoadBalancer
+    properties:
+      use_external_resource:
+        description: >
+          Indicate whether the resource exists or if Cloudify should create the resource.
+        type: boolean
+        default: false
+      resource_id:
+        description: >
+          Either the name or ID of the resource in Cloudify. If this is an existing
+          resource, you should provide the name or the ID of the resource in Amazon AWS.
+        type: string
+        default: ''
+      elb_name:
+        type: string
+        description: >
+          The mnemonic name associated with the new load balancer
+      zones:
+        description: >
+          zones (List of strings) - The names of the availability zone(s) to add.
+          example: ['us-east-1b','us-east-1b']
+      security_groups:
+        description: >
+          security_groups (list of strings) - The security groups assigned to your LoadBalancer
+          within your VPC.
+          example: ['sg-123456','sg-7891011']
+          FYI: security groups only supported with vpc
+        default: []
+      listeners:
+        description: >
+          listeners (List of tuples) - Each tuple contains three or four values, (LoadBalancerPortNumber,
+          InstancePortNumber, Protocol, [SSLCertificateId]) where LoadBalancerPortNumber and
+          InstancePortNumber are integer values between 1 and 65535, Protocol is a string containing
+          either 'TCP', 'SSL', 'HTTP', or 'HTTPS'; SSLCertificateID is the ARN of a AWS IAM certificate,
+          and must be specified when doing HTTPS.
+          example: [[80, 8080, 'http'], [443, 8443, 'tcp']]
+      health_checks:
+        description: >
+          list of healthchecks (dicts) to use as criteria for instance health
+          example: [{'target': 'HTTP:8080/health'}, {'target': 'HTTP:80/alive'}]
+        default: []
+      scheme:
+        type: string
+        description: >
+          The type of a LoadBalancer. By default, Elastic Load Balancing creates an internet-facing
+          LoadBalancer with a publicly resolvable DNS name, which resolves to public IP addresses.
+          Specify the value internal for this option to create an internal LoadBalancer with a DNS
+          name that resolves to private IP addresses.
+          This option is only available for LoadBalancers attached to an Amazon VPC.
+        default: ''
+      subnets:
+        description: >
+          list of strings - A list of subnet IDs in your VPC to attach to your LoadBalancer.
+          example:
+        default: []
+      complex_listeners:
+        description: >
+          List of tuples - Each tuple contains four or five values, (LoadBalancerPortNumber,
+          InstancePortNumber, Protocol, InstanceProtocol, SSLCertificateId).
+          Where:
+          LoadBalancerPortNumber and InstancePortNumber are integer values between 1 and 65535
+          Protocol and InstanceProtocol is a string containing either 'TCP', 'SSL', 'HTTP', or 'HTTPS'
+          SSLCertificateId is the ARN of an SSL certificate loaded into AWS IAM
+        default: []
+      aws_config:
+        description: >
+          A dictionary of values to pass to authenticate with the AWS API.
+        default: {}
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.ec2.elasticloadbalancer.create_elb
+        delete:
+          implementation: aws.ec2.elasticloadbalancer.delete_elb
+      cloudify.interfaces.validation:
+        creation:
+          implementation: aws.ec2.elasticloadbalancer.creation_validation
+
+
 relationships:
   cloudify.aws.relationships.instance_connected_to_elastic_ip:
     derived_from: cloudify.relationships.connected_to
@@ -163,3 +243,11 @@ relationships:
 
   cloudify.aws.relationships.instance_connected_to_security_group:
     derived_from: cloudify.relationships.connected_to
+
+  cloudify.aws.relationships.instance_connected_to_load_balancer:
+    derived_from: cloudify.relationships.connected_to
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish: aws.ec2.elasticloadbalancer.add_instance_to_elb
+        unlink: aws.ec2.elasticloadbalancer.remove_instance_from_elb
+

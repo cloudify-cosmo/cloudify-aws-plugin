@@ -8,6 +8,12 @@ imports:
 
 inputs:
 
+  aws_config:
+    default: {}
+
+  health_checks:
+    default: {}
+
   image:
     type: string
     default: ''
@@ -43,8 +49,25 @@ inputs:
   resource_id_vm:
     type: string
 
-  aws_config:
-    default: {}
+  elb_name:     
+    type: string
+
+  zones:     
+    type: string
+
+  listeners:     
+    type: string
+
+  scheme:
+    type: string
+    default: ''
+
+  subnets:
+     default: []
+
+  complex_listeners:
+     default: []
+
 
 node_templates:
 
@@ -93,6 +116,32 @@ node_templates:
     relationships:
       - type: cloudify.aws.relationships.instance_connected_to_security_group
         target: pair_b_connected_security_group
+
+  pair_c_connected_elb:
+    type: cloudify.aws.nodes.ElasticLoadBalancer
+    properties:
+      elb_name: { get_input: elb_name }
+      zones: { get_input: zones }
+      aws_config: { get_input: aws_config }
+      listeners: { get_input: listeners }
+      health_checks: { get_input: health_checks }
+      scheme: { get_input: scheme }
+      subnets: { get_input: subnets }
+      complex_listeners: { get_input: complex_listeners }
+
+  pair_c_connected_instance:
+    type: cloudify.aws.nodes.Instance
+    properties:
+      install_agent: false
+      resource_id: { get_input: resource_id_vm }
+      use_external_resource: { get_input: external_vm }
+      image_id: { get_input: image }
+      instance_type: { get_input: size }
+      aws_config: { get_input: aws_config }
+    relationships:
+      - type: cloudify.aws.relationships.instance_connected_to_load_balancer
+        target: pair_c_connected_elb
+
 
 plugins:
     ec2:
