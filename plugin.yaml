@@ -34,6 +34,18 @@ data_types:
           The endpoint for the given region.
         type: string
         required: false
+      elb_region_name:
+        description: >
+          The ELB Region RegionName, such as us-east-1.
+          (Not us-east-1b, which is an availability zone, or US East, which is a Region.)
+          Required for aws_config for node type cloudify.aws.nodes.ElasticLoadBalancer.
+        type: string
+        required: false
+      elb_region_endpoint:
+        description: >
+          The endpoint for the given ELB region.
+        type: string
+        required: false
 
   cloudify.datatypes.aws.Route:
     properties:
