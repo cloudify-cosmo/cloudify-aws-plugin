@@ -77,6 +77,24 @@ class TestKeyPair(testtools.TestCase):
         self.assertTrue(os.path.exists(key_path))
 
     @mock_ec2
+    def test_runtime_property_deleted(self):
+        """ This tests that the key pair type is added to and removed from the
+        runtime_properties.
+        """
+        ctx = self.mock_ctx('test_key_pair_type')
+        current_ctx.set(ctx=ctx)
+
+        keypair.create(ctx=ctx)
+        self.assertIn('external_type',
+                      ctx.instance.runtime_properties.keys())
+        self.assertEqual('keypair',
+                         ctx.instance.runtime_properties['external_type'])
+
+        keypair.delete(ctx=ctx)
+        self.assertNotIn('external_type',
+                         ctx.instance.runtime_properties.keys())
+
+    @mock_ec2
     def test_key_pair_exists_error_create(self):
         """ this tests that an error is raised if a
             keypair already exists in the file location

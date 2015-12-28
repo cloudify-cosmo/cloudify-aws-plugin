@@ -84,6 +84,13 @@ def set_external_resource_id(value, ctx_instance, external=True):
     ctx_instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID] = value
 
 
+def unassign_runtime_properties_from_resource(property_names, ctx_instance):
+    for property_name in property_names:
+        if property_name in ctx_instance.runtime_properties:
+            unassign_runtime_property_from_resource(
+                property_name, ctx_instance)
+
+
 def unassign_runtime_property_from_resource(property_name, ctx_instance):
     """Pops a runtime_property and reports to debug.
 
@@ -191,3 +198,22 @@ def get_instance_or_source_node_properties():
                 .format(
                     constants.RELATIONSHIP_INSTANCE,
                     constants.NODE_INSTANCE))
+
+
+def get_single_connected_node_by_type(
+        ctx, type_name, if_exists=False):
+    nodes = get_connected_nodes_by_type(ctx, type_name)
+    check = len(nodes) > 1 if if_exists else len(nodes) != 1
+    if check:
+        raise NonRecoverableError(
+            'Expected {0} one {1} node. got {2}'.format(
+                'at most' if if_exists else 'exactly', type_name, len(nodes)))
+    return nodes[0] if nodes else None
+
+
+def get_connected_nodes_by_type(ctx, type_name):
+    return [rel.target.node for rel in ctx.instance.relationships
+            if rel.target.instance.runtime_properties.get(
+                constants.AWS_TYPE_PROPERTY) and
+            rel.target.instance.runtime_properties.get(
+                constants.AWS_TYPE_PROPERTY) == type_name]
