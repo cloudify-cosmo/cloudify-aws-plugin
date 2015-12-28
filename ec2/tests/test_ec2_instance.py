@@ -15,16 +15,21 @@
 
 # Built-in Imports
 import testtools
+import tempfile
 
 # Third Party Imports
 from moto import mock_ec2
+import mock
 
 # Cloudify Imports is imported and used in operations
 from ec2 import constants
 from ec2 import connection
 from ec2 import instance
+from cloudify.context import BootstrapContext
 from cloudify.state import current_ctx
 from cloudify.mocks import MockCloudifyContext
+from cloudify.mocks import MockNodeContext
+from cloudify.mocks import MockContext
 from cloudify.exceptions import NonRecoverableError
 
 TEST_AMI_IMAGE_ID = 'ami-e214778a'
@@ -48,6 +53,7 @@ class TestInstance(testtools.TestCase):
             'instance_type': TEST_INSTANCE_TYPE,
             'cloudify_agent': {},
             'agent_config': {},
+            'use_password': False,
             'parameters': {
                 'security_group_ids': ['sg-73cd3f1e'],
                 'instance_initiated_shutdown_behavior': 'stop'
@@ -65,6 +71,130 @@ class TestInstance(testtools.TestCase):
         )
         ctx.node.type_hierarchy = ['cloudify.nodes.Compute']
         return ctx
+
+    @mock_ec2
+    @mock.patch('ec2.utils.get_single_connected_node_by_type')
+    def test_key_pair_and_relationship(self, *_):
+        """tests that key pair is not provided by both a property
+        and via relationship
+        """
+
+        name = 'test_key_pair_and_relationship'
+        ctx = self.mock_ctx(name)
+        current_ctx.set(ctx=ctx)
+
+        ctx.node.properties['use_password'] = True
+        private_key_dir = tempfile.mkdtemp()
+        private_key_path = '{0}/{1}.pem' \
+            .format(private_key_dir, name)
+
+        ex = self.assertRaises(NonRecoverableError,
+                               instance._get_private_key,
+                               private_key_path=private_key_path)
+        self.assertIn("server can't both have a",
+                      ex.message)
+
+    @mock_ec2
+    def test_no_key_pair_file(self, *_):
+        """tests correct error is thrown when key file is missing
+        """
+
+        name = 'test_no_key_pair_file'
+        ctx = self.mock_ctx(name)
+        current_ctx.set(ctx=ctx)
+
+        ctx.node.properties['use_password'] = True
+        private_key_dir = tempfile.mkdtemp()
+        private_key_path = '{0}/{1}.pem' \
+            .format(private_key_dir, name)
+
+        with mock.patch('ec2.utils.get_single_connected_node_by_type') \
+                as mock_get_single_connected_node_by_type:
+            mock_get_single_connected_node_by_type.return_value = None
+            ex = self.assertRaises(NonRecoverableError,
+                                   instance._get_private_key,
+                                   private_key_path=private_key_path)
+            self.assertIn("Cannot find private key file; expected file path",
+                          ex.message)
+
+    @mock_ec2
+    def test_relationship_key_pair(self, *_):
+        """tests finding a key file via relationship
+        """
+
+        name = 'test_relationship_key_pair'
+        ctx = self.mock_ctx(name)
+        current_ctx.set(ctx=ctx)
+
+        ctx.node.properties['use_password'] = True
+        private_key_dir = tempfile.mkdtemp()
+        private_key_path = '{0}/{1}.pem' \
+            .format(private_key_dir, name)
+        open(private_key_path, 'w').close()
+
+        key_pair_node = MockNodeContext(properties={
+            'private_key_path': private_key_path
+        })
+
+        with mock.patch('ec2.utils.get_single_connected_node_by_type') \
+                as mock_get_single_connected_node_by_type:
+            mock_get_single_connected_node_by_type.return_value = key_pair_node
+            output = instance._get_private_key('')
+            self.assertEqual(private_key_path, output)
+
+    @mock_ec2
+    @mock.patch('ec2.utils.get_single_connected_node_by_type')
+    def test_bootstrap_context_key_pair(self, *_):
+        """tests finding a key file via bootstrap context
+        """
+
+        name = 'test_bootstrap_context_key_pair'
+        private_key_dir = tempfile.mkdtemp()
+        private_key_path = '{0}/{1}.pem' \
+            .format(private_key_dir, name)
+        open(private_key_path, 'w').close()
+
+        cloudify_agent = MockContext()
+        cloudify_agent['agent_key_path'] = private_key_path
+
+        bootstrap_ctx = BootstrapContext({
+            'cloudify_agent': cloudify_agent
+        })
+
+        ctx = MockCloudifyContext(bootstrap_context=bootstrap_ctx,
+                                  node_name=name)
+        current_ctx.set(ctx=ctx)
+
+        with mock.patch('ec2.utils.get_single_connected_node_by_type') \
+                as mock_get_connected:
+            mock_get_connected.return_value = None
+            output = instance._get_private_key('')
+            self.assertEqual(private_key_path, output)
+
+    @mock_ec2
+    @mock.patch('ec2.utils.get_single_connected_node_by_type')
+    @mock.patch('ec2.instance._get_private_key')
+    def test_windows_runtime_property_created(self, *_):
+        """tests that the generated windows password is saved as
+        a runtime property
+        """
+
+        ctx = self.mock_ctx('test_windows_runtime_property_created')
+        current_ctx.set(ctx=ctx)
+
+        ec2_client = connection.EC2ConnectionClient().client()
+        reservation = ec2_client.run_instances(
+            TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
+        instance_id = reservation.instances[0].id
+        ctx.instance.runtime_properties['aws_resource_id'] = instance_id
+        ctx.node.properties['use_password'] = True
+
+        with mock.patch('ec2.instance._get_windows_password') \
+                as mock_get_windows_password:
+            mock_get_windows_password.return_value = 'pass'
+            instance.start(ctx=ctx)
+            self.assertEqual(ctx.instance.runtime_properties
+                             [constants.ADMIN_PASSWORD_PROPERTY], 'pass')
 
     @mock_ec2
     def test_run_instances_clean(self):

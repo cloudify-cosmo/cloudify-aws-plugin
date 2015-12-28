@@ -167,6 +167,8 @@ node_types:
           The instance's size.
         type: string
         required: true
+      use_password:
+        default: false
       parameters:
         description: >
           The key value pair parameters allowed by Amazon API to the
@@ -186,6 +188,18 @@ node_types:
           implementation: aws.ec2.instance.run_instances
         start:
           implementation: aws.ec2.instance.start
+          inputs:
+            start_retry_interval:
+              description: Polling interval until the server is active in seconds
+              type: integer
+              default: 30
+            private_key_path:
+              description: >
+                Path to private key which matches the server's
+                public key. Will be used to decrypt password in case
+                the "use_password" property is set to "true"
+              type: string
+              default: ''
         stop:
           implementation: aws.ec2.instance.stop
         delete:
@@ -193,6 +207,18 @@ node_types:
       cloudify.interfaces.validation:
         creation:
           implementation: aws.ec2.instance.creation_validation
+
+  cloudify.aws.nodes.WindowsInstance:
+    derived_from: cloudify.aws.nodes.Instance
+    properties:
+      use_password:
+        default: true
+      os_family:
+        default: windows
+      agent_config:
+        type: cloudify.datatypes.AgentConfig
+        default:
+          port: 5985
 
   cloudify.aws.nodes.ElasticIP:
     derived_from: cloudify.nodes.VirtualIP
