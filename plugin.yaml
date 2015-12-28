@@ -23,6 +23,11 @@ data_types:
           The ID of your AWS SECRET KEY.
         type: string
         required: false
+      region:
+        description: >
+          This is for backward compatibility with version 1.2.
+        type: string
+        required: false
       ec2_region_name:
         description: >
           The EC2 Region RegionName, such as us-east-1.
