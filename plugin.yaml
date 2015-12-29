@@ -767,6 +767,14 @@ relationships:
       cloudify.interfaces.relationship_lifecycle:
         establish:
           implementation: aws.vpc.routetable.create_route_to_gateway
+          inputs:
+            destination_cidr_block:
+              description: >
+                Provide a specific value for the destination cidr block.
+                If the target is an internet gateway, then this is not necessary.
+                It will resolve to the cidr_block node property.
+                Otherwise, you need to provide this value.
+              default: ''
         unlink:
           implementation: aws.vpc.routetable.delete_route_from_gateway
 
