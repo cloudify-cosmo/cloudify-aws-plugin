@@ -8,15 +8,25 @@ imports:
 
 inputs:
 
+  aws_config:
+    default: {}
+
   image:
     type: string
-    default: ''
 
   size:
     type: string
-    default: ''
 
   key_path:
+    type: string
+
+  vol_zone:
+    type: string
+
+  vol_size:
+    type: string
+
+  vol_device:
     type: string
 
   external_ip:
@@ -31,6 +41,9 @@ inputs:
   external_vm:
     type: boolean
 
+  external_vol:
+    type: boolean
+
   resource_id_ip:
     type: string
 
@@ -43,8 +56,31 @@ inputs:
   resource_id_vm:
     type: string
 
+  elb_name:     
+    type: string
+
+  zones:     
+    type: string
+
+  listeners:     
+    type: string
+
+  health_checks:
+  resource_id_vol:
+    type: string
+
   aws_config:
     default: {}
+
+  scheme:
+    type: string
+    default: ''
+
+  subnets:
+     default: []
+
+  complex_listeners:
+     default: []
 
 node_templates:
 
@@ -80,6 +116,24 @@ node_templates:
       use_external_resource: { get_input: external_vm }
       image_id: { get_input: image }
       instance_type: { get_input: size }
+      aws_config: { get_input: aws_config }
+
+  simple_load_balancer:
+    type: cloudify.aws.nodes.ElasticLoadBalancer
+    properties:
+      elb_name: { get_input: elb_name }
+      zones: { get_input: zones }
+      listeners: { get_input: listeners }
+      aws_config: { get_input: aws_config }
+
+  simple_volume:
+    type: cloudify.aws.nodes.Volume
+    properties:
+      resource_id: { get_input: resource_id_vol }
+      use_external_resource: { get_input: external_vol }
+      zone: { get_input: vol_zone }
+      size: { get_input: vol_size }
+      device: { get_input: vol_device }
       aws_config: { get_input: aws_config }
 
 plugins:
