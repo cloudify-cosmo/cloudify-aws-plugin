@@ -48,8 +48,9 @@ def disassociate_route_table(**_):
 
 
 @operation
-def create_route_to_gateway(**_):
-    return RouteTableGatewayAssociation().associated()
+def create_route_to_gateway(destination_cidr_block, **_):
+    return RouteTableGatewayAssociation(
+        destination_cidr_block).associated()
 
 
 @operation
@@ -59,18 +60,21 @@ def delete_route_from_gateway(**_):
 
 class RouteTableGatewayAssociation(AwsBaseRelationship, RouteMixin):
 
-    def __init__(self):
+    def __init__(self, destination_cidr_block=None):
         super(RouteTableGatewayAssociation, self).__init__()
         self.source_get_all_handler = {
             'function': self.client.get_all_route_tables,
             'argument':
             '{0}_ids'.format(constants.ROUTE_TABLE['AWS_RESOURCE_TYPE'])
         }
+        self.destination_cidr_block = destination_cidr_block
 
     def associate(self):
 
         route = dict(
-            destination_cidr_block=ctx.target.node.properties['cidr_block'],
+            destination_cidr_block=self.destination_cidr_block if
+            self.destination_cidr_block else
+            ctx.target.node.properties.get('cidr_block'),
             gateway_id=ctx.target.instance.runtime_properties[
                 constants.EXTERNAL_RESOURCE_ID]
         )
