@@ -68,7 +68,6 @@ data_types:
         type: string
         required: false
 
-
   cloudify.datatypes.aws.NetworkAclEntry:
     properties:
       rule_number:
@@ -116,7 +115,6 @@ data_types:
           The last port in the range.
         type: integer
         required: true
-
 
 node_types:
 
