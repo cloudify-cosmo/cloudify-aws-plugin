@@ -226,6 +226,14 @@ node_templates:
         target: new_subnet
       - type: cloudify.aws.relationships.route_table_to_gateway
         target: new_internet_gateway
+      - type: cloudify.aws.relationships.route_table_to_gateway
+        target: new_vpn_gateway
+        target_interfaces:
+          cloudify.interfaces.relationship_lifecycle:
+            establish:
+              implementation: aws.vpc.routetable.create_route_to_gateway
+              inputs:
+                destination_cidr_block: '54.0.0.0/16'
       - type: cloudify.aws.relationships.route_table_of_source_vpc_connected_to_target_peer_vpc
         target: existing_vpc
         target_interfaces:
