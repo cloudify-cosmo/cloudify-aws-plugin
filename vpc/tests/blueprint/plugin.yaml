@@ -23,6 +23,11 @@ data_types:
           The ID of your AWS SECRET KEY.
         type: string
         required: false
+      region:
+        description: >
+          This is for backward compatibility with version 1.2.
+        type: string
+        required: false
       ec2_region_name:
         description: >
           The EC2 Region RegionName, such as us-east-1.
@@ -32,6 +37,18 @@ data_types:
       ec2_region_endpoint:
         description: >
           The endpoint for the given region.
+        type: string
+        required: false
+      elb_region_name:
+        description: >
+          The ELB Region RegionName, such as us-east-1.
+          (Not us-east-1b, which is an availability zone, or US East, which is a Region.)
+          Required for aws_config for node type cloudify.aws.nodes.ElasticLoadBalancer.
+        type: string
+        required: false
+      elb_region_endpoint:
+        description: >
+          The endpoint for the given ELB region.
         type: string
         required: false
 
