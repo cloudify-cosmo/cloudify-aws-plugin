@@ -39,4 +39,5 @@ setup(
     install_requires=[
         'cloudify-plugins-common>=3.3.1',
         'boto==2.38.0'
+    ]
 )
