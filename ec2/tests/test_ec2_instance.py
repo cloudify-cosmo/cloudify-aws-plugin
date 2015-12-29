@@ -153,6 +153,7 @@ class TestInstance(testtools.TestCase):
         ctx.instance.runtime_properties['public_dns_name'] = '0.0.0.0'
         ctx.instance.runtime_properties['public_ip_address'] = '0.0.0.0'
         ctx.instance.runtime_properties['ip'] = '0.0.0.0'
+        ctx.instance.runtime_properties['placement'] = 'us-east-1b'
         instance.stop(ctx=ctx)
         reservations = ec2_client.get_all_reservations(instance_id)
         instance_object = reservations[0].instances[0]
@@ -179,6 +180,7 @@ class TestInstance(testtools.TestCase):
         instance_object = reservations[0].instances[0]
         state = instance_object.update()
         self.assertEqual(state, 'running')
+        self.assertNotIn('Name', instance_object.tags)
 
     @mock_ec2
     def test_terminate_clean(self):
@@ -421,3 +423,25 @@ class TestInstance(testtools.TestCase):
                 NonRecoverableError,
                 'Invalid id:'):
             instance.creation_validation(ctx=ctx)
+
+    @mock_ec2
+    def test_start_and_tag_name(self):
+        """ this tests that the instance start function
+        starts an instance.
+        """
+
+        ctx = self.mock_ctx('test_start_clean')
+        ctx.node.properties['name'] = 'test_start_and_tag_name'
+        current_ctx.set(ctx=ctx)
+
+        ec2_client = connection.EC2ConnectionClient().client()
+        reservation = ec2_client.run_instances(
+            TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
+        instance_id = reservation.instances[0].id
+        ctx.instance.runtime_properties['aws_resource_id'] = instance_id
+        ec2_client.stop_instances(instance_id)
+        instance.start(ctx=ctx)
+        reservations = ec2_client.get_all_reservations(instance_id)
+        instance_object = reservations[0].instances[0]
+        self.assertEquals(instance_object.tags.get('Name'),
+                          ctx.node.properties['name'])

@@ -20,6 +20,7 @@ import tempfile
 # Third party Imports
 from boto.ec2 import get_region
 from boto.ec2 import EC2Connection
+from boto.ec2.elb import connect_to_region as connect_to_elb_region
 
 # Cloudify Imports
 from ec2 import constants
@@ -42,10 +43,21 @@ SIMPLE_IP = 'simple_elastic_ip'
 SIMPLE_SG = 'simple_security_group'
 SIMPLE_KP = 'simple_key_pair'
 SIMPLE_VM = 'simple_instance'
+SIMPLE_LB = 'simple_load_balancer'
+SIMPLE_VOL = 'simple_volume'
 PAIR_A_IP = 'pair_a_connected_elastic_ip'
 PAIR_A_VM = 'pair_a_connected_instance'
 PAIR_B_SG = 'pair_b_connected_security_group'
 PAIR_B_VM = 'pair_b_connected_instance'
+PAIR_C_LB = 'pair_c_connected_elb'
+DEFAULT_LISTENER = [[80, 8080, 'http']]
+DEFAULT_EXTERNAL_ELB_NAME = 'myelb'
+DEFAULT_ZONES = ['us-east-1b']
+DEFAULT_HEALTH_CHECK = [{'target': 'HTTP:8080/health'}]
+PAIR_C_VOL = 'pair_c_connected_volume'
+PAIR_C_VM = 'pair_c_connected_instance'
+TEST_SIZE = 2
+TEST_DEVICE = '/dev/xvdf'
 
 
 class EC2LocalTestUtils(TestCase):
@@ -80,6 +92,7 @@ class EC2LocalTestUtils(TestCase):
                     resource_id_sg='', resource_id_vm='',
                     external_ip=False, external_kp=False,
                     external_sg=False, external_vm=False,
+                    resource_id_vol='', external_vol=False,
                     test_name='vanilla_test'):
 
         private_key_path = tempfile.mkdtemp()
@@ -90,20 +103,31 @@ class EC2LocalTestUtils(TestCase):
             'key_path': '{0}/{1}.pem'.format(
                 private_key_path,
                 test_name),
+            'vol_size': TEST_SIZE,
+            'vol_zone': self.env.availability_zone,
+            'vol_device': TEST_DEVICE,
             'resource_id_ip': resource_id_ip,
             'resource_id_kp': resource_id_kp,
             'resource_id_sg': resource_id_sg,
             'resource_id_vm': resource_id_vm,
+            'resource_id_vol': resource_id_vol,
             'external_ip': external_ip,
             'external_kp': external_kp,
             'external_sg': external_sg,
             'external_vm': external_vm,
+            'elb_name': DEFAULT_EXTERNAL_ELB_NAME,
+            'zones': [self.env.availability_zone],
+            'listeners': DEFAULT_LISTENER,
+            'health_checks': DEFAULT_HEALTH_CHECK,
+            'external_vol': external_vol,
             constants.AWS_CONFIG_PROPERTY:
                 self._get_aws_config()
         }
 
-    def mock_cloudify_context(self, test_name, external_vm=False,
-                              resource_id_vm='', resource_id_sg='',
+    def mock_cloudify_context(self, test_name,
+                              external_vm=False,
+                              resource_id_vm='',
+                              resource_id_sg='',
                               resource_id_kp=''):
         """ Creates a mock context for the instance
             tests
@@ -133,8 +157,12 @@ class EC2LocalTestUtils(TestCase):
             operation=operation
         )
 
-        ctx.instance.relationships = \
-            [self.mock_relationship_context(test_name)]
+        if 'volume' in test_node_id:
+            ctx.instance.relationships = \
+                [self.mock_volume_relationship_context(test_name)]
+        else:
+            ctx.instance.relationships = \
+                [self.mock_relationship_context(test_name)]
 
         return ctx
 
@@ -179,6 +207,90 @@ class EC2LocalTestUtils(TestCase):
 
         return relationship_context
 
+    def mock_elb_relationship_context(self, testname):
+        instance_context = MockContext({
+            'node': MockContext({
+                'properties': {
+                    constants.AWS_CONFIG_PROPERTY:
+                        self._get_aws_config(),
+                    'use_external_resource': False,
+                    'resource_id': ''
+                }
+            }),
+            'instance': MockContext({
+                'runtime_properties': {
+                    'aws_resource_id': 'i-abc1234',
+                    'public_ip_address': '127.0.0.1'
+                }
+            })
+        })
+
+        elb_context = MockContext({
+            'node': MockContext({
+                'properties': {
+                    constants.AWS_CONFIG_PROPERTY:
+                        self._get_aws_config(),
+                    'use_external_resource': False,
+                    'resource_id': '',
+                }
+            }),
+            'instance': MockContext({
+                'runtime_properties': {
+                    'aws_resource_id': ''
+                }
+            })
+        })
+
+        relationship_context = MockCloudifyContext(
+            node_id=testname, source=instance_context,
+            target=elb_context)
+
+        return relationship_context
+
+    def mock_volume_relationship_context(self, testname):
+
+        instance_context = MockContext({
+            'node': MockContext({
+                'properties': {
+                    constants.AWS_CONFIG_PROPERTY:
+                        self._get_aws_config(),
+                    'use_external_resource': False,
+                    'resource_id': ''
+                }
+            }),
+            'instance': MockContext({
+                'runtime_properties': {
+                    'aws_resource_id': 'i-abc1234',
+                    'public_ip_address': '127.0.0.1'
+                }
+            })
+        })
+
+        volume_context = MockContext({
+            'node': MockContext({
+                'properties': {
+                    constants.AWS_CONFIG_PROPERTY:
+                        self._get_aws_config(),
+                    'use_external_resource': False,
+                    'resource_id': '',
+                    'zone': self.env.availability_zone,
+                    'size': TEST_SIZE,
+                    'device': TEST_DEVICE,
+                }
+            }),
+            'instance': MockContext({
+                'runtime_properties': {
+                    'aws_resource_id': ''
+                }
+            })
+        })
+
+        relationship_context = MockCloudifyContext(
+            node_id=testname, source=volume_context,
+            target=instance_context)
+
+        return relationship_context
+
     def _get_instances(self, storage):
         return storage.get_node_instances()
 
@@ -193,17 +305,26 @@ class EC2LocalTestUtils(TestCase):
 
     def _get_aws_config(self):
 
-        region = get_region(self.env.ec2_region_name)
-
         return {
             'aws_access_key_id': self.env.aws_access_key_id,
             'aws_secret_access_key': self.env.aws_secret_access_key,
-            'region': region
+            'ec2_region_name': self.env.ec2_region_name,
+            'elb_region_name': self.env.ec2_region_name
         }
 
     def _get_ec2_client(self):
         aws_config = self._get_aws_config()
+        aws_config.pop('ec2_region_name')
+        aws_config.pop('elb_region_name')
+        aws_config['region'] = get_region(self.env.ec2_region_name)
         return EC2Connection(**aws_config)
+
+    def _get_elb_client(self):
+        aws_config = self._get_aws_config()
+        aws_config.pop('ec2_region_name')
+        aws_config.pop('elb_region_name')
+        elb_region = self.env.ec2_region_name
+        return connect_to_elb_region(elb_region, **aws_config)
 
     def _create_elastic_ip(self, ec2_client):
         new_address = ec2_client.allocate_address(domain=None)
@@ -224,3 +345,11 @@ class EC2LocalTestUtils(TestCase):
             image_id=self.env.ubuntu_trusty_image_id,
             instance_type=self.env.micro_instance_type)
         return new_reservation.instances[0]
+
+    def _create_volume(self, ec2_client,
+                       size=TEST_SIZE,
+                       zone=None):
+        if not zone:
+            zone = self.env.availability_zone
+        new_volume = ec2_client.create_volume(size, zone)
+        return new_volume

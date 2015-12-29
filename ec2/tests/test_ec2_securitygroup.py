@@ -323,7 +323,6 @@ class TestSecurityGroup(testtools.TestCase):
             'dummy',
             'this is test')
         ctx.node.properties['rules'][0]['src_group_id'] = group_object
-        print ctx.node.properties['rules']
         ex = self.assertRaises(
             NonRecoverableError,
             securitygroup._create_group_rules,

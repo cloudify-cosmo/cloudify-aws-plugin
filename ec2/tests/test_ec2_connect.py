@@ -18,6 +18,7 @@ import testtools
 
 # Third Party Imports
 from moto import mock_ec2
+from moto import mock_elb
 from boto.ec2 import EC2Connection
 
 # Cloudify Imports is imported and used in operations
@@ -25,6 +26,7 @@ from ec2 import constants
 from ec2 import connection
 from cloudify.state import current_ctx
 from cloudify.mocks import MockCloudifyContext
+from cloudify.exceptions import NonRecoverableError
 
 
 class TestConnection(testtools.TestCase):
@@ -36,7 +38,7 @@ class TestConnection(testtools.TestCase):
             node_id=test_name,
             properties={
                 constants.AWS_CONFIG_PROPERTY: {
-                    'ec2_region_name': 'dark-side-of-the-moon',
+                    'ec2_region_name': 'dark-side-of-the-moon'
                 }
             }
         )
@@ -54,6 +56,36 @@ class TestConnection(testtools.TestCase):
         self.assertTrue(type(ec2_client), EC2Connection)
         self.assertEqual(ec2_client.DefaultRegionEndpoint,
                          'ec2.us-east-1.amazonaws.com')
+
+    @mock_elb
+    def test_connect_elb(self):
+        """ this tests that a the correct region endpoint
+        in returned by the connect function
+        """
+
+        ctx = self.get_mock_context('test_connect')
+        ctx.node.properties['aws_config'] = {
+            'elb_region_name': 'us-east-1',
+            'elb_region_endpoint':
+            'elasticloadbalancing.eu-east-1.amazonaws.com'
+        }
+        current_ctx.set(ctx=ctx)
+
+        elb_client = connection.ELBConnectionClient().client()
+        self.assertEqual(elb_client.DefaultRegionEndpoint,
+                         'elasticloadbalancing.us-east-1.amazonaws.com')
+
+    @mock_elb
+    def test_connect_elb_bad(self):
+        """ this tests that a the correct region endpoint
+        in returned by the connect function
+        """
+
+        ctx = self.get_mock_context('test_connect')
+        current_ctx.set(ctx=ctx)
+        self.assertRaises(
+            NonRecoverableError,
+            connection.ELBConnectionClient().client)
 
     @mock_ec2
     def test_connect_bad_region(self):

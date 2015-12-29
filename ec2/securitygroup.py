@@ -69,10 +69,14 @@ def create(**_):
         'Creating Security Group: {0}'
         .format(name))
 
+    create_args = dict(
+        name=name,
+        description=ctx.node.properties['description'],
+        vpc_id=_get_connected_vpc()
+    )
+
     try:
-        group_object = ec2_client.create_security_group(
-            name,
-            ctx.node.properties['description'])
+        group_object = ec2_client.create_security_group(**create_args)
     except (boto.exception.EC2ResponseError,
             boto.exception.BotoServerError) as e:
         raise NonRecoverableError('{0}'.format(str(e)))
@@ -103,6 +107,20 @@ def delete(**_):
     ctx.logger.info(
         'Attempted to delete Security Group: {0}.'
         .format(group_id))
+
+
+def _get_connected_vpc():
+
+    list_of_vpcs = \
+        utils.get_target_external_resource_ids(
+            constants.SECURITY_GROUP_VPC_RELATIONSHIP, ctx.instance
+        )
+
+    if len(list_of_vpcs) > 1:
+        raise NonRecoverableError(
+            'security group may only be attached to one vpc')
+
+    return list_of_vpcs[0] if list_of_vpcs else None
 
 
 def _delete_security_group(group_id):
@@ -139,8 +157,12 @@ def _create_group_rules(group_object):
                 raise NonRecoverableError(
                     'You need to pass either src_group_id OR cidr_ip.')
 
-            src_group_object = \
-                _get_security_group_from_id(
+            if not group_object.vpc_id:
+                src_group_object = \
+                    _get_security_group_from_id(
+                        rule['src_group_id'])
+            else:
+                src_group_object = _get_vpc_security_group_from_name(
                     rule['src_group_id'])
 
             if not src_group_object:
@@ -236,6 +258,14 @@ def _get_security_group_from_name(group_name):
     group = _get_all_security_groups(list_of_group_names=group_name)
 
     return group[0] if group else group
+
+
+def _get_vpc_security_group_from_name(name):
+    groups = _get_all_security_groups()
+    for group in groups:
+        if group.name == name:
+            return group
+    return None
 
 
 def _get_all_security_groups(list_of_group_names=None, list_of_group_ids=None):
