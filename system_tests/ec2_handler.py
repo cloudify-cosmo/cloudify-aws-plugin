@@ -352,7 +352,7 @@ class EC2Handler(BaseHandler):
 
     def _snapshots(self, ec2_client):
         return [(ss.id, ss.id)
-                for ss in ec2_client.get_all_snapshots()]
+                for ss in ec2_client.get_all_snapshots(owner='self')]
 
     def _elbs(self, elb_client):
         return [(elb.name, elb.name)
