@@ -71,9 +71,7 @@ class EC2CleanupContext(BaseHandler.CleanupContext):
             (len(failed['instances']) == 0) and
             (len(failed['key_pairs']) == 0) and
             (len(failed['elasticips']) == 0) and
-            # This is the default security group which cannot
-            # be removed by a user.
-            (len(failed['security_groups']) == 1))
+            (len(failed['security_groups']) == 0))
         if errorflag:
             raise Exception(
                 "Unable to clean up Environment, "
@@ -331,7 +329,8 @@ class EC2Handler(BaseHandler):
 
     def _security_groups(self, ec2_client):
         return [(security_group.id, security_group.id)
-                for security_group in ec2_client.get_all_security_groups()]
+                for security_group in ec2_client.get_all_security_groups()
+                if 'default' not in security_group.name]
 
     def _instances(self, ec2_client):
         return [(instance[0].id, instance[0].id)
@@ -360,11 +359,13 @@ class EC2Handler(BaseHandler):
 
     def _vpcs(self, vpc_client):
         return [(vpc.id, vpc.id)
-                for vpc in vpc_client.get_all_vpcs()]
+                for vpc in vpc_client.get_all_vpcs()
+                if not vpc.is_default]
 
     def _subnets(self, vpc_client):
         return [(subnet.id, subnet.id)
-                for subnet in vpc_client.get_all_subnets()]
+                for subnet in vpc_client.get_all_subnets()
+                if not subnet.defaultForAz]
 
     def _internet_gateways(self, vpc_client):
         return [(internet_gateway.id, internet_gateway.id)
