@@ -822,6 +822,7 @@ relationships:
             target_account_id:
               description: >
                 The 12 digit account ID that the target VPC belongs to.
+              default: ''
             routes:
               description: >
                 A list of cloudify.datatypes.aws.Route for assignment to the source Route Table.
