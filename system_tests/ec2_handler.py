@@ -264,23 +264,6 @@ class EC2Handler(BaseHandler):
                         elb_name, failed, 'load_balancers'):
                     elb_client.get_all_load_balancers(elb_name)[0].delete()
 
-        for vpc_id, _ in vpcs:
-            if vpc_id in resources_to_remove['vpcs']:
-                with self._handled_exception(vpc_id, failed, 'vpcs'):
-                    vpc_client.delete_vpc(vpc_id)
-
-        for subnet_id, _ in subnets:
-            if subnet_id in resources_to_remove['subnets']:
-                with self._handled_exception(subnet_id, failed, 'subnets'):
-                    vpc_client.delete_subnet(subnet_id)
-
-        for internet_gateway_id, _ in internet_gateways:
-            if internet_gateway_id in resources_to_remove['internet_gateways']:
-                with self._handled_exception(internet_gateway_id,
-                                             failed,
-                                             'internet_gateways'):
-                    vpc_client.delete_internet_gateway(internet_gateway_id)
-
         for vpn_gateway_id, _ in vpn_gateways:
             if vpn_gateway_id in resources_to_remove['vpn_gateways']:
                 with self._handled_exception(vpn_gateway_id,
@@ -294,6 +277,13 @@ class EC2Handler(BaseHandler):
                                              failed,
                                              'customer_gateways'):
                     vpc_client.delete_customer_gateway(customer_gateway_id)
+
+        for internet_gateway_id, _ in internet_gateways:
+            if internet_gateway_id in resources_to_remove['internet_gateways']:
+                with self._handled_exception(internet_gateway_id,
+                                             failed,
+                                             'internet_gateways'):
+                    vpc_client.delete_internet_gateway(internet_gateway_id)
 
         for network_acl_id, _ in network_acls:
             if network_acl_id in resources_to_remove['network_acls']:
@@ -314,6 +304,16 @@ class EC2Handler(BaseHandler):
                 with self._handled_exception(route_table_id, failed,
                                              'route_tables'):
                     vpc_client.delete_route_table(route_table_id)
+
+        for subnet_id, _ in subnets:
+            if subnet_id in resources_to_remove['subnets']:
+                with self._handled_exception(subnet_id, failed, 'subnets'):
+                    vpc_client.delete_subnet(subnet_id)
+
+        for vpc_id, _ in vpcs:
+            if vpc_id in resources_to_remove['vpcs']:
+                with self._handled_exception(vpc_id, failed, 'vpcs'):
+                    vpc_client.delete_vpc(vpc_id)
 
         return failed
 
