@@ -287,7 +287,6 @@ node_templates:
             preconfigure:
               implementation: aws.vpc.vpc.create_vpc_peering_connection
               inputs:
-                target_account_id: '535075449278'
                 routes:
                     - destination_cidr_block: { get_property: [ vpc_two, cidr_block ] }
       - type: cloudify.relationships.depends_on
