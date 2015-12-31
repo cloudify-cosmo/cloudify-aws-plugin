@@ -381,7 +381,8 @@ class EC2Handler(BaseHandler):
 
     def _network_acls(self, vpc_client):
         return [(network_acl.id, network_acl.id)
-                for network_acl in vpc_client.get_all_network_acls()]
+                for network_acl in vpc_client.get_all_network_acls()
+                if not network_acl.default]
 
     def _dhcp_options_sets(self, vpc_client):
         return [(dhcp_options_set.id, dhcp_options_set.id)
