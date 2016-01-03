@@ -14,6 +14,7 @@
 #    * limitations under the License.
 
 # Built in Imports
+import os
 from copy import deepcopy
 from time import sleep
 
@@ -46,18 +47,19 @@ class TestVpc(TestVpcBase):
     def test_install_workflow(self):
         vpc_client = self.vpc_client()
         dumb_vpc = vpc_client.create_vpc('11.0.0.0/16')
-        self.addCleanup(vpc_client.delete_vpc, dumb_vpc.id)
         override_inputs = dict(
             vpc_id=dumb_vpc.id,
             vpc_two_create_new_resource=True
         )
+        workflow_inputs = self.get_inputs(override_inputs=override_inputs)
         cfy_local = local.init_env(
             self.get_blueprint_path(),
             name='test_install_workflow',
-            inputs=self.get_inputs(override_inputs=override_inputs),
+            inputs=workflow_inputs,
             ignored_modules=IGNORED_LOCAL_WORKFLOW_MODULES)
         cfy_local.execute('install', task_retries=10)
-        self.addCleanup(cfy_local.execute, 'uninstall', task_retries=10)
+        self.addCleanup(os.remove,
+                        os.path.expanduser(workflow_inputs['key_path']))
         node_instances = cfy_local.storage.get_node_instances()
         current_resources = self.get_current_list_of_used_resources(vpc_client)
         for node_instance in node_instances:
@@ -104,24 +106,37 @@ class TestVpc(TestVpcBase):
         with fabric_api.settings(**connection):
             instance_one_assertion = fabric_api.run('uname -a')
             fabric_api.put(
-                key_node.properties['private_key_path'], '~/.ssh/key.pem')
-            fabric_api.run('chmod 600 ~/.ssh/key.pem')
+                key_node.properties['private_key_path'],
+                key_node.properties['private_key_path'])
+            fabric_api.run('chmod 600 {0}'.format(
+                key_node.properties['private_key_path']))
+
+        def get_instance_two_assertion():
+            return fabric_api.run(
+                'ssh -o "StrictHostKeyChecking no" '
+                '-i {0} ubuntu@{1} /bin/uname -a'
+                .format(key_node.properties['private_key_path'],
+                        ec2_instance_two[0].runtime_properties['ip']))
 
         try:
             with fabric_api.settings(**connection):
-                instance_two_assertion = \
-                    fabric_api.run(
-                        'ssh -o "StrictHostKeyChecking no" '
-                        '-i ~/.ssh/key.pem ubuntu@{0} /bin/uname -a'
-                        .format(ec2_instance_two[0].runtime_properties['ip']))
+                instance_two_assertion = get_instance_two_assertion()
         except CommandTimeout:
-            sleep(10)
-            with fabric_api.settings(**connection):
-                instance_two_assertion = \
-                    fabric_api.run(
-                        'ssh -o "StrictHostKeyChecking no" '
-                        '-i ~/.ssh/key.pem ubuntu@{0} /bin/uname -a'
-                        .format(ec2_instance_two[0].runtime_properties['ip']))
+            sleep(15)
+            try:
+                with fabric_api.settings(**connection):
+                    instance_two_assertion = get_instance_two_assertion()
+            except CommandTimeout:
+                sleep(15)
+                try:
+                    with fabric_api.settings(**connection):
+                        instance_two_assertion = \
+                            get_instance_two_assertion()
+                except CommandTimeout:
+                    sleep(15)
+                    with fabric_api.settings(**connection):
+                        instance_two_assertion = \
+                            get_instance_two_assertion()
 
         self.assertIn('Ubuntu', instance_one_assertion)
         self.assertIn('Ubuntu', instance_two_assertion)

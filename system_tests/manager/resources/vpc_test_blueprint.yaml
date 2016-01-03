@@ -31,6 +31,10 @@ inputs:
     type: string
     default: ''
 
+  key_path:
+    type: string
+    default: ''
+
   ami_id:
     type: string
     default: 'ami-3cf8b154'
@@ -154,7 +158,8 @@ node_templates:
     type: cloudify.aws.nodes.KeyPair
     properties:
       aws_config: { get_input: aws_config }
-      private_key_path: ~/.ssh/vpc_system_test.pem
+      use_external_resource: { get_input: create_new_resource }
+      private_key_path: { get_input: key_path }
 
   elastic_ip_one:
     type: cloudify.aws.nodes.ElasticIP
