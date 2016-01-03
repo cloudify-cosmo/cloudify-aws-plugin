@@ -14,12 +14,14 @@
 #    * limitations under the License.
 
 import copy
+from time import sleep
 from contextlib import contextmanager
 
 from boto.ec2 import get_region
 from boto.ec2 import EC2Connection
 from boto.vpc import VPCConnection
 from boto.ec2.elb import connect_to_region as connect_to_elb_region
+from boto.exception import EC2ResponseError
 
 from cosmo_tester.framework.handlers import (
     BaseHandler,
@@ -66,16 +68,23 @@ class EC2CleanupContext(BaseHandler.CleanupContext):
                                                      None)
         cls.logger.info(
             "resources_to_be_removed: {0}".format(resources_to_be_removed))
-        failed = env.handler.remove_ec2_resources(resources_to_be_removed)
+
+        for segment in range(3):
+            failed_to_remove = \
+                env.handler.remove_ec2_resources(resources_to_be_removed)
+            if not failed_to_remove:
+                break
+
         errorflag = not (
-            (len(failed['instances']) == 0) and
-            (len(failed['key_pairs']) == 0) and
-            (len(failed['elasticips']) == 0) and
-            (len(failed['security_groups']) == 0))
+            (len(failed_to_remove['instances']) == 0) and
+            (len(failed_to_remove['key_pairs']) == 0) and
+            (len(failed_to_remove['elasticips']) == 0) and
+            (len(failed_to_remove['security_groups']) == 0) and
+            (len(failed_to_remove['vpcs']) == 0))
         if errorflag:
             raise Exception(
                 "Unable to clean up Environment, "
-                "resources remaining: {0}".format(failed))
+                "resources remaining: {0}".format(failed_to_remove))
 
 
 class CloudifyEC2InputsConfigReader(BaseCloudifyInputsConfigReader):
@@ -226,7 +235,21 @@ class EC2Handler(BaseHandler):
         for instance_id, _ in instances:
             if instance_id in resources_to_remove['instances']:
                 with self._handled_exception(instance_id, failed, 'instances'):
-                    ec2_client.terminate_instances(instance_id)
+                    instances = ec2_client.get_only_instances(instance_id)
+                    instance = instances[0]
+                    instance.terminate()
+                    # We need to make sure that the instance is terminated
+                    # or VPC stuff is going to fail.
+                    for segment in range(5):
+                        if 'terminated' not in instance.update():
+                            # Terminate is idempotent
+                            instance.terminate()
+                            sleep(10)
+
+                    if 'terminated' not in instance.state:
+                        raise RuntimeError(
+                            'The test failed because '
+                            'instance would not terminate.')
 
         for kp_name, _ in key_pairs:
             if kp_name in resources_to_remove['key_pairs']:
@@ -250,7 +273,15 @@ class EC2Handler(BaseHandler):
             if volume_id in resources_to_remove['volumes']:
                 with self._handled_exception(
                         volume_id, failed, 'volumes'):
-                    ec2_client.get_all_volumes(volume_id)[0].delete()
+                    volumes = []
+                    try:
+                        volumes = ec2_client.get_all_volumes(volume_id)
+                    except EC2ResponseError:
+                        continue
+                    for volume in volumes:
+                        if 'in-use' in volume.state:
+                            volume.detach(force=True)
+                        volume.delete()
 
         for snapshot_id, _ in snapshots:
             if snapshot_id in resources_to_remove['snapshots']:
@@ -264,25 +295,40 @@ class EC2Handler(BaseHandler):
                         elb_name, failed, 'load_balancers'):
                     elb_client.get_all_load_balancers(elb_name)[0].delete()
 
-        for vpn_gateway_id, _ in vpn_gateways:
-            if vpn_gateway_id in resources_to_remove['vpn_gateways']:
-                with self._handled_exception(vpn_gateway_id,
-                                             failed,
-                                             'vpn_gateways'):
-                    vpc_client.delete_vpn_gateway(vpn_gateway_id)
-
         for customer_gateway_id, _ in customer_gateways:
             if customer_gateway_id in resources_to_remove['customer_gateways']:
                 with self._handled_exception(customer_gateway_id,
                                              failed,
                                              'customer_gateways'):
+                    for vpnx in vpc_client.get_all_vpn_connections():
+                        if customer_gateway_id in vpnx.customer_gateway_id:
+                            vpnx.delete()
                     vpc_client.delete_customer_gateway(customer_gateway_id)
+
+        for vpn_gateway_id, _ in vpn_gateways:
+            if vpn_gateway_id in resources_to_remove['vpn_gateways']:
+                with self._handled_exception(vpn_gateway_id,
+                                             failed,
+                                             'vpn_gateways'):
+                    vgws = vpc_client.get_all_vpn_gateways(vpn_gateway_id)
+                    for vgw in vgws:
+                        for attachment in vgw.attachments:
+                            if 'attached' in attachment.state:
+                                vpc_client.detach_vpn_gateway(
+                                    vgw.id, attachment.vpc_id)
+                    vpc_client.delete_vpn_gateway(vpn_gateway_id)
 
         for internet_gateway_id, _ in internet_gateways:
             if internet_gateway_id in resources_to_remove['internet_gateways']:
                 with self._handled_exception(internet_gateway_id,
                                              failed,
                                              'internet_gateways'):
+                    igs = vpc_client.get_all_internet_gateways()
+                    for ig in igs:
+                        for attachment in ig.attachments:
+                            if 'attached' in attachment.state:
+                                vpc_client.detach_internet_gateway(
+                                    internet_gateway_id, attachment.vpc_id)
                     vpc_client.delete_internet_gateway(internet_gateway_id)
 
         for network_acl_id, _ in network_acls:
@@ -313,6 +359,11 @@ class EC2Handler(BaseHandler):
         for vpc_id, _ in vpcs:
             if vpc_id in resources_to_remove['vpcs']:
                 with self._handled_exception(vpc_id, failed, 'vpcs'):
+                    for peer_cx in \
+                            vpc_client.get_all_vpc_peering_connections():
+                        if vpc_id in peer_cx.requester_vpc_info.vpc_id:
+                            vpc_client.delete_vpc_peering_connection(
+                                peer_cx.id)
                     vpc_client.delete_vpc(vpc_id)
 
         return failed
@@ -368,8 +419,18 @@ class EC2Handler(BaseHandler):
                 if not subnet.defaultForAz]
 
     def _internet_gateways(self, vpc_client):
-        return [(internet_gateway.id, internet_gateway.id)
-                for internet_gateway in vpc_client.get_all_internet_gateways()]
+        default_vpc_id = ''
+        all_vpcs = vpc_client.get_all_vpcs()
+        all_internet_gateways = vpc_client.get_all_internet_gateways()
+        not_default_internet_gateways = []
+        for vpc in all_vpcs:
+            if vpc.is_default:
+                default_vpc_id = vpc.id
+        for ig in all_internet_gateways:
+            for attachment in ig.attachments:
+                if default_vpc_id not in attachment.vpc_id:
+                    not_default_internet_gateways.append((ig.id, ig.id))
+        return not_default_internet_gateways
 
     def _vpn_gateways(self, vpc_client):
         return [(vpn_gateway.id, vpn_gateway.id)
@@ -385,12 +446,22 @@ class EC2Handler(BaseHandler):
                 if not network_acl.default]
 
     def _dhcp_options_sets(self, vpc_client):
-        return [(dhcp_options_set.id, dhcp_options_set.id)
-                for dhcp_options_set in vpc_client.get_all_dhcp_options()]
+        all_dhcp_option_sets = vpc_client.get_all_dhcp_options()
+        not_default_dhcp_options_sets = []
+        vpcs = vpc_client.get_all_vpcs()
+        for dopt in all_dhcp_option_sets:
+            if dopt.id not in [vpc.dhcp_options_id for vpc in vpcs]:
+                not_default_dhcp_options_sets.append((dopt.id, dopt.id))
+        return not_default_dhcp_options_sets
 
     def _route_tables(self, vpc_client):
-        return [(route_table.id, route_table.id)
-                for route_table in vpc_client.get_all_route_tables()]
+        all_route_tables = vpc_client.get_all_route_tables()
+        not_default_route_tables = []
+        for rtb in all_route_tables:
+            if not any(association.main for association in rtb.associations):
+                not_default_route_tables.append(
+                    (rtb.id, rtb.id))
+        return not_default_route_tables
 
     def _remove_keys(self, dct, keys):
         for key in keys:

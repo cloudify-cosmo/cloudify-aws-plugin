@@ -64,7 +64,8 @@ class VpcPeeringConnection(AwsBaseRelationship, RouteMixin):
         super(VpcPeeringConnection, self).__init__(client=client)
         self.not_found_error = 'InvalidVpcPeeringConnectionId.NotFound'
         self.resource_id = None
-        self.target_account_id = target_account_id
+        self.target_account_id = target_account_id \
+            if target_account_id else None
         self.routes = routes
         self.source_vpc_id = \
             ctx.source.instance.runtime_properties.get('vpc_id')
@@ -108,6 +109,7 @@ class VpcPeeringConnection(AwsBaseRelationship, RouteMixin):
     def associate(self):
 
         associate_args = self._generate_association_args()
+        ctx.logger.info('ARGS: {0}'.format(associate_args))
         vpc_peering_connection = \
             self.execute(self.client.create_vpc_peering_connection,
                          associate_args, raise_on_falsy=True)
