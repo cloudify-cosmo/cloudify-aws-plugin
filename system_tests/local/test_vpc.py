@@ -14,6 +14,7 @@
 #    * limitations under the License.
 
 # Built in Imports
+import os
 from copy import deepcopy
 from time import sleep
 
@@ -46,18 +47,19 @@ class TestVpc(TestVpcBase):
     def test_install_workflow(self):
         vpc_client = self.vpc_client()
         dumb_vpc = vpc_client.create_vpc('11.0.0.0/16')
-        self.addCleanup(vpc_client.delete_vpc, dumb_vpc.id)
         override_inputs = dict(
             vpc_id=dumb_vpc.id,
             vpc_two_create_new_resource=True
         )
+        workflow_inputs = self.get_inputs(override_inputs=override_inputs)
         cfy_local = local.init_env(
             self.get_blueprint_path(),
             name='test_install_workflow',
-            inputs=self.get_inputs(override_inputs=override_inputs),
+            inputs=workflow_inputs,
             ignored_modules=IGNORED_LOCAL_WORKFLOW_MODULES)
         cfy_local.execute('install', task_retries=10)
-        self.addCleanup(cfy_local.execute, 'uninstall', task_retries=10)
+        self.addCleanup(os.remove,
+                        os.path.expanduser(workflow_inputs['key_path']))
         node_instances = cfy_local.storage.get_node_instances()
         current_resources = self.get_current_list_of_used_resources(vpc_client)
         for node_instance in node_instances:
@@ -90,7 +92,7 @@ class TestVpc(TestVpcBase):
         key_node = cfy_local.storage.get_node('key_one')
         elastic_ip_node = \
             cfy_local.storage.get_node_instances(node_id='elastic_ip_one')
-        ec2_instance_two = \
+        private_ec2_instance = \
             cfy_local.storage.get_node_instances(node_id='ec2_instance_two')
         connection = dict(
             user='ubuntu',
@@ -102,29 +104,37 @@ class TestVpc(TestVpcBase):
         )
 
         with fabric_api.settings(**connection):
-            instance_one_assertion = fabric_api.run('uname -a')
+            public_instance_assertion = fabric_api.run('uname -a')
             fabric_api.put(
-                key_node.properties['private_key_path'], '~/.ssh/key.pem')
-            fabric_api.run('chmod 600 ~/.ssh/key.pem')
+                key_node.properties['private_key_path'],
+                key_node.properties['private_key_path'])
+            fabric_api.run('chmod 600 {0}'.format(
+                key_node.properties['private_key_path']))
 
-        try:
-            with fabric_api.settings(**connection):
-                instance_two_assertion = \
-                    fabric_api.run(
-                        'ssh -o "StrictHostKeyChecking no" '
-                        '-i ~/.ssh/key.pem ubuntu@{0} /bin/uname -a'
-                        .format(ec2_instance_two[0].runtime_properties['ip']))
-        except CommandTimeout:
-            sleep(10)
-            with fabric_api.settings(**connection):
-                instance_two_assertion = \
-                    fabric_api.run(
-                        'ssh -o "StrictHostKeyChecking no" '
-                        '-i ~/.ssh/key.pem ubuntu@{0} /bin/uname -a'
-                        .format(ec2_instance_two[0].runtime_properties['ip']))
+        private_instance_assertion = ''
 
-        self.assertIn('Ubuntu', instance_one_assertion)
-        self.assertIn('Ubuntu', instance_two_assertion)
+        def get_private_instance_assertion():
+            return fabric_api.run(
+                'ssh -o "StrictHostKeyChecking no" '
+                '-i {0} ubuntu@{1} /bin/uname -a'
+                .format(key_node.properties['private_key_path'],
+                        private_ec2_instance[0].runtime_properties['ip']))
+
+        for try_attempt in range(3):
+            try:
+                with fabric_api.settings(**connection):
+                    private_instance_assertion = \
+                        get_private_instance_assertion()
+            except CommandTimeout as e:
+                if try_attempt < 2:
+                    sleep(15)
+                    continue
+                raise RuntimeError(str(e))
+            else:
+                break
+
+        self.assertIn('Ubuntu', public_instance_assertion)
+        self.assertIn('Ubuntu', private_instance_assertion)
 
     def test_uninstall_workflow(self):
         cfy_local = local.init_env(
