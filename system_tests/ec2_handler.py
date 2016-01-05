@@ -33,6 +33,26 @@ class EC2CleanupContext(BaseHandler.CleanupContext):
         super(EC2CleanupContext, self).__init__(context_name, env)
         self.before_run = self.env.handler.ec2_infra_state()
 
+    @classmethod
+    def clean_resources(cls, env, resources):
+
+        cls.logger.info('Performing cleanup: will try removing these '
+                        'resources: {0}'
+                        .format(resources))
+
+        failed_to_remove = {}
+
+        for segment in range(6):
+            failed_to_remove = \
+                env.handler.remove_ec2_resources(resources)
+            if not failed_to_remove:
+                break
+
+        cls.logger.info('Leftover resources after cleanup: {0}'
+                        .format(failed_to_remove))
+
+        return failed_to_remove
+
     def cleanup(self):
         super(EC2CleanupContext, self).cleanup()
         resources_to_teardown = self.get_resources_to_teardown()
@@ -40,14 +60,8 @@ class EC2CleanupContext(BaseHandler.CleanupContext):
             self.logger.warn('[{0}] SKIPPING cleanup: of the resources: {1}'
                              .format(self.context_name, resources_to_teardown))
             return
-        self.logger.info('[{0}] Performing cleanup: will try removing these '
-                         'resources: {1}'
-                         .format(self.context_name, resources_to_teardown))
 
-        leftovers = self.env.handler.remove_ec2_resources(
-            resources_to_teardown)
-        self.logger.info('[{0}] Leftover resources after cleanup: {1}'
-                         .format(self.context_name, leftovers))
+        self.clean_resources(self.env, resources_to_teardown)
 
     def get_resources_to_teardown(self):
         current_state = self.env.handler.ec2_infra_state()
@@ -66,14 +80,8 @@ class EC2CleanupContext(BaseHandler.CleanupContext):
         if env.use_existing_agent_keypair:
             resources_to_be_removed['key_pairs'].pop(env.agent_keypair_name,
                                                      None)
-        cls.logger.info(
-            "resources_to_be_removed: {0}".format(resources_to_be_removed))
 
-        for segment in range(3):
-            failed_to_remove = \
-                env.handler.remove_ec2_resources(resources_to_be_removed)
-            if not failed_to_remove:
-                break
+        failed_to_remove = cls.clean_resources(env, resources_to_be_removed)
 
         errorflag = not (
             (len(failed_to_remove['instances']) == 0) and
@@ -279,7 +287,7 @@ class EC2Handler(BaseHandler):
                     except EC2ResponseError:
                         continue
                     for volume in volumes:
-                        if 'in-use' in volume.state:
+                        if 'in-use' in volume.status:
                             volume.detach(force=True)
                         volume.delete()
 
@@ -313,30 +321,33 @@ class EC2Handler(BaseHandler):
                     vgws = vpc_client.get_all_vpn_gateways(vpn_gateway_id)
                     for vgw in vgws:
                         for attachment in vgw.attachments:
-                            if 'attached' in attachment.state:
+                            try:
                                 vpc_client.detach_vpn_gateway(
                                     vgw.id, attachment.vpc_id)
+                            except EC2ResponseError:
+                                pass
                     vpc_client.delete_vpn_gateway(vpn_gateway_id)
+
+        for subnet_id, _ in subnets:
+            if subnet_id in resources_to_remove['subnets']:
+                with self._handled_exception(subnet_id, failed, 'subnets'):
+                    vpc_client.delete_subnet(subnet_id)
 
         for internet_gateway_id, _ in internet_gateways:
             if internet_gateway_id in resources_to_remove['internet_gateways']:
                 with self._handled_exception(internet_gateway_id,
                                              failed,
                                              'internet_gateways'):
-                    igs = vpc_client.get_all_internet_gateways()
+                    igs = vpc_client.get_all_internet_gateways(
+                        internet_gateway_id)
                     for ig in igs:
                         for attachment in ig.attachments:
-                            if 'attached' in attachment.state:
+                            try:
                                 vpc_client.detach_internet_gateway(
                                     internet_gateway_id, attachment.vpc_id)
+                            except EC2ResponseError:
+                                pass
                     vpc_client.delete_internet_gateway(internet_gateway_id)
-
-        for network_acl_id, _ in network_acls:
-            if network_acl_id in resources_to_remove['network_acls']:
-                with self._handled_exception(network_acl_id,
-                                             failed,
-                                             'network_acls'):
-                    vpc_client.delete_network_acl(network_acl_id)
 
         for dhcp_options_set_id, _ in dhcp_options_sets:
             if dhcp_options_set_id in resources_to_remove['dhcp_options_sets']:
@@ -349,12 +360,31 @@ class EC2Handler(BaseHandler):
             if route_table_id in resources_to_remove['route_tables']:
                 with self._handled_exception(route_table_id, failed,
                                              'route_tables'):
+                    for route_table in vpc_client.get_all_route_tables(
+                            route_table_id):
+                        for association in route_table.associations:
+                            vpc_client.disassociate_route_table(
+                                association.id)
+                        for route in route_table.routes:
+                            try:
+                                vpc_client.delete_route(
+                                    route_table.id,
+                                    route.destination_cidr_block)
+                            except EC2ResponseError:
+                                pass
                     vpc_client.delete_route_table(route_table_id)
 
-        for subnet_id, _ in subnets:
-            if subnet_id in resources_to_remove['subnets']:
-                with self._handled_exception(subnet_id, failed, 'subnets'):
-                    vpc_client.delete_subnet(subnet_id)
+        for network_acl_id, _ in network_acls:
+            if network_acl_id in resources_to_remove['network_acls']:
+                with self._handled_exception(network_acl_id,
+                                             failed,
+                                             'network_acls'):
+                    for network_acl in vpc_client.get_all_network_acls(
+                            network_acl_id):
+                        for association in network_acl.associations:
+                            vpc_client.disassociate_network_acl(
+                                association.subnet_id)
+                    vpc_client.delete_network_acl(network_acl_id)
 
         for vpc_id, _ in vpcs:
             if vpc_id in resources_to_remove['vpcs']:
@@ -414,9 +444,14 @@ class EC2Handler(BaseHandler):
                 if not vpc.is_default]
 
     def _subnets(self, vpc_client):
+        default_vpc = ''
+        vpcs = vpc_client.get_all_vpcs()
+        for vpc in vpcs:
+            if vpc.is_default:
+                default_vpc = vpc.id
         return [(subnet.id, subnet.id)
                 for subnet in vpc_client.get_all_subnets()
-                if not subnet.defaultForAz]
+                if subnet.vpc_id != default_vpc]
 
     def _internet_gateways(self, vpc_client):
         default_vpc_id = ''
@@ -428,7 +463,7 @@ class EC2Handler(BaseHandler):
                 default_vpc_id = vpc.id
         for ig in all_internet_gateways:
             for attachment in ig.attachments:
-                if default_vpc_id not in attachment.vpc_id:
+                if attachment.vpc_id != default_vpc_id:
                     not_default_internet_gateways.append((ig.id, ig.id))
         return not_default_internet_gateways
 
@@ -441,27 +476,35 @@ class EC2Handler(BaseHandler):
                 for customer_gateway in vpc_client.get_all_customer_gateways()]
 
     def _network_acls(self, vpc_client):
+        default_vpc = ''
+        vpcs = vpc_client.get_all_vpcs()
+        for vpc in vpcs:
+            if vpc.is_default:
+                default_vpc = vpc.id
         return [(network_acl.id, network_acl.id)
                 for network_acl in vpc_client.get_all_network_acls()
-                if not network_acl.default]
+                if network_acl.vpc_id != default_vpc]
 
     def _dhcp_options_sets(self, vpc_client):
-        all_dhcp_option_sets = vpc_client.get_all_dhcp_options()
-        not_default_dhcp_options_sets = []
+        default_dopt = ''
         vpcs = vpc_client.get_all_vpcs()
-        for dopt in all_dhcp_option_sets:
-            if dopt.id not in [vpc.dhcp_options_id for vpc in vpcs]:
-                not_default_dhcp_options_sets.append((dopt.id, dopt.id))
-        return not_default_dhcp_options_sets
+        for vpc in vpcs:
+            if vpc.is_default:
+                default_dopt = vpc.dhcp_options_id
+        return [(dopt.id, dopt.id) for dopt
+                in vpc_client.get_all_dhcp_options()
+                if dopt.id != default_dopt]
 
     def _route_tables(self, vpc_client):
-        all_route_tables = vpc_client.get_all_route_tables()
-        not_default_route_tables = []
-        for rtb in all_route_tables:
-            if not any(association.main for association in rtb.associations):
-                not_default_route_tables.append(
-                    (rtb.id, rtb.id))
-        return not_default_route_tables
+        default_vpc = ''
+        vpcs = vpc_client.get_all_vpcs()
+        for vpc in vpcs:
+            if vpc.is_default:
+                default_vpc = vpc.id
+        return [(rtb.id, rtb.id) for rtb
+                in vpc_client.get_all_route_tables()
+                if rtb.vpc_id != default_vpc and not any(
+                association.main for association in rtb.associations)]
 
     def _remove_keys(self, dct, keys):
         for key in keys:
