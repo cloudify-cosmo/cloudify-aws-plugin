@@ -15,7 +15,7 @@
 
 # Built-in Imports
 import os
-from tempfile import mktemp
+import uuid
 
 # import testtools
 
@@ -50,7 +50,7 @@ class TestVpcBase(TestCase):
             vpc_id='',
             subnet_id='',
             internet_gateway_id='',
-            key_path=mktemp(),
+            key_path='~/{0}.pem'.format(uuid.uuid4()),
             ami_id=self.env.ubuntu_trusty_image_id,
             instance_type=self.env.medium_instance_type,
             vpn_gateway_id='',
