@@ -33,7 +33,7 @@ inputs:
 
   key_path:
     type: string
-    default: ''
+    default: '~/.ssh/key.pem'
 
   ami_id:
     type: string

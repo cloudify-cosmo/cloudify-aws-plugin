@@ -107,7 +107,8 @@ class TestVpc(TestVpcBase):
             public_instance_assertion = fabric_api.run('uname -a')
             fabric_api.put(
                 key_node.properties['private_key_path'],
-                key_node.properties['private_key_path'])
+                key_node.properties['private_key_path'],
+                use_sudo=True)
             fabric_api.run('chmod 600 {0}'.format(
                 key_node.properties['private_key_path']))
 
@@ -120,14 +121,14 @@ class TestVpc(TestVpcBase):
                 .format(key_node.properties['private_key_path'],
                         private_ec2_instance[0].runtime_properties['ip']))
 
-        for try_attempt in range(3):
+        for try_attempt in range(10):
             try:
                 with fabric_api.settings(**connection):
                     private_instance_assertion = \
                         get_private_instance_assertion()
             except CommandTimeout as e:
-                if try_attempt < 2:
-                    sleep(15)
+                if try_attempt < 9:
+                    sleep(30)
                     continue
                 raise RuntimeError(str(e))
             else:
