@@ -203,14 +203,17 @@ class VpcPeeringConnection(AwsBaseRelationship, RouteMixin):
         if output:
             if not self.add_route_to_target_vpc():
                 raise NonRecoverableError(
-                    'Unable to save route to target VPC route table.')
+                    'Unable to save route to target VPC route tables.')
 
         return output
 
     def add_route_to_target_vpc(self):
+        """ Adds a return route on to the target VPC route tables
+        :return: Boolean, True if all were successful, False if
+        at least one failed.
+        """
 
         source_vpc_cidr_block = ''
-        target_route_table_id = ''
 
         vpcs = self.execute(self.client.get_all_vpcs)
         for vpc in vpcs:
@@ -225,12 +228,14 @@ class VpcPeeringConnection(AwsBaseRelationship, RouteMixin):
         route_tables = self.execute(self.client.get_all_route_tables)
         for route_table in route_tables:
             if route_table.vpc_id == self.target_vpc_id:
-                target_route_table_id = route_table.id
+                route_created = self.create_route(
+                    route_table_id=route_table.id,
+                    route=new_route
+                )
+                if not route_created:
+                    return False
 
-        return self.create_route(
-            route_table_id=target_route_table_id,
-            route=new_route
-        )
+        return True
 
 
 class Vpc(AwsBaseNode):
