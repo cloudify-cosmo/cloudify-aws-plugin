@@ -19,6 +19,8 @@ INSTANCE_STATE_STARTED = 16
 INSTANCE_STATE_TERMINATED = 48
 INSTANCE_STATE_STOPPED = 80
 
+AWS_TYPE_PROPERTY = 'external_type'  # resource's openstack type
+
 INSTANCE_REQUIRED_PROPERTIES = ['image_id', 'instance_type']
 
 INSTANCE_INTERNAL_ATTRIBUTES = \
@@ -43,6 +45,8 @@ INSTANCE_SECURITY_GROUP_RELATIONSHIP = 'instance_connected_to_security_group'
 INSTANCE_KEYPAIR_RELATIONSHIP = 'instance_connected_to_keypair'
 INSTANCE_SUBNET_RELATIONSHIP = 'instance_contained_in_subnet'
 SECURITY_GROUP_VPC_RELATIONSHIP = 'security_group_contained_in_vpc'
+
+ADMIN_PASSWORD_PROPERTY = 'password'  # the server's password
 
 # securitygroup module constants
 SECURITY_GROUP_REQUIRED_PROPERTIES = ['description', 'rules']

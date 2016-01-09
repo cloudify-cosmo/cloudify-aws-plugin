@@ -27,6 +27,10 @@ from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
 from cloudify.decorators import operation
 
+KEYPAIR_AWS_TYPE = 'keypair'
+RUNTIME_PROPERTIES = [constants.AWS_TYPE_PROPERTY,
+                      constants.EXTERNAL_RESOURCE_ID]
+
 
 @operation
 def creation_validation(**_):
@@ -89,6 +93,9 @@ def create(**kwargs):
         kp.name, ctx.instance, external=False)
     _save_key_pair(kp)
 
+    ctx.instance.runtime_properties[constants.AWS_TYPE_PROPERTY] = \
+        KEYPAIR_AWS_TYPE
+
 
 @operation
 def delete(**kwargs):
@@ -110,8 +117,8 @@ def delete(**kwargs):
             boto.exception.BotoServerError) as e:
         raise NonRecoverableError('{0}'.format(str(e)))
 
-    utils.unassign_runtime_property_from_resource(
-        constants.EXTERNAL_RESOURCE_ID, ctx.instance)
+    utils.unassign_runtime_properties_from_resource(RUNTIME_PROPERTIES,
+                                                    ctx.instance)
     _delete_key_file()
     ctx.logger.info('Deleted key pair: {0}.'.format(key_pair_name))
 
@@ -158,8 +165,9 @@ def _delete_external_keypair():
         return False
 
     ctx.logger.info('External resource. Not deleting keypair.')
-    utils.unassign_runtime_property_from_resource(
-        constants.EXTERNAL_RESOURCE_ID, ctx.instance)
+
+    utils.unassign_runtime_properties_from_resource(RUNTIME_PROPERTIES,
+                                                    ctx.instance)
     return True
 
 
