@@ -243,8 +243,12 @@ class EC2Handler(BaseHandler):
         for instance_id, _ in instances:
             if instance_id in resources_to_remove['instances']:
                 with self._handled_exception(instance_id, failed, 'instances'):
-                    instances = ec2_client.get_only_instances(instance_id)
-                    instance = instances[0]
+                    specific_instance = \
+                        ec2_client.get_only_instances(instance_id)
+                    if instance_id not in \
+                            [instance.id for instance in specific_instance]:
+                        continue
+                    instance = specific_instance[0]
                     instance.terminate()
                     # We need to make sure that the instance is terminated
                     # or VPC stuff is going to fail.
