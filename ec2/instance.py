@@ -13,6 +13,8 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
+import os
+
 # Third-party Imports
 import boto.exception
 
@@ -24,6 +26,8 @@ from cloudify import ctx
 from cloudify import compute
 from cloudify.exceptions import NonRecoverableError
 from cloudify.decorators import operation
+from ec2 import passwd
+from ec2.keypair import KEYPAIR_AWS_TYPE
 
 
 @operation
@@ -83,7 +87,7 @@ def run_instances(**_):
 
 
 @operation
-def start(**_):
+def start(start_retry_interval=30, private_key_path=None, **_):
     ec2_client = connection.EC2ConnectionClient().client()
 
     instance_id = \
@@ -94,6 +98,12 @@ def start(**_):
         return
 
     if _get_instance_state() == constants.INSTANCE_STATE_STARTED:
+        if ctx.node.properties['use_password']:
+            _retrieve_windows_pass(ec2_client=ec2_client,
+                                   instance_id=instance_id,
+                                   private_key_path=private_key_path,
+                                   start_retry_interval=start_retry_interval)
+
         _instance_started_assign_runtime_properties_and_tag(instance_id)
         return
 
@@ -108,10 +118,16 @@ def start(**_):
     ctx.logger.debug('Attempted to start instance {0}.'.format(instance_id))
 
     if _get_instance_state() == constants.INSTANCE_STATE_STARTED:
+        if ctx.node.properties['use_password']:
+            _retrieve_windows_pass(ec2_client=ec2_client,
+                                   instance_id=instance_id,
+                                   private_key_path=private_key_path,
+                                   start_retry_interval=start_retry_interval)
         _instance_started_assign_runtime_properties_and_tag(instance_id)
     else:
         return ctx.operation.retry(
-            message='Waiting server to be running. Retrying...')
+            message='Waiting server to be running. Retrying...',
+            retry_after=start_retry_interval)
 
 
 @operation
@@ -204,6 +220,64 @@ def _instance_started_assign_runtime_properties_and_tag(instance_id):
     _assign_runtime_properties_to_instance(
         runtime_properties=constants.INSTANCE_INTERNAL_ATTRIBUTES)
     ctx.logger.info('Instance {0} is running.'.format(instance_id))
+
+
+def _retrieve_windows_pass(ec2_client,
+                           instance_id,
+                           private_key_path,
+                           start_retry_interval):
+    private_key = _get_private_key(private_key_path)
+    ctx.logger.debug('retrieving password for server')
+    password = _get_windows_password(ec2_client=ec2_client,
+                                     instance_id=instance_id,
+                                     private_key_path=private_key,
+                                     start_retry_interval=start_retry_interval)
+
+    ctx.instance.runtime_properties[
+        constants.ADMIN_PASSWORD_PROPERTY] = password
+    ctx.logger.info('Server has been set with a password')
+
+
+def _get_private_key(private_key_path):
+    pk_node_by_rel = \
+        utils.get_single_connected_node_by_type(
+            ctx, KEYPAIR_AWS_TYPE, True)
+
+    if private_key_path:
+        if pk_node_by_rel:
+            raise NonRecoverableError("server can't both have a "
+                                      '"private_key_path" input and be '
+                                      'connected to a keypair via a '
+                                      'relationship at the same time')
+        key_path = private_key_path
+    else:
+        if pk_node_by_rel and pk_node_by_rel.properties['private_key_path']:
+            key_path = pk_node_by_rel.properties['private_key_path']
+        else:
+            key_path = ctx.bootstrap_context.cloudify_agent.agent_key_path
+
+    if key_path:
+        key_path = os.path.expanduser(key_path)
+        if os.path.isfile(key_path):
+            return key_path
+
+    err_message = 'Cannot find private key file'
+    if key_path:
+        err_message += '; expected file path was {0}'.format(key_path)
+    raise NonRecoverableError(err_message)
+
+
+def _get_windows_password(ec2_client,
+                          instance_id,
+                          private_key_path,
+                          start_retry_interval):
+    password_data = ec2_client.get_password_data(instance_id=instance_id)
+    if not password_data:
+        return ctx.operation.retry(
+            message='Waiting for server to post generated password',
+            retry_after=start_retry_interval)
+
+    return passwd.get_windows_passwd(private_key_path, password_data)
 
 
 def _unassign_runtime_properties(runtime_properties, ctx_instance):
