@@ -242,8 +242,8 @@ def create_snapshot(args, **_):
 
     if constants.VOLUME_SNAPSHOT_ATTRIBUTE not in \
             ctx.instance.runtime_properties:
-        ctx.instance.runtime_properties[constants.VOLUME_SNAPSHOT_ATTRIBUTE] = \
-            list()
+        ctx.instance.runtime_properties[
+            constants.VOLUME_SNAPSHOT_ATTRIBUTE] = list()
 
     ctx.instance.runtime_properties[
         constants.VOLUME_SNAPSHOT_ATTRIBUTE].append(new_snapshot.id)

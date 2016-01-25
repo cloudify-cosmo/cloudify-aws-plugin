@@ -99,10 +99,14 @@ def start(start_retry_interval=30, private_key_path=None, **_):
 
     if _get_instance_state() == constants.INSTANCE_STATE_STARTED:
         if ctx.node.properties['use_password']:
-            _retrieve_windows_pass(ec2_client=ec2_client,
-                                   instance_id=instance_id,
-                                   private_key_path=private_key_path,
-                                   start_retry_interval=start_retry_interval)
+            password_success = _retrieve_windows_pass(
+                ec2_client=ec2_client,
+                instance_id=instance_id,
+                private_key_path=private_key_path)
+            if not password_success:
+                return ctx.operation.retry(
+                    message='Waiting for server to post generated password',
+                    retry_after=start_retry_interval)
 
         _instance_started_assign_runtime_properties_and_tag(instance_id)
         return
@@ -119,10 +123,14 @@ def start(start_retry_interval=30, private_key_path=None, **_):
 
     if _get_instance_state() == constants.INSTANCE_STATE_STARTED:
         if ctx.node.properties['use_password']:
-            _retrieve_windows_pass(ec2_client=ec2_client,
-                                   instance_id=instance_id,
-                                   private_key_path=private_key_path,
-                                   start_retry_interval=start_retry_interval)
+            password_success = _retrieve_windows_pass(
+                ec2_client=ec2_client,
+                instance_id=instance_id,
+                private_key_path=private_key_path)
+            if not password_success:
+                return ctx.operation.retry(
+                    message='Waiting for server to post generated password',
+                    retry_after=start_retry_interval)
         _instance_started_assign_runtime_properties_and_tag(instance_id)
     else:
         return ctx.operation.retry(
@@ -224,18 +232,19 @@ def _instance_started_assign_runtime_properties_and_tag(instance_id):
 
 def _retrieve_windows_pass(ec2_client,
                            instance_id,
-                           private_key_path,
-                           start_retry_interval):
+                           private_key_path):
     private_key = _get_private_key(private_key_path)
     ctx.logger.debug('retrieving password for server')
     password = _get_windows_password(ec2_client=ec2_client,
                                      instance_id=instance_id,
-                                     private_key_path=private_key,
-                                     start_retry_interval=start_retry_interval)
+                                     private_key_path=private_key)
 
-    ctx.instance.runtime_properties[
-        constants.ADMIN_PASSWORD_PROPERTY] = password
-    ctx.logger.info('Server has been set with a password')
+    if password:
+        ctx.instance.runtime_properties[
+            constants.ADMIN_PASSWORD_PROPERTY] = password
+        ctx.logger.info('Server has been set with a password')
+        return True
+    return False
 
 
 def _get_private_key(private_key_path):
@@ -269,13 +278,10 @@ def _get_private_key(private_key_path):
 
 def _get_windows_password(ec2_client,
                           instance_id,
-                          private_key_path,
-                          start_retry_interval):
+                          private_key_path):
     password_data = ec2_client.get_password_data(instance_id=instance_id)
     if not password_data:
-        return ctx.operation.retry(
-            message='Waiting for server to post generated password',
-            retry_after=start_retry_interval)
+        return None
 
     return passwd.get_windows_passwd(private_key_path, password_data)
 
