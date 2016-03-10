@@ -110,7 +110,7 @@ class CloudifyEC2InputsConfigReader(BaseCloudifyInputsConfigReader):
 
     @property
     def management_user_name(self):
-        return self.config['manager_server_user']
+        return self.config['ssh_user']
 
     @property
     def management_server_name(self):
@@ -118,11 +118,11 @@ class CloudifyEC2InputsConfigReader(BaseCloudifyInputsConfigReader):
 
     @property
     def agent_key_path(self):
-        return self.config['agent_key_pair_file_path']
+        return self.config['agent_private_key_path']
 
     @property
     def management_key_path(self):
-        return self.config['manager_key_pair_file_path']
+        return self.config['ssh_key_filename']
 
     @property
     def agent_keypair_name(self):
