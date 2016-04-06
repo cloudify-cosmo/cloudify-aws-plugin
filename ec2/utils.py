@@ -173,12 +173,12 @@ def get_provider_variables():
 
     provider_config = ctx.provider_context.get('resources', {})
 
-    agents_keypair = provider_config.get('agents_keypair', {})
-    agents_security_group = provider_config.get('agents_security_group', {})
-
     provider_context = {
-        "agents_keypair": agents_keypair.get('id'),
-        "agents_security_group": agents_security_group.get('id')
+        constants.AGENTS_KEYPAIR: provider_config.get(constants.AGENTS_KEYPAIR, {}).get('id'),
+        constants.AGENTS_SECURITY_GROUP: provider_config.get(constants.AGENTS_SECURITY_GROUP, {}).get('id'),
+        constants.AGENTS_SUBNET: provider_config.get(constants.AGENTS_SUBNET, {}).get('id'),
+        constants.AGENTS_VPC: provider_config.get(constants.AGENTS_VPC, {}).get('id'),
+        constants.AGENTS_AWS_INSTANCE_PARAMETERS: provider_config.get(constants.AGENTS_AWS_INSTANCE_PARAMETERS, {})
     }
 
     return provider_context

@@ -85,3 +85,10 @@ BOTO_CONFIG_SCHEMA = {
     'Credentials': ['aws_access_key_id', 'aws_secret_access_key'],
     'Boto': ['ec2_region_name', 'ec2_region_endpoint']
 }
+
+# Agents Base Values
+AGENTS_KEYPAIR = 'agents_keypair'
+AGENTS_SECURITY_GROUP = 'agents_security_group'
+AGENTS_SUBNET = 'agents_subnet'
+AGENTS_AWS_INSTANCE_PARAMETERS = 'agents_base_instance_parameters'
+AGENTS_VPC = 'agents_vpc'
