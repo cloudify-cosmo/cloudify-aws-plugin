@@ -18,6 +18,7 @@ import testtools
 
 # Third Party Imports
 from boto.ec2 import EC2Connection
+from boto.vpc import VPCConnection
 from moto import mock_ec2
 
 # Cloudify Imports is imported and used in operations
@@ -52,7 +53,8 @@ class TestElasticIP(testtools.TestCase):
 
         ctx = MockCloudifyContext(
             node_id=test_node_id,
-            properties=test_properties
+            properties=test_properties,
+            provider_context={'resources': {}}
         )
 
         return ctx
@@ -117,6 +119,9 @@ class TestElasticIP(testtools.TestCase):
     def get_client(self):
         return EC2Connection()
 
+    def create_vpc_client(self):
+        return VPCConnection()
+
     def allocate_address(self, client):
         return client.allocate_address(domain=None)
 
@@ -139,6 +144,23 @@ class TestElasticIP(testtools.TestCase):
         """ This tests that allocate adds the runtime_properties."""
 
         ctx = self.mock_ctx('test_allocate')
+        current_ctx.set(ctx=ctx)
+        elasticip.allocate(ctx=ctx)
+        self.assertIn('aws_resource_id', ctx.instance.runtime_properties)
+        self.assertNotIn('vpc_id', ctx.instance.runtime_properties)
+
+    @mock_ec2
+    def test_allocate_vpc(self):
+        """ This tests that allocate and vpc adds the runtime_properties."""
+
+        ctx = self.mock_ctx('test_allocate_vpc')
+        vpc = self.create_vpc_client().create_vpc('10.10.10.0/16')
+        ctx.provider_context['resources'] = {
+            constants.VPC: {
+                'id': vpc.id,
+                'external_resource': True
+            }
+        }
         current_ctx.set(ctx=ctx)
         elasticip.allocate(ctx=ctx)
         self.assertIn('aws_resource_id', ctx.instance.runtime_properties)
@@ -230,7 +252,8 @@ class TestElasticIP(testtools.TestCase):
         ctx.instance.runtime_properties['allocation_id'] = 'random'
         elasticip.release(ctx=ctx)
         self.assertNotIn('aws_resource_id',
-                         ctx.instance.runtime_properties.keys())
+                         ctx.instance.runtime_properties)
+        self.assertNotIn('instance_id', ctx.instance.runtime_properties)
 
     @mock_ec2
     def test_disassociate_external_elasticip_or_instance(self):
@@ -277,6 +300,11 @@ class TestElasticIP(testtools.TestCase):
         ctx.source.instance.runtime_properties['aws_resource_id'] = \
             instance_id
         elasticip.associate(ctx=ctx)
+        self.assertIn('instance_id',
+                      ctx.target.instance.runtime_properties)
+        self.assertEquals(instance_id,
+                          ctx.target.instance.runtime_properties.get(
+                              'instance_id'))
 
     @mock_ec2
     def test_good_address_associate_with_new_domain_property(self):
@@ -291,7 +319,15 @@ class TestElasticIP(testtools.TestCase):
             address.public_ip
         ctx.source.instance.runtime_properties['aws_resource_id'] = \
             instance_id
+        ctx.source.instance.runtime_properties['vpc_id'] = \
+            self.create_vpc_client().create_vpc('10.10.10.0/16').id
         elasticip.associate(ctx=ctx)
+        self.assertIn('instance_id',
+                      ctx.target.instance.runtime_properties)
+        self.assertEquals(instance_id,
+                          ctx.target.instance.runtime_properties.get(
+                              'instance_id'))
+        self.assertIn('vpc_id', ctx.target.instance.runtime_properties)
 
     @mock_ec2
     def test_good_address_associate_vpc_elastic_ip(self):
@@ -320,6 +356,7 @@ class TestElasticIP(testtools.TestCase):
         ctx.target.instance.runtime_properties['aws_resource_id'] = \
             address.public_ip
         ctx.source.instance.runtime_properties['instance_id'] = instance_id
+        ctx.target.instance.runtime_properties['instance_id'] = instance_id
         ctx.source.instance.runtime_properties['ip'] = address.public_ip
         elasticip.disassociate(ctx=ctx)
 
@@ -429,7 +466,7 @@ class TestElasticIP(testtools.TestCase):
         ctx.node.properties['use_external_resource'] = True
         elasticip.release(ctx=ctx)
         self.assertNotIn(
-            'aws_resource_id', ctx.instance.runtime_properties.keys())
+            'aws_resource_id', ctx.instance.runtime_properties)
         ec2_client = self.get_client()
         self.assertIsNotNone(ec2_client.get_all_addresses(address.public_ip))
 

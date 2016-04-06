@@ -238,7 +238,7 @@ node_types:
         required: true
       domain:
         description: >
-          Set this to 'VPC' if you want to use VPC.
+          Set this to 'vpc' if you want to use VPC.
         required: false
       aws_config:
         description: >

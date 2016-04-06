@@ -610,8 +610,8 @@ def _get_instance_subnet(provider_variables):
             constants.INSTANCE_SUBNET_RELATIONSHIP, ctx.instance
         )
 
-    if not list_of_subnets and provider_variables.get(constants.AGENTS_SUBNET):
-        list_of_subnets.append(provider_variables[constants.AGENTS_SUBNET])
+    if not list_of_subnets and provider_variables.get(constants.SUBNET):
+        list_of_subnets.append(provider_variables[constants.SUBNET])
     elif len(list_of_subnets) > 1:
         raise NonRecoverableError(
             'instance may only be attached to one subnet')

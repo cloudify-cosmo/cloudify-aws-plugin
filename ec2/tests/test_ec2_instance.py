@@ -285,11 +285,11 @@ class TestInstance(testtools.TestCase):
             availability_zone=TEST_AVAILABILITY_ZONE)
         ctx = self.mock_ctx('test_run_instances_provider_context_good_subnet')
         ctx.provider_context['resources'] = {
-            constants.AGENTS_VPC: {
+            constants.VPC: {
                 'id': vpc.id,
                 'external_resource': True
             },
-            constants.AGENTS_SUBNET: {
+            constants.SUBNET: {
                 'id': subnet.id,
                 'external_resource': True
             },
@@ -322,7 +322,7 @@ class TestInstance(testtools.TestCase):
 
         ctx = self.mock_ctx('test_run_instances_provider_context_bad_subnet')
         ctx.provider_context['resources'] = {
-            constants.AGENTS_SUBNET: {
+            constants.SUBNET: {
                 'id': SUBNET_ID,
                 'external_resource': True
             }
