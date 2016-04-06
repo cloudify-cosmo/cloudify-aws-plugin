@@ -16,10 +16,12 @@
 # Built-in Imports
 import testtools
 import tempfile
+import uuid
 
 # Third Party Imports
 from moto import mock_ec2
 import mock
+from boto.vpc import VPCConnection
 
 # Cloudify Imports is imported and used in operations
 from ec2 import constants
@@ -35,9 +37,14 @@ from cloudify.exceptions import NonRecoverableError
 TEST_AMI_IMAGE_ID = 'ami-e214778a'
 TEST_INSTANCE_TYPE = 't1.micro'
 FQDN = '((?:[a-z][a-z\\.\\d\\-]+)\\.(?:[a-z][a-z\\-]+))(?![\\w\\.])'
+SUBNET_ID = 'subnet-0123abcd'
+TEST_AVAILABILITY_ZONE = 'us-east-1b'
 
 
 class TestInstance(testtools.TestCase):
+
+    def create_vpc_client(self):
+        return VPCConnection()
 
     def mock_ctx(self, test_name):
         """ Creates a mock context for the instance
@@ -63,11 +70,12 @@ class TestInstance(testtools.TestCase):
         operation = {
             'retry_number': 0
         }
-
         ctx = MockCloudifyContext(
             node_id=test_node_id,
+            deployment_id=uuid.uuid1(),
             properties=test_properties,
-            operation=operation
+            operation=operation,
+            provider_context={'resources': {}}
         )
         ctx.node.type_hierarchy = ['cloudify.nodes.Compute']
         return ctx
@@ -265,6 +273,66 @@ class TestInstance(testtools.TestCase):
         self.assertNotIn('user_data', handle_userdata_output)
 
     @mock_ec2
+    @mock.patch('boto.ec2.instance.Instance.placement', TEST_AVAILABILITY_ZONE)
+    def test_run_instances_provider_context_good_subnet(self):
+        """ this tests that the instance create function
+        adds the runtime_properties
+        """
+
+        vpc = self.create_vpc_client().create_vpc('10.10.10.0/16')
+        subnet = self.create_vpc_client().create_subnet(
+            vpc.id, '10.10.10.0/24',
+            availability_zone=TEST_AVAILABILITY_ZONE)
+        ctx = self.mock_ctx('test_run_instances_provider_context_good_subnet')
+        ctx.provider_context['resources'] = {
+            constants.AGENTS_VPC: {
+                'id': vpc.id,
+                'external_resource': True
+            },
+            constants.AGENTS_SUBNET: {
+                'id': subnet.id,
+                'external_resource': True
+            },
+            constants.AGENTS_AWS_INSTANCE_PARAMETERS: {
+                'placement': TEST_AVAILABILITY_ZONE
+            }
+        }
+        current_ctx.set(ctx=ctx)
+        instance.run_instances(ctx=ctx)
+        self.assertIn('aws_resource_id',
+                      ctx.instance.runtime_properties.keys())
+        self.assertIn('subnet_id',
+                      ctx.instance.runtime_properties.keys())
+        self.assertEquals(subnet.id,
+                          ctx.instance.runtime_properties['subnet_id'])
+        self.assertIn('vpc_id',
+                      ctx.instance.runtime_properties.keys())
+        self.assertEquals(vpc.id,
+                          ctx.instance.runtime_properties['vpc_id'])
+        self.assertIn('placement',
+                      ctx.instance.runtime_properties.keys())
+        self.assertEquals(TEST_AVAILABILITY_ZONE,
+                          ctx.instance.runtime_properties['placement'])
+
+    @mock_ec2
+    def test_run_instances_provider_context_bad_subnet(self):
+        """ this tests that the instance create function
+        adds the runtime_properties
+        """
+
+        ctx = self.mock_ctx('test_run_instances_provider_context_bad_subnet')
+        ctx.provider_context['resources'] = {
+            constants.AGENTS_SUBNET: {
+                'id': SUBNET_ID,
+                'external_resource': True
+            }
+        }
+        current_ctx.set(ctx=ctx)
+        e = self.assertRaises(NonRecoverableError,
+                              instance.run_instances, ctx=ctx)
+        self.assertIn(SUBNET_ID, e.message)
+
+    @mock_ec2
     def test_stop_clean(self):
         """
         this tests that the instance stop function stops the
@@ -283,7 +351,7 @@ class TestInstance(testtools.TestCase):
         ctx.instance.runtime_properties['public_dns_name'] = '0.0.0.0'
         ctx.instance.runtime_properties['public_ip_address'] = '0.0.0.0'
         ctx.instance.runtime_properties['ip'] = '0.0.0.0'
-        ctx.instance.runtime_properties['placement'] = 'us-east-1b'
+        ctx.instance.runtime_properties['placement'] = TEST_AVAILABILITY_ZONE
         instance.stop(ctx=ctx)
         reservations = ec2_client.get_all_reservations(instance_id)
         instance_object = reservations[0].instances[0]
@@ -310,7 +378,6 @@ class TestInstance(testtools.TestCase):
         instance_object = reservations[0].instances[0]
         state = instance_object.update()
         self.assertEqual(state, 'running')
-        self.assertNotIn('Name', instance_object.tags)
 
     @mock_ec2
     def test_terminate_clean(self):

@@ -14,6 +14,7 @@
 #    * limitations under the License.
 
 import os
+import uuid
 
 # Third-party Imports
 import boto.exception
@@ -84,6 +85,7 @@ def run_instances(**_):
 
     utils.set_external_resource_id(
         instance_id, ctx.instance, external=False)
+    _instance_created_assign_runtime_properties()
 
 
 @operation
@@ -212,18 +214,24 @@ def _assign_runtime_properties_to_instance(runtime_properties):
         elif 'public_ip_address' is property_name:
             ctx.instance.runtime_properties[property_name] = \
                 _get_instance_attribute('ip_address')
-        elif 'placement' is property_name:
-            ctx.instance.runtime_properties[property_name] = \
-                _get_instance_attribute('placement')
         else:
-            attribute = _get_instance_attribute(property_name)
+            ctx.instance.runtime_properties[property_name] = \
+                _get_instance_attribute(property_name)
 
-        ctx.logger.debug('Set {0}: {1}.'.format(property_name, attribute))
+
+def _instance_created_assign_runtime_properties():
+    _assign_runtime_properties_to_instance(
+        runtime_properties=constants.INSTANCE_INTERNAL_ATTRIBUTES_POST_CREATE)
 
 
 def _instance_started_assign_runtime_properties_and_tag(instance_id):
     if ctx.node.properties.get('name'):
         _add_tag(instance_id, 'Name', ctx.node.properties['name'])
+    else:
+        _add_tag(instance_id, 'Name', uuid.uuid4())
+
+    _add_tag(instance_id, 'instance_id', ctx.instance.id)
+    _add_tag(instance_id, 'deployment_id', ctx.deployment.id)
 
     _assign_runtime_properties_to_instance(
         runtime_properties=constants.INSTANCE_INTERNAL_ATTRIBUTES)
@@ -542,17 +550,19 @@ def _get_instance_parameters():
             constants.INSTANCE_SECURITY_GROUP_RELATIONSHIP,
             ctx.instance)
 
-    if provider_variables.get('agents_security_group'):
+    if provider_variables.get(constants.AGENTS_SECURITY_GROUP):
         attached_group_ids.append(
-            provider_variables['agents_security_group'])
+            provider_variables[constants.AGENTS_SECURITY_GROUP])
 
-    parameters = {
+    parameters = \
+        provider_variables.get(constants.AGENTS_AWS_INSTANCE_PARAMETERS)
+    parameters.update({
         'image_id': ctx.node.properties['image_id'],
         'instance_type': ctx.node.properties['instance_type'],
         'security_group_ids': attached_group_ids,
         'key_name': _get_instance_keypair(provider_variables),
         'subnet_id': _get_instance_subnet(provider_variables)
-    }
+    })
 
     parameters.update(ctx.node.properties['parameters'])
     parameters = _handle_userdata(parameters)
@@ -569,8 +579,9 @@ def _get_instance_keypair(provider_variables):
         utils.get_target_external_resource_ids(
             constants.INSTANCE_KEYPAIR_RELATIONSHIP, ctx.instance)
 
-    if not list_of_keypairs and provider_variables.get('agents_keypair'):
-        list_of_keypairs.append(provider_variables['agents_keypair'])
+    if not list_of_keypairs and \
+            provider_variables.get(constants.AGENTS_KEYPAIR):
+        list_of_keypairs.append(provider_variables[constants.AGENTS_KEYPAIR])
     elif len(list_of_keypairs) > 1:
         raise NonRecoverableError(
             'Only one keypair may be attached to an instance.')
@@ -599,8 +610,8 @@ def _get_instance_subnet(provider_variables):
             constants.INSTANCE_SUBNET_RELATIONSHIP, ctx.instance
         )
 
-    if not list_of_subnets and provider_variables.get('agents_subnet'):
-        list_of_subnets.append(provider_variables['agents_subnet'])
+    if not list_of_subnets and provider_variables.get(constants.AGENTS_SUBNET):
+        list_of_subnets.append(provider_variables[constants.AGENTS_SUBNET])
     elif len(list_of_subnets) > 1:
         raise NonRecoverableError(
             'instance may only be attached to one subnet')
