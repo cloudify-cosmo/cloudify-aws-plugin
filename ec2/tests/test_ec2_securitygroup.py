@@ -30,14 +30,19 @@ from cloudify.exceptions import NonRecoverableError
 
 class TestSecurityGroup(testtools.TestCase):
 
-    def security_group_mock(self, test_name, test_properties):
+    def security_group_mock(self, test_name, test_properties, retry_number=0):
         """ Creates a mock context for security group tests
             with given properties
         """
 
+        operation = {
+            'retry_number': retry_number
+        }
+
         ctx = MockCloudifyContext(
             node_id=test_name,
-            properties=test_properties
+            properties=test_properties,
+            operation=operation
         )
 
         return ctx
@@ -74,6 +79,22 @@ class TestSecurityGroup(testtools.TestCase):
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock('test_create', test_properties)
         current_ctx.set(ctx=ctx)
+        securitygroup.create(ctx=ctx)
+
+    @mock_ec2
+    def test_create_retry(self):
+        """This tests that create retry works"""
+
+        test_properties = self.get_mock_properties()
+        ctx = self.security_group_mock('test_create_retry', test_properties,
+                                       retry_number=1)
+        current_ctx.set(ctx=ctx)
+        name = ctx.node.properties.get('resource_id')
+        description = ctx.node.properties.get('description')
+        ec2_client = connection.EC2ConnectionClient().client()
+        group = ec2_client.create_security_group(name, description)
+        ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID] = \
+            group.id
         securitygroup.create(ctx=ctx)
 
     @mock_ec2

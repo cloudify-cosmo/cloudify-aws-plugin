@@ -1,0 +1,34 @@
+# DSL version, should appear in the main blueprint.yaml
+# and may appear in other imports. In such case, the versions must match
+tosca_definitions_version: cloudify_dsl_1_2
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/3.3.1/types.yaml
+  - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-aws-plugin/master/plugin.yaml
+
+inputs:
+
+  aws_config:
+      default: {}
+
+  external_sg:
+      type: boolean
+
+  resource_id_sg:
+      type: string
+
+node_templates:
+
+  simple_security_group:
+      type: cloudify.aws.nodes.SecurityGroup
+      properties:
+        resource_id: { get_input: resource_id_sg }
+        use_external_resource: { get_input: external_sg }
+        description: Simple Security Group
+        rules: []
+        aws_config: { get_input: aws_config }
+
+plugins:
+    ec2:
+        executor: central_deployment_agent
+        install: false

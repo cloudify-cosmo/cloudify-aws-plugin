@@ -75,15 +75,26 @@ def create(**_):
         vpc_id=_get_connected_vpc()
     )
 
-    try:
-        group_object = ec2_client.create_security_group(**create_args)
-    except (boto.exception.EC2ResponseError,
-            boto.exception.BotoServerError) as e:
-        raise NonRecoverableError('{0}'.format(str(e)))
+    if ctx.operation.retry_number == 0 and constants.EXTERNAL_RESOURCE_ID \
+            not in ctx.instance.runtime_properties:
 
-    _create_group_rules(group_object)
-    utils.set_external_resource_id(
-        group_object.id, ctx.instance, external=False)
+        try:
+            security_group = ec2_client.create_security_group(**create_args)
+        except (boto.exception.EC2ResponseError,
+                boto.exception.BotoServerError) as e:
+            raise NonRecoverableError('{0}'.format(str(e)))
+        utils.set_external_resource_id(
+                security_group.id, ctx.instance, external=False)
+
+    security_group = _get_security_group_from_id(
+            ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID])
+
+    if not security_group:
+        return ctx.operation.retry(
+            message='Waiting to verify that security group {0} '
+            'has been added.'.format(constants.EXTERNAL_RESOURCE_ID))
+
+    _create_group_rules(security_group)
 
 
 @operation
@@ -115,6 +126,10 @@ def _get_connected_vpc():
         utils.get_target_external_resource_ids(
             constants.SECURITY_GROUP_VPC_RELATIONSHIP, ctx.instance
         )
+    manager_vpc = utils.get_provider_variables().get(constants.VPC)
+
+    if manager_vpc:
+        list_of_vpcs.append(manager_vpc.get('id'))
 
     if len(list_of_vpcs) > 1:
         raise NonRecoverableError(
