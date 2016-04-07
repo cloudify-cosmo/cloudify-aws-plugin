@@ -25,7 +25,10 @@ INSTANCE_REQUIRED_PROPERTIES = ['image_id', 'instance_type']
 
 INSTANCE_INTERNAL_ATTRIBUTES = \
     ['private_dns_name', 'public_dns_name',
-     'public_ip_address', 'ip', 'placement']
+     'public_ip_address', 'ip']
+
+INSTANCE_INTERNAL_ATTRIBUTES_POST_CREATE = \
+    ['vpc_id', 'subnet_id', 'placement']
 
 RUN_INSTANCE_PARAMETERS = {
     'image_id': None, 'key_name': None, 'security_groups': None,
@@ -85,3 +88,10 @@ BOTO_CONFIG_SCHEMA = {
     'Credentials': ['aws_access_key_id', 'aws_secret_access_key'],
     'Boto': ['ec2_region_name', 'ec2_region_endpoint']
 }
+
+# Agents Base Values
+AGENTS_KEYPAIR = 'agents_keypair'
+AGENTS_SECURITY_GROUP = 'agents_security_group'
+AGENTS_SUBNET = 'subnet'
+AGENTS_AWS_INSTANCE_PARAMETERS = 'agents_instance_parameters'
+AGENTS_VPC = 'vpc'
