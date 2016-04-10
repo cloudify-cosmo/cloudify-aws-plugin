@@ -92,6 +92,9 @@ BOTO_CONFIG_SCHEMA = {
 # Agents Base Values
 AGENTS_KEYPAIR = 'agents_keypair'
 AGENTS_SECURITY_GROUP = 'agents_security_group'
-AGENTS_SUBNET = 'subnet'
+SUBNET = 'subnet'
 AGENTS_AWS_INSTANCE_PARAMETERS = 'agents_instance_parameters'
-AGENTS_VPC = 'vpc'
+VPC = 'vpc'
+
+VPC_DOMAIN = 'vpc'
+ELASTIC_IP_DOMAIN_PROPERTY = 'domain'

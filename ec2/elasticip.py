@@ -57,9 +57,14 @@ def allocate(**_):
 
     ctx.logger.debug('Attempting to allocate elasticip.')
 
+    provider_variables = utils.get_provider_variables()
+
     kw = {}
-    if ctx.node.properties.get('domain'):
-        kw['domain'] = ctx.node.properties['domain']
+    domain = ctx.node.properties.get(
+        constants.ELASTIC_IP_DOMAIN_PROPERTY) or \
+        provider_variables.get(constants.VPC)
+    if domain:
+        kw[constants.ELASTIC_IP_DOMAIN_PROPERTY] = constants.VPC_DOMAIN
 
     try:
         address_object = ec2_client.allocate_address(**kw)
@@ -67,7 +72,7 @@ def allocate(**_):
             boto.exception.BotoServerError) as e:
         raise NonRecoverableError('{0}'.format(str(e)))
 
-    if 'vpc' in address_object.domain:
+    if constants.VPC_DOMAIN in address_object.domain:
         ctx.instance.runtime_properties[constants.ALLOCATION_ID] = \
             address_object.allocation_id
 
@@ -160,6 +165,11 @@ def associate(**_):
         'Associated Elastic IP {0} with instance {1}.'
         .format(elasticip, instance_id))
     ctx.source.instance.runtime_properties['public_ip_address'] = elasticip
+    ctx.target.instance.runtime_properties['instance_id'] = \
+        ctx.source.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
+    vpc_id = ctx.source.instance.runtime_properties.get('vpc_id')
+    if vpc_id:
+        ctx.target.instance.runtime_properties['vpc_id'] = vpc_id
 
 
 @operation
@@ -200,6 +210,11 @@ def disassociate(**_):
 
     utils.unassign_runtime_property_from_resource(
         'public_ip_address', ctx.source.instance)
+    utils.unassign_runtime_property_from_resource(
+        'instance_id', ctx.target.instance)
+    if ctx.source.instance.runtime_properties.get('vpc_id'):
+        utils.unassign_runtime_property_from_resource(
+            'vpc_id', ctx.target.instance)
 
     ctx.logger.info(
         'Disassociated Elastic IP {0} from instance {1}.'

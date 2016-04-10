@@ -99,7 +99,7 @@ def unassign_runtime_property_from_resource(property_name, ctx_instance):
     :param ctx:  The Cloudify ctx context.
     """
 
-    value = ctx_instance.runtime_properties.pop(property_name)
+    value = ctx_instance.runtime_properties.pop(property_name, None)
     ctx.logger.debug(
         'Unassigned {0} runtime property: {1}'.format(property_name, value))
 
@@ -178,10 +178,10 @@ def get_provider_variables():
             provider_config.get(constants.AGENTS_KEYPAIR, {}).get('id'),
         constants.AGENTS_SECURITY_GROUP:
             provider_config.get(constants.AGENTS_SECURITY_GROUP, {}).get('id'),
-        constants.AGENTS_SUBNET:
-            provider_config.get(constants.AGENTS_SUBNET, {}).get('id'),
-        constants.AGENTS_VPC:
-            provider_config.get(constants.AGENTS_VPC, {}).get('id'),
+        constants.SUBNET:
+            provider_config.get(constants.SUBNET, {}).get('id'),
+        constants.VPC:
+            provider_config.get(constants.VPC, {}).get('id'),
         constants.AGENTS_AWS_INSTANCE_PARAMETERS:
             provider_config.get(constants.AGENTS_AWS_INSTANCE_PARAMETERS, {})
     }
