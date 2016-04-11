@@ -40,7 +40,7 @@ BAD_INSTANCE_ID = 'i-4339wSD9'
 
 class TestEBS(testtools.TestCase):
 
-    def mock_ctx(self, test_name):
+    def mock_ctx(self, test_name, zone=TEST_ZONE):
 
         test_node_id = test_name
         test_properties = {
@@ -48,7 +48,7 @@ class TestEBS(testtools.TestCase):
             'use_external_resource': False,
             'resource_id': '',
             'size': TEST_SIZE,
-            'zone': TEST_ZONE,
+            constants.ZONE: zone,
             'device': TEST_DEVICE
         }
 
@@ -66,7 +66,7 @@ class TestEBS(testtools.TestCase):
             constants.AWS_CONFIG_PROPERTY: {},
             'use_external_resource': False,
             'resource_id': '',
-            'zone': '',
+            constants.ZONE: '',
             'size': '',
             'device': ''
         }
@@ -101,7 +101,7 @@ class TestEBS(testtools.TestCase):
                     constants.AWS_CONFIG_PROPERTY: {},
                     'use_external_resource': False,
                     'resource_id': '',
-                    'zone': '',
+                    constants.ZONE: '',
                     'size': '',
                     'device': TEST_DEVICE
                 }
@@ -150,6 +150,21 @@ class TestEBS(testtools.TestCase):
         args = dict()
         ebs.create(args, ctx=ctx)
         self.assertIn('aws_resource_id', ctx.instance.runtime_properties)
+
+    @mock_ec2
+    def test_create_with_zone(self):
+        """ This tests that allocate zone is updated with the users
+        zone input."""
+
+        zone = 'us-east-1b'
+        ctx = self.mock_ctx('test_create_with_zone', zone=zone)
+        current_ctx.set(ctx=ctx)
+        args = {constants.ZONE: zone}
+        ebs.create(args, ctx=ctx)
+        self.assertIn('aws_resource_id', ctx.instance.runtime_properties)
+        self.assertIn(constants.ZONE, ctx.instance.runtime_properties)
+        self.assertEqual(zone, ctx.instance.runtime_properties.get(
+                constants.ZONE))
 
     @mock_ec2
     def test_attach_external_volume_or_instance(self):
@@ -215,19 +230,38 @@ class TestEBS(testtools.TestCase):
         self.assertEqual(False, output)
 
     @mock_ec2
-    def test_good_volume_id_delete(self):
+    def test_volume_delete(self):
         """ This tests that release unsets the aws_resource_id
         runtime_properties
         """
 
-        ctx = self.mock_ctx('test_good_volume_id_delete')
+        ctx = self.mock_ctx('test_volume_delete')
         current_ctx.set(ctx=ctx)
         volume = self.get_volume()
         ctx.instance.runtime_properties['aws_resource_id'] = \
             volume.id
         ebs.delete(ctx=ctx)
         self.assertNotIn('aws_resource_id',
-                         ctx.instance.runtime_properties.keys())
+                         ctx.instance.runtime_properties)
+
+    @mock_ec2
+    def test_volume_delete_with_zone(self):
+        """ This tests that release unsets the aws_resource_id
+        and zone runtime_properties
+        """
+
+        ctx = self.mock_ctx('test_volume_delete_with_zone')
+        current_ctx.set(ctx=ctx)
+        volume = self.get_volume()
+        ctx.instance.runtime_properties['aws_resource_id'] = \
+            volume.id
+        ctx.instance.runtime_properties[constants.ZONE] = \
+            volume.zone
+        ebs.delete(ctx=ctx)
+        self.assertNotIn('aws_resource_id',
+                         ctx.instance.runtime_properties)
+        self.assertNotIn(constants.ZONE,
+                         ctx.instance.runtime_properties)
 
     @mock_ec2
     def test_detach_external_volume_or_instance(self):

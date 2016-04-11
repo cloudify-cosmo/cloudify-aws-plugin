@@ -66,7 +66,7 @@ def create(args, **_):
 
     create_volume_args = dict(
         size=ctx.node.properties['size'],
-        zone=ctx.node.properties['zone']
+        zone=ctx.node.properties[constants.ZONE]
     )
 
     create_volume_args.update(args)
@@ -76,6 +76,8 @@ def create(args, **_):
     except (boto.exception.EC2ResponseError,
             boto.exception.BotoServerError) as e:
         raise NonRecoverableError('{0}'.format(str(e)))
+
+    ctx.instance.runtime_properties[constants.ZONE] = new_volume.zone
 
     utils.set_external_resource_id(
         new_volume.id, ctx.instance, external=False)
@@ -100,6 +102,9 @@ def delete(**_):
                     .format(volume_id))
 
     utils.unassign_runtime_property_from_resource(
+            constants.ZONE, ctx.instance)
+
+    utils.unassign_runtime_property_from_resource(
         constants.EXTERNAL_RESOURCE_ID, ctx.instance)
 
     ctx.logger.info(
@@ -120,12 +125,12 @@ def attach(**_):
         utils.get_external_resource_id_or_raise(
             'attach volume', ctx.target.instance)
 
-    if ctx.source.node.properties['zone'] not in \
+    if ctx.source.node.properties[constants.ZONE] not in \
             ctx.target.instance.runtime_properties.get('placement'):
         ctx.logger.info(
             'Volume Zone {0} and Instance Zone {1} do not match. '
             'This may lead to an error.'.format(
-                ctx.source.node.properties['zone'],
+                ctx.source.node.properties[constants.ZONE],
                 ctx.target.instance.runtime_properties.get('placement')
             )
         )
