@@ -63,7 +63,8 @@ HEALTH_CHECK_UNHEALTHY_THRESHOLD = 5
 ELB_REQUIRED_PROPERTIES = ['elb_name', 'zones', 'listeners']
 
 # ebs module constants
-VOLUME_REQUIRED_PROPERTIES = ['size', 'zone', 'device']
+ZONE = 'zone'
+VOLUME_REQUIRED_PROPERTIES = ['size', ZONE, 'device']
 VOLUME_SNAPSHOT_ATTRIBUTE = 'snapshots_ids'
 VOLUME_AVAILABLE = 'available'
 VOLUME_CREATING = 'creating'
