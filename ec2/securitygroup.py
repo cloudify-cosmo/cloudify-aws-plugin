@@ -129,7 +129,7 @@ def _get_connected_vpc():
     manager_vpc = utils.get_provider_variables().get(constants.VPC)
 
     if manager_vpc:
-        list_of_vpcs.append(manager_vpc.get('id'))
+        list_of_vpcs.append(manager_vpc)
 
     if len(list_of_vpcs) > 1:
         raise NonRecoverableError(
