@@ -17,7 +17,7 @@
 import re
 
 # Third-party Imports
-import boto.exception
+from boto import exception
 
 # Cloudify imports
 from ec2 import utils
@@ -80,8 +80,8 @@ def create(**_):
 
         try:
             security_group = ec2_client.create_security_group(**create_args)
-        except (boto.exception.EC2ResponseError,
-                boto.exception.BotoServerError) as e:
+        except (exception.EC2ResponseError,
+                exception.BotoServerError) as e:
             raise NonRecoverableError('{0}'.format(str(e)))
         utils.set_external_resource_id(
                 security_group.id, ctx.instance, external=False)
@@ -95,6 +95,15 @@ def create(**_):
             'has been added.'.format(constants.EXTERNAL_RESOURCE_ID))
 
     _create_group_rules(security_group)
+
+
+@operation
+def start(**_):
+    """Add tags to EC2 security group.
+    """
+
+    security_group = _get_security_group_from_id(utils.get_resource_id())
+    utils.add_tag(security_group)
 
 
 @operation
@@ -151,8 +160,8 @@ def _delete_security_group(group_id):
 
     try:
         group_to_delete.delete()
-    except (boto.exception.EC2ResponseError,
-            boto.exception.BotoServerError) as e:
+    except (exception.EC2ResponseError,
+            exception.BotoServerError) as e:
         raise NonRecoverableError('{0}'.format(str(e)))
 
 
@@ -194,8 +203,8 @@ def _create_group_rules(group_object):
 
         try:
             group_object.authorize(**rule)
-        except (boto.exception.EC2ResponseError,
-                boto.exception.BotoServerError) as e:
+        except (exception.EC2ResponseError,
+                exception.BotoServerError) as e:
             raise NonRecoverableError('{0}'.format(str(e)))
         except Exception as e:
             _delete_security_group(group_object.id)
@@ -298,12 +307,12 @@ def _get_all_security_groups(list_of_group_names=None, list_of_group_ids=None):
         groups = ec2_client.get_all_security_groups(
             groupnames=list_of_group_names,
             group_ids=list_of_group_ids)
-    except boto.exception.EC2ResponseError as e:
+    except exception.EC2ResponseError as e:
         if 'InvalidGroup.NotFound' in e:
             groups = ec2_client.get_all_security_groups()
             utils.log_available_resources(groups)
         return None
-    except boto.exception.BotoServerError as e:
+    except exception.BotoServerError as e:
         raise NonRecoverableError('{0}'.format(str(e)))
 
     return groups

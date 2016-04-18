@@ -99,3 +99,5 @@ VPC = 'vpc'
 
 VPC_DOMAIN = 'vpc'
 ELASTIC_IP_DOMAIN_PROPERTY = 'domain'
+
+OBJECTATTR = 'object'

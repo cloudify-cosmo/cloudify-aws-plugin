@@ -14,48 +14,25 @@
 #    * limitations under the License.
 
 # Built-in Imports
-# import re
 import mock
 
 # Third-party Imports
 from moto import mock_ec2
 
 # Cloudify Imports
-from vpc.vpc import (
-    delete
-)
-from vpc.subnet import (
-    create_subnet,
-    delete_subnet
-)
-from vpc.routetable import (
-    delete_route_table
-)
-from vpc.dhcp import (
-    delete_dhcp_options
-)
+from vpc import vpc, subnet, routetable, dhcp
+
 from vpc_testcase import VpcTestCase
 from cloudify.state import current_ctx
 from cloudify.exceptions import NonRecoverableError
 from vpc import constants
 
-# VPC_ID_FORMAT = '^vpc\-[0-9a-z]{8}$'
-# SUBNET_ID_FORMAT = '^subnet\-[0-9a-z]{8}$'
-# IG_FORMAT = '^igw\-[0-9a-z]{8}$'
-# VPN_GATEWAY_FORMAT = '^vgw\-[0-9a-z]{8}$'
-# ACL_FORMAT = '^acl\-[0-9a-z]{8}$'
-# DHCP_FORMAT = '^dopt\-[0-9a-z]{8}$'
-# CUSTOMER_GATEWAY_FORMAT = '^cgw\-[0-9a-z]{8}$'
-# ROUTE_TABLE_FORMAT = '^rtb\-[0-9a-z]{8}$'
-#
 VPC_TYPE = 'cloudify.aws.nodes.VPC'
 SUBNET_TYPE = 'cloudify.aws.nodes.Subnet'
-# INTERNET_GATEWAY_TYPE = 'cloudify.aws.nodes.InternetGateway'
-# VPN_GATEWAY_TYPE = 'cloudify.aws.nodes.VPNGateway'
-# CUSTOMER_GATEWAY_TYPE = 'cloudify.aws.nodes.CustomerGateway'
-# ACL_TYPE = 'cloudify.aws.nodes.ACL'
 DHCP_OPTIONS_TYPE = 'cloudify.aws.nodes.DHCPOptions'
 ROUTE_TABLE_TYPE = 'cloudify.aws.nodes.RouteTable'
+TEST_VPC_CIDR = '10.10.10.0/16'
+TEST_SUBNET_CIDR = '10.10.10.0/24'
 
 
 class TestVpcModule(VpcTestCase):
@@ -80,11 +57,32 @@ class TestVpcModule(VpcTestCase):
         return node_context
 
     @mock_ec2
+    def test_start_vpc(self, *_):
+
+        ctx = self.get_mock_vpc_node_instance_context('test_start_vpc')
+        ctx.node.properties['name'] = 'test_start_vpc'
+        current_ctx.set(ctx=ctx)
+
+        vpc_client = self.create_client()
+        new_vpc = vpc_client.create_vpc(TEST_VPC_CIDR)
+        vpc_id = new_vpc.id
+        ctx.instance.runtime_properties['aws_resource_id'] = vpc_id
+        vpc.start(ctx=ctx)
+        vpc_list = vpc_client.get_all_vpcs(vpc_id)
+        vpc_object = vpc_list[0]
+        self.assertEquals(vpc_object.tags.get('Name'),
+                          ctx.node.properties['name'])
+        self.assertEquals(vpc_object.tags.get('resource_id'),
+                          ctx.instance.id)
+        self.assertEquals(vpc_object.tags.get('deployment_id'),
+                          ctx.deployment.id)
+
+    @mock_ec2
     def test_delete_invalid_vpc_id(self):
         ctx = self.get_mock_vpc_node_instance_context(
             'test_delete_invalid_vpc_id')
         ctx.instance.runtime_properties['aws_resource_id'] = 'vpc-0123abcd'
-        error = self.assertRaises(NonRecoverableError, delete, ctx=ctx)
+        error = self.assertRaises(NonRecoverableError, vpc.delete, ctx=ctx)
         self.assertIn(
             'Cannot use_external_resource because resource '
             'vpc-0123abcd is not in this account',
@@ -121,7 +119,8 @@ class TestSubnetModule(VpcTestCase):
         ctx = self.get_mock_subnet_node_instance_context(
             'test_delete_invalid_subnet_id')
         ctx.instance.runtime_properties['aws_resource_id'] = 'subnet-0123abcd'
-        error = self.assertRaises(NonRecoverableError, delete_subnet, ctx=ctx)
+        error = self.assertRaises(NonRecoverableError, subnet.delete_subnet,
+                                  ctx=ctx)
         self.assertIn(
             'Cannot use_external_resource because resource '
             'subnet-0123abcd is not in this account',
@@ -132,9 +131,31 @@ class TestSubnetModule(VpcTestCase):
                 return_value=[Vpc(), Vpc()])
     def test_create(self, *_):
         ctx = self.get_mock_subnet_node_instance_context('test_create')
-        error = self.assertRaises(NonRecoverableError, create_subnet,
+        error = self.assertRaises(NonRecoverableError, subnet.create_subnet,
                                   args=None, ctx=ctx)
         self.assertIn('subnet can only be connected to one vpc', error.message)
+
+    @mock_ec2
+    def test_start_subnet(self, *_):
+        ctx = self.get_mock_subnet_node_instance_context('test_start_subnet')
+        ctx.node.properties['name'] = 'test_start_subnet'
+        current_ctx.set(ctx=ctx)
+
+        vpc_client = self.create_client()
+        vpc = vpc_client.create_vpc(TEST_VPC_CIDR)
+        new_subnet = vpc_client.create_subnet(
+                vpc.id, TEST_SUBNET_CIDR)
+        subnet_id = new_subnet.id
+        ctx.instance.runtime_properties['aws_resource_id'] = subnet_id
+        subnet.start_subnet(ctx=ctx)
+        subnet_list = vpc_client.get_all_subnets(subnet_id)
+        subnet_object = subnet_list[0]
+        self.assertEquals(subnet_object.tags.get('Name'),
+                          ctx.node.properties['name'])
+        self.assertEquals(subnet_object.tags.get('resource_id'),
+                          ctx.instance.id)
+        self.assertEquals(subnet_object.tags.get('deployment_id'),
+                          ctx.deployment.id)
 
 
 class TestRouteTableModule(VpcTestCase):
@@ -177,6 +198,29 @@ class TestRouteTableModule(VpcTestCase):
         }
 
     @mock_ec2
+    def test_start_route_table(self, *_):
+
+        ctx = self.get_mock_route_table_node_instance_context(
+                'test_start_route_table')
+        ctx.node.properties['name'] = 'test_start_route_table'
+        current_ctx.set(ctx=ctx)
+
+        vpc_client = self.create_client()
+        vpc = vpc_client.create_vpc(TEST_VPC_CIDR)
+        new_route_table = vpc_client.create_route_table(vpc.id)
+        route_table_id = new_route_table.id
+        ctx.instance.runtime_properties['aws_resource_id'] = route_table_id
+        routetable.start_route_table(ctx=ctx)
+        route_table_route = vpc_client.get_all_route_tables(route_table_id)
+        route_table_object = route_table_route[0]
+        self.assertEquals(route_table_object.tags.get('Name'),
+                          ctx.node.properties['name'])
+        self.assertEquals(route_table_object.tags.get('resource_id'),
+                          ctx.instance.id)
+        self.assertEquals(route_table_object.tags.get('deployment_id'),
+                          ctx.deployment.id)
+
+    @mock_ec2
     def test_delete_route_table(self, *_):
         client = self.create_client()
         vpc = self.create_vpc(client)
@@ -189,7 +233,7 @@ class TestRouteTableModule(VpcTestCase):
         client.create_route(route_table_id=route_table.id,
                             destination_cidr_block='10.0.0.0/24')
         ctx.instance.runtime_properties['routes'] = self.get_routes()
-        delete_route_table(ctx=ctx)
+        routetable.delete_route_table(ctx=ctx)
         self.assertNotIn(ctx.instance.runtime_properties,
                          constants.EXTERNAL_RESOURCE_ID)
 
@@ -212,6 +256,28 @@ class TestDhcpModule(VpcTestCase):
         return node_context
 
     @mock_ec2
+    def test_start_dhcp_options(self, *_):
+
+        ctx = self.get_mock_dhcp_node_instance_context(
+                'test_start_dhcp_options')
+        ctx.node.properties['name'] = 'test_start_dhcp_options'
+        current_ctx.set(ctx=ctx)
+
+        vpc_client = self.create_client()
+        new_dhcp = vpc_client.create_dhcp_options()
+        dhcp_id = new_dhcp.id
+        ctx.instance.runtime_properties['aws_resource_id'] = dhcp_id
+        dhcp.start_dhcp_options(ctx=ctx)
+        dhcp_list = vpc_client.get_all_dhcp_options(dhcp_id)
+        dhcp_object = dhcp_list[0]
+        self.assertEquals(dhcp_object.tags.get('Name'),
+                          ctx.node.properties['name'])
+        self.assertEquals(dhcp_object.tags.get('resource_id'),
+                          ctx.instance.id)
+        self.assertEquals(dhcp_object.tags.get('deployment_id'),
+                          ctx.deployment.id)
+
+    @mock_ec2
     def test_delete_dhcp_option_set(self, *_):
         client = self.create_client()
         args = dict(
@@ -224,5 +290,5 @@ class TestDhcpModule(VpcTestCase):
         ctx.instance.runtime_properties[
             constants.EXTERNAL_RESOURCE_ID] = dhcp_options.id
         error = self.assertRaises(
-            NonRecoverableError, delete_dhcp_options, ctx=ctx)
+            NonRecoverableError, dhcp.delete_dhcp_options, ctx=ctx)
         self.assertIn('returned False', error.message)

@@ -31,6 +31,11 @@ def create_dhcp_options(**_):
 
 
 @operation
+def start_dhcp_options(**_):
+    return DhcpOptions().started()
+
+
+@operation
 def delete_dhcp_options(**_):
     return DhcpOptions().deleted()
 
@@ -106,6 +111,9 @@ class DhcpOptions(AwsBaseNode):
             netbios_name_servers=ctx.node.properties['netbios_name_servers'],
             netbios_node_type=ctx.node.properties['netbios_node_type']
         )
+
+    def start(self):
+        return True
 
     def delete(self):
         delete_args = dict(dhcp_options_id=self.resource_id)

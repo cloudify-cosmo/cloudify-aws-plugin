@@ -33,6 +33,11 @@ def create_route_table(routes, **_):
 
 
 @operation
+def start_route_table(**_):
+    return RouteTable().started()
+
+
+@operation
 def delete_route_table(**_):
     return RouteTable().deleted()
 
@@ -195,6 +200,9 @@ class RouteTable(AwsBaseNode, RouteMixin):
         ctx.logger.info(
             'Added {0} {1} to Cloudify.'
             .format(self.aws_resource_type, self.resource_id))
+        return True
+
+    def start(self):
         return True
 
     def delete(self):
