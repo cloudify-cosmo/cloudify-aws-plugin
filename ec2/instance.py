@@ -14,7 +14,6 @@
 #    * limitations under the License.
 
 import os
-import uuid
 
 # Third-party Imports
 import boto.exception
@@ -86,6 +85,30 @@ def run_instances(**_):
     utils.set_external_resource_id(
         instance_id, ctx.instance, external=False)
     _instance_created_assign_runtime_properties()
+
+
+@operation
+def modify_instance_attributes(new_attributes, **_):
+    _modify_instance_attributes(new_attributes)
+
+
+def _modify_instance_attributes(new_attributes):
+
+    instance_id = \
+        ctx.instance.runtime_properties.get(constants.EXTERNAL_RESOURCE_ID)
+
+    if not instance_id:
+        ctx.operation.retry('instance_id not yet set.')
+
+    instance = _get_instance_from_id(instance_id)
+
+    for attribute, value in new_attributes.items():
+        try:
+            instance.modify_attribute(attribute, value)
+        except (boto.exception.EC2ResponseError,
+                boto.exception.BotoServerError,
+                AttributeError) as e:
+            raise NonRecoverableError('{0}'.format(str(e)))
 
 
 @operation
@@ -225,13 +248,9 @@ def _instance_created_assign_runtime_properties():
 
 
 def _instance_started_assign_runtime_properties_and_tag(instance_id):
-    if ctx.node.properties.get('name'):
-        _add_tag(instance_id, 'Name', ctx.node.properties['name'])
-    else:
-        _add_tag(instance_id, 'Name', uuid.uuid4())
 
-    _add_tag(instance_id, 'instance_id', ctx.instance.id)
-    _add_tag(instance_id, 'deployment_id', ctx.deployment.id)
+    instance = _get_instance_from_id(instance_id)
+    utils.add_tag(instance)
 
     _assign_runtime_properties_to_instance(
         runtime_properties=constants.INSTANCE_INTERNAL_ATTRIBUTES)
@@ -587,20 +606,6 @@ def _get_instance_keypair(provider_variables):
             'Only one keypair may be attached to an instance.')
 
     return list_of_keypairs[0] if list_of_keypairs else None
-
-
-def _add_tag(instance_id, tag_id, tag_content):
-
-    instance = _get_instance_from_id(instance_id)
-
-    try:
-        output = instance.add_tag(tag_id, tag_content)
-    except (boto.exception.EC2ResponseError,
-            boto.exception.BotoServerError) as e:
-        raise NonRecoverableError(
-            'unable to tag instance name: {0}'.format(str(e)))
-
-    return output
 
 
 def _get_instance_subnet(provider_variables):

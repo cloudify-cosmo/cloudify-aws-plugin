@@ -36,6 +36,10 @@ def create_internet_gateway(**_):
     return InternetGateway().created()
 
 
+def start_internet_gateway(**_):
+    return InternetGateway().started()
+
+
 @operation
 def delete_internet_gateway(**_):
     return InternetGateway().deleted()
@@ -47,6 +51,11 @@ def create_vpn_gateway(**_):
 
 
 @operation
+def start_vpn_gateway(**_):
+    return VpnGateway().started()
+
+
+@operation
 def delete_vpn_gateway(**_):
     return VpnGateway().deleted()
 
@@ -54,6 +63,11 @@ def delete_vpn_gateway(**_):
 @operation
 def create_customer_gateway(**_):
     return CustomerGateway().created()
+
+
+@operation
+def start_customer_gateway(**_):
+    return CustomerGateway().started()
 
 
 @operation
@@ -234,6 +248,9 @@ class InternetGateway(AwsBaseNode):
         self.resource_id = gateway.id
         return True
 
+    def start(self):
+        return True
+
     def delete(self):
         delete_args = dict(internet_gateway_id=self.resource_id)
         return self.execute(self.client.delete_internet_gateway,
@@ -265,6 +282,9 @@ class VpnGateway(AwsBaseNode):
         self.resource_id = gateway.id
         return True
 
+    def start(self):
+        return True
+
     def delete(self):
         delete_args = dict(vpn_gateway_id=self.resource_id)
         return self.execute(self.client.delete_vpn_gateway, delete_args)
@@ -293,6 +313,9 @@ class CustomerGateway(AwsBaseNode):
         gateway = self.execute(self.client.create_customer_gateway,
                                create_args, raise_on_falsy=True)
         self.resource_id = gateway.id
+        return True
+
+    def start(self):
         return True
 
     def delete(self):

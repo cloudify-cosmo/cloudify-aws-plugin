@@ -13,6 +13,8 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+import uuid
+
 # Third-party Imports
 from boto import exception
 
@@ -306,6 +308,14 @@ class AwsBaseNode(AwsBase):
 
         return True
 
+    def start(self):
+        return False
+
+    def started(self):
+
+        if self.use_external_resource_naively() or self.start():
+            return self.post_start()
+
     def delete(self):
         return False
 
@@ -359,6 +369,28 @@ class AwsBaseNode(AwsBase):
 
         return resource
 
+    def tag_resource(self, resource):
+
+        name = ctx.node.properties.get('name')
+        if name:
+            self._tag_resource(resource, 'Name', name)
+        else:
+            self._tag_resource(resource, 'Name', uuid.uuid4())
+
+        self._tag_resource(resource, 'resource_id', ctx.instance.id)
+        self._tag_resource(resource, 'deployment_id', ctx.deployment.id)
+
+    def _tag_resource(self, resource, tag_key, tag_value):
+
+        try:
+            output = resource.add_tag(tag_key, tag_value)
+        except (exception.EC2ResponseError,
+                exception.BotoServerError) as e:
+            raise NonRecoverableError(
+                    'unable to tag resource name: {0}'.format(str(e)))
+
+        return output
+
     def post_create(self):
 
         ec2_utils.set_external_resource_id(self.resource_id, ctx.instance)
@@ -366,6 +398,13 @@ class AwsBaseNode(AwsBase):
         ctx.logger.info(
             'Added {0} {1} to Cloudify.'
             .format(self.aws_resource_type, self.resource_id))
+
+        return True
+
+    def post_start(self):
+
+        resource = self.get_resource()
+        self.tag_resource(resource)
 
         return True
 

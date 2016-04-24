@@ -250,7 +250,8 @@ class VpcTestCase(testtools.TestCase):
 
         ctx = MockCloudifyContext(
             node_id=test_name,
-            properties=node_properties
+            properties=node_properties,
+            deployment_id='d1'
         )
 
         ctx.instance.relationships = [] if not relationships else relationships

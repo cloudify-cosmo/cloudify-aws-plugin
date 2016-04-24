@@ -36,6 +36,11 @@ def create_vpc(**_):
 
 
 @operation
+def start(**_):
+    return Vpc().started()
+
+
+@operation
 def delete(**_):
     return Vpc().deleted()
 
@@ -279,6 +284,9 @@ class Vpc(AwsBaseNode):
         ctx.instance.runtime_properties['default_dhcp_options_id'] = \
             vpc.dhcp_options_id
 
+        return True
+
+    def start(self):
         return True
 
     def delete(self):

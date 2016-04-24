@@ -33,6 +33,11 @@ def create_network_acl(**_):
 
 
 @operation
+def start_network_acl(**_):
+    return NetworkAcl().started()
+
+
+@operation
 def delete_network_acl(**_):
     return NetworkAcl().deleted()
 
@@ -145,6 +150,9 @@ class NetworkAcl(AwsBaseNode):
         ctx.logger.info('create network acl entry {0}'.format(args))
         return self.execute(self.client.create_network_acl_entry,
                             args, raise_on_falsy=True)
+
+    def start(self):
+        return True
 
     def delete(self):
         delete_args = dict(network_acl_id=self.resource_id)

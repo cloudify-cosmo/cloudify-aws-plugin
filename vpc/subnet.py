@@ -32,6 +32,11 @@ def create_subnet(**_):
 
 
 @operation
+def start_subnet(**_):
+    return Subnet().started()
+
+
+@operation
 def delete_subnet(**_):
     return Subnet().deleted()
 
@@ -88,6 +93,9 @@ class Subnet(AwsBaseNode):
             )
 
         return create_args
+
+    def start(self):
+        return True
 
     def delete(self):
         delete_args = dict(subnet_id=self.resource_id)

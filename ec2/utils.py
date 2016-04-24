@@ -15,11 +15,15 @@
 
 # Built-in Imports
 import os
+import uuid
 
 # Cloudify Imports
 from ec2 import constants
 from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
+
+# Third-party Imports
+from boto import exception
 
 
 def validate_node_property(key, ctx_node_properties):
@@ -222,3 +226,27 @@ def get_connected_nodes_by_type(ctx, type_name):
                 constants.AWS_TYPE_PROPERTY) and
             rel.target.instance.runtime_properties.get(
                 constants.AWS_TYPE_PROPERTY) == type_name]
+
+
+def add_tag(resource):
+
+    name = ctx.node.properties.get('name')
+    if name:
+        _add_tag(resource, 'Name', name)
+    else:
+        _add_tag(resource, 'Name', uuid.uuid4())
+
+    _add_tag(resource, 'resource_id', ctx.instance.id)
+    _add_tag(resource, 'deployment_id', ctx.deployment.id)
+
+
+def _add_tag(resource, tag_key, tag_value):
+
+    try:
+        output = resource.add_tag(tag_key, tag_value)
+    except (exception.EC2ResponseError,
+            exception.BotoServerError) as e:
+        raise NonRecoverableError(
+            'unable to tag resource name: {0}'.format(str(e)))
+
+    return output

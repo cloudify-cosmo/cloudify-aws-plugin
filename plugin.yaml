@@ -288,6 +288,7 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create: aws.ec2.securitygroup.create
+        start: aws.ec2.securitygroup.start
         delete: aws.ec2.securitygroup.delete
       cloudify.interfaces.validation:
         creation: aws.ec2.securitygroup.creation_validation
@@ -471,6 +472,7 @@ node_types:
       cloudify.interfaces.lifecycle:
         create:
           implementation: aws.ec2.elasticloadbalancer.create_elb
+        start: aws.ec2.elasticloadbalancer.start
         delete:
           implementation: aws.ec2.elasticloadbalancer.delete_elb
       cloudify.interfaces.validation:
@@ -513,6 +515,7 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create: aws.vpc.vpc.create_vpc
+        start: aws.vpc.vpc.start
         delete: aws.vpc.vpc.delete
       cloudify.interfaces.validation:
         creation: aws.vpc.vpc.creation_validation
@@ -552,6 +555,7 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create: aws.vpc.subnet.create_subnet
+        start: aws.vpc.subnet.start_subnet
         delete: aws.vpc.subnet.delete_subnet
       cloudify.interfaces.validation:
         creation: aws.vpc.subnet.creation_validation
@@ -664,6 +668,7 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create: aws.vpc.networkacl.create_network_acl
+        start: aws.vpc.networkacl.start_network_acl
         delete: aws.vpc.networkacl.delete_network_acl
       cloudify.interfaces.validation:
         creation: aws.vpc.networkacl.creation_validation
@@ -717,6 +722,7 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create: aws.vpc.dhcp.create_dhcp_options
+        start: aws.vpc.dhcp.start_dhcp_options
         delete: aws.vpc.dhcp.delete_dhcp_options
       cloudify.interfaces.validation:
         creation: aws.vpc.dhcp.creation_validation
@@ -752,6 +758,7 @@ node_types:
               description: >
                 A list of cloudify.datatypes.aws.Route.
               default: []
+        start: aws.vpc.routetable.start_route_table
         delete: aws.vpc.routetable.delete_route_table
       cloudify.interfaces.validation:
         creation: aws.vpc.routetable.creation_validation
