@@ -310,4 +310,4 @@ def start(**_):
     elb_name = ctx.node.properties['elb_name']
     lb = _get_existing_elb(elb_name)
 
-    utils.add_tag(lb, ctx.node, ctx.instance)
+    utils.add_tag(lb)
