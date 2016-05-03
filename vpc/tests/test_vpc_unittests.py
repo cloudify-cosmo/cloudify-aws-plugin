@@ -70,8 +70,6 @@ class TestVpcModule(VpcTestCase):
         vpc.start(ctx=ctx)
         vpc_list = vpc_client.get_all_vpcs(vpc_id)
         vpc_object = vpc_list[0]
-        self.assertEquals(vpc_object.tags.get('Name'),
-                          ctx.node.properties['name'])
         self.assertEquals(vpc_object.tags.get('resource_id'),
                           ctx.instance.id)
         self.assertEquals(vpc_object.tags.get('deployment_id'),
@@ -150,8 +148,6 @@ class TestSubnetModule(VpcTestCase):
         subnet.start_subnet(ctx=ctx)
         subnet_list = vpc_client.get_all_subnets(subnet_id)
         subnet_object = subnet_list[0]
-        self.assertEquals(subnet_object.tags.get('Name'),
-                          ctx.node.properties['name'])
         self.assertEquals(subnet_object.tags.get('resource_id'),
                           ctx.instance.id)
         self.assertEquals(subnet_object.tags.get('deployment_id'),
@@ -213,8 +209,6 @@ class TestRouteTableModule(VpcTestCase):
         routetable.start_route_table(ctx=ctx)
         route_table_route = vpc_client.get_all_route_tables(route_table_id)
         route_table_object = route_table_route[0]
-        self.assertEquals(route_table_object.tags.get('Name'),
-                          ctx.node.properties['name'])
         self.assertEquals(route_table_object.tags.get('resource_id'),
                           ctx.instance.id)
         self.assertEquals(route_table_object.tags.get('deployment_id'),
@@ -270,8 +264,6 @@ class TestDhcpModule(VpcTestCase):
         dhcp.start_dhcp_options(ctx=ctx)
         dhcp_list = vpc_client.get_all_dhcp_options(dhcp_id)
         dhcp_object = dhcp_list[0]
-        self.assertEquals(dhcp_object.tags.get('Name'),
-                          ctx.node.properties['name'])
         self.assertEquals(dhcp_object.tags.get('resource_id'),
                           ctx.instance.id)
         self.assertEquals(dhcp_object.tags.get('deployment_id'),

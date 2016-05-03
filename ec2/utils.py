@@ -234,7 +234,7 @@ def add_tag(resource):
     if name:
         _add_tag(resource, 'Name', name)
     else:
-        _add_tag(resource, 'Name', uuid.uuid4())
+        _add_tag(resource, 'Name', str(uuid.uuid4()))
 
     _add_tag(resource, 'resource_id', ctx.instance.id)
     _add_tag(resource, 'deployment_id', ctx.deployment.id)

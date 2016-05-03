@@ -168,6 +168,8 @@ node_templates:
       image_id: { get_input: image }
       instance_type: { get_input: size }
       aws_config: { get_input: aws_config }
+      parameters:
+        placement: { get_property: [pair_c_connected_volume, zone] }
     relationships:
       - type: cloudify.aws.relationships.instance_connected_to_load_balancer
         target: pair_c_connected_elb

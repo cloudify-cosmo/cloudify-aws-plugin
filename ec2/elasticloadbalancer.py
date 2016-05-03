@@ -300,14 +300,3 @@ def _get_existing_elb(elb_name):
         if elbs[0].name == elb_name:
             return elbs[0]
     return None
-
-
-@operation
-def start(**_):
-    """Add tags to EC2 elastic load balancer.
-    """
-
-    elb_name = ctx.node.properties['elb_name']
-    lb = _get_existing_elb(elb_name)
-
-    utils.add_tag(lb)

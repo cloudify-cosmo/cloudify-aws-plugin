@@ -102,7 +102,9 @@ def start(**_):
     """Add tags to EC2 security group.
     """
 
-    security_group = _get_security_group_from_id(utils.get_resource_id())
+    group_id = utils.get_external_resource_id_or_raise(
+            'start security group', ctx.instance)
+    security_group = _get_security_group_from_id(group_id)
     utils.add_tag(security_group)
 
 
