@@ -72,7 +72,7 @@ class TestInstance(testtools.TestCase):
         }
         ctx = MockCloudifyContext(
             node_id=test_node_id,
-            deployment_id=uuid.uuid1(),
+            deployment_id=str(uuid.uuid4()),
             properties=test_properties,
             operation=operation,
             provider_context={'resources': {}}
@@ -624,7 +624,7 @@ class TestInstance(testtools.TestCase):
     @mock_ec2
     def test_start_and_tag_name(self):
         """ this tests that the instance start function
-        starts an instance.
+        starts an instance and add tags.
         """
 
         ctx = self.mock_ctx('test_start_clean')
@@ -642,3 +642,7 @@ class TestInstance(testtools.TestCase):
         instance_object = reservations[0].instances[0]
         self.assertEquals(instance_object.tags.get('Name'),
                           ctx.node.properties['name'])
+        self.assertEquals(instance_object.tags.get('resource_id'),
+                          ctx.instance.id)
+        self.assertEquals(instance_object.tags.get('deployment_id'),
+                          ctx.deployment.id)

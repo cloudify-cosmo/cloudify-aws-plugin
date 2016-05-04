@@ -15,6 +15,7 @@
 
 # Built-in Imports
 import testtools
+import uuid
 
 # Third Party Imports
 from moto import mock_ec2
@@ -42,6 +43,7 @@ class TestSecurityGroup(testtools.TestCase):
         ctx = MockCloudifyContext(
             node_id=test_name,
             properties=test_properties,
+            deployment_id=str(uuid.uuid4()),
             operation=operation
         )
 
@@ -114,6 +116,27 @@ class TestSecurityGroup(testtools.TestCase):
         self.assertEqual(
             ctx.instance.runtime_properties['aws_resource_id'],
             group.id)
+
+    @mock_ec2
+    def test_start(self):
+        """This tests that start adds tags"""
+
+        test_properties = self.get_mock_properties()
+        ctx = self.security_group_mock(
+                'test_start', test_properties)
+        current_ctx.set(ctx=ctx)
+
+        ec2_client = connection.EC2ConnectionClient().client()
+        group = ec2_client.create_security_group('test_start', 'this is test')
+        group_id = group.id
+        ctx.instance.runtime_properties['aws_resource_id'] = group_id
+        securitygroup.start(ctx=ctx)
+        group_list = ec2_client.get_all_security_groups(group_ids=group_id)
+        group_object = group_list[0]
+        self.assertEquals(group_object.tags.get('resource_id'),
+                          ctx.instance.id)
+        self.assertEquals(group_object.tags.get('deployment_id'),
+                          ctx.deployment.id)
 
     @mock_ec2
     def test_delete(self):
