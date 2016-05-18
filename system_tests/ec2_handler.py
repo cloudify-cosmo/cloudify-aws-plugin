@@ -285,12 +285,11 @@ class EC2Handler(BaseHandler):
             if volume_id in resources_to_remove['volumes']:
                 with self._handled_exception(
                         volume_id, failed, 'volumes'):
-                    volumes = []
                     try:
-                        volumes = ec2_client.get_all_volumes(volume_id)
+                        volumes_list = ec2_client.get_all_volumes(volume_id)
                     except EC2ResponseError:
                         continue
-                    for volume in volumes:
+                    for volume in volumes_list:
                         if 'in-use' in volume.status:
                             volume.detach(force=True)
                         volume.delete()
