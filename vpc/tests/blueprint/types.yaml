@@ -1,8 +1,8 @@
 ##################################################################################
 # The types defined here make use of features only available in the
-# 'cloudify_dsl_1_2' tosca definitions version
+# 'cloudify_dsl_1_3' tosca definitions version
 ##################################################################################
-tosca_definitions_version: cloudify_dsl_1_2
+tosca_definitions_version: cloudify_dsl_1_3
 
 ##################################################################################
 # Base type definitions
@@ -100,7 +100,7 @@ node_types:
 
         #####################################################
         # This operation will stop the agent process
-        # whithout connecting to the remote host.
+        # without connecting to the remote host.
         # ---------------------------------------------------
         # It will be executed on the agent host via AMQP
         #####################################################
@@ -133,7 +133,7 @@ node_types:
 
         #####################################################
         # This operation will restart the agent process
-        # whithout connecting to the remote host.
+        # without connecting to the remote host.
         # the agent will have a new name after this
         # operation, but will of course listen to the same
         # queue.
@@ -176,6 +176,25 @@ node_types:
           inputs:
             install_agent_timeout:
               default: 300
+
+
+        #####################################################
+        # This operation attempts to communicate with an
+        # agent that has already been installed. This
+        # operation should not have side effects.
+        # ---------------------------------------------------
+        # It will be executed on the central deployment
+        # agent. This request might be sent to a different
+        # manager's RabbitMQ server
+        #####################################################
+
+        validate_amqp:
+          implementation: agent.cloudify_agent.operations.validate_agent_amqp
+          executor: central_deployment_agent
+          inputs:
+            validate_agent_timeout:
+              default: 20
+
 
 
       cloudify.interfaces.host:  # DEPRECATED
@@ -228,7 +247,7 @@ node_types:
           implementation: script.script_runner.tasks.run
           inputs:
             script_path:
-              default: https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/3.3/resources/rest-service/cloudify/fs/mkfs.sh
+              default: https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/resources/rest-service/cloudify/fs/mkfs.sh
 
   # A storage Container (Object Store segment)
   cloudify.nodes.ObjectStorage:
@@ -349,7 +368,7 @@ relationships:
           implementation: script.script_runner.tasks.run
           inputs:
             script_path:
-              default: https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/3.3/resources/rest-service/cloudify/fs/fdisk.sh
+              default: https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/resources/rest-service/cloudify/fs/fdisk.sh
             device_name:
               default: { get_attribute: [TARGET, device_name] }
 
@@ -361,12 +380,12 @@ relationships:
           implementation: script.script_runner.tasks.run
           inputs:
             script_path:
-              default: https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/3.3/resources/rest-service/cloudify/fs/mount.sh
+              default: https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/resources/rest-service/cloudify/fs/mount.sh
         unlink:
           implementation: script.script_runner.tasks.run
           inputs:
             script_path:
-              default: https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/3.3/resources/rest-service/cloudify/fs/unmount.sh
+              default: https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/resources/rest-service/cloudify/fs/unmount.sh
 
 ##################################################################################
 # Workflows
@@ -374,6 +393,30 @@ relationships:
 workflows:
 
   install: default_workflows.cloudify.plugins.workflows.install
+
+  update:
+    mapping: default_workflows.cloudify.plugins.workflows.update
+    parameters:
+      update_id:
+        default: ''
+      added_instance_ids:
+        default: []
+      added_target_instances_ids:
+        default: []
+      removed_instance_ids:
+        default: []
+      remove_target_instance_ids:
+        default: []
+      modified_entity_ids:
+        default: []
+      extended_instance_ids:
+        default: []
+      extend_target_instance_ids:
+        default: []
+      reduced_instance_ids:
+        default: []
+      reduce_target_instance_ids:
+        default: []
 
   uninstall: default_workflows.cloudify.plugins.workflows.uninstall
 
@@ -404,22 +447,25 @@ workflows:
         default: Not provided
 
   scale:
-    mapping: default_workflows.cloudify.plugins.workflows.scale
+    mapping: default_workflows.cloudify.plugins.workflows.scale_entity
     parameters:
-      node_id:
-        description: Which node (not node instance) to scale
+      scalable_entity_name:
+        description: >
+          Which node/group to scale. Note that the parameter specified
+          should denote the node/group name and NOT the node/group instance id.
       delta:
         description: >
-            How many nodes should be added/removed.
+            How many node/group instances should be added/removed.
             A positive number denotes increase of instances.
             A negative number denotes decrease of instances.
         default: 1
       scale_compute:
         description: >
-            If node is contained (transitively) within a compute node
-            and this property is 'true', operate on compute node instead
-            of 'node_id'
-        default: true
+            If a node name is passed as the `scalable_entity_name` parameter
+            and that node is contained (transitively) within a compute node
+            and this property is 'true', operate on the compute node instead
+            of the specified node.
+        default: false
 
   install_new_agents:
     mapping: default_workflows.cloudify.plugins.workflows.install_new_agents
@@ -430,6 +476,10 @@ workflows:
         default: []
       node_instance_ids:
         default: []
+      validate:
+        default: True
+      install:
+        default: True
 
 ##################################################################################
 # Base data type definitions
@@ -437,36 +487,79 @@ workflows:
 data_types:
 
   cloudify.datatypes.AgentConfig:
+    description: >
+      Cloudify agent configuration schema.
     properties:
       install_method:
+        description: |
+          Specifies how (and if) the cloudify agent should be installed.
+          Valid values are:
+          * none - No agent will be installed on the host.
+          * remote - An agent will be installed using SSH on linux hosts and WinRM on windows hosts.
+          * init_script - An agent will be installed via a script that will run on the host when it gets created.
+                          This method is only supported for specific IaaS plugins.
+          * provided - An agent is assumed to already be installed on the host image.
+                       That agent will be configured and started via a script that will run on the host when it gets created.
+                       This method is only supported for specific IaaS plugins.
         type: string
         required: true
       user:
+        description: >
+          For host agents, the agent will be installed for this user.
         type: string
         required: false
       key:
+        description: >
+          For host agents that are installed via SSH, this is the path to the private
+          key that will be used to connect to the host.
+          In most cases, this value will be derived automatically during bootstrap.
         type: string
         required: false
       password:
+        description: >
+          For host agents that are installed via SSH (on linux) and WinRM (on windows)
+          this property can be used to connect to the host.
+          For linux hosts, this property is optional in case the key property is properly configured
+          (either explicitly or implicitly during bootstrap).
+          For windows hosts that are installed via WinRM, this property is also optional
+          and depends on whether the password runtime property has been set by the relevant IaaS plugin,
+          prior to the agent installation.
         type: string
         required: false
       port:
+        description: >
+          For host agents that are installed via SSH (on linux) and WinRM (on windows),
+          this is the port used to connect to the host.
+          The default values are 22 for linux hosts and 5985 for windows hosts.
         type: integer
         required: false
       process_management:
+        description: >
+          Process management specific configuration. (type: dictionary)
         required: false
       min_workers:
+        description: >
+          Minimum number of agent workers. By default, the value will be 0.
+          Note: For windows based agents, this property is ignored and min_workers is set to the value of max_workers.
         type: integer
         required: false
       max_workers:
+        description: >
+          Maximum number of agent workers. By default, the value will be 5.
         type: integer
         required: false
       disable_requiretty:
+        description: >
+          For linux based agents, disables the requiretty setting in the sudoers file. By default, this value will be true.
         type: boolean
         required: false
       env:
+        description: >
+          Optional environment variables that the agent will be started with. (type: dictionary)
         required: false
       extra:
+        description: >
+          Optional additional low level configuration details. (type: dictionary)
         required: false
 
 ##################################################################################
@@ -510,7 +603,7 @@ policy_types:
                 description: Service names whose events should be taken into consideration
                 default:
                     - service
-        source: https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/3.3/resources/rest-service/cloudify/policies/host_failure.clj
+        source: https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/resources/rest-service/cloudify/policies/host_failure.clj
 
     cloudify.policies.types.threshold:
         properties: &THRESHOLD_BASED_POLICY_PROPERTIES
@@ -529,7 +622,7 @@ policy_types:
             stability_time:
                 description: How long a threshold must be breached before the triggers will be processed
                 default: 0
-        source: https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/3.3/resources/rest-service/cloudify/policies/threshold.clj
+        source: https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/resources/rest-service/cloudify/policies/threshold.clj
 
     cloudify.policies.types.ewma_stabilized:
         properties:
@@ -538,7 +631,7 @@ policy_types:
                 description: |
                     r is the ratio between successive events. The smaller it is, the smaller impact on the computed value the most recent event has.
                 default: 0.5
-        source: https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/3.3/resources/rest-service/cloudify/policies/ewma_stabilized.clj
+        source: https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/resources/rest-service/cloudify/policies/ewma_stabilized.clj
 
 ##################################################################################
 # Policy triggers definitions
@@ -568,4 +661,4 @@ policy_triggers:
       conn_timeout:
         description: Connection timeout when making request to manager REST in ms
         default: 1000
-    source: https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/3.3/resources/rest-service/cloudify/triggers/execute_workflow.clj
+    source: https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/master/resources/rest-service/cloudify/triggers/execute_workflow.clj

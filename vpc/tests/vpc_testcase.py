@@ -254,7 +254,7 @@ class VpcTestCase(testtools.TestCase):
             deployment_id='d1'
         )
 
-        ctx.instance.relationships = [] if not relationships else relationships
+        ctx.instance.relationship = [] if not relationships else relationships
 
         return ctx
 
