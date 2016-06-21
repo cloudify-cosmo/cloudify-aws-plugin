@@ -185,6 +185,12 @@ node_types:
       cloudify.interfaces.lifecycle:
         create:
           implementation: aws.ec2.instance.run_instances
+          inputs:
+            parameters:
+              description: >
+                The key value pair parameters allowed by Amazon API to the
+                ec2.connection.EC2Connection.run_instances command.
+              default: {}
         start:
           implementation: aws.ec2.instance.start
           inputs:
@@ -559,6 +565,62 @@ node_types:
       cloudify.interfaces.validation:
         creation: aws.vpc.subnet.creation_validation
 
+  # ElasticNetworkInterface
+  # Exposed runtime properties:
+  #   aws_resource_id (AWS ENI ID)
+  #   aws_subnet_id
+  #   aws_vpc_id
+  #   aws_owner_id
+  #   aws_mac_address
+  #   aws_private_ip_address
+  #   aws_source_dest_check
+  #   aws_security_groups
+  #   aws_tags
+  #   aws_availability_zone
+  #   aws_region
+  #   aws_device_index
+  #   aws_delete_on_termination
+  cloudify.aws.nodes.ElasticNetworkInterface:
+    derived_from: cloudify.nodes.Root
+    properties:
+      device_index:
+        type: integer
+        required: true
+        description: >
+          Network Interface device index specifies index of the
+          resulting adapter in the Instance (ie. eth0, eth1, etc...)
+      delete_on_termination:
+        default: false
+        required: false
+        description: >
+          Determines if the ENI will be deleted on
+          Instance termination (separate functionality than
+          Cloudify's default cleanup mechanism - generally safe to be false)
+      subnet_id:
+        required: false
+        type: string
+      private_ip_address:
+        required: false
+        type: string
+      description:
+        required: false
+        type: string
+      groups:
+        required: false
+      tags:
+        required: false
+        description: >
+          Key-value pairs of tags for the AWS resource. Empty values are allowed.
+      aws_config:
+        description: >
+          A dictionary of values to pass to authenticate with the AWS API.
+        type: cloudify.datatypes.aws.Config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: aws.ec2.networkinterface.create
+        delete: aws.ec2.networkinterface.delete
+
   cloudify.aws.nodes.Gateway:
     derived_from: cloudify.nodes.Root
     properties:
@@ -893,3 +955,27 @@ relationships:
 
   cloudify.aws.relationships.security_group_contained_in_vpc:
     derived_from: cloudify.relationships.contained_in
+    
+  # EC2 Subnet -> Elastic Network Interface
+  # Connects an ENI to an EC2 Subnet pre-provisioning
+  cloudify.aws.relationships.eni_contained_in_subnet:
+    derived_from: cloudify.relationships.contained_in
+    
+  # Elastic Network Interface -> Elastic IP
+  # Connects an EIP to an ENI post-provisioning
+  cloudify.aws.relationships.eni_connected_to_elastic_ip:
+    derived_from: cloudify.relationships.connected_to
+    target_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish: aws.ec2.networkinterface.attach_elastic_ip
+        unlink: aws.ec2.networkinterface.detach_elastic_ip
+        
+  # Elastic Network Interface -> Security Group
+  # Connects an EC2 Security Group to an ENI pre-provisioning
+  cloudify.aws.relationships.eni_connected_to_security_group:
+    derived_from: cloudify.relationships.connected_to
+        
+  # Instance -> Elastic Network Interface
+  # Connects an ENI to an Instance pre-provisioning
+  cloudify.aws.relationships.instance_connected_to_eni:
+    derived_from: cloudify.relationships.connected_to
