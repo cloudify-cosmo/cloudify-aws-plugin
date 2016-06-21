@@ -1,5 +1,5 @@
-########
-# Copyright (c) 2015 GigaSpaces Technologies Ltd. All rights reserved
+# #######
+# Copyright (c) 2016 GigaSpaces Technologies Ltd. All rights reserved
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,20 +14,30 @@
 #    * limitations under the License.
 
 import os
+from json import dumps
 
 # Third-party Imports
 import boto.exception
+from boto.ec2.networkinterface import (
+    NetworkInterfaceCollection,
+    NetworkInterfaceSpecification)
+from yaml import safe_load
 
 # Cloudify imports
 from ec2 import utils
 from ec2 import constants
 from ec2 import connection
+from ec2.keypair import KEYPAIR_AWS_TYPE
 from cloudify import ctx
 from cloudify import compute
 from cloudify.exceptions import NonRecoverableError
 from cloudify.decorators import operation
-from ec2 import passwd
-from ec2.keypair import KEYPAIR_AWS_TYPE
+
+
+NETWORK_INTERFACE_RELATIONSHIP = \
+    'cloudify.aws.relationships.instance_connected_to_eni'
+NETWORK_INTERFACE_GROUP_TYPE = \
+    'cloudify.aws.nodes.ElasticNetworkInterface'
 
 
 @operation
@@ -58,7 +68,7 @@ def creation_validation(**_):
 
 
 @operation
-def run_instances(**_):
+def run_instances(parameters, **_):
     ec2_client = connection.EC2ConnectionClient().client()
 
     for property_name in constants.INSTANCE_REQUIRED_PROPERTIES:
@@ -68,15 +78,19 @@ def run_instances(**_):
         return
 
     instance_parameters = _get_instance_parameters()
+    # Add in lifecycle input parameters if they exist
+    if parameters and isinstance(parameters, dict):
+        instance_parameters.update(parameters)
+        instance_parameters = _sanitize_json_input(instance_parameters)
+    # Find, and build, all Elastic Network Interfaces
+    instance_parameters['network_interfaces'] = _build_network_interfaces()
 
     ctx.logger.info(
         'Attempting to create EC2 Instance with these API parameters: {0}.'
         .format(instance_parameters))
 
     instance_id = _run_instances_if_needed(ec2_client, instance_parameters)
-
     instance = _get_instance_from_id(instance_id)
-
     if instance is None:
         return ctx.operation.retry(
             message='Waiting to verify that instance {0} '
@@ -622,3 +636,68 @@ def _get_instance_subnet(provider_variables):
             'instance may only be attached to one subnet')
 
     return list_of_subnets[0] if list_of_subnets else None
+
+
+def _get_network_interface_object(ec2_client, eni_id):
+    '''Gets a NetworkInterface object from AWS'''
+    eni_objs = ec2_client.get_all_network_interfaces(
+        network_interface_ids=[eni_id])
+    if not isinstance(eni_objs, list) or len(eni_objs) < 1:
+        raise NonRecoverableError(
+            'Could not get NetworkInterface object of {0}'
+            .format(eni_id))
+    return eni_objs[0]
+
+
+def _find_attached_eni():
+    '''
+        Finds all attached Network Interfaces via relationships
+
+        returns: Relationship context
+    '''
+    return [
+        rel for rel in ctx.instance.relationships
+        if NETWORK_INTERFACE_RELATIONSHIP in rel.type_hierarchy and
+        NETWORK_INTERFACE_GROUP_TYPE in rel.target.node.type_hierarchy
+    ]
+
+
+def _build_network_interfaces():
+    '''
+        Searches for attached ElasticNetworkInterface instances
+        and converts them into a NetworkInterfaceCollection for
+        use with run_instances()
+
+        :rtype: boto.ec2.networkinterface.NetworkInterfaceCollection
+        returns: EC2-compatible list of Elastic Network Interfaces
+    '''
+    network_interfaces = []
+    for rel in _find_attached_eni():
+        rt_props = rel.target.instance.runtime_properties
+        network_interfaces.append(NetworkInterfaceSpecification(
+            network_interface_id=rt_props.get('aws_resource_id'),
+            # subnet_id=rt_props.get('aws_subnet_id'),
+            # description=rt_props.get('aws_description'),
+            # private_ip_address=rt_props.get('aws_private_ip_address'),
+            # groups=rt_props.get('aws_security_groups', list()),
+            device_index=rt_props.get('aws_device_index'),
+            delete_on_termination=rt_props.get('aws_delete_on_termination')))
+    return NetworkInterfaceCollection(*network_interfaces)
+
+
+def _sanitize_json_input(us_data):
+    '''
+        Sanitizes data before going to AWS. This mostly
+        handles cases where there are mixed-encoded objects
+        where part of the object is ASCII/UTF-8 and the other
+        part is Unicode.
+
+    :param obj us_data: JSON-serializable Python object
+    :returns: UTF-8 JSON object
+    :rtype: JSON object
+    '''
+    if not us_data:
+        return None
+    if not isinstance(us_data, dict) and not isinstance(us_data, list):
+        return None
+    return safe_load(dumps(us_data, ensure_ascii=True).encode('utf8'))
