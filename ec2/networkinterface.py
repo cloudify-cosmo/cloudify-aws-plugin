@@ -74,6 +74,14 @@ def create(**_):
     ctx.logger.debug('create_network_interface({0})'.format(params))
     try:
         iface_obj = ec2_client.create_network_interface(**params)
+        # Update Source/Dest check if needed
+        if ctx.node.properties.get('source_dest_check') is not None:
+            ec2_client.modify_network_interface_attribute(
+                iface_obj.id,
+                'sourceDestCheck',
+                ctx.node.properties.get('source_dest_check'))
+            # Update the object
+            iface_obj = _get_network_interface_object(ec2_client, iface_obj.id)
         # Create tags if needed
         if isinstance(ctx.node.properties.get('tags'), dict):
             ec2_client.create_tags([iface_obj.id], ctx.node.properties['tags'])
