@@ -32,7 +32,9 @@ setup(
     packages=[
         'core',
         'ec2',
-        'vpc'
+        'vpc',
+        'cloudify_aws',
+        'cloudify_aws.ec2'
     ],
 
     license='LICENSE',
