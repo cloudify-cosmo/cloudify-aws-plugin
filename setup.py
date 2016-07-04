@@ -25,14 +25,17 @@ setup(
     author='Gigaspaces',
     author_email='cosmo-admin@gigaspaces.com',
 
-    version='1.4.1',
+    version='1.4.2.dev0',
     description='Cloudify plugin for AWS infrastructure.',
 
     # This must correspond to the actual packages in the plugin.
     packages=[
         'core',
         'ec2',
-        'vpc'
+        'vpc',
+        'cloudify_aws',
+        'cloudify_aws.ec2',
+        'cloudify_aws.vpc'
     ],
 
     license='LICENSE',
