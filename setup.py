@@ -32,6 +32,7 @@ setup(
     packages=[
         'core',
         'ec2',
+        'lambda',
         'vpc'
     ],
 

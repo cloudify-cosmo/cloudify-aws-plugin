@@ -5,7 +5,7 @@
 plugins:
   aws:
     executor: central_deployment_agent
-    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/master.zip
+    source: https://github.com/funkyhat/cloudify-aws-plugin/archive/new-services-poc.zip
     package_name: cloudify-aws-plugin
     package_version: '1.4.1'
 
@@ -762,6 +762,87 @@ node_types:
       cloudify.interfaces.validation:
         creation: aws.vpc.routetable.creation_validation
 
+  cloudify.aws.nodes.LambdaFunction:
+    derived_from: cloudify.nodes.???
+    properties:
+      name:
+        description: >
+          The name of the function. It must be unique within the region & tenant.
+        required: true
+      code_path:
+        description: >
+          The path to the lambda proram.
+        required: true
+      handler:
+        description: >
+          The function within the code which should be called when the lambda is 
+          executed
+        required: true
+      runtime:
+        description: >
+          The langauge runtime for the lambda function
+        required: true
+        default: python2.7
+      description:
+        required: false
+      role:
+        description: >
+          The AWS IAM role which the lambda function will run as. This defines the permissions for the function.
+        required: true
+      memory_size:
+        default: 128
+      aws_config:
+        description: >
+          A dictionary of values to pass to authenticate with the AWS API.
+        type: cloudify.datatypes.aws.Config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.lambda.create
+        delete:
+          implementation: aws.lambda.terminate
+      cloudify.interfaces.validation:
+        creation:
+          implementation: aws.lambda.creation_validation
+
+  cloudify.aws.nodes.LambdaAPIEndpoint:
+    derived_from: cloudify.nodes.
+    properties:
+      aws_config:
+        description: >
+          A dictionary of values to pass to authenticate with the AWS API.
+        type: cloudify.datatypes.aws.Config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.lambda.endpoint.create
+        delete:
+          implementation: aws.lambda.endpoint.terminate
+      cloudify.interfaces.validation:
+        creation:
+          implementation: aws.lambda.endpoint.creation_validation
+
+  cloudify.aws.nodes.S3Bucket:
+    derived_from: cloudify.nodes.ObjectStorage
+    properties:
+      aws_config:
+        description: >
+          A dictionary of values to pass to authenticate with the AWS API.
+        type: cloudify.datatypes.aws.Config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.s3.bucket.create
+        delete:
+          implementation: aws.s3.bucket.terminate
+      cloudify.interfaces.validation:
+        creation:
+          implementation: aws.s3.bucket.creation_validation
+
+
 relationships:
   cloudify.aws.relationships.instance_connected_to_elastic_ip:
     derived_from: cloudify.relationships.connected_to
@@ -893,3 +974,10 @@ relationships:
 
   cloudify.aws.relationships.security_group_contained_in_vpc:
     derived_from: cloudify.relationships.contained_in
+
+  cloudify.aws.relationships.endpoint_connected_to_lambda:
+    derived_from: cloudify.relationships.connected_to
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish: aws.ec2.lambda.add_endpoint
+        unlink: aws.ec2.lambda.remove_endpoint
