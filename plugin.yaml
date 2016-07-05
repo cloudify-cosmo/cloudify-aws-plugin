@@ -382,10 +382,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create: aws.ec2.keypair.create
-        delete: aws.ec2.keypair.delete
+        create: aws.cloudify_aws.ec2.keypair.create
+        delete: aws.cloudify_aws.ec2.keypair.delete
       cloudify.interfaces.validation:
-        creation: aws.ec2.keypair.creation_validation
+        creation: aws.cloudify_aws.ec2.keypair.creation_validation
 
   cloudify.aws.nodes.ElasticLoadBalancer:
     derived_from: cloudify.nodes.LoadBalancer
