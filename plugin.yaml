@@ -7,7 +7,7 @@ plugins:
     executor: central_deployment_agent
     source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/master.zip
     package_name: cloudify-aws-plugin
-    package_version: '1.4.1'
+    package_version: '1.4.2.dev0'
 
 data_types:
 
@@ -184,9 +184,9 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
-          implementation: aws.ec2.instance.run_instances
+          implementation: aws.cloudify_aws.ec2.instance.create
         start:
-          implementation: aws.ec2.instance.start
+          implementation: aws.cloudify_aws.ec2.instance.start
           inputs:
             start_retry_interval:
               description: Polling interval until the server is active in seconds
@@ -200,12 +200,12 @@ node_types:
               type: string
               default: ''
         stop:
-          implementation: aws.ec2.instance.stop
+          implementation: aws.cloudify_aws.ec2.instance.stop
         delete:
-          implementation: aws.ec2.instance.terminate
+          implementation: aws.cloudify_aws.ec2.instance.delete
       cloudify.interfaces.validation:
         creation:
-          implementation: aws.ec2.instance.creation_validation
+          implementation: aws.cloudify_aws.ec2.instance.creation_validation
 
   cloudify.aws.nodes.WindowsInstance:
     derived_from: cloudify.aws.nodes.Instance
@@ -382,10 +382,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create: aws.ec2.keypair.create
-        delete: aws.ec2.keypair.delete
+        create: aws.cloudify_aws.ec2.keypair.create
+        delete: aws.cloudify_aws.ec2.keypair.delete
       cloudify.interfaces.validation:
-        creation: aws.ec2.keypair.creation_validation
+        creation: aws.cloudify_aws.ec2.keypair.creation_validation
 
   cloudify.aws.nodes.ElasticLoadBalancer:
     derived_from: cloudify.nodes.LoadBalancer
