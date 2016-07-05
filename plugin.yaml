@@ -337,7 +337,6 @@ node_types:
           inputs:
             args:
               default: {}
-        start: aws.cloudify_aws.ec2.ebs.start
         delete:
           implementation: aws.cloudify_aws.ec2.ebs.delete
           inputs:
@@ -788,7 +787,11 @@ relationships:
     derived_from: cloudify.relationships.connected_to
     source_interfaces:
       cloudify.interfaces.relationship_lifecycle:
-        establish: aws.cloudify_aws.ec2.ebs.associate
+        establish:
+          implementation: aws.cloudify_aws.ec2.ebs.associate
+          inputs:
+            args:
+              default: {}
         unlink:
           implementation: aws.cloudify_aws.ec2.ebs.disassociate
           inputs:

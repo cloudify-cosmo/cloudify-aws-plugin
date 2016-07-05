@@ -53,8 +53,8 @@ class TestEBS(testtools.TestCase):
         }
 
         ctx = MockCloudifyContext(
-                node_id=test_node_id,
-                properties=test_properties
+            node_id=test_node_id,
+            properties=test_properties
         )
 
         return ctx
@@ -72,8 +72,8 @@ class TestEBS(testtools.TestCase):
         }
 
         ctx = MockCloudifyContext(
-                node_id=test_node_id,
-                properties=test_properties
+            node_id=test_node_id,
+            properties=test_properties
         )
 
         return ctx
@@ -114,8 +114,8 @@ class TestEBS(testtools.TestCase):
         })
 
         relationship_context = MockCloudifyContext(
-                node_id=testname, source=volume_context,
-                target=instance_context)
+            node_id=testname, source=volume_context,
+            target=instance_context)
 
         return relationship_context
 
@@ -124,12 +124,12 @@ class TestEBS(testtools.TestCase):
 
     def create_volume(self, client):
         return client.create_volume(
-                size=TEST_SIZE,
-                zone=TEST_ZONE)
+            size=TEST_SIZE,
+            zone=TEST_ZONE)
 
     def run_instance(self, client):
         return client.run_instances(
-                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
+            TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
 
     def get_volume(self):
         client = self.get_client()
@@ -170,7 +170,7 @@ class TestEBS(testtools.TestCase):
         self.assertIn('aws_resource_id', ctx.instance.runtime_properties)
         self.assertIn(constants.ZONE, ctx.instance.runtime_properties)
         self.assertEqual(zone, ctx.instance.runtime_properties.get(
-                constants.ZONE))
+            constants.ZONE))
 
     @mock_ec2
     def test_start(self):
@@ -196,7 +196,7 @@ class TestEBS(testtools.TestCase):
         """
 
         ctx = self.mock_relationship_context(
-                'test_attach_external_volume_or_instance')
+            'test_attach_external_volume_or_instance')
         current_ctx.set(ctx=ctx)
         ctx.source.node.properties['use_external_resource'] = False
         ctx.target.node.properties['resource_id'] = BAD_INSTANCE_ID
@@ -214,7 +214,7 @@ class TestEBS(testtools.TestCase):
         """
 
         ctx = self.mock_ctx(
-                'test_delete_external_volume')
+            'test_delete_external_volume')
         current_ctx.set(ctx=ctx)
         test_volume = self.create_volume_for_checking()
 
@@ -245,7 +245,7 @@ class TestEBS(testtools.TestCase):
         """
 
         ctx = self.mock_ctx(
-                'test_create_external_volume')
+            'test_create_external_volume')
         current_ctx.set(ctx=ctx)
         test_volume = self.create_volume_for_checking()
 
@@ -295,7 +295,7 @@ class TestEBS(testtools.TestCase):
         """
 
         ctx = self.mock_relationship_context(
-                'test_detach_external_volume_or_instance')
+            'test_detach_external_volume_or_instance')
         current_ctx.set(ctx=ctx)
         ctx.source.node.properties['use_external_resource'] = False
         test_volumeinstanceconn = self.create_volumeinstanceconn_for_checking()
@@ -351,7 +351,7 @@ class TestEBS(testtools.TestCase):
         ctx.node.properties['resource_id'] = BAD_VOLUME_ID
         current_ctx.set(ctx=ctx)
         ex = self.assertRaises(
-                NonRecoverableError, ebs.creation_validation, ctx=ctx)
+            NonRecoverableError, ebs.creation_validation, ctx=ctx)
         self.assertIn('External resource, but the supplied', ex.message)
 
     @mock_ec2
@@ -367,7 +367,7 @@ class TestEBS(testtools.TestCase):
         ctx.node.properties['use_external_resource'] = False
         ctx.node.properties['resource_id'] = volume.id
         ex = self.assertRaises(
-                NonRecoverableError, ebs.creation_validation, ctx=ctx)
+            NonRecoverableError, ebs.creation_validation, ctx=ctx)
         self.assertIn('Not external resource, but the supplied', ex.message)
 
     @mock_ec2
@@ -380,11 +380,11 @@ class TestEBS(testtools.TestCase):
         current_ctx.set(ctx=ctx)
         del(ctx.source.instance.runtime_properties['aws_resource_id'])
         ex = self.assertRaises(
-                NonRecoverableError, ebs.VolumeInstanceConnection().associate,
-                ctx=ctx)
+            NonRecoverableError, ebs.VolumeInstanceConnection().associate,
+            ctx=ctx)
         self.assertIn(
-                'Cannot attach volume because aws_resource_id is not assigned',
-                ex.message)
+            'Cannot attach volume because aws_resource_id is not assigned',
+            ex.message)
 
     @mock_ec2
     def test_bad_volume_external_resource(self):
@@ -395,10 +395,10 @@ class TestEBS(testtools.TestCase):
         ctx.node.properties['resource_id'] = BAD_VOLUME_ID
         args = dict()
         ex = self.assertRaises(
-                NonRecoverableError, ebs.create, args, ctx=ctx)
+            NonRecoverableError, ebs.create, args, ctx=ctx)
         self.assertIn(
-                'Cannot use_external_resource because resource',
-                ex.message)
+            'Cannot use_external_resource because resource',
+            ex.message)
 
     @mock_ec2
     def test_delete_existing(self):
@@ -413,7 +413,7 @@ class TestEBS(testtools.TestCase):
         ctx.node.properties['use_external_resource'] = True
         ebs.delete(ctx=ctx)
         self.assertNotIn(
-                'aws_resource_id', ctx.instance.runtime_properties.keys())
+            'aws_resource_id', ctx.instance.runtime_properties.keys())
         ec2_client = self.get_client()
         self.assertIsNotNone(ec2_client.get_all_volumes([volume.id]))
 
@@ -452,8 +452,8 @@ class TestEBS(testtools.TestCase):
             instance_id
         ebs.associate(ctx=ctx)
         self.assertEqual(
-                instance_id,
-                ctx.source.instance.runtime_properties['instance_id'])
+            instance_id,
+            ctx.source.instance.runtime_properties['instance_id'])
 
     @mock_ec2
     def test_existing_detach(self, *_):
@@ -463,7 +463,7 @@ class TestEBS(testtools.TestCase):
         """
 
         ctx = self.mock_relationship_context(
-                'test_existing_detach')
+            'test_existing_detach')
         current_ctx.set(ctx=ctx)
         volume = self.get_volume()
         instance_id = self.get_instance_id()
@@ -482,7 +482,7 @@ class TestEBS(testtools.TestCase):
         args = dict(force=True)
         ebs.VolumeInstanceConnection().disassociated(args)
         self.assertNotIn(
-                'instance_id', ctx.source.instance.runtime_properties)
+            'instance_id', ctx.source.instance.runtime_properties)
 
     @mock_ec2
     def test_detach_external_volume(self):
@@ -493,7 +493,7 @@ class TestEBS(testtools.TestCase):
         """
 
         ctx = self.mock_relationship_context(
-                'test_detach_external_volume')
+            'test_detach_external_volume')
         current_ctx.set(ctx=ctx)
         volume = self.get_volume()
         instance_id = self.get_instance_id()
@@ -556,5 +556,5 @@ class TestEBS(testtools.TestCase):
         args = dict()
         ebs.create_snapshot(args, ctx=ctx)
         self.assertIn(
-                constants.EBS['VOLUME_SNAPSHOT_ATTRIBUTE'],
-                ctx.instance.runtime_properties)
+            constants.EBS['VOLUME_SNAPSHOT_ATTRIBUTE'],
+            ctx.instance.runtime_properties)

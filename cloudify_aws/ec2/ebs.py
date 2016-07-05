@@ -78,46 +78,66 @@ class VolumeInstanceConnection(AwsBaseRelationship):
 
         volume_id = \
             utils.get_external_resource_id_or_raise(
-                    'attach volume', ctx.source.instance)
+                'attach volume', ctx.source.instance)
         instance_id = \
             utils.get_external_resource_id_or_raise(
-                    'attach volume', ctx.target.instance)
+                'attach volume', ctx.target.instance)
 
         if ctx.source.node.properties[constants.ZONE] not in \
                 ctx.target.instance.runtime_properties.get('placement'):
             ctx.logger.info(
-                    'Volume Zone {0} and Instance Zone {1} do not match. '
-                    'This may lead to an error.'.format(
-                            ctx.source.node.properties[constants.ZONE],
-                            ctx.target.instance.runtime_properties
-                            .get('placement')
-                    )
+                'Volume Zone {0} and Instance Zone {1} do not match. '
+                'This may lead to an error.'.format(
+                    ctx.source.node.properties[constants.ZONE],
+                    ctx.target.instance.runtime_properties
+                    .get('placement')
+                )
             )
 
         volume_object = self.get_source_resource()
 
         if not volume_object:
             raise NonRecoverableError(
-                    'EBS volume {0} not found in account.'.format(volume_id))
+                'EBS volume {0} not found in account.'.format(volume_id))
 
         if constants.EBS['VOLUME_CREATING'] in volume_object.update():
-            return ctx.operation.retry(
-                    message='Waiting for volume to be ready. '
-                            'Volume in state {0}'
-                            .format(volume_object.status))
+            return False
         elif constants.EBS['VOLUME_AVAILABLE'] not in volume_object.update():
             raise NonRecoverableError(
-                    'Cannot attach Volume {0} because it is in state {1}.'
-                    .format(volume_object.id, volume_object.status))
+                'Cannot attach Volume {0} because it is in state {1}.'
+                .format(volume_object.id, volume_object.status))
 
         attach_args = dict(
-                volume_id=volume_id,
-                instance_id=instance_id,
-                device=ctx.source.node.properties['device']
+            volume_id=volume_id,
+            instance_id=instance_id,
+            device=ctx.source.node.properties['device']
         )
 
         return self.execute(self.client.attach_volume, attach_args,
                             raise_on_falsy=True)
+
+    def associated(self, args=None):
+
+        ctx.logger.info(
+            'Attempting to associate {0} with {1}.'
+            .format(self.source_resource_id,
+                    self.target_resource_id))
+
+        if self.use_source_external_resource_naively() \
+                or self.associate(args):
+            return self.post_associate()
+
+        elif not self.associate(args):
+            return ctx.operation.retry(
+                message='Failed to associate {0} with {1}.'
+                        .format(self.source_resource_id,
+                                self.target_resource_id))
+
+        raise NonRecoverableError(
+            'Source is neither external resource, '
+            'nor Cloudify resource, unable to associate {0} with {1}.'
+            .format(self.source_resource_id,
+                    self.target_resource_id))
 
     def disassociate(self, args=None, **_):
 
@@ -132,48 +152,32 @@ class VolumeInstanceConnection(AwsBaseRelationship):
 
         if not volume_object:
             raise NonRecoverableError(
-                    'EBS volume {0} not found in account.'.format(volume_id))
+                'EBS volume {0} not found in account.'.format(volume_id))
 
         detach_args = dict(
-                volume_id=volume_id,
-                instance_id=instance_id,
-                device=ctx.source.node.properties['device']
+            volume_id=volume_id,
+            instance_id=instance_id,
+            device=ctx.source.node.properties['device']
         )
         if args:
             detach_args.update(args)
 
-        try:
-            detached = self.execute(self.client.detach_volume, detach_args,
-                                    raise_on_falsy=True)
-        except (exception.EC2ResponseError,
-                exception.BotoServerError) as e:
-            raise NonRecoverableError('{0}'.format(str(e)))
-
-        if not detached:
-            raise NonRecoverableError(
-                    'Failed to detach volume {0} from instance {1}'
-                    .format(volume_id, instance_id))
-
-        return True
+        return self.execute(self.client.detach_volume, detach_args,
+                            raise_on_falsy=True)
 
     def post_associate(self):
 
+        super(VolumeInstanceConnection, self).post_associate()
         ctx.source.instance.runtime_properties['instance_id'] = \
             self.target_resource_id
-        ctx.logger.info(
-                'Associated EBS volume {0} with instance {1}.'
-                .format(self.source_resource_id, self.target_resource_id))
 
         return True
 
     def post_disassociate(self):
 
+        super(VolumeInstanceConnection, self).post_disassociate()
         utils.unassign_runtime_property_from_resource(
-                'instance_id', ctx.source.instance)
-
-        ctx.logger.info(
-                'Detached volume {0} from instance {1}.'
-                .format(self.source_resource_id, self.target_resource_id))
+            'instance_id', ctx.source.instance)
 
         return True
 
@@ -182,8 +186,8 @@ class Ebs(AwsBaseNode):
 
     def __init__(self):
         super(Ebs, self).__init__(
-                constants.EBS['AWS_RESOURCE_TYPE'],
-                constants.EBS['REQUIRED_PROPERTIES']
+            constants.EBS['AWS_RESOURCE_TYPE'],
+            constants.EBS['REQUIRED_PROPERTIES']
         )
         self.not_found_error = constants.EBS['NOT_FOUND_ERROR']
         self.get_all_handler = {
@@ -196,11 +200,10 @@ class Ebs(AwsBaseNode):
         """
 
         create_volume_args = dict(
-                size=ctx.node.properties['size'],
-                zone=ctx.node.properties[constants.ZONE]
+            size=ctx.node.properties['size'],
+            zone=ctx.node.properties[constants.ZONE]
         )
-        if args:
-            create_volume_args.update(args)
+        create_volume_args.update(args if args else {})
 
         ctx.logger.info('ARGS: {0}'.format(create_volume_args))
 
@@ -219,20 +222,38 @@ class Ebs(AwsBaseNode):
         """ Deletes an EBS Volume.
         """
 
-        if not self._delete_volume():
-            return ctx.operation.retry(
-                    message='Failed to delete volume {0}.'
-                    .format(self.resource_id))
+        if not self._delete_volume(args):
+            return False
 
         utils.unassign_runtime_property_from_resource(
-                constants.ZONE, ctx.instance)
+            constants.ZONE, ctx.instance)
 
         return True
 
-    def _delete_volume(self):
+    def deleted(self, args=None):
+
+        ctx.logger.info(
+            'Attempting to delete {0} {1}.'
+            .format(self.aws_resource_type,
+                    self.cloudify_node_instance_id))
+
+        if not self.get_resource():
+            self.raise_forbidden_external_resource(self.resource_id)
+
+        if self.delete_external_resource_naively() or self.delete(args):
+            return self.post_delete()
+        elif not self.delete(args):
+            return ctx.operation.retry(
+                message='Failed to delete volume {0}.'
+                .format(self.resource_id))
+        else:
+            raise NonRecoverableError(
+                'Neither external resource, nor Cloudify resource, '
+                'unable to delete this resource.')
+
+    def _delete_volume(self, args):
         """
 
-        :param volume_id:
         :return: True if the item is deleted,
         False if the item cannot be deleted yet.
         """
@@ -241,17 +262,16 @@ class Ebs(AwsBaseNode):
 
         if not volume_to_delete:
             ctx.logger.info(
-                    'Volume id {0} does not exist.'
-                    .format(self.resource_id))
+                'Volume id {0} does not exist.'
+                .format(self.resource_id))
             return True
 
-        if volume_to_delete.status not in \
-                constants.EBS['VOLUME_AVAILABLE'] or \
-                volume_to_delete.status in \
-                constants.EBS['VOLUME_IN_USE']:
+        if volume_to_delete.status not in constants.EBS['VOLUME_AVAILABLE'] \
+                or volume_to_delete.status in constants.EBS['VOLUME_IN_USE']:
             return False
 
         delete_args = dict(volume_id=self.resource_id)
+        delete_args.update(args if args else {})
         return self.execute(self.client.delete_volume,
                             delete_args, raise_on_falsy=True)
 
@@ -261,11 +281,11 @@ class Ebs(AwsBaseNode):
 
         volume_id = \
             utils.get_external_resource_id_or_raise(
-                    'create snapshot', ctx.instance)
+                'create snapshot', ctx.instance)
 
         ctx.logger.info(
-                'Trying to create a snapshot of EBS volume {0}.'
-                .format(volume_id))
+            'Trying to create a snapshot of EBS volume {0}.'
+            .format(volume_id))
 
         if not args:
             snapshot_desc = \
@@ -280,9 +300,6 @@ class Ebs(AwsBaseNode):
                 exception.BotoServerError) as e:
             raise NonRecoverableError('{0}'.format(str(e)))
 
-        ctx.logger.info(
-                'Created snapshot of EBS volume {0}.'.format(volume_id))
-
         if constants.EBS['VOLUME_SNAPSHOT_ATTRIBUTE'] not in \
                 ctx.instance.runtime_properties:
             ctx.instance.runtime_properties[
@@ -291,11 +308,17 @@ class Ebs(AwsBaseNode):
         ctx.instance.runtime_properties[
             constants.EBS['VOLUME_SNAPSHOT_ATTRIBUTE']].append(new_snapshot.id)
 
+        return True
+
     def snapshot_created(self, args=None):
         ctx.logger.info(
-                'Attempting to create {0} {1}.'
-                .format(self.aws_resource_type,
-                        self.cloudify_node_instance_id))
+            'Attempting to create snapshot of EBS volume {0}.'
+            .format(self.resource_id))
 
         if self.create_snapshot(args):
-            return True
+            return self.post_snapshot_create()
+
+    def post_snapshot_create(self):
+        ctx.logger.info(
+            'Created snapshot of EBS volume {0}.'
+            .format(self.resource_id))
