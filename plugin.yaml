@@ -763,7 +763,7 @@ node_types:
         creation: aws.vpc.routetable.creation_validation
 
   cloudify.aws.nodes.LambdaFunction:
-    derived_from: cloudify.nodes.???
+    derived_from: cloudify.nodes.SoftwareComponent
     properties:
       name:
         description: >
