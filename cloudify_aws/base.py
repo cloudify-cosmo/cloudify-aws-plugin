@@ -403,6 +403,7 @@ class AwsBaseNode(AwsBase):
             self._tag_resource(resource, 'Name', uuid.uuid4())
 
         self._tag_resource(resource, 'resource_id', ctx.instance.id)
+
         deployment_id = ctx.deployment.id
         if deployment_id:
             self._tag_resource(resource, 'deployment_id', deployment_id)
