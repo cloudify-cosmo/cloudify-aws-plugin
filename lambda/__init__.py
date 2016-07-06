@@ -25,14 +25,12 @@ from cloudify import ctx
 from cloudify.decorators import operation
 
 
-props = ctx.node.properties
-aws_conf = props['aws_config']
-
-client = boto3.Session(
-    aws_access_key_id=aws_conf['aws_access_key'],
-    aws_secret_access_key=aws_conf['aws_secret_key'],
-    region=aws_conf['ec2_region_name'],
-    ).client('lambda')
+def connection(aws_conf):
+    return boto3.Session(
+        aws_access_key_id=aws_conf['aws_access_key'],
+        aws_secret_access_key=aws_conf['aws_secret_key'],
+        region=aws_conf['ec2_region_name'],
+        ).client('lambda')
 
 
 @contextmanager
@@ -60,6 +58,9 @@ def zip_lambda(path, runtime):
 
 @operation
 def create(*args, **kwargs):
+    props = ctx.node.properties
+    client = connection(props['aws_config'])
+
     zipfile = zip_lambda(props['code_path'], props['runtime'])
     client.create_function(
         FunctionName=props['function_name'],
