@@ -5,7 +5,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#        http://www.apache.org/licenses/LICENSE-2.0
+#    http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -38,120 +38,164 @@ RELATIONSHIP_INSTANCE = 'relationship-instance'
 NODE_INSTANCE = 'node-instance'
 
 INSTANCE = dict(
-        AWS_RESOURCE_TYPE='instance',
-        CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.Instance',
-        ID_FORMAT='^i\-[0-9a-z]{8}$',
-        NOT_FOUND_ERROR='InvalidInstanceID.NotFound',
-        REQUIRED_PROPERTIES=['image_id', 'instance_type']
+    AWS_RESOURCE_TYPE='instance',
+    CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.Instance',
+    ID_FORMAT='^i\-[0-9a-z]{8}$',
+    NOT_FOUND_ERROR='InvalidInstanceID.NotFound',
+    REQUIRED_PROPERTIES=['image_id', 'instance_type'],
 )
 
 SECURITYGROUP = dict(
-        AWS_RESOURCE_TYPE='group',
-        CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.SecurityGroup',
-        ID_FORMAT='^sg\-[0-9a-z]{8}$',
-        NOT_FOUND_ERROR='InvalidGroup.NotFound',
-        REQUIRED_PROPERTIES=['description', 'rules']
+    AWS_RESOURCE_TYPE='group',
+    CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.SecurityGroup',
+    ID_FORMAT='^sg\-[0-9a-z]{8}$',
+    NOT_FOUND_ERROR='InvalidGroup.NotFound',
+    REQUIRED_PROPERTIES=['description', 'rules'],
 )
 
 SUBNET = dict(
-        AWS_RESOURCE_TYPE='subnet',
-        CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.Subnet',
-        ID_FORMAT='^subnet\-[0-9a-z]{8}$',
-        NOT_FOUND_ERROR='InvalidSubnetID.NotFound',
-        REQUIRED_PROPERTIES=['cidr_block']
+    AWS_RESOURCE_TYPE='subnet',
+    CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.Subnet',
+    ID_FORMAT='^subnet\-[0-9a-z]{8}$',
+    NOT_FOUND_ERROR='InvalidSubnetID.NotFound',
+    REQUIRED_PROPERTIES=['cidr_block'],
 )
 
 VPC = dict(
-        AWS_RESOURCE_TYPE='vpc',
-        CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.VPC',
-        ID_FORMAT='^vpc\-[0-9a-z]{8}$',
-        NOT_FOUND_ERROR='InvalidVpcID.NotFound',
-        REQUIRED_PROPERTIES=['cidr_block', 'instance_tenancy']
+    AWS_RESOURCE_TYPE='vpc',
+    CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.VPC',
+    ID_FORMAT='^vpc\-[0-9a-z]{8}$',
+    NOT_FOUND_ERROR='InvalidVpcID.NotFound',
+    REQUIRED_PROPERTIES=['cidr_block', 'instance_tenancy'],
 )
 
 KEYPAIR = dict(
-        AWS_RESOURCE_TYPE='keypair',
-        CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.KeyPair',
-        NOT_FOUND_ERROR='InvalidKeyPair.NotFound',
-        REQUIRED_PROPERTIES=['private_key_path']
+    AWS_RESOURCE_TYPE='keypair',
+    CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.KeyPair',
+    NOT_FOUND_ERROR='InvalidKeyPair.NotFound',
+    REQUIRED_PROPERTIES=['private_key_path'],
 )
 
 ELB = dict(
-        AWS_RESOURCE_TYPE='load_balancer',
-        CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.ElasticLoadBalancer',
-        NOT_FOUND_ERROR='LoadBalancerNotFound',
-        REQUIRED_PROPERTIES=['elb_name', 'zones', 'listeners']
+    AWS_RESOURCE_TYPE='load_balancer',
+    CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.ElasticLoadBalancer',
+    NOT_FOUND_ERROR='LoadBalancerNotFound',
+    REQUIRED_PROPERTIES=['elb_name', 'zones', 'listeners'],
 )
 
 ELASTICIP = dict(
-        AWS_RESOURCE_TYPE='elasticip',
-        CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.ElasticIP',
-        NOT_FOUND_ERROR='InvalidAddress.NotFound',
-        REQUIRED_PROPERTIES=[],
-        ALLOCATION_ID='allocation_id',
-        VPC_DOMAIN='vpc',
-        ELASTIC_IP_DOMAIN_PROPERTY='domain'
+    AWS_RESOURCE_TYPE='elasticip',
+    CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.ElasticIP',
+    NOT_FOUND_ERROR='InvalidAddress.NotFound',
+    REQUIRED_PROPERTIES=[],
+    ALLOCATION_ID='allocation_id',
+    VPC_DOMAIN='vpc',
+    ELASTIC_IP_DOMAIN_PROPERTY='domain',
 )
 
 ZONE = 'zone'
 EBS = dict(
-        AWS_RESOURCE_TYPE='volume',
-        CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.Volume',
-        ID_FORMAT='^vol\-[0-9a-z]{8}$',
-        NOT_FOUND_ERROR='InvalidVolume.NotFound',
-        REQUIRED_PROPERTIES=['size', ZONE, 'device'],
-        VOLUME_SNAPSHOT_ATTRIBUTE='snapshots_ids',
-        VOLUME_AVAILABLE='available',
-        VOLUME_CREATING='creating',
-        VOLUME_IN_USE='in-use'
+    AWS_RESOURCE_TYPE='volume',
+    CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.Volume',
+    ID_FORMAT='^vol\-[0-9a-z]{8}$',
+    NOT_FOUND_ERROR='InvalidVolume.NotFound',
+    REQUIRED_PROPERTIES=['size', ZONE, 'device'],
+    VOLUME_SNAPSHOT_ATTRIBUTE='snapshots_ids',
+    VOLUME_AVAILABLE='available',
+    VOLUME_CREATING='creating',
+    VOLUME_IN_USE='in-use',
 )
 
 ROUTE_TABLE = dict(
-        AWS_RESOURCE_TYPE='route_table',
-        CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.RouteTable',
-        ID_FORMAT='^rtb\-[0-9a-z]{8}$',
-        NOT_FOUND_ERROR='InvalidRouteTableID.NotFound',
-        REQUIRED_PROPERTIES=[]
+    AWS_RESOURCE_TYPE='route_table',
+    CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.RouteTable',
+    ID_FORMAT='^rtb\-[0-9a-z]{8}$',
+    NOT_FOUND_ERROR='InvalidRouteTableID.NotFound',
+    REQUIRED_PROPERTIES=[],
 )
 
 NETWORK_ACL = dict(
-        AWS_RESOURCE_TYPE='network_acl',
-        CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.ACL',
-        ID_FORMAT='^acl\-[0-9a-z]{8}$',
-        NOT_FOUND_ERROR='InvalidNetworkAclID.NotFound',
-        REQUIRED_PROPERTIES=[]
+    AWS_RESOURCE_TYPE='network_acl',
+    CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.ACL',
+    ID_FORMAT='^acl\-[0-9a-z]{8}$',
+    NOT_FOUND_ERROR='InvalidNetworkAclID.NotFound',
+    REQUIRED_PROPERTIES=[],
 )
 
 INTERNET_GATEWAY = dict(
-        AWS_RESOURCE_TYPE='internet_gateway',
-        CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.InternetGateway',
-        ID_FORMAT='^igw\-[0-9a-z]{8}$',
-        NOT_FOUND_ERROR='InvalidInternetGatewayID.NotFound',
-        REQUIRED_PROPERTIES=[]
+    AWS_RESOURCE_TYPE='internet_gateway',
+    CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.InternetGateway',
+    ID_FORMAT='^igw\-[0-9a-z]{8}$',
+    NOT_FOUND_ERROR='InvalidInternetGatewayID.NotFound',
+    REQUIRED_PROPERTIES=[],
 )
 
 VPN_GATEWAY = dict(
-        AWS_RESOURCE_TYPE='vpn_gateway',
-        CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.VPNGateway',
-        ID_FORMAT='^vgw\-[0-9a-z]{8}$',
-        NOT_FOUND_ERROR='InvalidVpnGatewayID.NotFound',
-        REQUIRED_PROPERTIES=[]
+    AWS_RESOURCE_TYPE='vpn_gateway',
+    CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.VPNGateway',
+    ID_FORMAT='^vgw\-[0-9a-z]{8}$',
+    NOT_FOUND_ERROR='InvalidVpnGatewayID.NotFound',
+    REQUIRED_PROPERTIES=[],
 )
 
 CUSTOMER_GATEWAY = dict(
-        AWS_RESOURCE_TYPE='customer_gateway',
-        CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.CustomerGateway',
-        ID_FORMAT='^cgw\-[0-9a-z]{8}$',
-        NOT_FOUND_ERROR='InvalidCustomerGatewayID.NotFound',
-        REQUIRED_PROPERTIES=[]
+    AWS_RESOURCE_TYPE='customer_gateway',
+    CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.CustomerGateway',
+    ID_FORMAT='^cgw\-[0-9a-z]{8}$',
+    NOT_FOUND_ERROR='InvalidCustomerGatewayID.NotFound',
+    REQUIRED_PROPERTIES=[],
 )
 
 DHCP_OPTIONS = dict(
-        AWS_RESOURCE_TYPE='dhcp_options',
-        CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.DHCPOptions',
-        ID_FORMAT='^dopt\-[0-9a-z]{8}$',
-        NOT_FOUND_ERROR='InvalidDhcpOptionID.NotFound',
-        REQUIRED_PROPERTIES=[]
+    AWS_RESOURCE_TYPE='dhcp_options',
+    CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.DHCPOptions',
+    ID_FORMAT='^dopt\-[0-9a-z]{8}$',
+    NOT_FOUND_ERROR='InvalidDhcpOptionID.NotFound',
+    REQUIRED_PROPERTIES=[],
+)
+
+S3_BUCKET = dict(
+    AWS_RESOURCE_TYPE='s3_bucket',
+    CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.S3Bucket',
+    ID_FORMAT='^.*$',
+    NOT_FOUND_ERROR='not_applicable_boto3',
+    REQUIRED_PROPERTIES=[],
+    RESOURCE_ID_KEY='name',
+)
+
+S3_OBJECT = dict(
+    AWS_RESOURCE_TYPE='s3_object',
+    CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.S3Object',
+    ID_FORMAT='^.*$',
+    NOT_FOUND_ERROR='not_applicable_boto3',
+    REQUIRED_PROPERTIES=[],
+)
+
+ECS_TASK = dict(
+    AWS_RESOURCE_TYPE='ecs_task',
+    CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.ECSTask',
+    ID_FORMAT='^.*$',
+    NOT_FOUND_ERROR='not_applicable_boto3',
+    REQUIRED_PROPERTIES=[],
+    RESOURCE_ID_KEY='name',
+)
+
+ECS_CLUSTER = dict(
+    AWS_RESOURCE_TYPE='ecs_cluster',
+    CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.ECSCluster',
+    ID_FORMAT='^.*$',
+    NOT_FOUND_ERROR='not_applicable_boto3',
+    REQUIRED_PROPERTIES=[],
+    RESOURCE_ID_KEY='name',
+)
+
+ECS_SERVICE = dict(
+    AWS_RESOURCE_TYPE='ecs_service',
+    CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.ECSService',
+    ID_FORMAT='^.*$',
+    NOT_FOUND_ERROR='not_applicable_boto3',
+    REQUIRED_PROPERTIES=[],
+    RESOURCE_ID_KEY='name',
 )
 
 GATEWAY_VPC_RELATIONSHIP = \
@@ -174,6 +218,18 @@ DHCP_VPC_RELATIONSHIP = \
     'cloudify.aws.relationships.dhcp_options_associated_with_vpc'
 CUSTOMER_VPC_RELATIONSHIP = \
     'cloudify.aws.relationships.customer_gateway_connected_to_vpn_gateway'
+SERVICE_CLUSTER_RELATIONSHIP = \
+    'cloudify.aws.relationships.ecs_service_running_on_cluster'
+VOLUME_TASK_RELATIONSHIP = \
+    'cloudify.aws.relationships.ecs_volume_for_task'
+CONTAINER_TASK_RELATIONSHIP = \
+    'cloudify.aws.relationships.ecs_container_for_task'
+SERVICE_LOAD_BALANCER_RELATIONSHIP = \
+    'cloudify.aws.relationships.ecs_service_behind_load_balancer'
+SERVICE_TASK_RELATIONSHIP = \
+    'cloudify.aws.relationships.ecs_service_runs_task'
+OBJECT_BUCKET_RELATIONSHIP = \
+    'cloudify.aws.relationships.s3_object_contained_in_bucket'
 
 INSTANCE_INTERNAL_ATTRIBUTES_POST_CREATE = \
     ['vpc_id', 'subnet_id', 'placement']

@@ -192,6 +192,7 @@ def get_provider_variables():
 
 
 def get_instance_or_source_node_properties():
+    print(ctx.type)
 
     if ctx.type == constants.RELATIONSHIP_INSTANCE:
         return ctx.source.node.properties

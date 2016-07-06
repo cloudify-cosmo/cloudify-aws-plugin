@@ -17,6 +17,7 @@ import uuid
 
 # Third-party Imports
 from boto import exception
+from botocore.exceptions import ClientError
 
 # Cloudify imports
 from . import utils, constants, connection
@@ -37,7 +38,8 @@ class AwsBase(object):
         try:
             output = fn(**args) if args else fn()
         except (exception.EC2ResponseError,
-                exception.BotoServerError) as e:
+                exception.BotoServerError,
+                ClientError) as e:
             raise NonRecoverableError('{0}'.format(str(e)))
 
         if raise_on_falsy and not output:
@@ -48,30 +50,48 @@ class AwsBase(object):
 
     def get_and_filter_resources_by_matcher(
             self, filter_function, filters,
-            not_found_token='NotFound'):
+            not_found_token='NotFound',
+            results_key=None):
 
         try:
             list_of_matching_resources = filter_function(**filters)
-        except exception.EC2ResponseError as e:
+        except (exception.EC2ResponseError,
+                ClientError) as e:
             if not_found_token in str(e):
                 return []
             raise NonRecoverableError('{0}'.format(str(e)))
         except exception.BotoServerError as e:
             raise NonRecoverableError('{0}'.format(str(e)))
 
+        if results_key is not None:
+            list_of_matching_resources = list_of_matching_resources.get(
+                results_key,
+                [],
+            )
+
         return list_of_matching_resources
 
     def filter_for_single_resource(self, filter_function,
                                    filters,
-                                   not_found_token='NotFound'):
+                                   not_found_token='NotFound',
+                                   results_key=None,
+                                   id_key=None):
 
         resources = self.get_and_filter_resources_by_matcher(
-            filter_function, filters, not_found_token)
+            filter_function,
+            filters,
+            not_found_token,
+            results_key=results_key,
+        )
 
         if resources:
             for resource in resources:
-                if resource.id == filters.values()[0]:
-                    return resource
+                if id_key is not None:
+                    if resource.get(id_key, None) == filters.values()[0]:
+                        return resource
+                else:
+                    if resource.id == filters.values()[0]:
+                        return resource
 
         return None
 
@@ -91,10 +111,11 @@ class AwsBase(object):
             for relationship in relationships:
                 targets_by_relationship_type.update(
                     {
-                        relationship.type:
+                        relationship.type: (
                             relationship.target.instance
                             .runtime_properties.get(
                                 constants.EXTERNAL_RESOURCE_ID)
+                        )
                     }
                 )
 
@@ -256,7 +277,8 @@ class AwsBaseNode(AwsBase):
     def __init__(self,
                  aws_resource_type,
                  required_properties,
-                 client=None
+                 client=None,
+                 resource_id_key='resource_id',
                  ):
         super(AwsBaseNode, self).__init__(client)
 
@@ -269,7 +291,7 @@ class AwsBaseNode(AwsBase):
             constants.EXTERNAL_RESOURCE_ID, None) if \
             constants.EXTERNAL_RESOURCE_ID in \
             ctx.instance.runtime_properties.keys() else \
-            ctx.node.properties['resource_id']
+            ctx.node.properties[resource_id_key]
         self.is_external_resource = \
             ctx.node.properties['use_external_resource']
         self.required_properties = required_properties
@@ -410,7 +432,8 @@ class AwsBaseNode(AwsBase):
         matches = self.get_and_filter_resources_by_matcher(
             self.get_all_handler['function'],
             {self.get_all_handler['argument']: list_of_ids},
-            not_found_token=self.not_found_error
+            not_found_token=self.not_found_error,
+            results_key=self.get_all_handler.get('results_key', None),
         )
 
         return matches
@@ -420,7 +443,9 @@ class AwsBaseNode(AwsBase):
         resource = self.filter_for_single_resource(
             self.get_all_handler['function'],
             {self.get_all_handler['argument']: self.resource_id},
-            not_found_token=self.not_found_error
+            not_found_token=self.not_found_error,
+            id_key=self.get_all_handler.get('id_key', None),
+            results_key=self.get_all_handler.get('results_key', None),
         )
 
         return resource
@@ -484,6 +509,44 @@ class AwsBaseNode(AwsBase):
             'Modified {0} {1}.'
             .format(self.aws_resource_type, self.resource_id))
         return True
+
+    def get_relationship_target(self, relationships, intended_relationship):
+        target = None
+
+        for relationship in relationships:
+            if relationship.type == intended_relationship:
+                target = relationship.target
+                break
+
+        return target
+
+    def get_target_attribute(self, relationships, from_relationship,
+                             desired_attribute):
+        target = self.get_relationship_target(relationships, from_relationship)
+
+        attr = None
+
+        if target is not None:
+            attr = target.instance.runtime_properties.get(
+                desired_attribute,
+                None
+            )
+
+        return attr
+
+    def get_target_property(self, relationships, from_relationship,
+                            desired_property):
+        target = self.get_relationship_target(relationships, from_relationship)
+
+        prop = None
+
+        if target is not None:
+            prop = target.node.properties.get(
+                desired_property,
+                None
+            )
+
+        return prop
 
 
 class RouteMixin(object):

@@ -54,14 +54,15 @@ def disassociate(args=None, **_):
 class ElbInstanceConnection(AwsBaseRelationship):
 
     def __init__(self, client=None):
-        super(ElbInstanceConnection, self).__init__(client=client)
+        self.client = client or connection.ELBConnectionClient().client()
+        super(ElbInstanceConnection, self).__init__(client=self.client)
         self.not_found_error = 'InvalidInstanceID.NotFound.'
         self.resource_id = None
-        self.client = connection.ELBConnectionClient().client()
         self.source_get_all_handler = {
             'function': self.client.get_all_load_balancers,
-            'argument':
+            'argument': (
                 '{0}_names'.format(constants.ELB['AWS_RESOURCE_TYPE'])
+            )
         }
 
     def associate(self, args=None, **_):
@@ -163,12 +164,13 @@ class ElbInstanceConnection(AwsBaseRelationship):
 
 class Elb(AwsBaseNode):
 
-    def __init__(self):
+    def __init__(self, client=None):
+        self.client = client or connection.ELBConnectionClient().client()
         super(Elb, self).__init__(
             constants.ELB['AWS_RESOURCE_TYPE'],
-            constants.ELB['REQUIRED_PROPERTIES']
+            constants.ELB['REQUIRED_PROPERTIES'],
+            self.client,
         )
-        self.client = connection.ELBConnectionClient().client()
         self.not_found_error = constants.ELB['NOT_FOUND_ERROR']
         self.get_all_handler = {
             'function': self.client.get_all_load_balancers,
@@ -178,6 +180,8 @@ class Elb(AwsBaseNode):
     def create(self, args=None, **_):
 
         lb = self._create_elb(args)
+
+        ctx.instance.runtime_properties['dns_name'] = lb.dns_name
 
         health_checks = ctx.node.properties.get('health_checks')
 

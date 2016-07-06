@@ -252,6 +252,369 @@ node_types:
       cloudify.interfaces.validation:
         creation: aws.cloudify_aws.ec2.elasticip.creation_validation
 
+  cloudify.aws.nodes.S3Bucket:
+    derived_from: cloudify.nodes.ObjectStorage
+    properties:
+      name:
+        description: >
+          The name of the bucket to create on S3.
+        type: string
+        default: ''
+        required: true
+      permissions:
+        description: |
+          What permissions to set on the bucket.
+          Valid options are: private, public-read, public-read-write, authenticated-read
+        type: string
+        default: private
+      website_index_page:
+        description: >
+          If both this and website_error_page are set, this bucket will become a web page.
+          If one is set, the other must be set.
+          This value defines the index page to use in any paths in the site, e.g. for index.html a visit to
+          http://<bucket address>/ will return http://<bucket address>/index.html
+          and
+          http://<bucket address>/other/ will return http://<bucket address>/other/index.html
+          May not contain a /.
+        type: string
+        default: ''
+      website_error_page:
+        description: >
+          If both this and website_index_page are set, this bucket will become a web page.
+          If one is set, the other must be set.
+          This defines the object to return in the event of a HTTP 4XX error.
+        type: string
+        default: ''
+      use_external_resource:
+        description: >
+          Whether to use an existing bucket. If this is true, no bucket will be created and
+          if the bucket does not exist an error will be raised.
+          Additionally, if this is true the bucket will not be deleted on uninstall of this node.
+          If this is false and the bucket does exist, an error will be raised.
+        type: boolean
+        default: false
+      aws_config:
+        description: >
+          A dictionary of values to pass to authenticate with the AWS API.
+        type: cloudify.datatypes.aws.Config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: aws.cloudify_aws.s3.bucket.create
+        configure: aws.cloudify_aws.s3.bucket.configure
+        delete: aws.cloudify_aws.s3.bucket.delete
+
+  cloudify.aws.nodes.S3Object:
+    derived_from: cloudify.nodes.ObjectStorage
+    properties:
+      name:
+        description: >
+          The name of the object within the bucket.
+        type: string
+        required: true
+      contents:
+        description: >
+          What to store on S3.
+          This is mutually exclusive with the filename parameter.
+        type: string
+        default: ''
+      filename:
+        description: >
+          Path to file to store in bucket.
+          This is mutually exclusive with the contents parameter.
+        type: string
+        default: ''
+      content_type:
+        description: >
+          What content type to use for this object.
+          Useful if the bucket is intended to be a website. (e.g. text/html for .html files).
+        type: string
+        default: 'application/octet-stream'
+      permissions:
+        description: >
+          What permissions to use for this object.
+          Valid options are: private, public-read, public-read-write, authenticated-read
+          If not set, permissions from the parent bucket will be inherited.
+        required: false
+      use_external_resource:
+        description: >
+          Whether to use an existing object. If this is true, no object will be created and
+          if the object does not exist an error will be raised.
+          Additionally, if this is true the object will not be deleted on uninstall of this node.
+          If this is false and the object does exist, an error will be raised.
+        type: boolean
+        default: false
+      aws_config:
+        description: >
+          A dictionary of values to pass to authenticate with the AWS API.
+        type: cloudify.datatypes.aws.Config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: aws.cloudify_aws.s3.object.create
+        delete: aws.cloudify_aws.s3.object.delete
+
+  cloudify.aws.nodes.ECSCluster:
+    derived_from: cloudify.nodes.Compute
+    properties:
+      name:
+        description: >
+          Name of ECS cluster.
+        type: string
+      use_external_resource:
+        description: >
+          Whether to use an existing cluster. If this is true, no cluster will be created and
+          if the cluster does not exist an error will be raised.
+          Additionally, if this is true the cluster will not be deleted on uninstall of this node.
+          If this is false and the cluster does exist, an error will be raised.
+        type: boolean
+        default: false
+      aws_config:
+        description: >
+          A dictionary of values to pass to authenticate with the AWS API.
+        type: cloudify.datatypes.aws.Config
+        required: false
+      install_agent:
+        description: >
+          Don't install an agent into an ECS cluster.
+        default: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: aws.cloudify_aws.ecs.cluster.create
+        delete: aws.cloudify_aws.ecs.cluster.delete
+
+  cloudify.aws.nodes.ECSService:
+    derived_from: cloudify.nodes.Tier
+    properties:
+      name:
+        description: >
+          Name of ECS service to create.
+        type: string
+      desired_count:
+        description: >
+          The number of instantiations of the associated task to run on the cluster.
+        default: 1
+      container_listening_port:
+        description: >
+          The port that will be used with a related load balancer.
+        type: integer
+        default: 80
+      lb_management_role:
+        description: >
+          The name of the IAM role that will be used to manage the load balancer.
+          See http://docs.aws.amazon.com/AmazonECS/latest/developerguide/service_IAM_role.html for requirements.
+        type: string
+        default: ecsServiceRole
+      use_external_resource:
+        description: >
+          Whether to use an existing service. If this is true, no service will be created and
+          if the service does not exist an error will be raised.
+          Additionally, if this is true the service will not be deleted on uninstall of this node.
+          If this is false and the service does exist, an error will be raised.
+        type: boolean
+        default: false
+      aws_config:
+        description: >
+          A dictionary of values to pass to authenticate with the AWS API.
+        type: cloudify.datatypes.aws.Config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: aws.cloudify_aws.ecs.service.create
+        delete: aws.cloudify_aws.ecs.service.delete
+
+  cloudify.aws.nodes.ECSTask:
+    derived_from: cloudify.nodes.Tier
+    properties:
+      name:
+        description: >
+          The name of the task on ECS. Known as a 'family' within ECS.
+      use_external_resource:
+        description: >
+          Whether to use an existing task. If this is true, no task will be created and
+          if the task does not exist an error will be raised.
+          Additionally, if this is true the task will not be deleted on uninstall of this node.
+          If this is false and the task does exist, an error will be raised.
+        type: boolean
+        default: false
+      aws_config:
+        description: >
+          A dictionary of values to pass to authenticate with the AWS API.
+        type: cloudify.datatypes.aws.Config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: aws.cloudify_aws.ecs.task.create
+        delete: aws.cloudify_aws.ecs.task.delete
+
+  cloudify.aws.nodes.ECSContainer:
+    derived_from: cloudify.nodes.Container
+    properties:
+      name:
+        description: >
+          The name of this container.
+      image:
+        description: >
+          The image to import from docker. Can also be specified as "<repository url>/<image>:<tag>",
+          as in the IMAGE parameter of docker run.
+      memory:
+        description: >
+          The amount of RAM in MB to reserve for this container.
+          Note that exceeding this will cause the container to be killed.
+          This must be at least 4 (MB)
+      # The remaining parameters for containers are optional
+      tcp_port_mappings:
+        description: >
+          A dictionary of <host port>: <container port> mappings to map TCP ports to the container.
+          Ports 22, 2375, 2376, 51678 are restricted and may not be used as host ports.
+          At most 100 TCP and UDP port mappings may be provided.
+        default: {}
+      udp_port_mappings:
+        description: >
+          A dictionary of <host port>: <container port> mappings to map UDP ports to the container.
+          Ports 22, 2375, 2376, 51678 are restricted and may not be used as host ports.
+          At most 100 TCP and UDP port mappings may be provided.
+        default: {}
+      cpu_units:
+        description: >
+          How many CPU units to provide for this instance.
+          1 full CPU is 1024 units.
+        type: integer
+        default: -1
+      essential:
+        description: >
+          If this is true, all other containers associated with this task will be stopped if this container fails or stops for any reason.
+        type: boolean
+        default: true
+      entrypoint:
+        description: >
+          Entrypoint for container, in the form ["command", "arg1", "arg2", ...],
+          as in the --entrypoint argument to docker run.
+        default: []
+      command:
+        description: >
+          Entrypoint for container, in the form ["command", "arg1", "arg2", ...],
+          as in the COMMAND parameter of docker run.
+        default: []
+      workdir:
+        description: >
+          Working directory to use on docker container,
+          as in the --workdir option to docker run.
+        type: string
+        default: ''
+      env_vars:
+        description: >
+          Env vars for the container to use, in the form { '<env var>': 'value', ... },
+          as used in the --env option to docker run.
+        default: {}
+      disable_networking:
+        description: >
+          Whether to disable networking (true) in the docker container or not (false),
+          as in the NetworkDisabled parameter of the docker remote API container creation.
+        default: null
+      links:
+        description: >
+          List of links to other docker containers in the form "<name>:<alias>",
+          as in the --link option to docker run.
+        default: []
+      hostname:
+        description: >
+          Hostname to set in the container,
+          as in the --hostname option to docker run.
+        type: string
+        default: ''
+      dns_servers:
+        description: >
+          List of DNS servers to use in the container,
+          as in the --dns option to docker run.
+        default: []
+      dns_search_domains:
+        description: >
+          List of DNS search domains to use in the container,
+          as in the --dns-search option to docker run.
+        default: []
+      extra_hosts_entries:
+        description: >
+          Dictionary of extra hosts entries in the form {"<hostname>": "<ip>", ...},
+          as in the --add-host option to docker run.
+        default: {}
+      read_only_root_filesystem:
+        description: >
+          Whether to make the root filesystem of the container read-only,
+          as in the --read-only option to docker run.
+        type: boolean
+        default: false
+      mount_points:
+        description: >
+          List of extra mount points to mount on the container.
+          This must be a list of dictionaries as follows: [ { 'sourceVolume': <source volume>, 'containerPath': <container_path>, 'readOnly': true|false }, ... ],
+          as in the --volume option to docker run.
+        default: []
+      volumes_from:
+        description: >
+          List of volumes to mount from other containers.
+          This must be a list of dictionaries as follows: [ { 'sourceContainer': <source container name>, 'readOnly': true|false }, ... ],
+          as in the --volumes-from option to docker run.
+        default: []
+      log_driver:
+        description: >
+          Which log driver to use for the container,
+          as in the --log-driver option to docker run.
+          Valid options are: json-file, syslog, journald, gelf, fluentd, awslogs
+        type: string
+        default: ''
+      log_driver_options:
+        description: >
+          key- value options to pass to log driver.
+        default: {}
+      privileged:
+        description: >
+          Whether to run the container with elevated privileges on the container instance,
+          as in the --privileged option to docker run.
+        type: boolean
+        default: false
+      user:
+        description: >
+          The username to use in the container,
+          as in the --user option to docker run.
+        type: string
+        default: ''
+      security_options:
+        description: >
+          SELinux/Apparmor labels for the docker container,
+          as in the --security-opt option to docker run.
+        default: []
+      ulimits:
+        description: >
+          List of dictionaries to set ulimits, in the form
+          [{ 'name': '<core|cpu|data|fsize|locks|memlock|msgqueue|nice|nofile|nproc|rss|rtprio|rttime|sigpending|stack>',
+          'softLimit': <integer>, 'hardLimit': <integer>}, ...],
+          as in the --ulimit option to docker run.
+        default: []
+      docker_labels:
+        description: >
+          Dictionary of key-value pairs to set docker labels with associated values,
+          as in the --label option to docker run.
+        default: {}
+      install_agent:
+        description: >
+          Don't install an agent into an ECS container.
+        default: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: aws.cloudify_aws.ecs.container.validate
+
+  cloudify.aws.nodes.ECSVolume:
+    derived_from: cloudify.nodes.Volume
+    properties:
+      name:
+        description: >
+          The name of the volume.
+        type: string
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: aws.cloudify_aws.ecs.volume.validate
+
   cloudify.aws.nodes.SecurityGroup:
     derived_from: cloudify.nodes.SecurityGroup
     properties:
@@ -900,3 +1263,28 @@ relationships:
 
   cloudify.aws.relationships.security_group_contained_in_vpc:
     derived_from: cloudify.relationships.contained_in
+
+  cloudify.aws.relationships.s3_object_contained_in_bucket:
+    derived_from: cloudify.relationships.contained_in
+
+  cloudify.aws.relationships.ecs_service_running_on_cluster:
+    derived_from: cloudify.relationships.contained_in
+
+  cloudify.aws.relationships.ecs_service_runs_task:
+    derived_from: cloudify.relationships.depends_on
+
+  cloudify.aws.relationships.ecs_volume_for_task:
+    derived_from: cloudify.relationships.depends_on
+
+  cloudify.aws.relationships.ecs_container_for_task:
+    derived_from: cloudify.relationships.depends_on
+
+  cloudify.aws.relationships.ecs_instances_in_cluster:
+    derived_from: cloudify.relationships.contained_in
+    target_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish: aws.cloudify_aws.ecs.cluster.add_container_instance
+        unlink: aws.cloudify_aws.ecs.cluster.remove_container_instance
+
+  cloudify.aws.relationships.ecs_service_behind_load_balancer:
+    derived_from: cloudify.relationships.depends_on

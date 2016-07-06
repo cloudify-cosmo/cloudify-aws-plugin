@@ -32,13 +32,16 @@ setup(
     packages=[
         'cloudify_aws',
         'cloudify_aws.ec2',
-        'cloudify_aws.vpc'
+        'cloudify_aws.vpc',
+        'cloudify_aws.ecs',
+        'cloudify_aws.s3',
     ],
 
     license='LICENSE',
     install_requires=[
         'cloudify-plugins-common>=3.3.1',
         'boto==2.38.0',
-        'pycrypto==2.6.1'
-    ]
+        'boto3==1.3.1',
+        'pycrypto==2.6.1',
+    ],
 )
