@@ -1,0 +1,39 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/3.4/types.yaml
+  - plugin.yaml
+
+
+inputs:
+  lambda_name:
+    type: string
+
+  lambda_path:
+    type: string
+
+  lambda_runtime:
+    type: string
+
+  lambda_handler:
+    default: main.main
+
+  role:
+    type: string
+    default: arn:aws:iam::535075449278:role/lambda_basic_execution
+
+  aws_config:
+    required: false
+
+
+node_templates:
+  dynamodb_lambda:
+    type: cloudify.aws.nodes.LambdaFunction
+    properties:
+      name: { get_input: lambda_name }
+      code_path: resources/code.py
+      runtime: { get_input: lambda_runtime }
+      handler: { get_input: lambda_handler }
+      role: { get_input: role }
+      aws_config: { get_input: aws_config }
