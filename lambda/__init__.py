@@ -27,8 +27,8 @@ from cloudify.decorators import operation
 
 def connection(aws_conf):
     return boto3.Session(
-        aws_access_key_id=aws_conf['aws_access_key'],
-        aws_secret_access_key=aws_conf['aws_secret_key'],
+        aws_access_key_id=aws_conf['aws_access_key_id'],
+        aws_secret_access_key=aws_conf['aws_secret_access_key'],
         region=aws_conf['ec2_region_name'],
         ).client('lambda')
 
