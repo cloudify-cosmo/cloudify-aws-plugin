@@ -807,7 +807,7 @@ node_types:
           implementation: aws.lambda.creation_validation
 
   cloudify.aws.nodes.LambdaAPIEndpoint:
-    derived_from: cloudify.nodes.
+    derived_from: cloudify.nodes.SoftwareComponent
     properties:
       aws_config:
         description: >
