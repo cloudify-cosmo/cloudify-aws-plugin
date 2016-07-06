@@ -29,7 +29,7 @@ def connection(aws_conf):
     return boto3.Session(
         aws_access_key_id=aws_conf['aws_access_key_id'],
         aws_secret_access_key=aws_conf['aws_secret_access_key'],
-        region=aws_conf['ec2_region_name'],
+        region_name=aws_conf['ec2_region_name'],
         ).client('lambda')
 
 
@@ -48,9 +48,9 @@ def zip_lambda(path, runtime):
     """
     if 'python' in runtime:
         with tmp_tmp_dir() as tmp:
-            with zipfile.ZipFile(os.path.join(tmp, 'lambda.zip')) as zip:
+            with zipfile.ZipFile(os.path.join(tmp, 'lambda.zip'), 'w') as zip:
                 zip.write(path)
-            return open(path, 'b').read()
+            return open(zip.filename, 'rb').read()
 
     raise NotImplementedError(
         "zip procedure for {} is not implemented".format(runtime))
