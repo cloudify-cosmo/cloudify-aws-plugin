@@ -59,6 +59,7 @@ def zip_lambda(path, runtime):
 @operation
 def create(*args, **kwargs):
     props = ctx.node.properties
+    ctx.logger.info(props)
     client = connection(props['aws_config'])
 
     zipfile = zip_lambda(props['code_path'], props['runtime'])
