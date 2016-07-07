@@ -765,10 +765,6 @@ node_types:
   cloudify.aws.nodes.LambdaFunction:
     derived_from: cloudify.nodes.SoftwareComponent
     properties:
-      name:
-        description: >
-          The name of the function. It must be unique within the region & tenant.
-        required: true
       code_path:
         description: >
           The path to the lambda proram.

@@ -75,6 +75,11 @@ def zip_lambda(ctx, path, runtime):
         "zip procedure for {} is not implemented".format(runtime))
 
 
+def _lambda_name(ctx):
+    """Construct the name to use in AWS"""
+    return '{}-{}'.format(ctx.deployment.id, ctx.instance.id)
+
+
 @operation
 def create(ctx):
     props = ctx.node.properties
@@ -82,7 +87,7 @@ def create(ctx):
 
     zipfile = zip_lambda(ctx, props['code_path'], props['runtime'])
     client.create_function(
-        FunctionName=ctx.instance.id,
+        FunctionName=_lambda_name(ctx),
         Runtime=props['runtime'],
         Handler=props['handler'],
         Code={'ZipFile': zipfile},
@@ -95,5 +100,5 @@ def delete(ctx):
     props = ctx.node.properties
     client = connection(props['aws_config'])
     client.delete_function(
-        FunctionName=ctx.instance.id,
+        FunctionName=_lambda_name(ctx),
         )
