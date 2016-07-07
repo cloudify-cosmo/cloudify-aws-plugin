@@ -82,7 +82,7 @@ def create(ctx):
 
     zipfile = zip_lambda(ctx, props['code_path'], props['runtime'])
     client.create_function(
-        FunctionName=props['name'],
+        FunctionName=ctx.instance.id,
         Runtime=props['runtime'],
         Handler=props['handler'],
         Code={'ZipFile': zipfile},
@@ -95,5 +95,5 @@ def delete(ctx):
     props = ctx.node.properties
     client = connection(props['aws_config'])
     client.delete_function(
-        FunctionName=props['name'],
+        FunctionName=ctx.instance.id,
         )
