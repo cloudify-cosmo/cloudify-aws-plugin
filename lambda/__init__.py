@@ -19,17 +19,9 @@ import tempfile
 import zipfile
 from contextlib import contextmanager
 
-import boto3
+from core.boto3_connection import connection
 
 from cloudify.decorators import operation
-
-
-def connection(aws_conf):
-    return boto3.Session(
-        aws_access_key_id=aws_conf['aws_access_key_id'],
-        aws_secret_access_key=aws_conf['aws_secret_access_key'],
-        region_name=aws_conf['ec2_region_name'],
-        ).client('lambda')
 
 
 @contextmanager
@@ -83,7 +75,7 @@ def _lambda_name(ctx):
 @operation
 def create(ctx):
     props = ctx.node.properties
-    client = connection(props['aws_config'])
+    client = connection(props['aws_config']).client('lambda')
 
     zipfile = zip_lambda(ctx, props['code_path'], props['runtime'])
     client.create_function(
@@ -98,7 +90,7 @@ def create(ctx):
 @operation
 def delete(ctx):
     props = ctx.node.properties
-    client = connection(props['aws_config'])
+    client = connection(props['aws_config']).client('lambda')
     client.delete_function(
         FunctionName=_lambda_name(ctx),
         )
