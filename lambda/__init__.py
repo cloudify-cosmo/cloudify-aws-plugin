@@ -21,7 +21,6 @@ from contextlib import contextmanager
 
 import boto3
 
-from cloudify import ctx
 from cloudify.decorators import operation
 
 
@@ -42,29 +41,48 @@ def tmp_tmp_dir():
         shutil.rmtree(tmpdir)
 
 
-def zip_lambda(path, runtime):
+def zip_dir(path, zip):
+    for root, _, files in os.walk(path):
+        for file in files:
+            zip.write(
+                os.path.join(root, file),
+                file,
+                )
+
+
+def zip_lambda(ctx, path, runtime):
     """
     Zip up a software package as a AWS Lambda
     """
-    if 'python' in runtime:
-        with tmp_tmp_dir() as tmp:
-            with zipfile.ZipFile(os.path.join(tmp, 'lambda.zip'), 'w') as zip:
-                zip.write(path)
-            return open(zip.filename, 'rb').read()
+    # TODO: support grabbing a package from pip/url
+    # TODO: support collecting dependencies for large modules
+    with tmp_tmp_dir() as tmp:
+        zipdir = os.path.join(tmp, 'zipdir')
+        os.mkdir(zipdir)
+        import pdb ; pdb.set_trace()
+        ctx.download_resource(
+            os.path.join('resources', path),
+            os.path.join(zipdir, path),
+            )
+
+        if 'python' in runtime:
+                with zipfile.ZipFile(
+                        os.path.join(tmp, 'lambda.zip'), 'w') as zip:
+                    zip_dir(zipdir, zip)
+                return open(zip.filename, 'rb').read()
 
     raise NotImplementedError(
         "zip procedure for {} is not implemented".format(runtime))
 
 
 @operation
-def create(*args, **kwargs):
+def create(ctx):
     props = ctx.node.properties
-    ctx.logger.info(props)
     client = connection(props['aws_config'])
 
-    zipfile = zip_lambda(props['code_path'], props['runtime'])
+    zipfile = zip_lambda(ctx, props['code_path'], props['runtime'])
     client.create_function(
-        FunctionName=props['function_name'],
+        FunctionName=props['name'],
         Runtime=props['runtime'],
         Handler=props['handler'],
         Code={'ZipFile': zipfile},
@@ -73,5 +91,9 @@ def create(*args, **kwargs):
 
 
 @operation
-def delete(*args, **kwargs):
-    raise NotImplementedError()
+def delete(ctx):
+    props = ctx.node.properties
+    client = connection(props['aws_config'])
+    client.delete_function(
+        FunctionName=props['name'],
+        )

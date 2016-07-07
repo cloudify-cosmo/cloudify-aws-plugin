@@ -3,14 +3,11 @@ tosca_definitions_version: cloudify_dsl_1_3
 
 imports:
   - http://www.getcloudify.org/spec/cloudify/3.4/types.yaml
-  - plugin.yaml
+  - ../plugin.yaml
 
 
 inputs:
   lambda_name:
-    type: string
-
-  lambda_path:
     type: string
 
   lambda_runtime:
@@ -32,7 +29,7 @@ node_templates:
     type: cloudify.aws.nodes.LambdaFunction
     properties:
       name: { get_input: lambda_name }
-      code_path: resources/code.py
+      code_path: code.py
       runtime: { get_input: lambda_runtime }
       handler: { get_input: lambda_handler }
       role: { get_input: role }
