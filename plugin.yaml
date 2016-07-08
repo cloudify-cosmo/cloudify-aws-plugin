@@ -998,5 +998,27 @@ relationships:
     derived_from: cloudify.relationships.connected_to
     source_interfaces:
       cloudify.interfaces.relationship_lifecycle:
-        establish: aws.ec2.lambda.add_endpoint
-        unlink: aws.ec2.lambda.remove_endpoint
+        establish: aws.lambda.add_endpoint
+        unlink: aws.lambda.remove_endpoint
+
+  cloudify.aws.relationships.dynamodbstream_connected_to_lambda:
+    derived_from: cloudify.relationships.connected_to
+    properties:
+      aws_config:
+        required: false
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish:
+          implementation: aws.lambda.connect_dynamodb_stream
+        unlink:
+          implementation: aws.lambda.disconnect_dynamodb_stream
+
+
+workflows:
+  invoke_lambda:
+    mapping: aws.lambda.invoke_lambda
+    parameters:
+      lambda_node:
+        description: name of the node to invoke
+      payload:
+        description: JSON input to pass to the lambda

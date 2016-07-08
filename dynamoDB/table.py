@@ -52,6 +52,10 @@ def create(ctx):
             'ReadCapacityUnits': props['read_capacity'],
             'WriteCapacityUnits': props['write_capacity'],
             },
+        StreamSpecification={
+            'StreamEnabled': True,
+            'StreamViewType': 'NEW_IMAGE',
+            },
         )
 
     while True:
@@ -59,6 +63,8 @@ def create(ctx):
         status = response['Table']['TableStatus']
         if status == 'ACTIVE':
             ctx.instance.runtime_properties['name'] = table_name
+            ctx.instance.runtime_properties[
+                'arn'] = response['Table']['TableArn']
             return response
         elif status in ['UPDATING', 'DELETING']:
             raise NonRecoverableError('WHAT IS HAPPENING TO ME')

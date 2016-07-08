@@ -23,7 +23,7 @@ outputs:
 
 
 node_templates:
-  dynamodb_lambda:
+  simple_lambda:
     type: cloudify.aws.nodes.LambdaFunction
     properties:
       code_path: code.py
@@ -31,6 +31,20 @@ node_templates:
       handler: code.main
       role: { get_input: role }
       aws_config: { get_input: aws_config }
+
+  dynamo_cats_lambda:
+    type: cloudify.aws.nodes.LambdaFunction
+    properties:
+      code_path: cats.py
+      runtime: python2.7
+      handler: cats.streamhandler
+      role: { get_input: role }
+      aws_config: { get_input: aws_config }
+    relationships:
+      - type: cloudify.aws.relationships.dynamodbstream_connected_to_lambda
+        target: cats_table
+        properties:
+          aws_config: { get_input: aws_config }
 
   cats_table:
     type: cloudify.aws.nodes.DynamoDBTable

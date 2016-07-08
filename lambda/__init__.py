@@ -19,9 +19,11 @@ import tempfile
 import zipfile
 from contextlib import contextmanager
 
-from core.boto3_connection import connection
+from botocore.exceptions import ClientError
 
-from cloudify.decorators import operation
+from cloudify.exceptions import NonRecoverableError
+from cloudify.decorators import operation, workflow
+from core.boto3_connection import connection
 
 
 @contextmanager
@@ -67,24 +69,23 @@ def zip_lambda(ctx, path, runtime):
         "zip procedure for {} is not implemented".format(runtime))
 
 
-def _lambda_name(ctx):
-    """Construct the name to use in AWS"""
-    return '{}-{}'.format(ctx.deployment.id, ctx.instance.id)
-
-
 @operation
 def create(ctx):
     props = ctx.node.properties
     client = connection(props['aws_config']).client('lambda')
 
+    lambda_name = '{}-{}'.format(ctx.deployment.id, ctx.instance.id)
+
     zipfile = zip_lambda(ctx, props['code_path'], props['runtime'])
     client.create_function(
-        FunctionName=_lambda_name(ctx),
+        FunctionName=lambda_name,
         Runtime=props['runtime'],
         Handler=props['handler'],
         Code={'ZipFile': zipfile},
         Role=props['role'],
         )
+
+    ctx.instance.runtime_properties['name'] = lambda_name
 
 
 @operation
@@ -92,5 +93,45 @@ def delete(ctx):
     props = ctx.node.properties
     client = connection(props['aws_config']).client('lambda')
     client.delete_function(
-        FunctionName=_lambda_name(ctx),
+        FunctionName=ctx.instance.runtime_properties['name'],
         )
+
+
+@operation
+def connect_dynamodb_stream(ctx):
+    lclient = connection(ctx.source.node.properties['aws_config']).client(
+            'lambda')
+    dclient = connection(ctx.target.node.properties['aws_config']).client(
+            'dynamodb')
+
+    stream_arn = dclient.describe_table(
+            TableName=ctx.target.instance.runtime_properties['name']
+            )['Table']['LatestStreamArn']
+    try:
+        mapping_uuid = lclient.create_event_source_mapping(
+                FunctionName=ctx.source.instance.runtime_properties['name'],
+                EventSourceArn=stream_arn,
+                StartingPosition='TRIM_HORIZON',
+                )
+    except ClientError as e:
+        if e.response['ResponseMetadata']['HTTPStatusCode']:
+            raise NonRecoverableError(e)
+        raise
+
+    mappings = ctx.source.instance.runtime_properties.setdefault(
+            'dynamodb_stream_mappings', {})
+    mappings[ctx.target.instance.id] = mapping_uuid
+
+
+@operation
+def disconnect_dynamodb_stream(ctx):
+    lclient = connection(ctx.source.node.properties['aws_config']).client(
+            'lambda')
+    try:
+        lclient.delete_event_source_mapping(
+                ctx.source.instance.runtime_properties[
+                    'dynamodb_stream_mappings'][ctx.target.instance.id])
+    except ClientError as e:
+        if e.response['ResponseMetadata']['HTTPStatusCode']:
+            raise NonRecoverableError(e)
+        raise
