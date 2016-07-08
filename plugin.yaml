@@ -799,6 +799,35 @@ node_types:
         delete:
           implementation: aws.lambda.delete
 
+  cloudify.aws.nodes.DynamoDBTable:
+    derived_from: cloudify.nodes.DBMS
+    properties:
+      attribute_definitions:
+        required: true
+        description: >
+          List of attributes as pairs of ATTRIBUTE_NAME, TYPE. Where TYPE is one of S (String), N (Number), B (Binary).
+      key_schema:
+        required: true
+        description: >
+          List of keys as pairs of KEY_NAME, KEY_TYPE. Where KEY_NAME is the ATTRIBUTE_NAME, and KEY_TYPE is one of HASH, RANGE.
+      read_capacity:
+        required: true
+        default: 50
+      write_capacity:
+        required: true
+        default: 50
+      aws_config:
+        description: >
+          A dictionary of values to pass to authenticate with the AWS API.
+        type: cloudify.datatypes.aws.Config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.dynamoDB.table.create
+        delete:
+          implementation: aws.dynamoDB.table.delete
+
   cloudify.aws.nodes.LambdaAPIEndpoint:
     derived_from: cloudify.nodes.SoftwareComponent
     properties:

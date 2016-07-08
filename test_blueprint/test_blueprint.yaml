@@ -15,6 +15,13 @@ inputs:
     required: false
 
 
+outputs:
+  cats_table:
+    description: dynamoDB table
+    value:
+      name: { get_attribute: [cats_table, name] }
+
+
 node_templates:
   dynamodb_lambda:
     type: cloudify.aws.nodes.LambdaFunction
@@ -24,3 +31,12 @@ node_templates:
       handler: code.main
       role: { get_input: role }
       aws_config: { get_input: aws_config }
+
+  cats_table:
+    type: cloudify.aws.nodes.DynamoDBTable
+    properties:
+      aws_config: { get_input: aws_config }
+      attribute_definitions:
+        - [cat_name, S]
+      key_schema:
+        - [cat_name, HASH]
