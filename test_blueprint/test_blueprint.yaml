@@ -54,3 +54,27 @@ node_templates:
         - [cat_name, S]
       key_schema:
         - [cat_name, HASH]
+
+  cats:
+    type: cloudify.aws.nodes.RestApi
+    properties:
+      aws_config: { get_input: aws_config }
+
+  finder:
+    type: cloudify.aws.nodes.RestApiResource
+    properties:
+      aws_config: { get_input: aws_config }
+    relationships:
+      - type: cloudify.aws.relationships.resource_in_api
+        target: cats
+
+  finder_GET:
+    type: cloudify.aws.nodes.RestApiMethod
+    properties:
+      aws_config: { get_input: aws_config }
+    relationships:
+      - type: cloudify.aws.relationships.method_in_resource
+        target: finder
+      - type: cloudify.aws.relationships.api_connected_to_lambda
+        target: dynamo_cats_lambda
+

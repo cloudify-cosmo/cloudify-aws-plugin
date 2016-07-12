@@ -828,6 +828,68 @@ node_types:
         delete:
           implementation: aws.dynamoDB.table.delete
 
+  cloudify.aws.nodes.RestApi:
+    derived_from: cloudify.nodes.SoftwareComponent
+    properties:
+      description:
+        description: description
+        default: 'none'
+        required: false
+      aws_config:
+        description: >
+          A dictionary of values to pass to authenticate with the AWS API.
+        type: cloudify.datatypes.aws.Config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.apigateway.rest_api.create
+        delete:
+          implementation: aws.apigateway.rest_api.delete
+
+  cloudify.aws.nodes.RestApiResource:
+    derived_from: cloudify.nodes.SoftwareComponent
+    properties:
+      aws_config:
+        description: >
+          A dictionary of values to pass to authenticate with the AWS API.
+        type: cloudify.datatypes.aws.Config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.apigateway.resource.create
+        delete:
+          implementation: aws.apigateway.resource.delete
+
+  cloudify.aws.nodes.RestApiMethod:
+    derived_from: cloudify.nodes.SoftwareComponent
+    properties:
+      http_method:
+        description: >
+          The HTTP API method to add, e.g. 'GET' or 'POST'.
+        required: true
+        default: GET
+      auth_type:
+        description: >
+          TODO!
+        required: true
+        default: NONE
+      aws_config:
+        description: >
+          A dictionary of values to pass to authenticate with the AWS API.
+        type: cloudify.datatypes.aws.Config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.apigateway.method.create
+        delete:
+          implementation: aws.apigateway.method.delete
+      cloudify.interfaces.validation:
+        creation:
+          implementation: aws.apigateway.method.creation_validation
+
   cloudify.aws.nodes.LambdaAPIEndpoint:
     derived_from: cloudify.nodes.SoftwareComponent
     properties:
@@ -1012,6 +1074,25 @@ relationships:
           implementation: aws.lambda.connect_dynamodb_stream
         unlink:
           implementation: aws.lambda.disconnect_dynamodb_stream
+
+  cloudify.aws.relationships.resource_in_api:
+    derived_from: cloudify.relationships.contained_in
+
+  cloudify.aws.relationships.method_in_resource:
+    derived_from: cloudify.relationships.contained_in
+
+  cloudify.aws.relationships.api_connected_to_lambda:
+    derived_from: cloudify.relationships.connected_to
+    properties:
+      type:
+        required: true
+        default: HTTP
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish:
+          implementation: aws.apigateway.method.connect_lambda
+        unlink:
+          implementation: aws.apigateway.method.disconnect_lambda
 
 
 workflows:

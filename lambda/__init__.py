@@ -77,7 +77,7 @@ def create(ctx):
     lambda_name = '{}-{}'.format(ctx.deployment.id, ctx.instance.id)
 
     zipfile = zip_lambda(ctx, props['code_path'], props['runtime'])
-    client.create_function(
+    function = client.create_function(
         FunctionName=lambda_name,
         Runtime=props['runtime'],
         Handler=props['handler'],
@@ -85,7 +85,10 @@ def create(ctx):
         Role=props['role'],
         )
 
-    ctx.instance.runtime_properties['name'] = lambda_name
+    ctx.instance.runtime_properties.update({
+        'name': lambda_name,
+        'arn': function['FunctionArn'],
+        })
 
 
 @operation

@@ -30,6 +30,7 @@ setup(
 
     # This must correspond to the actual packages in the plugin.
     packages=[
+        'apigateway',
         'core',
         'ec2',
         'lambda',
@@ -40,7 +41,7 @@ setup(
     install_requires=[
         'cloudify-plugins-common>=3.3.1',
         'boto==2.38.0',
-        'boto3--1.3.1',
+        'boto3==1.3.1',
         'pycrypto==2.6.1',
     ],
 )
