@@ -471,12 +471,12 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
-          implementation: aws.ec2.elasticloadbalancer.create_elb
+          implementation: aws.cloudify_aws.ec2.elasticloadbalancer.create
         delete:
-          implementation: aws.ec2.elasticloadbalancer.delete_elb
+          implementation: aws.cloudify_aws.ec2.elasticloadbalancer.delete
       cloudify.interfaces.validation:
         creation:
-          implementation: aws.ec2.elasticloadbalancer.creation_validation
+          implementation: aws.cloudify_aws.ec2.elasticloadbalancer.creation_validation
 
   cloudify.aws.nodes.VPC:
     derived_from: cloudify.nodes.Network
@@ -780,8 +780,8 @@ relationships:
     derived_from: cloudify.relationships.connected_to
     source_interfaces:
       cloudify.interfaces.relationship_lifecycle:
-        establish: aws.ec2.elasticloadbalancer.add_instance_to_elb
-        unlink: aws.ec2.elasticloadbalancer.remove_instance_from_elb
+        establish: aws.cloudify_aws.ec2.elasticloadbalancer.associate
+        unlink: aws.cloudify_aws.ec2.elasticloadbalancer.disassociate
 
   cloudify.aws.relationships.volume_connected_to_instance:
     derived_from: cloudify.relationships.connected_to
