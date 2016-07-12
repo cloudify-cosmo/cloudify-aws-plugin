@@ -41,10 +41,18 @@ node_templates:
       role: { get_input: role }
       aws_config: { get_input: aws_config }
     relationships:
-      - type: cloudify.aws.relationships.dynamodbstream_connected_to_lambda
-        target: cats_table
-        properties:
-          aws_config: { get_input: aws_config }
+#      - type: cloudify.aws.relationships.dynamodbstream_connected_to_lambda
+#        target: cats_table
+#        properties:
+#          aws_config: { get_input: aws_config }
+
+#  cats_finder_lambda:
+#    type: cloudify.aws.nodes.LambdaFunction
+#    properties:
+#      code_path: cats_finder.py
+#      handler: cats_finder.main
+#      role: { get_input: role }
+#      aws_config: { get_input: aws_config }
 
   cats_table:
     type: cloudify.aws.nodes.DynamoDBTable
@@ -68,9 +76,10 @@ node_templates:
       - type: cloudify.aws.relationships.resource_in_api
         target: cats
 
-  finder_GET:
+  finder_POST:
     type: cloudify.aws.nodes.RestApiMethod
     properties:
+      http_method: POST
       aws_config: { get_input: aws_config }
     relationships:
       - type: cloudify.aws.relationships.method_in_resource
