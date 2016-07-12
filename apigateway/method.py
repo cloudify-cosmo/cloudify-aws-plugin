@@ -20,16 +20,32 @@ from cloudify.decorators import operation
 from .resource import get_parents
 
 
-uri_template = (
+lambda_uri_template = (
     "arn:aws:apigateway:{region}:lambda:path/"
     "{api_version}/functions/{lambda_arn}/invocations")
+api_uri_template = (
+    "arn:aws:execute-api:{region}:{account_id}:{api_id}/*/POST/DynamoDBManager"
+    )
 
 
 def generate_lambda_uri(ctx, client, lambda_arn):
-    return uri_template.format(
+    return lambda_uri_template.format(
         region=client.meta.region_name,
         api_version=client.meta.service_model.api_version,
         lambda_arn=lambda_arn,
+        )
+
+
+def generate_api_uri(ctx, client, api_id):
+    account_id = ctx.target.instance.runtime_properties[
+            'arn'].split(':')[4]
+    # Only the account id field is all-digits
+    assert int(account_id)
+
+    return api_uri_template.format(
+        region=client.meta.region_name,
+        account_id=account_id,
+        api_id=api_id,
         )
 
 
@@ -72,19 +88,33 @@ def delete(ctx):
         )
 
 
+def get_connected_lambda(source, target):
+    props = source.instance.runtime_properties
+    linked = props.setdefault(
+        'linked_lambdas', {})
+    props._set_changed()
+    return linked.setdefault(target.node.name, {})
+
+
 @operation
 def connect_lambda(ctx):
     sprops = ctx.source.node.properties
-    client = connection(sprops['aws_config']).client('apigateway')
+    sclient = connection(sprops['aws_config']).client('apigateway')
+    tclient = connection(sprops['aws_config']).client('lambda')
 
     parent, api = get_parents(ctx.source.instance)
 
     lambda_uri = generate_lambda_uri(
-        ctx, client,
+        ctx, sclient,
         ctx.target.instance.runtime_properties['arn'],
         )
+    api_uri = generate_api_uri(
+        ctx, sclient,
+        api.runtime_properties['id'],
+        )
+    function_name = ctx.target.instance.runtime_properties['name']
 
-    client.put_integration(
+    sclient.put_integration(
         restApiId=api.runtime_properties['id'],
         resourceId=parent.runtime_properties['resource_id'],
         type='AWS',
@@ -93,16 +123,37 @@ def connect_lambda(ctx):
         uri=lambda_uri,
         )
 
+    runtime_props = get_connected_lambda(ctx.source, ctx.target)
+
+    runtime_props['statement_id'] = '{}-{}'.format(
+        ctx.source.node.name, ctx.target.node.name)
+
+    tclient.add_permission(
+        FunctionName=function_name,
+        StatementId=runtime_props['statement_id'],
+        Action='lambda:InvokeFunction',
+        Principal='apigateway.amazonaws.com',
+        SourceArn=api_uri,
+        )
+
 
 @operation
 def disconnect_lambda(ctx):
-    sprops = ctx.source.properties
-    client = connection(sprops['aws_config']).client('apigateway')
+    sprops = ctx.source.node.properties
+    sclient = connection(sprops['aws_config']).client('apigateway')
+    tclient = connection(sprops['aws_config']).client('lambda')
 
     parent, api = get_parents(ctx.source.instance)
 
-    client.delete_integration(
+    tclient.remove_permission(
+        FunctionName=ctx.target.instance.runtime_properties['name'],
+        StatementId=get_connected_lambda(
+            ctx.source,
+            ctx.target)['statement_id'],
+        )
+
+    sclient.delete_integration(
         restApiId=api.runtime_properties['id'],
-        resourceId=parent['resource_id'],
+        resourceId=parent.runtime_properties['resource_id'],
         httpMethod=sprops['http_method'],
         )
