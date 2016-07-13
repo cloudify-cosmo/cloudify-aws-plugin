@@ -136,7 +136,7 @@ def connect_lambda(ctx):
     sclient.put_integration_response(
         restApiId=api.runtime_properties['id'],
         resourceId=parent.runtime_properties['resource_id'],
-        httpMethod="POST",
+        httpMethod=sprops['http_method'],
         statusCode="200",
         selectionPattern=".*",
         )
@@ -144,7 +144,7 @@ def connect_lambda(ctx):
     sclient.put_method_response(
         restApiId=api.runtime_properties['id'],
         resourceId=parent.runtime_properties['resource_id'],
-        httpMethod="POST",
+        httpMethod=sprops['http_method'],
         statusCode="200",
         )
 

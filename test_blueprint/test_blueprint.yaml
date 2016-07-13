@@ -79,7 +79,6 @@ node_templates:
   finder_POST:
     type: cloudify.aws.nodes.RestApiMethod
     properties:
-      http_method: POST
       aws_config: { get_input: aws_config }
     relationships:
       - type: cloudify.aws.relationships.method_in_resource
