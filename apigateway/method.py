@@ -22,7 +22,7 @@ from .resource import get_parents
 
 lambda_uri_template = (
     "arn:aws:apigateway:{region}:lambda:path/"
-    "2015-03-31/functions/{lambda_arn}/invocations")
+    "{api_version}/functions/{lambda_arn}/invocations")
 api_uri_template = (
     "arn:aws:execute-api:{region}:{account_id}:{api_id}/*/"
     "{http_method}{resource}"
@@ -32,6 +32,7 @@ api_uri_template = (
 def generate_lambda_uri(ctx, client, lambda_arn):
     return lambda_uri_template.format(
         region=client.meta.region_name,
+        api_version=client.meta.service_model.api_version,
         lambda_arn=lambda_arn,
         )
 
@@ -118,7 +119,7 @@ def connect_lambda(ctx):
     parent, api = get_parents(ctx.source.instance)
 
     lambda_uri = generate_lambda_uri(
-        ctx, sclient,
+        ctx, tclient,
         ctx.target.instance.runtime_properties['arn'],
         )
 
