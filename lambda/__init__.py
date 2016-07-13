@@ -53,7 +53,6 @@ def zip_lambda(ctx, path, runtime):
     with tmp_tmp_dir() as tmp:
         zipdir = os.path.join(tmp, 'zipdir')
         os.mkdir(zipdir)
-        import pdb ; pdb.set_trace()
         ctx.download_resource(
             os.path.join('resources', path),
             os.path.join(zipdir, path),

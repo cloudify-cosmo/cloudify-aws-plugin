@@ -32,8 +32,6 @@ def create(ctx):
 
     table_name = _table_name(ctx)
 
-    import pdb ; pdb.set_trace()
-
     client.create_table(
         TableName=table_name,
         AttributeDefinitions=[
