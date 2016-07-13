@@ -111,7 +111,7 @@ def connect_dynamodb_stream(ctx):
             TableName=ctx.target.instance.runtime_properties['name']
             )['Table']['LatestStreamArn']
     try:
-        mapping_uuid = lclient.create_event_source_mapping(
+        mapping = lclient.create_event_source_mapping(
                 FunctionName=ctx.source.instance.runtime_properties['name'],
                 EventSourceArn=stream_arn,
                 StartingPosition='TRIM_HORIZON',
@@ -123,7 +123,9 @@ def connect_dynamodb_stream(ctx):
 
     mappings = ctx.source.instance.runtime_properties.setdefault(
             'dynamodb_stream_mappings', {})
-    mappings[ctx.target.instance.id] = mapping_uuid
+    mappings[ctx.target.instance.id] = mapping['UUID']
+    # TODO: fix this in cloudify.manager.DirtyTrackingDict instead: setdefault
+    ctx.source.instance.runtime_properties._set_changed()
 
 
 @operation
@@ -132,7 +134,7 @@ def disconnect_dynamodb_stream(ctx):
             'lambda')
     try:
         lclient.delete_event_source_mapping(
-                ctx.source.instance.runtime_properties[
+                UUID=ctx.source.instance.runtime_properties[
                     'dynamodb_stream_mappings'][ctx.target.instance.id])
     except ClientError as e:
         if e.response['ResponseMetadata']['HTTPStatusCode']:

@@ -9,7 +9,7 @@ imports:
 inputs:
   role:
     type: string
-    default: arn:aws:iam::535075449278:role/lambda_basic_execution
+    default: arn:aws:iam::535075449278:role/lambda_basic_execution_with_extra
 
   aws_config:
     required: false
@@ -41,18 +41,18 @@ node_templates:
       role: { get_input: role }
       aws_config: { get_input: aws_config }
     relationships:
-#      - type: cloudify.aws.relationships.dynamodbstream_connected_to_lambda
-#        target: cats_table
-#        properties:
-#          aws_config: { get_input: aws_config }
+      - type: cloudify.aws.relationships.dynamodbstream_connected_to_lambda
+        target: cats_table
+        properties:
+          aws_config: { get_input: aws_config }
 
-#  cats_finder_lambda:
-#    type: cloudify.aws.nodes.LambdaFunction
-#    properties:
-#      code_path: cats_finder.py
-#      handler: cats_finder.main
-#      role: { get_input: role }
-#      aws_config: { get_input: aws_config }
+  cats_finder_lambda:
+    type: cloudify.aws.nodes.LambdaFunction
+    properties:
+      code_path: cats_finder.py
+      handler: cats_finder.main
+      role: { get_input: role }
+      aws_config: { get_input: aws_config }
 
   cats_table:
     type: cloudify.aws.nodes.DynamoDBTable
@@ -84,5 +84,5 @@ node_templates:
       - type: cloudify.aws.relationships.method_in_resource
         target: finder
       - type: cloudify.aws.relationships.api_connected_to_lambda
-        target: dynamo_cats_lambda
+        target: cats_finder_lambda
 
