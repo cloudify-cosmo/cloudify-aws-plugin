@@ -19,6 +19,9 @@ from cloudify.decorators import operation
 from cloudify.exceptions import NonRecoverableError
 
 
+api_url_template = "https://{api_id}.execute-api.{region}.amazonaws.com"
+
+
 def get_root_resource(client, api):
     for item in client.get_resources(restApiId=api['id'])['items']:
         if item['path'] == '/':
@@ -40,6 +43,9 @@ def create(ctx):
     ctx.instance.runtime_properties.update({
         'id': api['id'],
         'resource_id': get_root_resource(client, api),
+        'url': api_url_template.format(
+            api_id=api['id'],
+            region=props['aws_config']['ec2_region_name']),
         })
 
 
@@ -48,4 +54,10 @@ def delete(ctx):
     props = ctx.node.properties
     client = connection(props['aws_config']).client('apigateway')
 
-    client.delete_rest_api(restApiId=ctx.instance.runtime_properties['id'])
+    try:
+        client.delete_rest_api(restApiId=ctx.instance.runtime_properties['id'])
+    except:
+        # TODO:
+        # if e means we're throttled:
+        #     return ctx.operation.retry(message='throttled, waiting.')
+        raise  # And then this should maybe raise NonRecoverableError?
