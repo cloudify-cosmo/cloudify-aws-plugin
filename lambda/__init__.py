@@ -15,6 +15,7 @@
 
 import os
 import shutil
+import subprocess
 import tempfile
 import zipfile
 from contextlib import contextmanager
@@ -22,7 +23,7 @@ from contextlib import contextmanager
 from botocore.exceptions import ClientError
 
 from cloudify.exceptions import NonRecoverableError
-from cloudify.decorators import operation, workflow
+from cloudify.decorators import operation
 from core.boto3_connection import connection
 
 
@@ -40,7 +41,8 @@ def zip_dir(path, zip):
         for file in files:
             zip.write(
                 os.path.join(root, file),
-                file,
+                # Keep the bit of the path after `path` or the zip ends up flat
+                os.path.normpath(os.path.join(root, file).replace(path, '')),
                 )
 
 
@@ -53,16 +55,30 @@ def zip_lambda(ctx, path, runtime):
     with tmp_tmp_dir() as tmp:
         zipdir = os.path.join(tmp, 'zipdir')
         os.mkdir(zipdir)
-        ctx.download_resource(
-            os.path.join('resources', path),
-            os.path.join(zipdir, path),
-            )
 
         if 'python' in runtime:
-                with zipfile.ZipFile(
-                        os.path.join(tmp, 'lambda.zip'), 'w') as zip:
-                    zip_dir(zipdir, zip)
-                return open(zip.filename, 'rb').read()
+            try:
+                ctx.download_resource(
+                    os.path.join('resources', path),
+                    os.path.join(zipdir, path),
+                    )
+            except IOError as e:
+                # TODO: What's the exception for resources on a manager?
+                if e.errno != 2:
+                    raise
+                # It's not a resource file, must be a Python package
+                subprocess.check_call([
+                    'pip', 'install',
+                    '--target', zipdir,
+                    path,
+                    ],
+                    stderr=subprocess.STDOUT)
+                # TODO: possibly strip out .py files and leave just .pyc?
+
+            with zipfile.ZipFile(
+                    os.path.join(tmp, 'lambda.zip'), 'w') as zip:
+                zip_dir(zipdir, zip)
+            return open(zip.filename, 'rb').read()
 
     raise NotImplementedError(
         "zip procedure for {} is not implemented".format(runtime))
