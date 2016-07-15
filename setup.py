@@ -33,6 +33,7 @@ setup(
         'core',
         'ec2',
         'vpc',
+        'Lambda',
         'cloudify_aws',
         'cloudify_aws.ec2',
         'cloudify_aws.vpc'
