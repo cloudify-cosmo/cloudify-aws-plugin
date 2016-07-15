@@ -13,6 +13,9 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+from functools import partial
+
+from botocore.exceptions import ClientError
 from core.boto3_connection import connection
 
 from cloudify.decorators import operation
@@ -30,15 +33,37 @@ def get_root_resource(client, api):
         "Couldn't find the API's root resource. Something is wrong")
 
 
+def run_maybe_throttled_call(ctx, call, retry_time=30):
+    try:
+        return call()
+    except ClientError as e:
+        if 'TooManyRequestsException' == e.response.get(
+                'Error', {'Code': None}).get('Code', 'Unknown'):
+                # Avoid throwing a new exception because e dosen't look how we
+                # expect it to
+            # this means we're throttled
+            ctx.operation.retry(
+                message='throttled by apigateway API, waiting.',
+                retry_after=30)
+        else:
+            raise
+
+
 @operation
 def create(ctx):
     props = ctx.node.properties
     client = connection(props['aws_config']).client('apigateway')
 
-    api = client.create_rest_api(
-        name=ctx.node.name,
-        description=ctx.node.properties['description'],
+    api = run_maybe_throttled_call(
+        ctx,
+        partial(
+            client.create_rest_api,
+            name=ctx.node.name,
+            description=ctx.node.properties['description'],
+            )
         )
+    if api is None:
+        return
 
     ctx.instance.runtime_properties.update({
         'id': api['id'],
@@ -54,10 +79,10 @@ def delete(ctx):
     props = ctx.node.properties
     client = connection(props['aws_config']).client('apigateway')
 
-    try:
-        client.delete_rest_api(restApiId=ctx.instance.runtime_properties['id'])
-    except:
-        # TODO:
-        # if e means we're throttled:
-        #     return ctx.operation.retry(message='throttled, waiting.')
-        raise  # And then this should maybe raise NonRecoverableError?
+    run_maybe_throttled_call(
+        ctx,
+        partial(
+            client.delete_rest_api,
+            restApiId=ctx.instance.runtime_properties['id'],
+            )
+        )
