@@ -50,8 +50,6 @@ def zip_lambda(ctx, path, runtime):
     """
     Zip up a software package as a AWS Lambda
     """
-    # TODO: support grabbing a package from pip/url
-    # TODO: support collecting dependencies for large modules
     with tmp_tmp_dir() as tmp:
         zipdir = os.path.join(tmp, 'zipdir')
         os.mkdir(zipdir)
