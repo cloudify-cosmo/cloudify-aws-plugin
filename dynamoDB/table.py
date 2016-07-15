@@ -17,7 +17,8 @@ from time import sleep
 
 from cloudify.exceptions import NonRecoverableError
 from cloudify.decorators import operation
-from core.boto3_connection import connection
+
+from cloudify_aws.boto3_connection import connection
 
 
 def _table_name(ctx):

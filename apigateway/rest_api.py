@@ -16,10 +16,11 @@
 from functools import partial
 
 from botocore.exceptions import ClientError
-from core.boto3_connection import connection
 
 from cloudify.decorators import operation
 from cloudify.exceptions import NonRecoverableError
+
+from cloudify_aws.boto3_connection import connection
 
 
 api_url_template = "https://{api_id}.execute-api.{region}.amazonaws.com"

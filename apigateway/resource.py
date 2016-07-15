@@ -13,7 +13,7 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-from core.boto3_connection import connection
+from cloudify_aws.boto3_connection import connection
 
 from cloudify.decorators import operation
 from cloudify.exceptions import NonRecoverableError
