@@ -1094,12 +1094,3 @@ relationships:
         unlink:
           implementation: aws.apigateway.method.disconnect_lambda
 
-
-workflows:
-  invoke_lambda:
-    mapping: aws.Lambda.invoke_lambda
-    parameters:
-      lambda_node:
-        description: name of the node to invoke
-      payload:
-        description: JSON input to pass to the lambda
