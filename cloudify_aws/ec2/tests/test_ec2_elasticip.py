@@ -488,19 +488,6 @@ class TestElasticIP(testtools.TestCase):
         ec2_client = self.get_client()
         self.assertIsNotNone(ec2_client.get_all_addresses(address.public_ip))
 
-    # @mock_ec2
-    # def test_get_all_addresses_bad(self):
-    #     """ tests that _get_all_addresses returns None
-    #     for a bad address.
-    #     """
-    #     ctx = self.mock_ctx('test_get_all_addresses_bad')
-    #     current_ctx.set(ctx=ctx)
-    #     test_elasticip = self.create_elasticip_for_checking()
-    #
-    #     output = test_elasticip._get_all_addresses(
-    #             address='127.0.0.1')
-    #     self.assertIsNone(output)
-
     @mock_ec2
     def test_existing_address_associate(self):
         """ Tests that when an address that is in the user's
