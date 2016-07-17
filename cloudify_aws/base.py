@@ -290,7 +290,7 @@ class AwsBaseNode(AwsBase):
                 'Neither external resource, nor Cloudify resource, '
                 'unable to create this resource.')
 
-    def add_instance_to_elb(self):
+    def add(self):
         return False
 
     def added(self):
@@ -300,7 +300,7 @@ class AwsBaseNode(AwsBase):
                     .format(self.aws_resource_type,
                             self.cloudify_node_instance_id))
 
-        if self.use_external_resource_naively() or self.create():
+        if self.use_external_resource_naively() or self.add():
             return self.post_create()
 
         raise NonRecoverableError(
@@ -430,7 +430,9 @@ class AwsBaseNode(AwsBase):
             self._tag_resource(resource, 'Name', uuid.uuid4())
 
         self._tag_resource(resource, 'resource_id', ctx.instance.id)
-        self._tag_resource(resource, 'deployment_id', ctx.deployment.id)
+        deployment_id = ctx.deployment.id
+        if deployment_id:
+            self._tag_resource(resource, 'deployment_id', deployment_id)
 
     def _tag_resource(self, resource, tag_key, tag_value):
 
