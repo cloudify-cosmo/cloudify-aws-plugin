@@ -798,6 +798,9 @@ node_types:
           implementation: aws.Lambda.create
         delete:
           implementation: aws.Lambda.delete
+      cloudify.interfaces.validation:
+        creation:
+          implementation: aws.Lambda.creation_validation
 
   cloudify.aws.nodes.DynamoDBTable:
     derived_from: cloudify.nodes.DBMS

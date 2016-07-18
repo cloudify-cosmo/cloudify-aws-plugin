@@ -83,6 +83,16 @@ def zip_lambda(ctx, path, runtime):
         "zip procedure for {} is not implemented".format(runtime))
 
 
+@operation
+def creation_validation(ctx):
+    # raise NotImplementedError()
+    supported_runtimes = ['python2.7']
+    if ctx.node.properties['runtime'] not in supported_runtimes:
+        raise NonRecoverableError(
+                "Runtime {} not supported. Only {} supported.".format(
+                    ctx.node.properties['runtime'], supported_runtimes))
+
+
 @b3operation
 def create(ctx):
     props = ctx.node.properties
