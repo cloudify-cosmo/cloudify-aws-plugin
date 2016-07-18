@@ -228,3 +228,31 @@ def get_connected_nodes_by_type(ctx, type_name):
                 constants.AWS_TYPE_PROPERTY) and
             rel.target.instance.runtime_properties.get(
                     constants.AWS_TYPE_PROPERTY) == type_name]
+
+
+def get_relationships(
+        relationships,
+        filter_relationships=None,
+        filter_nodes=None):
+    """
+    Get all relationships of a particular node or the current context.
+
+    Optionally filter based on relationship type, node type.
+    """
+    if isinstance(relationships, CurrentContext):
+        # Shortcut to support supplying ctx directly
+        relationships = relationships.node.relationships
+    # And coerce the other inputs to lists if they are strings:
+    if isinstance(filter_relationships, basestring):
+        filter_relationships = [filter_relationships]
+    if isinstance(filter_nodes, basestring):
+        filter_nodes = [filter_nodes]
+    results = []
+    for rel in relationships:
+        if filter_relationships and rel.type not in filter_relationships:
+            rel = None
+        if filter_nodes and rel.target.node.type not in filter_nodes:
+            rel = None
+        if rel:
+            results.append(rel)
+    return results

@@ -13,22 +13,36 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-from cloudify_aws.boto3_connection import connection, b3operation
-
 from cloudify.exceptions import NonRecoverableError
+
+from cloudify_aws.boto3_connection import connection, b3operation
+from cloudify_aws.utils import get_relationships
 
 
 def get_parents(instance):
-    for rel in instance.relationships:
-        if rel.type in [
+    """
+    Return the immediate parent and the root API node.
+
+    This function is also used when connecting integrations to HTTP methods on
+    resources.
+    """
+    rel = get_relationships(
+            instance.relationships,
+            filter_relationships=[
                 'cloudify.aws.relationships.resource_in_api',
                 'cloudify.aws.relationships.method_in_resource',
-                'cloudify.aws.relationships.api_connected_to_lambda']:
-            parent = rel.target.instance
-            if rel.target.node.type == 'cloudify.aws.nodes.RestApi':
-                return parent, rel.target.instance
-            return parent, get_parents(parent)[1]
-    raise NonRecoverableError("Didn't find the correct relationships")
+                'cloudify.aws.relationships.api_connected_to_lambda'],
+            filter_nodes=[
+                'cloudify.aws.nodes.RestApi',
+                'cloudify.aws.nodes.RestApiResource'])
+    if len(rel) != 1:
+        raise NonRecoverableError(
+                "Something is wrong. There should only be one parent")
+    rel = rel[0]
+    parent = rel.target.instance
+    if rel.target.node.type == 'cloudify.aws.nodes.RestApi':
+        return parent, rel.target.instance
+    return parent, get_parents(parent)[1]
 
 
 @b3operation
