@@ -17,6 +17,8 @@ from cloudify_aws.boto3_connection import connection, b3operation
 
 from cloudify.exceptions import NonRecoverableError
 from cloudify.decorators import operation
+
+from cloudify_aws.utils import get_relationships
 from .resource import get_parents
 
 
@@ -64,8 +66,10 @@ def generate_api_uri(ctx, client):
 
 @operation
 def creation_validation(ctx):
-    if 'cloudify.aws.relationships.method_in_resource' not in [
-            rel.type for rel in ctx.node.relationships]:
+    if len(get_relationships(
+            ctx,
+            filter_relationships='cloudify.aws.relationships.'
+            'method_in_resource')) != 1:
         raise NonRecoverableError(
                 "An API Method must be related to either an ApiResource or "
                 "a RestApi (root resource) via "
