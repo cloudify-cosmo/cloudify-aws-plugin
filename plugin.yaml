@@ -864,6 +864,9 @@ node_types:
           implementation: aws.apigateway.resource.create
         delete:
           implementation: aws.apigateway.resource.delete
+      cloudify.interfaces.validation:
+        create:
+          implementation: aws.apigateway.resource.creation_validation
 
   cloudify.aws.nodes.RestApiMethod:
     derived_from: cloudify.nodes.SoftwareComponent
