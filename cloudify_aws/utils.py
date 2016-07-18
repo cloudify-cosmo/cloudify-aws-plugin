@@ -20,6 +20,7 @@ import os
 from . import constants
 from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
+from cloudify.context import CloudifyContext
 
 
 def validate_node_property(key, ctx_node_properties):
@@ -239,9 +240,9 @@ def get_relationships(
 
     Optionally filter based on relationship type, node type.
     """
-    if isinstance(relationships, CurrentContext):
+    if isinstance(relationships, CloudifyContext):
         # Shortcut to support supplying ctx directly
-        relationships = relationships.node.relationships
+        relationships = relationships.instance.relationships
     # And coerce the other inputs to lists if they are strings:
     if isinstance(filter_relationships, basestring):
         filter_relationships = [filter_relationships]
