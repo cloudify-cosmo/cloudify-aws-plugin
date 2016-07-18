@@ -15,11 +15,13 @@
 
 from functools import partial
 
-from botocore.exceptions import ClientError
-
 from cloudify.exceptions import NonRecoverableError
 
-from cloudify_aws.boto3_connection import connection, b3operation
+from cloudify_aws.boto3_connection import (
+        connection,
+        b3operation,
+        run_maybe_throttled_call,
+        )
 
 
 api_url_template = "https://{api_id}.execute-api.{region}.amazonaws.com"
@@ -31,22 +33,6 @@ def get_root_resource(client, api):
             return item['id']
     raise NonRecoverableError(
         "Couldn't find the API's root resource. Something is wrong")
-
-
-def run_maybe_throttled_call(ctx, call, retry_time=30):
-    try:
-        return call()
-    except ClientError as e:
-        if 'TooManyRequestsException' == e.response.get(
-                'Error', {'Code': None}).get('Code', 'Unknown'):
-                # Avoid throwing a new exception because e dosen't look how we
-                # expect it to
-            # this means we're throttled
-            ctx.operation.retry(
-                message='throttled by apigateway API, waiting.',
-                retry_after=30)
-        else:
-            raise
 
 
 @b3operation

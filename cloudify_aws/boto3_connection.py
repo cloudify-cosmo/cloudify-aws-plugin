@@ -76,3 +76,19 @@ def b3operation(fun, *args, **kwargs):
         fun(*args, **kwargs)
 
     return wrap
+
+
+def run_maybe_throttled_call(ctx, call, retry_time=30):
+    try:
+        return call()
+    except ClientError as e:
+        if 'TooManyRequestsException' == e.response.get(
+                'Error', {'Code': None}).get('Code', 'Unknown'):
+                # Avoid throwing a new exception because e dosen't look how we
+                # expect it to
+            # this means we're throttled
+            ctx.operation.retry(
+                message='throttled by apigateway API, waiting.',
+                retry_after=30)
+        else:
+            raise
