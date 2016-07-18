@@ -46,6 +46,18 @@ def get_parents(instance):
 
 
 @b3operation
+def creation_validation(ctx):
+    count = len(get_relationships(
+        ctx, 'cloudify.aws.relationships.resource_in_api',
+        ['cloudify.aws.nodes.RestApi',
+         'cloudify.aws.nodes.RestApiResource']))
+    if count != 1:
+        raise NonRecoverableError(
+                'Should be 1 parent relationship to either another node or '
+                'to a root API. Found {}.'.format(count))
+
+
+@b3operation
 def create(ctx):
     props = ctx.node.properties
     client = connection(props['aws_config']).client('apigateway')
