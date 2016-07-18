@@ -13,9 +13,8 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-from cloudify_aws.boto3_connection import connection
+from cloudify_aws.boto3_connection import connection, b3operation
 
-from cloudify.decorators import operation
 from cloudify.exceptions import NonRecoverableError
 
 
@@ -32,7 +31,7 @@ def get_parents(instance):
     raise NonRecoverableError("Didn't find the correct relationships")
 
 
-@operation
+@b3operation
 def create(ctx):
     props = ctx.node.properties
     client = connection(props['aws_config']).client('apigateway')
@@ -51,7 +50,7 @@ def create(ctx):
         })
 
 
-@operation
+@b3operation
 def delete(ctx):
     props = ctx.node.properties
     client = connection(props['aws_config']).client('apigateway')
