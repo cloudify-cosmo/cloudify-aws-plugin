@@ -25,7 +25,7 @@ from botocore.exceptions import ClientError
 from cloudify.exceptions import NonRecoverableError
 from cloudify.decorators import operation
 
-from cloudify_aws.boto3_connection import connection
+from cloudify_aws.boto3_connection import connection, b3operation
 
 
 @contextmanager
@@ -83,7 +83,7 @@ def zip_lambda(ctx, path, runtime):
         "zip procedure for {} is not implemented".format(runtime))
 
 
-@operation
+@b3operation
 def create(ctx):
     props = ctx.node.properties
     client = connection(props['aws_config']).client('lambda')
@@ -105,7 +105,7 @@ def create(ctx):
         })
 
 
-@operation
+@b3operation
 def delete(ctx):
     props = ctx.node.properties
     client = connection(props['aws_config']).client('lambda')
@@ -114,7 +114,7 @@ def delete(ctx):
         )
 
 
-@operation
+@b3operation
 def connect_dynamodb_stream(ctx):
     lclient = connection(ctx.source.node.properties['aws_config']).client(
             'lambda')
@@ -142,7 +142,7 @@ def connect_dynamodb_stream(ctx):
     ctx.source.instance.runtime_properties._set_changed()
 
 
-@operation
+@b3operation
 def disconnect_dynamodb_stream(ctx):
     lclient = connection(ctx.source.node.properties['aws_config']).client(
             'lambda')

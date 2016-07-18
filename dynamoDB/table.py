@@ -16,9 +16,8 @@
 from time import sleep
 
 from cloudify.exceptions import NonRecoverableError
-from cloudify.decorators import operation
 
-from cloudify_aws.boto3_connection import connection
+from cloudify_aws.boto3_connection import connection, b3operation
 
 
 def _table_name(ctx):
@@ -26,7 +25,7 @@ def _table_name(ctx):
     return '{}-{}'.format(ctx.deployment.id, ctx.instance.id)
 
 
-@operation
+@b3operation
 def create(ctx):
     props = ctx.node.properties
     client = connection(props['aws_config']).client('dynamodb')
@@ -70,7 +69,7 @@ def create(ctx):
         sleep(3)
 
 
-@operation
+@b3operation
 def delete(ctx):
     props = ctx.node.properties
     client = connection(props['aws_config']).client('dynamodb')

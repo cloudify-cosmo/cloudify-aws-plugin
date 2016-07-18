@@ -17,10 +17,9 @@ from functools import partial
 
 from botocore.exceptions import ClientError
 
-from cloudify.decorators import operation
 from cloudify.exceptions import NonRecoverableError
 
-from cloudify_aws.boto3_connection import connection
+from cloudify_aws.boto3_connection import connection, b3operation
 
 
 api_url_template = "https://{api_id}.execute-api.{region}.amazonaws.com"
@@ -50,7 +49,7 @@ def run_maybe_throttled_call(ctx, call, retry_time=30):
             raise
 
 
-@operation
+@b3operation
 def create(ctx):
     props = ctx.node.properties
     client = connection(props['aws_config']).client('apigateway')
@@ -75,7 +74,7 @@ def create(ctx):
         })
 
 
-@operation
+@b3operation
 def delete(ctx):
     props = ctx.node.properties
     client = connection(props['aws_config']).client('apigateway')

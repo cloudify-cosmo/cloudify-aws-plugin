@@ -13,7 +13,7 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
-from cloudify_aws.boto3_connection import connection
+from cloudify_aws.boto3_connection import connection, b3operation
 
 from cloudify.exceptions import NonRecoverableError
 from cloudify.decorators import operation
@@ -72,7 +72,7 @@ def creation_validation(ctx):
                 "'cloudify.aws.relationships.method_in_resource'")
 
 
-@operation
+@b3operation
 def create(ctx):
     props = ctx.node.properties
     client = connection(props['aws_config']).client('apigateway')
@@ -87,7 +87,7 @@ def create(ctx):
         )
 
 
-@operation
+@b3operation
 def delete(ctx):
     props = ctx.node.properties
     client = connection(props['aws_config']).client('apigateway')
@@ -110,7 +110,7 @@ def get_connected_lambda(source, target):
     return linked.setdefault(target.node.name, {})
 
 
-@operation
+@b3operation
 def connect_lambda(ctx):
     sprops = ctx.source.node.properties
     sclient = connection(sprops['aws_config']).client('apigateway')
@@ -170,7 +170,7 @@ def connect_lambda(ctx):
         )
 
 
-@operation
+@b3operation
 def disconnect_lambda(ctx):
     sprops = ctx.source.node.properties
     sclient = connection(sprops['aws_config']).client('apigateway')
