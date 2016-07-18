@@ -47,6 +47,7 @@ RUN_INSTANCE_PARAMETERS = {
 INSTANCE_SECURITY_GROUP_RELATIONSHIP = 'instance_connected_to_security_group'
 INSTANCE_KEYPAIR_RELATIONSHIP = 'instance_connected_to_keypair'
 INSTANCE_SUBNET_RELATIONSHIP = 'instance_contained_in_subnet'
+INSTANCE_SUBNET_CONNECTED_TO_RELATIONSHIP = 'instance_connected_to_subnet'
 SECURITY_GROUP_VPC_RELATIONSHIP = 'security_group_contained_in_vpc'
 
 ADMIN_PASSWORD_PROPERTY = 'password'  # the server's password
