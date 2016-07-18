@@ -69,10 +69,15 @@ def nonrecoverable_errors(fun):
 
 def b3operation(fun, *args, **kwargs):
     """Combine @operation and @nonrecoverable_errors"""
+    import inspect
+
     @wraps(fun)
     @operation
     @nonrecoverable_errors
     def wrap(*args, **kwargs):
+        if (fun.__name__ == 'create' and
+                hasattr(inspect.getmodule(fun), 'creation_validation')):
+            inspect.getmodule(fun).creation_validation(*args, **kwargs)
         fun(*args, **kwargs)
 
     return wrap
