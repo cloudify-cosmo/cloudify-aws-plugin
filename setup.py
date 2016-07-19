@@ -30,7 +30,9 @@ setup(
 
     # This must correspond to the actual packages in the plugin.
     packages=[
+        'apigateway',
         'core',
+        'dynamoDB',
         'ec2',
         'vpc',
         'Lambda',
