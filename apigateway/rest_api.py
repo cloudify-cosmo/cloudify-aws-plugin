@@ -24,7 +24,7 @@ from cloudify_aws.boto3_connection import (
         )
 
 
-api_url_template = "https://{api_id}.execute-api.{region}.amazonaws.com"
+api_url_template = "https://{api_id}.execute-api.{region}.amazonaws.com/"
 
 
 def get_root_resource(client, api):

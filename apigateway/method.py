@@ -153,11 +153,6 @@ def connect_lambda(ctx):
         statusCode="200",
         )
 
-    sclient.create_deployment(
-        restApiId=api.runtime_properties['id'],
-        stageName='prod',
-        )
-
     # Authorize the endpoint to call the lambda function
     function_name = ctx.target.instance.runtime_properties['name']
     api_uri = generate_api_uri(ctx, sclient)

@@ -73,6 +73,7 @@ def create(ctx):
     ctx.instance.runtime_properties.update({
         'id': resource['id'],
         'resource_id': resource['id'],
+        'path': resource['path'],
         })
 
 

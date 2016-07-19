@@ -896,6 +896,36 @@ node_types:
         creation:
           implementation: aws.apigateway.method.creation_validation
 
+  cloudify.aws.nodes.RestApiSimpleDeployment:
+    derived_from: cloudify.nodes.SoftwareComponent
+    properties:
+      name:
+        description: >
+          Optional name for the deployment. If this isn't supplied the
+          node name will be used.
+        required: false
+      description:
+        description: description
+        default: 'none'
+        required: false
+      stage_description:
+        description: >
+          Description for the implicitly created stage. If the stage already
+          exists this will be ignored. Defaults to "Stage for {node_name}"
+        required: false
+      aws_config:
+        description: >
+          Use this to publish the REST API. The deployment name forms the
+          first part of the URL after the domain name
+        type: cloudify.datatypes.aws.Config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.apigateway.simpledeployment.create
+        delete:
+          implementation: aws.apigateway.simpledeployment.delete
+
   cloudify.aws.nodes.LambdaAPIEndpoint:
     derived_from: cloudify.nodes.SoftwareComponent
     properties:
@@ -1099,4 +1129,10 @@ relationships:
           implementation: aws.apigateway.method.connect_lambda
         unlink:
           implementation: aws.apigateway.method.disconnect_lambda
+
+  cloudify.aws.relationships.deployment_of_rest_api:
+    derived_from: cloudify.relationships.contained_in
+
+  cloudify.aws.relationships.deployment_depends_on_method:
+    derived_from: cloudify.relationships.depends_on
 
