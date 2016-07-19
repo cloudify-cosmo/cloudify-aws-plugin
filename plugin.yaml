@@ -1119,10 +1119,6 @@ relationships:
 
   cloudify.aws.relationships.api_connected_to_lambda:
     derived_from: cloudify.relationships.connected_to
-    properties:
-      type:
-        required: true
-        default: HTTP
     source_interfaces:
       cloudify.interfaces.relationship_lifecycle:
         establish:
