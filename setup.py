@@ -30,14 +30,14 @@ setup(
 
     # This must correspond to the actual packages in the plugin.
     packages=[
-        'apigateway',
         'core',
-        'dynamoDB',
         'ec2',
         'vpc',
-        'Lambda',
         'cloudify_aws',
+        'cloudify_aws.apigateway',
+        'cloudify_aws.dynamoDB',
         'cloudify_aws.ec2',
+        'cloudify_aws.Lambda',
         'cloudify_aws.vpc'
     ],
 

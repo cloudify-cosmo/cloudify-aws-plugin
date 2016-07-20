@@ -795,12 +795,12 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
-          implementation: aws.Lambda.create
+          implementation: aws.cloudify_aws.Lambda.create
         delete:
-          implementation: aws.Lambda.delete
+          implementation: aws.cloudify_aws.Lambda.delete
       cloudify.interfaces.validation:
         creation:
-          implementation: aws.Lambda.creation_validation
+          implementation: aws.cloudify_aws.Lambda.creation_validation
 
   cloudify.aws.nodes.DynamoDBTable:
     derived_from: cloudify.nodes.DBMS
@@ -827,9 +827,9 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
-          implementation: aws.dynamoDB.table.create
+          implementation: aws.cloudify_aws.dynamoDB.table.create
         delete:
-          implementation: aws.dynamoDB.table.delete
+          implementation: aws.cloudify_aws.dynamoDB.table.delete
 
   cloudify.aws.nodes.RestApi:
     derived_from: cloudify.nodes.SoftwareComponent
@@ -846,9 +846,9 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
-          implementation: aws.apigateway.rest_api.create
+          implementation: aws.cloudify_aws.apigateway.rest_api.create
         delete:
-          implementation: aws.apigateway.rest_api.delete
+          implementation: aws.cloudify_aws.apigateway.rest_api.delete
 
   cloudify.aws.nodes.RestApiResource:
     derived_from: cloudify.nodes.SoftwareComponent
@@ -861,12 +861,12 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
-          implementation: aws.apigateway.resource.create
+          implementation: aws.cloudify_aws.apigateway.resource.create
         delete:
-          implementation: aws.apigateway.resource.delete
+          implementation: aws.cloudify_aws.apigateway.resource.delete
       cloudify.interfaces.validation:
         create:
-          implementation: aws.apigateway.resource.creation_validation
+          implementation: aws.cloudify_aws.apigateway.resource.creation_validation
 
   cloudify.aws.nodes.RestApiMethod:
     derived_from: cloudify.nodes.SoftwareComponent
@@ -908,12 +908,12 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
-          implementation: aws.apigateway.method.create
+          implementation: aws.cloudify_aws.apigateway.method.create
         delete:
-          implementation: aws.apigateway.method.delete
+          implementation: aws.cloudify_aws.apigateway.method.delete
       cloudify.interfaces.validation:
         creation:
-          implementation: aws.apigateway.method.creation_validation
+          implementation: aws.cloudify_aws.apigateway.method.creation_validation
 
   cloudify.aws.nodes.RestApiSimpleDeployment:
     derived_from: cloudify.nodes.SoftwareComponent
@@ -941,9 +941,9 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
-          implementation: aws.apigateway.simpledeployment.create
+          implementation: aws.cloudify_aws.apigateway.simpledeployment.create
         delete:
-          implementation: aws.apigateway.simpledeployment.delete
+          implementation: aws.cloudify_aws.apigateway.simpledeployment.delete
 
   cloudify.aws.nodes.LambdaAPIEndpoint:
     derived_from: cloudify.nodes.SoftwareComponent
@@ -956,9 +956,9 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
-          implementation: aws.Lambda.endpoint.create
+          implementation: aws.cloudify_aws.Lambda.endpoint.create
         delete:
-          implementation: aws.Lambda.endpoint.delete
+          implementation: aws.cloudify_aws.Lambda.endpoint.delete
 
   cloudify.aws.nodes.S3Bucket:
     derived_from: cloudify.nodes.ObjectStorage
@@ -1126,9 +1126,9 @@ relationships:
     source_interfaces:
       cloudify.interfaces.relationship_lifecycle:
         establish:
-          implementation: aws.Lambda.connect_dynamodb_stream
+          implementation: aws.cloudify_aws.Lambda.connect_dynamodb_stream
         unlink:
-          implementation: aws.Lambda.disconnect_dynamodb_stream
+          implementation: aws.cloudify_aws.Lambda.disconnect_dynamodb_stream
 
   cloudify.aws.relationships.resource_in_api:
     derived_from: cloudify.relationships.contained_in
@@ -1141,9 +1141,9 @@ relationships:
     source_interfaces:
       cloudify.interfaces.relationship_lifecycle:
         establish:
-          implementation: aws.apigateway.method.connect_lambda
+          implementation: aws.cloudify_aws.apigateway.method.connect_lambda
         unlink:
-          implementation: aws.apigateway.method.disconnect_lambda
+          implementation: aws.cloudify_aws.apigateway.method.disconnect_lambda
 
   cloudify.aws.relationships.deployment_of_rest_api:
     derived_from: cloudify.relationships.contained_in

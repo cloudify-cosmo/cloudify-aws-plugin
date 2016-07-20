@@ -19,7 +19,7 @@ from cloudify.exceptions import NonRecoverableError
 from cloudify.decorators import operation
 
 from cloudify_aws.utils import get_relationships
-from apigateway.resource import get_parents
+from cloudify_aws.apigateway.resource import get_parents
 
 
 @operation
