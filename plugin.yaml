@@ -881,6 +881,25 @@ node_types:
           TODO!
         required: true
         default: NONE
+      request_parameters:
+        description: >
+          Mappings between the API method and the backend.
+          This should be a dict such as
+            request_parameters:
+              destination: source
+              destination_2: source_2
+          http://docs.aws.amazon.com/apigateway/latest/developerguide/request-response-data-mappings.html
+        required: false
+      request_templates:
+        description: >
+          Mapping from application_type -> API Gateway request template. e.g.
+            request_templates:
+              application/json: >
+                {
+                  "all": "$input.params('all')"
+                }
+          See http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html for the reference.
+        required: false
       aws_config:
         description: >
           A dictionary of values to pass to authenticate with the AWS API.

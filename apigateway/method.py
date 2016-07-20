@@ -13,6 +13,8 @@
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 
+import string
+
 from cloudify_aws.boto3_connection import connection, b3operation
 
 from cloudify.exceptions import NonRecoverableError
@@ -66,14 +68,23 @@ def generate_api_uri(ctx, client):
 
 @operation
 def creation_validation(ctx):
+    props = ctx.node.properties
+
     if len(get_relationships(
             ctx,
             filter_relationships='cloudify.aws.relationships.'
             'method_in_resource')) != 1:
         raise NonRecoverableError(
-                "An API Method must be related to either an ApiResource or "
-                "a RestApi (root resource) via "
-                "'cloudify.aws.relationships.method_in_resource'")
+            "An API Method must be related to either an ApiResource or "
+            "a RestApi (root resource) via "
+            "'cloudify.aws.relationships.method_in_resource'")
+
+    if 'request_parameters' in props:
+        for k, v in props['request_parameters'].items():
+            if not (k.startswith('integration.request.') and
+                    v.startswith('method.request.')):
+                raise NonRecoverableError(
+                    "Badly formed request mapping: {}: {}".format(k, v))
 
 
 @b3operation
@@ -83,12 +94,18 @@ def create(ctx):
 
     parent, api = get_parents(ctx.instance)
 
-    client.put_method(
-        restApiId=api.runtime_properties['id'],
-        resourceId=parent.runtime_properties['resource_id'],
-        httpMethod=props['http_method'],
-        authorizationType=props['auth_type'],
-        )
+    args = {
+        'restApiId': api.runtime_properties['id'],
+        'resourceId': parent.runtime_properties['resource_id'],
+        'httpMethod': props['http_method'],
+        'authorizationType': props['auth_type'],
+        }
+    if 'request_parameters' in props:
+        args['requestParameters'] = {
+            v: False
+            for v in props['request_parameters'].values()}
+
+    client.put_method(**args)
 
 
 @b3operation
@@ -114,6 +131,14 @@ def get_connected_lambda(source, target):
     return linked.setdefault(target.node.name, {})
 
 
+def camel_farm(identifier):
+    """
+    Convert from underscored to camelCase.
+    """
+    words = identifier.split('_')
+    return ''.join([words[0]] + map(string.capitalize, words[1:]))
+
+
 @b3operation
 def connect_lambda(ctx):
     sprops = ctx.source.node.properties
@@ -127,14 +152,19 @@ def connect_lambda(ctx):
         ctx.target.instance.runtime_properties['arn'],
         )
 
-    sclient.put_integration(
-        restApiId=api.runtime_properties['id'],
-        resourceId=parent.runtime_properties['resource_id'],
-        type='AWS',
-        httpMethod=sprops['http_method'],
-        integrationHttpMethod="POST",
-        uri=lambda_uri,
-        )
+    args = {
+        'restApiId': api.runtime_properties['id'],
+        'resourceId': parent.runtime_properties['resource_id'],
+        'type': 'AWS',
+        'httpMethod': sprops['http_method'],
+        'integrationHttpMethod': "POST",
+        'uri': lambda_uri,
+        }
+    for arg in ['request_parameters', 'request_templates']:
+        if arg in sprops:
+            args[camel_farm(arg)] = sprops[arg]
+
+    sclient.put_integration(**args)
 
     runtime_props = get_connected_lambda(ctx.source, ctx.target)
 
