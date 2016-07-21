@@ -1,0 +1,46 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/3.4/types.yaml
+  - ../../aws-plugin/plugin.yaml
+
+
+inputs:
+
+  aws_access_key_id:
+    type: string
+    default: ''
+
+  aws_secret_access_key:
+    type: string
+    default: ''
+
+  ec2_region_name:
+    type: string
+    default: 'us-east-1'
+
+
+dsl_definitions:
+  aws_configuration: &aws_configuration
+    aws_access_key_id: { get_input: aws_access_key_id }
+    aws_secret_access_key: { get_input: aws_secret_access_key }
+    ec2_region_name: { get_input: ec2_region_name }
+
+
+node_templates:
+  dynamodb_test_table:
+    type: cloudify.aws.nodes.DynamoDBTable
+    properties:
+      attribute_definitions:
+        - [name, S]
+      key_schema:
+        - [name, HASH]
+      aws_config: *aws_configuration
+
+
+outputs:
+  table_name:
+    value: { get_attribute: [dynamodb_test_table, name] }
+
+
