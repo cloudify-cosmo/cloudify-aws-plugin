@@ -1,0 +1,47 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/3.4/types.yaml
+  - ../../aws-plugin/plugin.yaml
+
+
+inputs:
+  role:
+    type: string
+    default: arn:aws:iam::535075449278:role/lambda_basic_execution_with_extra
+
+  aws_access_key_id:
+    type: string
+    default: ''
+
+  aws_secret_access_key:
+    type: string
+    default: ''
+
+  ec2_region_name:
+    type: string
+    default: 'us-east-1'
+
+
+dsl_definitions:
+  aws_configuration: &aws_configuration
+    aws_access_key_id: { get_input: aws_access_key_id }
+    aws_secret_access_key: { get_input: aws_secret_access_key }
+    ec2_region_name: { get_input: ec2_region_name }
+
+
+node_templates:
+  echo_lambda:
+    type: cloudify.aws.nodes.LambdaFunction
+    properties:
+      code_path: echo.py
+      runtime: python2.7
+      handler: echo.main
+      role: { get_input: role }
+      aws_config: *aws_configuration
+
+
+outputs:
+  function_name:
+    value: { get_attribute: [echo_lambda, name] }
