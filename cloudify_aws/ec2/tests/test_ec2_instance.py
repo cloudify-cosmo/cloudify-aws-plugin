@@ -411,7 +411,7 @@ class TestInstance(testtools.TestCase):
                 TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
         instance_id = reservation.instances[0].id
         ctx.instance.runtime_properties['aws_resource_id'] = instance_id
-        instance.Instance().terminate(ctx=ctx)
+        instance.Instance().delete(ctx=ctx)
         reservations = ec2_client.get_all_reservations(instance_id)
         instance_object = reservations[0].instances[0]
         state = instance_object.update()
@@ -466,7 +466,7 @@ class TestInstance(testtools.TestCase):
         ctx.instance.runtime_properties['public_ip_address'] = '0.0.0.0'
         ctx.instance.runtime_properties['ip'] = '0.0.0.0'
         ex = self.assertRaises(NonRecoverableError,
-                               instance.Instance().terminate, ctx=ctx)
+                               instance.Instance().delete, ctx=ctx)
         self.assertIn('InvalidInstanceID.NotFound', ex.message)
 
     @mock_ec2

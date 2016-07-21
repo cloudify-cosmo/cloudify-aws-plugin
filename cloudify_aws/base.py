@@ -139,10 +139,10 @@ class AwsBaseRelationship(AwsBase):
             ctx.source.node.properties['use_external_resource']
         self.source_get_all_handler = {'function': None, 'argument': ''}
 
-    def associate(self):
+    def associate(self, args=None):
         return False
 
-    def associated(self):
+    def associated(self, args=None):
 
         ctx.logger.info(
                 'Attempting to associate {0} with {1}.'
@@ -150,7 +150,7 @@ class AwsBaseRelationship(AwsBase):
                         self.target_resource_id))
 
         if self.use_source_external_resource_naively() \
-                or self.associate():
+                or self.associate(args):
             return self.post_associate()
 
         raise NonRecoverableError(
@@ -177,18 +177,23 @@ class AwsBaseRelationship(AwsBase):
 
         return True
 
-    def disassociate(self):
+    def disassociate(self, args=None):
         return False
 
-    def disassociated(self):
+    def disassociated(self, args=None):
 
         ctx.logger.info(
                 'Attempting to disassociate {0} from {1}.'
                 .format(self.source_resource_id, self.target_resource_id))
 
-        if self.disassociate_external_resource_naively() \
-                or self.disassociate():
-            return self.post_disassociate()
+        if args:
+            if self.disassociate_external_resource_naively() \
+                    or self.disassociate(args):
+                return self.post_disassociate()
+        else:
+            if self.disassociate_external_resource_naively() \
+                    or self.disassociate():
+                return self.post_disassociate()
 
         raise NonRecoverableError(
                 'Source is neither external resource, '
@@ -255,7 +260,7 @@ class AwsBaseNode(AwsBase):
         """ This validates all Nodes before bootstrap.
         """
 
-        resource = self.get_all_matching(self.get_resource())
+        resource = self.get_resource()
 
         for property_key in self.required_properties:
             utils.validate_node_property(
@@ -273,34 +278,17 @@ class AwsBaseNode(AwsBase):
                     'exists in the account.'
                     .format(self.aws_resource_type))
 
-    def create(self):
+    def create(self, args=None):
         return False
 
-    def created(self):
+    def created(self, args=None):
 
         ctx.logger.info(
                 'Attempting to create {0} {1}.'
                 .format(self.aws_resource_type,
                         self.cloudify_node_instance_id))
 
-        if self.use_external_resource_naively() or self.create():
-            return self.post_create()
-
-        raise NonRecoverableError(
-                'Neither external resource, nor Cloudify resource, '
-                'unable to create this resource.')
-
-    def add_instance_to_elb(self):
-        return False
-
-    def added(self):
-
-        ctx.logger.info(
-                'Attempting to add {0} {1}.'
-                .format(self.aws_resource_type,
-                        self.cloudify_node_instance_id))
-
-        if self.use_external_resource_naively() or self.create():
+        if self.use_external_resource_naively() or self.create(args):
             return self.post_create()
 
         raise NonRecoverableError(
@@ -322,22 +310,23 @@ class AwsBaseNode(AwsBase):
 
         return True
 
-    def start(self):
+    def start(self, args=None):
         return False
 
-    def started(self):
+    def started(self, args=None):
 
-        ctx.logger.info(
-                'Attempting to start instance {0}.'
-                .format(self.cloudify_node_instance_id))
+        if self.aws_resource_type is 'instance':
+            ctx.logger.info(
+                    'Attempting to start instance {0}.'
+                    .format(self.cloudify_node_instance_id))
 
-        if self.use_external_resource_naively() or self.start():
+        if self.use_external_resource_naively() or self.start(args):
             return self.post_start()
 
-    def delete(self):
+    def delete(self, args=None):
         return False
 
-    def deleted(self):
+    def deleted(self, args=None):
 
         ctx.logger.info(
                 'Attempting to delete {0} {1}.'
@@ -347,7 +336,7 @@ class AwsBaseNode(AwsBase):
         if not self.get_resource():
             self.raise_forbidden_external_resource(self.resource_id)
 
-        if self.delete_external_resource_naively() or self.delete():
+        if self.delete_external_resource_naively() or self.delete(args):
             return self.post_delete()
 
         raise NonRecoverableError(
