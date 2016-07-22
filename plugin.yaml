@@ -945,21 +945,6 @@ node_types:
         delete:
           implementation: aws.cloudify_aws.apigateway.simpledeployment.delete
 
-  cloudify.aws.nodes.LambdaAPIEndpoint:
-    derived_from: cloudify.nodes.SoftwareComponent
-    properties:
-      aws_config:
-        description: >
-          A dictionary of values to pass to authenticate with the AWS API.
-        type: cloudify.datatypes.aws.Config
-        required: false
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        create:
-          implementation: aws.cloudify_aws.Lambda.endpoint.create
-        delete:
-          implementation: aws.cloudify_aws.Lambda.endpoint.delete
-
   cloudify.aws.nodes.S3Bucket:
     derived_from: cloudify.nodes.ObjectStorage
     properties:
