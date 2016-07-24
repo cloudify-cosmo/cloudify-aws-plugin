@@ -34,28 +34,28 @@ def creation_validation(**_):
 
 
 @operation
-def create(**_):
-    return Instance().created()
+def create(args=None, **_):
+    return Instance().created(args)
 
 
 @operation
-def start(start_retry_interval=30, private_key_path=None, **_):
-    return Instance().started()
+def start(start_retry_interval=30, private_key_path=None, args=None,  **_):
+    return Instance().started(args)
 
 
 @operation
-def terminate(**_):
-    return Instance().terminated()
+def delete(args=None, **_):
+    return Instance().deleted(args)
 
 
 @operation
-def modify_attributes(new_attributes, **_):
-    return Instance().modified(new_attributes)
+def modify_attributes(new_attributes, args=None, **_):
+    return Instance().modified(new_attributes, args)
 
 
 @operation
-def stop(**_):
-    return Instance().stopped()
+def stop(args=None, **_):
+    return Instance().stopped(args)
 
 
 class Instance(AwsBaseNode):
@@ -87,7 +87,7 @@ class Instance(AwsBaseNode):
 
         return True
 
-    def create(self, **_):
+    def create(self, args=None, **_):
 
         instance_parameters = self._get_instance_parameters()
 
@@ -112,11 +112,15 @@ class Instance(AwsBaseNode):
 
         return True
 
-    def start(self, start_retry_interval=30, private_key_path=None, **_):
+    def start(self, args=None, start_retry_interval=30,
+              private_key_path=None, **_):
 
         instance_id = \
             utils.get_external_resource_id_or_raise(
                     'start instance', ctx.instance)
+
+        self._assign_runtime_properties_to_instance(
+                    runtime_properties=constants.INSTANCE_INTERNAL_ATTRIBUTES)
 
         if self._get_instance_state() == constants.INSTANCE_STATE_STARTED:
             if ctx.node.properties['use_password']:
@@ -213,7 +217,7 @@ class Instance(AwsBaseNode):
 
         return passwd.get_windows_passwd(private_key_path, password_data)
 
-    def stop(self, **_):
+    def stop(self, args=None, **_):
 
         instance_id = \
             utils.get_external_resource_id_or_raise(
@@ -229,7 +233,7 @@ class Instance(AwsBaseNode):
 
         return True
 
-    def terminate(self, **_):
+    def delete(self, args=None, **_):
 
         instance_id = \
             utils.get_external_resource_id_or_raise(
@@ -252,6 +256,11 @@ class Instance(AwsBaseNode):
         else:
             return ctx.operation.retry(
                     message='Waiting server to terminate. Retrying...')
+
+    def deleted(self, args=None):
+
+        if self.delete_external_resource_naively() or self.delete(args):
+            return self.post_delete()
 
     def _run_instances_if_needed(self, create_args):
 
@@ -306,7 +315,7 @@ class Instance(AwsBaseNode):
                 ctx.instance.runtime_properties[property_name] = \
                     self._get_instance_attribute(property_name)
 
-    def modify_attributes(self, new_attributes, **_):
+    def modify_attributes(self, new_attributes, args=None, **_):
 
         instance_id = \
             ctx.instance.runtime_properties.get(
@@ -518,18 +527,6 @@ class Instance(AwsBaseNode):
 
         return instances
 
-    def started(self):
-
-        self._assign_runtime_properties_to_instance(
-                runtime_properties=constants.INSTANCE_INTERNAL_ATTRIBUTES)
-
-        ctx.logger.info(
-                'Attempting to start instance {0}.'
-                .format(self.cloudify_node_instance_id))
-
-        if self.use_external_resource_naively() or self.start():
-            return self.post_start()
-
     def post_start(self):
 
         resource = self._get_instance_from_id(self.resource_id)
@@ -537,29 +534,24 @@ class Instance(AwsBaseNode):
 
         return True
 
-    def modified(self, new_attributes):
+    def modified(self, new_attributes, args=None):
 
         ctx.logger.info(
                 'Attempting to modify instance attributes {0} {1}.'
                 .format(self.aws_resource_type,
                         self.cloudify_node_instance_id))
 
-        if self.modify_attributes(new_attributes):
+        if self.modify_attributes(new_attributes, args):
             return self.post_modify()
 
-    def terminated(self):
-
-        if self.delete_external_resource_naively() or self.terminate():
-            return self.post_terminate()
-
-    def stopped(self):
+    def stopped(self, args=None):
 
         ctx.logger.info(
                 'Attempting to stop EC2 instance {0} {1}.'
                 .format(self.aws_resource_type,
                         self.cloudify_node_instance_id))
 
-        if self.delete_external_resource_naively() or self.stop():
+        if self.delete_external_resource_naively() or self.stop(args):
             return self.post_stop()
 
     def post_stop(self):
@@ -570,17 +562,6 @@ class Instance(AwsBaseNode):
 
         ctx.logger.info(
                 'Stopped {0} {1}.'
-                .format(self.aws_resource_type, self.resource_id))
-
-        return True
-
-    def post_terminate(self):
-
-        utils.unassign_runtime_property_from_resource(
-                constants.EXTERNAL_RESOURCE_ID, ctx.instance)
-
-        ctx.logger.info(
-                'Terminated {0} {1}.'
                 .format(self.aws_resource_type, self.resource_id))
 
         return True
@@ -623,3 +604,6 @@ class Instance(AwsBaseNode):
             raise NonRecoverableError('{0}.'.format(str(e)))
 
         return image_object
+
+    def get_resource(self):
+        return self._get_instance_from_id(utils.get_resource_id())

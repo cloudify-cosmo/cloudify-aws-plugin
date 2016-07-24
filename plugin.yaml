@@ -202,7 +202,7 @@ node_types:
         stop:
           implementation: aws.cloudify_aws.ec2.instance.stop
         delete:
-          implementation: aws.cloudify_aws.ec2.instance.terminate
+          implementation: aws.cloudify_aws.ec2.instance.delete
       cloudify.interfaces.validation:
         creation:
           implementation: aws.cloudify_aws.ec2.instance.creation_validation
