@@ -33,13 +33,13 @@ def creation_validation(**_):
 
 
 @operation
-def create(**_):
-    return KeyPair().keypair_created()
+def create(args=None, **_):
+    return KeyPair().created(args)
 
 
 @operation
-def delete(**_):
-    return KeyPair().deleted()
+def delete(args=None, **_):
+    return KeyPair().deleted(args)
 
 
 class KeyPair(AwsBaseNode):
@@ -93,7 +93,7 @@ class KeyPair(AwsBaseNode):
 
         return True
 
-    def create(self, **_):
+    def create(self, args=None, **_):
         """Creates a keypair."""
 
         key_pair_name = utils.get_resource_id()
@@ -110,49 +110,34 @@ class KeyPair(AwsBaseNode):
 
         return True
 
-    def keypair_created(self):
+    def created(self, args=None):
 
         ctx.logger.info(
-                'Attempting to create {0} {1}.'
-                .format(self.aws_resource_type,
-                        self.cloudify_node_instance_id))
+                'Attempting to create keypair {0}.'
+                .format(self.cloudify_node_instance_id))
 
-        if self._create_external_keypair() or self.create():
+        if self._create_external_keypair() or self.create(args):
             return self.post_create()
 
         raise NonRecoverableError(
                 'Neither external resource, nor Cloudify resource, '
                 'unable to create this resource.')
 
-    def delete(self, **_):
+    def delete(self, args=None, **_):
         """Deletes a keypair."""
 
         key_pair_name = utils.get_external_resource_id_or_raise(
                 'delete key pair', ctx.instance)
 
-        if self._delete_external_keypair():
-            return
+        return self.execute(self.client.delete_key_pair,
+                            dict(key_name=key_pair_name), raise_on_falsy=True)
 
-        self.execute(self.client.delete_key_pair,
-                     dict(key_name=key_pair_name), raise_on_falsy=True)
+    def post_delete(self):
 
-        utils.unassign_runtime_properties_from_resource(
-                constants.RUNTIME_PROPERTIES, ctx.instance)
+        super(KeyPair, self).post_delete()
         self._delete_key_file()
+
         return True
-
-    def deleted(self):
-        ctx.logger.info(
-                'Attempting to delete {0} {1}.'
-                .format(self.aws_resource_type,
-                        self.cloudify_node_instance_id))
-
-        if self.delete_external_resource_naively() or self.delete():
-            return self.post_delete()
-
-        raise NonRecoverableError(
-                'Neither external resource, nor Cloudify resource, '
-                'unable to delete this resource.')
 
     def _get_path_to_key_file(self):
         """Gets the path to the key file.
@@ -228,25 +213,6 @@ class KeyPair(AwsBaseNode):
                     'Unable to set permissions key file: {0}.'
                     .format(key_file))
 
-    def _delete_external_keypair(self):
-        """If use_external_resource is True, this will delete the runtime_properties,
-        and then exit.
-
-        :param ctx: The Cloudify context.
-        :return False: Cloudify resource. Continue operation.
-        :return True: External resource. Unset runtime_properties.
-            Ignore operation.
-        """
-
-        if not utils.use_external_resource(ctx.node.properties):
-            return False
-
-        ctx.logger.info('External resource. Not deleting keypair.')
-
-        utils.unassign_runtime_properties_from_resource(
-                constants.RUNTIME_PROPERTIES, ctx.instance)
-        return True
-
     def _delete_key_file(self):
         """ Deletes the key pair in the file specified in the blueprint.
 
@@ -292,3 +258,6 @@ class KeyPair(AwsBaseNode):
                     'External resource, but the key file does not exist.')
         utils.set_external_resource_id(key_pair_name, ctx.instance)
         return True
+
+    def get_resource(self):
+        return self._get_key_pair_by_id(self.resource_id)

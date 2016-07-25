@@ -92,7 +92,7 @@ class TestKeyPair(testtools.TestCase):
         self.assertEqual('keypair',
                          ctx.instance.runtime_properties['external_type'])
 
-        keypair.delete(ctx=ctx)
+        keypair.KeyPair().deleted()
         self.assertNotIn('external_type',
                          ctx.instance.runtime_properties.keys())
 

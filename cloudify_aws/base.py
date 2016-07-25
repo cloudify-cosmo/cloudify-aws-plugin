@@ -419,8 +419,8 @@ class AwsBaseNode(AwsBase):
 
     def post_delete(self):
 
-        utils.unassign_runtime_property_from_resource(
-                constants.EXTERNAL_RESOURCE_ID, ctx.instance)
+        utils.unassign_runtime_properties_from_resource(
+                constants.RUNTIME_PROPERTIES, ctx.instance)
 
         ctx.logger.info(
                 'Removed {0} {1} from Cloudify.'
