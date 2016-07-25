@@ -59,12 +59,12 @@ def get_external_resource_id_or_raise(operation, ctx_instance):
     ctx.logger.debug(
             'Checking if {0} in instance runtime_properties, for {0} '
             'operation.'
-                .format(constants.EXTERNAL_RESOURCE_ID, operation))
+            .format(constants.EXTERNAL_RESOURCE_ID, operation))
 
     if constants.EXTERNAL_RESOURCE_ID not in ctx_instance.runtime_properties:
         raise NonRecoverableError(
                 'Cannot {0} because {1} is not assigned.'
-                    .format(operation, constants.EXTERNAL_RESOURCE_ID))
+                .format(operation, constants.EXTERNAL_RESOURCE_ID))
 
     return ctx_instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
 
@@ -120,12 +120,12 @@ def use_external_resource(ctx_node_properties):
     if not ctx_node_properties['use_external_resource']:
         ctx.logger.debug(
                 'Using Cloudify resource_id: {0}.'
-                    .format(ctx_node_properties['resource_id']))
+                .format(ctx_node_properties['resource_id']))
         return False
     else:
         ctx.logger.debug(
                 'Using external resource_id: {0}.'
-                    .format(ctx_node_properties['resource_id']))
+                .format(ctx_node_properties['resource_id']))
         return True
 
 
@@ -181,13 +181,13 @@ def get_provider_variables():
             provider_config.get(constants.AGENTS_KEYPAIR, {}).get('id'),
         constants.AGENTS_SECURITY_GROUP:
             provider_config.get(constants.AGENTS_SECURITY_GROUP, {})
-                .get('id'),
+            .get('id'),
         constants.SUBNET['AWS_RESOURCE_TYPE']:
             provider_config.get(constants.SUBNET['AWS_RESOURCE_TYPE'], {})
-                .get('id'),
+            .get('id'),
         constants.VPC['AWS_RESOURCE_TYPE']:
             provider_config.get(constants.VPC['AWS_RESOURCE_TYPE'], {})
-                .get('id'),
+            .get('id'),
         constants.AGENTS_AWS_INSTANCE_PARAMETERS:
             provider_config.get(constants.AGENTS_AWS_INSTANCE_PARAMETERS, {})
     }
@@ -206,9 +206,8 @@ def get_instance_or_source_node_properties():
                 'Invalid use of ctx. '
                 'get_instance_or_source_node_properties '
                 'called in a context that is not {0} or {1}.'
-                    .format(constants.RELATIONSHIP_INSTANCE,
-                            constants.NODE_INSTANCE))
-
+                .format(constants.RELATIONSHIP_INSTANCE,
+                        constants.NODE_INSTANCE))
 
 def get_single_connected_node_by_type(
         ctx, type_name, if_exists=False):
@@ -217,8 +216,8 @@ def get_single_connected_node_by_type(
     if check:
         raise NonRecoverableError(
                 'Expected {0} one {1} node. got {2}'
-                    .format('at most' if if_exists else 'exactly',
-                            type_name, len(nodes)))
+                .format('at most' if if_exists else 'exactly',
+                        type_name, len(nodes)))
     return nodes[0] if nodes else None
 
 
