@@ -186,14 +186,9 @@ class AwsBaseRelationship(AwsBase):
                 'Attempting to disassociate {0} from {1}.'
                 .format(self.source_resource_id, self.target_resource_id))
 
-        if args:
-            if self.disassociate_external_resource_naively() \
-                    or self.disassociate(args):
-                return self.post_disassociate()
-        else:
-            if self.disassociate_external_resource_naively() \
-                    or self.disassociate():
-                return self.post_disassociate()
+        if self.disassociate_external_resource_naively() \
+                or self.disassociate(args):
+            return self.post_disassociate()
 
         raise NonRecoverableError(
                 'Source is neither external resource, '
