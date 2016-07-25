@@ -12,11 +12,11 @@ from boto import exception
 from boto.ec2.elb.healthcheck import HealthCheck
 
 # Cloudify imports
-from cloudify_aws import constants, utils, connection
 from cloudify import ctx
 from cloudify.decorators import operation
-from cloudify.exceptions import NonRecoverableError
+from cloudify_aws import constants, connection
 from cloudify.exceptions import RecoverableError
+from cloudify.exceptions import NonRecoverableError
 from cloudify_aws.base import AwsBaseNode, AwsBaseRelationship
 
 
@@ -26,23 +26,23 @@ def creation_validation(**_):
 
 
 @operation
-def create(**_):
-    return Elb().created()
+def create(args=None, **_):
+    return Elb().created(args)
 
 
 @operation
-def delete(**_):
-    return Elb().deleted()
+def delete(args=None, **_):
+    return Elb().deleted(args)
 
 
 @operation
-def associate(**_):
-    return ElbInstanceConnection().associated()
+def associate(args=None, **_):
+    return ElbInstanceConnection().associated(args)
 
 
 @operation
-def disassociate(**_):
-    return ElbInstanceConnection().disassociated()
+def disassociate(args=None, **_):
+    return ElbInstanceConnection().disassociated(args)
 
 
 class ElbInstanceConnection(AwsBaseRelationship):
@@ -58,15 +58,11 @@ class ElbInstanceConnection(AwsBaseRelationship):
                 '{0}_names'.format(constants.ELB['AWS_RESOURCE_TYPE'])
         }
 
-    def associate(self, **_):
+    def associate(self, args=None, **_):
 
-        elb_name = \
-            utils.get_external_resource_id_or_raise(
-                    'register instance', ctx.target.instance)
+        elb_name = self.target_resource_id
 
-        instance_id = \
-            utils.get_external_resource_id_or_raise(
-                    'register instance', ctx.source.instance)
+        instance_id = self.source_resource_id
 
         ctx.logger.info('Attemping to add instance: {0} to elb {1}'
                         .format(instance_id, elb_name))
@@ -93,24 +89,22 @@ class ElbInstanceConnection(AwsBaseRelationship):
 
         return True
 
-    def disassociate(self, **_):
+    def disassociate(self, args=None, **_):
 
-        elb_name = \
-            utils.get_external_resource_id_or_raise(
-                    'deregister instance', ctx.target.instance)
+        elb_name = self.target_resource_id
 
-        instance_id = \
-            utils.get_external_resource_id_or_raise(
-                    'deregister instance', ctx.source.instance)
+        instance_id = self.source_resource_id
 
         instance_list = [instance_id]
-        lb = self._get_existing_elb(elb_name)
 
-        ctx.logger.info('Attempting to remove instance: {0} from elb {1}'
-                        .format(instance_id, elb_name))
+        deregister_args = dict(
+            load_balancer_name=elb_name,
+            instances=instance_list
+        )
 
         try:
-            lb.deregister_instances(instance_list)
+            self.execute(self.client.deregister_instances, deregister_args,
+                         raise_on_falsy=True)
         except (exception.EC2ResponseError,
                 exception.BotoServerError,
                 exception.BotoClientError) as e:
@@ -118,9 +112,6 @@ class ElbInstanceConnection(AwsBaseRelationship):
                 raise RecoverableError('Instance not removed from Load '
                                        'Balancer {0}'.format(str(e)))
 
-        ctx.logger.info(
-                'Instance {0} deregistrated from Load Balancer {1}.'
-                .format(instance_id, elb_name))
         self._remove_instance_from_elb_list_in_properties(instance_id)
 
         return True
@@ -134,13 +125,6 @@ class ElbInstanceConnection(AwsBaseRelationship):
         self._add_instance_to_elb_list_in_properties(self.source_resource_id)
 
         return True
-
-    def _get_existing_elb(self, elb_name):
-        elbs = self._get_elbs_by_names([elb_name])
-        if elbs:
-            if elbs[0].name == elb_name:
-                return elbs[0]
-        return None
 
     def _get_elbs_by_names(self, list_of_names):
 
@@ -184,12 +168,19 @@ class ElbInstanceConnection(AwsBaseRelationship):
         ctx.logger.info('Attempting to get Load Balancer Instance List.')
 
         elb_name = ctx.node.properties['elb_name']
-        lb = self._get_existing_elb(elb_name)
+        lb = self.get_target_resource(elb_name)
         list_of_instances = lb.instances
-        ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID] = \
+        self.resource_id = \
             lb.name
 
         return list_of_instances
+
+    def get_target_resource(self, elb_name=None):
+        elbs = self._get_elbs_by_names([elb_name])
+        if elbs:
+            if elbs[0].name == elb_name:
+                return elbs[0]
+        return None
 
 
 class Elb(AwsBaseNode):
@@ -206,31 +197,7 @@ class Elb(AwsBaseNode):
             'argument': '{0}_names'.format(constants.ELB['AWS_RESOURCE_TYPE'])
         }
 
-    def creation_validation(self, **_):
-        """ This checks that all user supplied info is valid """
-
-        for property_key in constants.ELB['REQUIRED_PROPERTIES']:
-            utils.validate_node_property(property_key, ctx.node.properties)
-
-        if not ctx.node.properties['resource_id']:
-            elb = None
-        else:
-            elb = self._get_existing_elb(
-                    ctx.node.properties['resource_id'])
-
-        if ctx.node.properties['use_external_resource'] and not elb:
-            raise NonRecoverableError(
-                    'External resource, but the supplied '
-                    'elb does not exist in the account.')
-
-        if not ctx.node.properties['use_external_resource'] and elb:
-            raise NonRecoverableError(
-                    'Not external resource, but the supplied '
-                    'elb exists.')
-
-        return True
-
-    def create(self, **_):
+    def create(self, args=None, **_):
 
         lb = self._create_elb()
 
@@ -241,23 +208,6 @@ class Elb(AwsBaseNode):
                 self._add_health_check_to_elb(lb, health_check)
 
         return True
-
-    def deleted(self):
-
-        ctx.logger.info(
-                'Attempting to delete {0} {1}.'
-                .format(self.aws_resource_type,
-                        self.cloudify_node_instance_id))
-
-        if not self.resource_id or self.is_external_resource:
-            return False
-
-        if self.delete_external_resource_naively() or self.delete():
-            return self.post_delete()
-
-        raise NonRecoverableError(
-                'Neither external resource, nor Cloudify resource, '
-                'unable to delete this resource.')
 
     def _create_elb(self):
 
@@ -279,14 +229,12 @@ class Elb(AwsBaseNode):
                     ' successfully, verifying the load balancer '
                     'afterwards has failed')
 
-        ctx.logger.info('Load Balancer Created.')
-
         ctx.instance.runtime_properties['elb_name'] = params_dict['name']
         self.resource_id = params_dict['name']
 
         return lb
 
-    def delete(self, **_):
+    def delete(self, args=None, **_):
 
         elb_name = ctx.node.properties['elb_name']
 
@@ -299,9 +247,11 @@ class Elb(AwsBaseNode):
             raise NonRecoverableError('Load Balancer {0} not deleted.'
                                       .format(str(e)))
 
+        return True
+
+    def post_delete(self):
         if 'elb_name' in ctx.instance.runtime_properties:
             ctx.instance.runtime_properties.pop('elb_name')
-
         return True
 
     def _add_health_check_to_elb(self, elb, health_check):
@@ -338,13 +288,6 @@ class Elb(AwsBaseNode):
             params_dict['subnets'] = ctx.node.properties['subnets']
         return params_dict
 
-    def _get_existing_elb(self, elb_name):
-        elbs = self._get_elbs_by_names([elb_name])
-        if elbs:
-            if elbs[0].name == elb_name:
-                return elbs[0]
-        return None
-
     def _create_health_check(self, user_health_check):
 
         health_check = {
@@ -365,24 +308,5 @@ class Elb(AwsBaseNode):
 
         return health_check
 
-    def _get_elbs_by_names(self, list_of_names):
-
-        ctx.logger.info(
-                'Attempting to get Load Balancers {0}.'.format(list_of_names))
-        total_elb_list = ''
-
-        try:
-            total_elb_list = self.client.get_all_load_balancers()
-            elb_list = self.client.get_all_load_balancers(
-                    load_balancer_names=list_of_names)
-        except (exception.EC2ResponseError,
-                exception.BotoServerError,
-                exception.BotoClientError) as e:
-            if 'LoadBalancerNotFound' in e:
-                ctx.logger.info('Unable to find load balancers matching: '
-                                '{0}'.format(list_of_names))
-                ctx.logger.info('load balancers available: '
-                                '{0}'.format(total_elb_list))
-            raise NonRecoverableError('Error when accessing ELB interface '
-                                      '{0}'.format(str(e)))
-        return elb_list
+    def get_resource(self):
+        return self.resource_id

@@ -17,16 +17,16 @@
 import testtools
 
 # Third Party Imports
-from moto import mock_elb
-from moto import mock_ec2
 import boto
 import mock
+from moto import mock_elb
+from moto import mock_ec2
 
 # Cloudify Imports is imported and used in operations
-from cloudify_aws import constants, connection
-from cloudify_aws.ec2 import elasticloadbalancer
 from cloudify.state import current_ctx
+from cloudify_aws import constants, connection
 from cloudify.mocks import MockCloudifyContext
+from cloudify_aws.ec2 import elasticloadbalancer
 from cloudify.exceptions import NonRecoverableError
 
 
@@ -174,7 +174,7 @@ class TestLoadBalancer(testtools.TestCase):
     def test_create_elb_with_health_check(self):
         ctx = self.mock_elb_ctx('test_create_elb')
         current_ctx.set(ctx=ctx)
-        elasticloadbalancer.Elb().create(ctx=ctx)
+        elasticloadbalancer.create(ctx=ctx)
         self.assertIsNotNone(ctx.instance.runtime_properties.get('elb_name'))
         self.assertIsNotNone(ctx.node.properties.get('health_checks'))
 
@@ -227,10 +227,10 @@ class TestLoadBalancer(testtools.TestCase):
                                              instance_context=instance_ctx,
                                              elb_context=elb_ctx)
         current_ctx.set(ctx=ctx)
-        elasticloadbalancer.ElbInstanceConnection().disassociate(ctx=ctx)
-        self.assertEqual(0,
-                         len(ctx.target.instance.runtime_properties.get(
-                                 'instance_list')))
+        self.assertRaises(NonRecoverableError,
+                          elasticloadbalancer.ElbInstanceConnection()
+                          .disassociate,
+                          ctx=ctx)
 
     @mock_ec2
     @mock_elb
@@ -240,16 +240,17 @@ class TestLoadBalancer(testtools.TestCase):
                 use_external_resource=True,
                 instance_list=[])
         current_ctx.set(elb_ctx)
-        self.assertFalse(elasticloadbalancer.delete(ctx=elb_ctx))
+        self.assertTrue(elasticloadbalancer.delete(ctx=elb_ctx))
 
     @mock_ec2
     @mock_elb
     def test_get_elbs(self):
-        elb_ctx = self.mock_elb_ctx(
+        elb_ctx = self.mock_relationship_context(
                 'test_get_elbs',
                 use_external_resource=True)
         current_ctx.set(elb_ctx)
-        test_elasticloadbalancer = self.create_elb_for_checking()
+        test_elasticloadbalancer = self\
+            .create_elbinstanceconnection_for_checking()
 
         self.assertRaises(NonRecoverableError,
                           test_elasticloadbalancer._get_elbs_by_names,
@@ -289,7 +290,7 @@ class TestLoadBalancer(testtools.TestCase):
         ex = self.assertRaises(NonRecoverableError,
                                elasticloadbalancer.creation_validation,
                                ctx=ctx)
-        self.assertIn('elb exists', ex.message)
+        self.assertIn('Not external resource, but the supplied', ex.message)
 
     @mock_elb
     @mock.patch('cloudify_aws.ec2.elasticloadbalancer'
@@ -328,8 +329,6 @@ class TestLoadBalancer(testtools.TestCase):
                               ctx=ctx)
 
     @mock_elb
-    @mock.patch('cloudify_aws.ec2.elasticloadbalancer'
-                '.ElbInstanceConnection.__init__')
     def test_client_error_add_health_check_to_elb(self, *_):
         with mock.patch('cloudify_aws.connection.ELBConnectionClient',
                         new=self.mock_elb_client_raise_NonRecoverableError):
@@ -337,17 +336,9 @@ class TestLoadBalancer(testtools.TestCase):
                                     use_external_resource=False,
                                     resource_id='myelb')
             current_ctx.set(ctx=ctx)
-
-            with mock.patch('cloudify_aws.ec2.elasticloadbalancer'
-                            '.ElbInstanceConnection.__init__') \
-                    as mock_elbinstanceconnection_init:
-                mock_elbinstanceconnection_init.return_value = None
-                test_elbinstanceconnection = elasticloadbalancer \
-                    .ElbInstanceConnection()
-                self.assertRaises(NonRecoverableError,
-                                  test_elbinstanceconnection
-                                  .associate,
-                                  ctx=ctx)
+            self.assertRaises(NonRecoverableError,
+                              elasticloadbalancer.associate,
+                              ctx=ctx)
 
     @mock_elb
     def test_create_elb_with_bad_health_check(self):

@@ -209,6 +209,7 @@ def get_instance_or_source_node_properties():
                 .format(constants.RELATIONSHIP_INSTANCE,
                         constants.NODE_INSTANCE))
 
+
 def get_single_connected_node_by_type(
         ctx, type_name, if_exists=False):
     nodes = get_connected_nodes_by_type(ctx, type_name)
