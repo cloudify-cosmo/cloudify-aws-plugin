@@ -158,22 +158,17 @@ class VolumeInstanceConnection(AwsBaseRelationship):
 
     def post_associate(self):
 
+        super(VolumeInstanceConnection, self).post_associate()
         ctx.source.instance.runtime_properties['instance_id'] = \
             self.target_resource_id
-        ctx.logger.info(
-                'Associated EBS volume {0} with instance {1}.'
-                .format(self.source_resource_id, self.target_resource_id))
 
         return True
 
     def post_disassociate(self):
 
+        super(VolumeInstanceConnection, self).post_disassociate()
         utils.unassign_runtime_property_from_resource(
                 'instance_id', ctx.source.instance)
-
-        ctx.logger.info(
-                'Detached volume {0} from instance {1}.'
-                .format(self.source_resource_id, self.target_resource_id))
 
         return True
 
@@ -280,9 +275,6 @@ class Ebs(AwsBaseNode):
                 exception.BotoServerError) as e:
             raise NonRecoverableError('{0}'.format(str(e)))
 
-        ctx.logger.info(
-                'Created snapshot of EBS volume {0}.'.format(volume_id))
-
         if constants.EBS['VOLUME_SNAPSHOT_ATTRIBUTE'] not in \
                 ctx.instance.runtime_properties:
             ctx.instance.runtime_properties[
@@ -291,11 +283,17 @@ class Ebs(AwsBaseNode):
         ctx.instance.runtime_properties[
             constants.EBS['VOLUME_SNAPSHOT_ATTRIBUTE']].append(new_snapshot.id)
 
+        return True
+
     def snapshot_created(self, args=None):
         ctx.logger.info(
-                'Attempting to create {0} {1}.'
-                .format(self.aws_resource_type,
-                        self.cloudify_node_instance_id))
+                'Attempting to create snapshot of EBS volume {0}.'
+                .format(self.resource_id))
 
-        if self.create_snapshot(args):
-            return True
+        if self.use_external_resource_naively() or self.create_snapshot(args):
+            return self.post_snapshot_create()
+
+    def post_snapshot_create(self):
+        ctx.logger.info(
+                'Created snapshot of EBS volume {0}.'
+                .format(self.resource_id))
