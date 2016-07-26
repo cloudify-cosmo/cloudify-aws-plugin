@@ -20,7 +20,6 @@ import testtools
 from boto.ec2 import EC2Connection
 from boto.vpc import VPCConnection
 from moto import mock_ec2
-from boto import exception
 
 # Cloudify Imports is imported and used in operations
 from cloudify_aws.ec2 import elasticip
@@ -152,7 +151,7 @@ class TestElasticIP(testtools.TestCase):
 
         ctx = self.mock_ctx('test_allocate')
         current_ctx.set(ctx=ctx)
-        elasticip.ElasticIP().create(ctx=ctx)
+        elasticip.create(ctx=ctx)
         self.assertIn('aws_resource_id', ctx.instance.runtime_properties)
         self.assertNotIn('vpc_id', ctx.instance.runtime_properties)
 
@@ -169,7 +168,7 @@ class TestElasticIP(testtools.TestCase):
             }
         }
         current_ctx.set(ctx=ctx)
-        elasticip.ElasticIP().create(ctx=ctx)
+        elasticip.create(ctx=ctx)
         self.assertIn('aws_resource_id', ctx.instance.runtime_properties)
 
     @mock_ec2
@@ -179,7 +178,7 @@ class TestElasticIP(testtools.TestCase):
         ctx = self.mock_ctx('test_allocate')
         del ctx.node.properties['domain']
         current_ctx.set(ctx=ctx)
-        elasticip.ElasticIP().create(ctx=ctx)
+        elasticip.create(ctx=ctx)
         self.assertIn('aws_resource_id', ctx.instance.runtime_properties)
 
     @mock_ec2
@@ -194,10 +193,10 @@ class TestElasticIP(testtools.TestCase):
         test_elasticipinstanceconnection = \
             self.create_elasticipinstanceconnection_for_checking()
         ctx.source.node.properties['use_external_resource'] = False
-
+        test_elasticipinstanceconnection.resource_id = '127.0.0.1'
         output = \
             test_elasticipinstanceconnection\
-            ._associate_external_elasticip_or_instance('127.0.0.1')
+            .use_source_external_resource_naively()
 
         self.assertEqual(False, output)
 
@@ -229,7 +228,7 @@ class TestElasticIP(testtools.TestCase):
         address = self.get_address()
         ctx.node.properties['use_external_resource'] = True
         ctx.node.properties['resource_id'] = address.public_ip
-        elasticip.ElasticIP().create(ctx=ctx)
+        elasticip.create(ctx=ctx)
         self.assertIn('aws_resource_id', ctx.instance.runtime_properties)
 
     @mock_ec2
@@ -281,7 +280,7 @@ class TestElasticIP(testtools.TestCase):
 
         output = \
             test_elasticipinstanceconnection\
-            ._disassociate_external_elasticip_or_instance()
+            .disassociate_external_resource_naively()
 
         self.assertEqual(False, output)
 
@@ -313,7 +312,7 @@ class TestElasticIP(testtools.TestCase):
             address.public_ip
         ctx.source.instance.runtime_properties['aws_resource_id'] = \
             instance_id
-        elasticip.ElasticIPInstanceConnection().associate(ctx=ctx)
+        elasticip.associate(ctx=ctx)
         self.assertIn('instance_id',
                       ctx.target.instance.runtime_properties)
         self.assertEquals(instance_id,
@@ -335,7 +334,7 @@ class TestElasticIP(testtools.TestCase):
             instance_id
         ctx.source.instance.runtime_properties['vpc_id'] = \
             self.create_vpc_client().create_vpc('10.10.10.0/16').id
-        elasticip.ElasticIPInstanceConnection().associate(ctx=ctx)
+        elasticip.associate(ctx=ctx)
         self.assertIn('instance_id',
                       ctx.target.instance.runtime_properties)
         self.assertEquals(instance_id,
@@ -423,7 +422,7 @@ class TestElasticIP(testtools.TestCase):
         current_ctx.set(ctx=ctx)
         ex = self.assertRaises(
                 NonRecoverableError,
-                elasticip.ElasticIP().creation_validation, ctx=ctx)
+                elasticip.ElasticIP().creation_validation)
         self.assertIn('elasticip does not exist', ex.message)
 
     @mock_ec2
@@ -440,8 +439,8 @@ class TestElasticIP(testtools.TestCase):
         ctx.node.properties['resource_id'] = address.public_ip
         ex = self.assertRaises(
                 NonRecoverableError,
-                elasticip.ElasticIP().creation_validation, ctx=ctx)
-        self.assertIn('elasticip exists', ex.message)
+                elasticip.ElasticIP().creation_validation)
+        self.assertIn('Not external resource, but the supplied', ex.message)
 
     @mock_ec2
     def test_associate_no_instance_id(self):
@@ -522,7 +521,7 @@ class TestElasticIP(testtools.TestCase):
         ctx.source.node.properties['resource_id'] = instance_id
         ctx.source.instance.runtime_properties['aws_resource_id'] = \
             instance_id
-        elasticip.ElasticIPInstanceConnection().associate(ctx=ctx)
+        elasticip.associate(ctx=ctx)
         self.assertEqual(
                 address.public_ip,
                 ctx.source.instance.runtime_properties['public_ip_address'])
@@ -549,7 +548,7 @@ class TestElasticIP(testtools.TestCase):
             instance_id
         ctx.source.instance.runtime_properties['public_ip_address'] = \
             address.public_ip
-        elasticip.ElasticIPInstanceConnection().disassociate(ctx=ctx)
+        elasticip.disassociate(ctx=ctx)
         self.assertNotIn(
                 'public_ip_address', ctx.source.instance.runtime_properties)
 
@@ -577,5 +576,5 @@ class TestElasticIP(testtools.TestCase):
 
         output = \
             test_elasticipinstanceconnection\
-            ._disassociate_external_elasticip_or_instance()
+            .disassociate_external_resource_naively()
         self.assertEqual(False, output)
