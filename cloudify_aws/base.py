@@ -170,10 +170,18 @@ class AwsBaseRelationship(AwsBase):
             self.raise_forbidden_external_resource(
                     self.source_resource_id)
 
-        ctx.logger.info(
-                'Assuming {0} is external, because the user '
-                'specified use_external_resource.Not associating it with {1}.'
-                .format(resource.id, self.target_resource_id))
+        if hasattr(resource, 'id'):
+            ctx.logger.info(
+                    'Assuming {0} is external, because the user '
+                    'specified use_external_resource. '
+                    'Not associating it with {1}.'
+                    .format(resource.id, self.target_resource_id))
+        else:
+            ctx.logger.info(
+                    'Assuming resource is external, because the user '
+                    'specified use_external_resource. '
+                    'Not associating it with {0}.'
+                    .format(self.target_resource_id))
 
         return True
 
@@ -202,17 +210,32 @@ class AwsBaseRelationship(AwsBase):
 
         resource = self.get_source_resource()
 
-        ctx.logger.info(
-                'Assuming {0} is external, because the user specified '
-                'use_external_resource. Not disassociating it with {1}.'
-                .format(resource.id, self.target_resource_id))
+        if hasattr(resource, 'id'):
+            ctx.logger.info(
+                    'Assuming {0} is external, because the user specified '
+                    'use_external_resource. Not disassociating it with {1}.'
+                    .format(resource.id, self.target_resource_id))
+        else:
+            ctx.logger.info(
+                    'Assuming resource is external, because the user '
+                    'specified use_external_resource. '
+                    'Not disassociating it with {0}.'
+                    .format(self.target_resource_id))
 
         return True
 
     def post_associate(self):
+        ctx.logger.info(
+                'Associated {0} with {1}.'
+                .format(self.source_resource_id,
+                        self.target_resource_id))
         return True
 
     def post_disassociate(self):
+        ctx.logger.info(
+                'Disassociated {0} from {1}.'
+                .format(self.source_resource_id,
+                        self.target_resource_id))
         return True
 
     def get_source_resource(self):
