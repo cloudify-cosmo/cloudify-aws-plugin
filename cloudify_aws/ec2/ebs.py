@@ -101,10 +101,7 @@ class VolumeInstanceConnection(AwsBaseRelationship):
                     'EBS volume {0} not found in account.'.format(volume_id))
 
         if constants.EBS['VOLUME_CREATING'] in volume_object.update():
-            return ctx.operation.retry(
-                    message='Waiting for volume to be ready. '
-                            'Volume in state {0}'
-                            .format(volume_object.status))
+            return False
         elif constants.EBS['VOLUME_AVAILABLE'] not in volume_object.update():
             raise NonRecoverableError(
                     'Cannot attach Volume {0} because it is in state {1}.'
@@ -142,19 +139,8 @@ class VolumeInstanceConnection(AwsBaseRelationship):
         if args:
             detach_args.update(args)
 
-        try:
-            detached = self.execute(self.client.detach_volume, detach_args,
-                                    raise_on_falsy=True)
-        except (exception.EC2ResponseError,
-                exception.BotoServerError) as e:
-            raise NonRecoverableError('{0}'.format(str(e)))
-
-        if not detached:
-            raise NonRecoverableError(
-                    'Failed to detach volume {0} from instance {1}'
-                    .format(volume_id, instance_id))
-
-        return True
+        return self.execute(self.client.detach_volume, detach_args,
+                            raise_on_falsy=True)
 
     def post_associate(self):
 
@@ -215,9 +201,7 @@ class Ebs(AwsBaseNode):
         """
 
         if not self._delete_volume():
-            return ctx.operation.retry(
-                    message='Failed to delete volume {0}.'
-                    .format(self.resource_id))
+            return False
 
         utils.unassign_runtime_property_from_resource(
                 constants.ZONE, ctx.instance)
@@ -290,7 +274,7 @@ class Ebs(AwsBaseNode):
                 'Attempting to create snapshot of EBS volume {0}.'
                 .format(self.resource_id))
 
-        if self.use_external_resource_naively() or self.create_snapshot(args):
+        if self.create_snapshot(args):
             return self.post_snapshot_create()
 
     def post_snapshot_create(self):
