@@ -153,11 +153,6 @@ class AwsBaseRelationship(AwsBase):
                 or self.associate(args):
             return self.post_associate()
 
-        elif not self.associate(args):
-            return ctx.operation.retry(
-                    message='Failed to associate {0} with {1}.'
-                    .format(self.source_resource_id, self.target_resource_id))
-
         raise NonRecoverableError(
                 'Source is neither external resource, '
                 'nor Cloudify resource, unable to associate {0} with {1}.'
@@ -202,11 +197,6 @@ class AwsBaseRelationship(AwsBase):
         if self.disassociate_external_resource_naively() \
                 or self.disassociate(args):
             return self.post_disassociate()
-
-        elif not self.disassociate(args):
-            return ctx.operation.retry(
-                    message='Failed to disassociate {0} from {1}.'
-                    .format(self.source_resource_id, self.target_resource_id))
 
         raise NonRecoverableError(
                 'Source is neither external resource, '
@@ -319,11 +309,6 @@ class AwsBaseNode(AwsBase):
         if self.use_external_resource_naively() or self.create(args):
             return self.post_create()
 
-        elif not self.create(args):
-            return ctx.operation.retry(
-                    message='Failed to create {0} {1}.'
-                    .format(self.aws_resource_type, self.resource_id))
-
         raise NonRecoverableError(
                 'Neither external resource, nor Cloudify resource, '
                 'unable to create this resource.')
@@ -371,11 +356,6 @@ class AwsBaseNode(AwsBase):
 
         if self.delete_external_resource_naively() or self.delete(args):
             return self.post_delete()
-
-        elif not self.delete(args):
-            return ctx.operation.retry(
-                    message='Failed to delete {0} {1}.'
-                    .format(self.aws_resource_type, self.resource_id))
 
         raise NonRecoverableError(
                 'Neither external resource, nor Cloudify resource, '
