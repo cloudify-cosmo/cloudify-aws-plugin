@@ -158,6 +158,15 @@ node_templates:
     relationships:
       - type: cloudify.aws.relationships.volume_connected_to_instance
         target: pair_c_connected_instance
+        source_interfaces:
+          cloudify.interfaces.relationship_lifecycle:
+            postconfigure: aws.ec2.ebs.attach
+            establish:
+              implementation: aws.ec2.instance.modify_instance_attributes
+              inputs:
+                new_attributes:
+                  blockDeviceMapping: [ { concat: [ { get_input: vol_device }, '=true'] } ]
+                ctx_instance_type: 'target'
 
   pair_c_connected_instance:
     type: cloudify.aws.nodes.Instance

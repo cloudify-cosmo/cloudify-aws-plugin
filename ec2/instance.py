@@ -88,14 +88,13 @@ def run_instances(**_):
 
 
 @operation
-def modify_instance_attributes(new_attributes, **_):
-    _modify_instance_attributes(new_attributes)
+def modify_instance_attributes(new_attributes, ctx_instance_type=None, **_):
+    _modify_instance_attributes(new_attributes, ctx_instance_type)
 
 
-def _modify_instance_attributes(new_attributes):
+def _modify_instance_attributes(new_attributes, ctx_instance_type):
 
-    instance_id = \
-        ctx.instance.runtime_properties.get(constants.EXTERNAL_RESOURCE_ID)
+    instance_id = _get_instance_id_from_ctx(ctx_instance_type)
 
     if not instance_id:
         ctx.operation.retry('instance_id not yet set.')
@@ -109,6 +108,19 @@ def _modify_instance_attributes(new_attributes):
                 boto.exception.BotoServerError,
                 AttributeError) as e:
             raise NonRecoverableError('{0}'.format(str(e)))
+
+
+def _get_instance_id_from_ctx(ctx_instance_type):
+
+    ctx_instance_type = ctx_instance_type or ''
+    if 'source' in ctx_instance_type:
+        return ctx.source.instance.runtime_properties.get(
+                constants.EXTERNAL_RESOURCE_ID)
+    elif 'target' in ctx_instance_type:
+        return ctx.target.instance.runtime_properties.get(
+                constants.EXTERNAL_RESOURCE_ID)
+
+    return ctx.instance.runtime_properties.get(constants.EXTERNAL_RESOURCE_ID)
 
 
 @operation
