@@ -72,7 +72,7 @@ class TestKeyPair(testtools.TestCase):
         current_ctx.set(ctx=ctx)
 
         key_path = self.create_dummy_key_path(ctx=ctx)
-        keypair.create(ctx=ctx)
+        keypair.KeyPair().created()
         self.addCleanup(os.remove, key_path)
         self.assertIn('aws_resource_id',
                       ctx.instance.runtime_properties.keys())
@@ -258,21 +258,6 @@ class TestKeyPair(testtools.TestCase):
         self.assertIn(
                 'External resource, but the key file does not exist',
                 ex.message)
-
-    @mock_ec2
-    def test_get_key_pair_by_id(self):
-        """ This tests that the _get_key_pair_by_id function
-        returns the same keypair object.
-        """
-
-        ctx = self.mock_ctx('test_get_key_pair_by_id')
-        current_ctx.set(ctx=ctx)
-        test_keypair = self.create_kp_for_checking()
-
-        ec2_client = connection.EC2ConnectionClient().client()
-        kp = ec2_client.create_key_pair('test_get_key_pair_by_id_bad_id')
-        output = test_keypair._get_key_pair_by_id(kp.name)
-        self.assertEqual(output.name, kp.name)
 
     @mock_ec2
     def test_get_key_file_path_missing_property(self):

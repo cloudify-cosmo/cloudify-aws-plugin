@@ -16,9 +16,6 @@
 # Built-in Imports
 import os
 
-# Third-party Imports
-from boto import exception
-
 # Cloudify imports
 from cloudify_aws import utils, constants
 from cloudify import ctx
@@ -71,7 +68,9 @@ class KeyPair(AwsBaseNode):
                         'External resource, but the key file '
                         'does not exist locally.')
             try:
-                self._get_key_pair_by_id(ctx.node.properties['resource_id'])
+                if not self.get_all_matching(
+                        ctx.node.properties['resource_id']):
+                    raise NonRecoverableError(self.not_found_error)
             except NonRecoverableError as e:
                 raise NonRecoverableError(
                         'External resource, '
@@ -83,7 +82,7 @@ class KeyPair(AwsBaseNode):
                         'Not external resource, '
                         'but the key file exists locally.')
             try:
-                self._get_key_pair_by_id(ctx.node.properties['resource_id'])
+                self.get_all_matching(ctx.node.properties['resource_id'])
             except NonRecoverableError:
                 pass
             else:
@@ -109,19 +108,6 @@ class KeyPair(AwsBaseNode):
         self.resource_id = kp.name
 
         return True
-
-    def created(self, args=None):
-
-        ctx.logger.info(
-                'Attempting to create keypair {0}.'
-                .format(self.cloudify_node_instance_id))
-
-        if self._create_external_keypair() or self.create(args):
-            return self.post_create()
-
-        raise NonRecoverableError(
-                'Neither external resource, nor Cloudify resource, '
-                'unable to create this resource.')
 
     def delete(self, args=None, **_):
         """Deletes a keypair."""
@@ -161,22 +147,6 @@ class KeyPair(AwsBaseNode):
         """
 
         return True if os.path.exists(path_to_key_file) else False
-
-    def _get_key_pair_by_id(self, key_pair_id):
-        """Returns the key pair object for a given key pair id.
-
-        :param key_pair_id: The ID of a keypair.
-        :returns The boto keypair object.
-        :raises NonRecoverableError: If EC2 finds no matching key pairs.
-        """
-
-        try:
-            key_pairs = self.client.get_all_key_pairs(keynames=key_pair_id)
-        except (exception.EC2ResponseError,
-                exception.BotoServerError) as e:
-            raise NonRecoverableError('{0}'.format(str(e)))
-
-        return key_pairs[0] if key_pairs else None
 
     def _save_key_pair(self, key_pair_object):
         """Saves a keypair to the filesystem.
@@ -230,7 +200,7 @@ class KeyPair(AwsBaseNode):
                         'Unable to delete key pair: {0}.'
                         .format(str(e)))
 
-    def _create_external_keypair(self):
+    def use_external_resource_naively(self):
         """If use_external_resource is True, this will set the runtime_properties,
         and then exit.
 
@@ -241,11 +211,10 @@ class KeyPair(AwsBaseNode):
         :raises NonRecoverableError: If unable to locate the existing key file.
         """
 
-        if not utils.use_external_resource(ctx.node.properties):
+        if not self.is_external_resource:
             return False
 
-        key_pair_name = ctx.node.properties['resource_id']
-        key_pair_in_account = self._get_key_pair_by_id(key_pair_name)
+        key_pair_in_account = self.get_resource()
         key_path_in_filesystem = self._get_path_to_key_file()
         ctx.logger.debug(
                 'Path to key file: {0}.'.format(key_path_in_filesystem))
@@ -256,8 +225,7 @@ class KeyPair(AwsBaseNode):
         if not self._search_for_key_file(key_path_in_filesystem):
             raise NonRecoverableError(
                     'External resource, but the key file does not exist.')
-        utils.set_external_resource_id(key_pair_name, ctx.instance)
         return True
 
     def get_resource(self):
-        return self._get_key_pair_by_id(self.resource_id)
+        return self.get_all_matching(self.resource_id)
