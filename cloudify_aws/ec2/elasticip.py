@@ -66,12 +66,8 @@ class ElasticIPInstanceConnection(AwsBaseRelationship):
         that was also created by Cloudify.
         """
 
-        instance_id = \
-            utils.get_external_resource_id_or_raise(
-                    'associate elasticip', ctx.source.instance)
-        elasticip = \
-            utils.get_external_resource_id_or_raise(
-                    'associate elasticip', ctx.target.instance)
+        instance_id = self.source_resource_id
+        elasticip = self.target_resource_id
 
         kw = dict(instance_id=instance_id, public_ip=elasticip)
 
@@ -98,8 +94,7 @@ class ElasticIPInstanceConnection(AwsBaseRelationship):
         ctx.source.instance.runtime_properties['public_ip_address'] = \
             self.target_resource_id
         ctx.target.instance.runtime_properties['instance_id'] = \
-            ctx.source.instance.runtime_properties[
-                constants.EXTERNAL_RESOURCE_ID]
+            self.source_resource_id
         vpc_id = ctx.source.instance.runtime_properties.get('vpc_id')
         if vpc_id:
             ctx.target.instance.runtime_properties['vpc_id'] = vpc_id
@@ -111,11 +106,9 @@ class ElasticIPInstanceConnection(AwsBaseRelationship):
         that was also created by Cloudify.
         """
 
-        elasticip = \
-            utils.get_external_resource_id_or_raise(
-                    'disassociate elasticip', ctx.target.instance)
+        elasticip = self.target_resource_id
 
-        elasticip_object = self._get_address_object_by_id(elasticip)
+        elasticip_object = self.get_target_resource()
 
         if not elasticip_object:
             raise NonRecoverableError(
@@ -147,27 +140,29 @@ class ElasticIPInstanceConnection(AwsBaseRelationship):
 
         return True
 
-    def _get_address_object_by_id(self, address_id):
-        """Returns the elastip object for a given address elastip.
-
-        :param address_id: The ID of a elastip.
-        :returns The boto elastip object.
-        """
-
-        address = self._get_all_addresses(address=address_id)
-
-        return address[0] if address else address
-
-    def _get_all_addresses(self, address=None):
-        """Returns a list of elastip objects for a given address elastip.
-
-        :param address: The ID of a elastip.
-        :returns A list of elasticip objects.
-        :raises NonRecoverableError: If Boto errors.
-        """
+    def get_source_resource(self):
 
         try:
-            addresses = self.client.get_all_addresses(address)
+            instances = self.execute(self.client.get_all_instances,
+                                     dict(instance_ids=self
+                                          .source_resource_id),
+                                     raise_on_falsy=True)
+        except exception.EC2ResponseError as e:
+            if constants.INSTANCE['NOT_FOUND_ERROR'] in e:
+                instances = self.client.get_all_instances()
+                utils.log_available_resources(instances)
+            return None
+        except exception.BotoServerError as e:
+            raise NonRecoverableError('{0}'.format(str(e)))
+
+        return instances[0] if instances else instances
+
+    def get_target_resource(self):
+
+        try:
+            addresses = self.execute(self.client.get_all_addresses,
+                                     dict(addresses=self.target_resource_id),
+                                     raise_on_falsy=True)
         except exception.EC2ResponseError as e:
             if constants.ELASTICIP['NOT_FOUND_ERROR'] in e:
                 addresses = self.client.get_all_addresses()
@@ -176,10 +171,7 @@ class ElasticIPInstanceConnection(AwsBaseRelationship):
         except exception.BotoServerError as e:
             raise NonRecoverableError('{0}'.format(str(e)))
 
-        return addresses
-
-    def get_source_resource(self):
-        return self._get_address_object_by_id(self.target_resource_id)
+        return addresses[0] if addresses else addresses
 
 
 class ElasticIP(AwsBaseNode):
@@ -232,18 +224,16 @@ class ElasticIP(AwsBaseNode):
         in the connected account.
         """
 
-        elasticip = \
-            utils.get_external_resource_id_or_raise(
-                    'release elasticip', ctx.instance)
-
-        address_object = self._get_address_object_by_id(elasticip)
+        address_object = self.get_resource()
 
         if not address_object:
             raise NonRecoverableError(
                     'Unable to release elasticip. Elasticip not in account.')
 
         try:
-            deleted = address_object.delete()
+            deleted = self.execute(self.client.release_address,
+                                   dict(public_ip=self.resource_id),
+                                   raise_on_falsy=True)
         except (exception.EC2ResponseError,
                 exception.BotoServerError) as e:
             raise NonRecoverableError('{0}'.format(str(e)))
@@ -253,7 +243,7 @@ class ElasticIP(AwsBaseNode):
                     'Elastic IP {0} deletion failed for an unknown reason.'
                     .format(address_object.public_ip))
 
-        address = self._get_address_object_by_id(address_object.public_ip)
+        address = self.get_resource()
 
         if not address:
             utils.unassign_runtime_property_from_resource(
@@ -264,37 +254,5 @@ class ElasticIP(AwsBaseNode):
 
         return True
 
-    def _get_address_object_by_id(self, address_id):
-        """Returns the elastip object for a given address elastip.
-
-        :param address_id: The ID of a elastip.
-        :returns The boto elastip object.
-        """
-
-        address = self._get_all_addresses(address=address_id)
-
-        return address[0] if address else address
-
-    def _get_all_addresses(self, address=None):
-        """Returns a list of elastip objects for a given address elastip.
-
-        :param address: The ID of a elastip.
-        :returns A list of elasticip objects.
-        :raises NonRecoverableError: If Boto errors.
-        """
-
-        try:
-            addresses = self.client.get_all_addresses(address)
-        except exception.EC2ResponseError as e:
-            if constants.ELASTICIP['NOT_FOUND_ERROR'] in e:
-                addresses = self.client.get_all_addresses()
-                utils.log_available_resources(addresses)
-            return None
-        except exception.BotoServerError as e:
-            raise NonRecoverableError('{0}'.format(str(e)))
-
-        return addresses
-
     def get_resource(self):
-        return self._get_address_object_by_id(
-                ctx.node.properties['resource_id'])
+        return self.get_all_matching(self.resource_id)
