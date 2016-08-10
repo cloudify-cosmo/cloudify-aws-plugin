@@ -116,25 +116,9 @@ class SecurityGroup(AwsBaseNode):
         """
 
         if not re.match('^sg\-[0-9a-z]{8}$', group_id):
-            group = self._get_security_group_from_name(group_id)
-            return group
-
-        group = self._get_all_security_groups(list_of_group_ids=group_id)
-
-        return group[0] if group else group
-
-    def _get_security_group_from_name(self, group_name):
-        """Returns the security group object for a given group name.
-
-        :param group_name: The name of a security group.
-        :returns The boto security group object.
-        """
-
-        if re.match('^sg\-[0-9a-z]{8}$', group_name):
-            group = self._get_security_group_from_id(group_name)
-            return group
-
-        group = self._get_all_security_groups(list_of_group_names=group_name)
+            group = self._get_all_security_groups(list_of_group_names=group_id)
+        else:
+            group = self._get_all_security_groups(list_of_group_ids=group_id)
 
         return group[0] if group else group
 
@@ -244,7 +228,8 @@ class SecurityGroup(AwsBaseNode):
                     'does not exist in the account'.format(group_id))
 
         try:
-            group_to_delete.delete()
+            self.execute(self.client.delete_security_group,
+                         dict(group_id=group_id), raise_on_falsy=True)
         except (exception.EC2ResponseError,
                 exception.BotoServerError) as e:
             raise NonRecoverableError('{0}'.format(str(e)))

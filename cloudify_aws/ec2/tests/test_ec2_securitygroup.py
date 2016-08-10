@@ -295,35 +295,34 @@ class TestSecurityGroup(testtools.TestCase):
 
     @mock.patch('cloudify_aws.ec2.securitygroup.SecurityGroup.__init__')
     @mock.patch('cloudify_aws.ec2.securitygroup.SecurityGroup'
-                '._get_security_group_from_name')
-    def test_get_security_group_from_name(self, *_):
+                '._get_security_group_from_id')
+    def test_get_security_group_from_id(self, *_):
         """This tests that _get_security_group_from_name
         returns a securoty group from an ID as expected.
         """
 
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
-                'test_get_security_group_from_name', test_properties)
+                'test_get_security_group_from_id', test_properties)
         current_ctx.set(ctx=ctx)
-        # test_securitygroup = self.create_sg_for_checking()
 
         with mock_ec2():
             with mock.patch('cloudify_aws.ec2.securitygroup.SecurityGroup'
                             '.__init__') as mock_sg_init:
                 with mock.patch('cloudify_aws.ec2.securitygroup.SecurityGroup'
-                                '._get_security_group_from_name') as \
+                                '._get_security_group_from_id') as \
                         mock_get_sg:
                     mock_sg_init.return_value = None
                     ec2_client = connection.EC2ConnectionClient().client()
                     group = \
                         ec2_client.create_security_group(
-                                'test_get_security_group_from_name',
+                                'test_get_security_group_from_id',
                                 'this is test')
                     mock_get_sg.return_value = group
                     ctx.instance.runtime_properties['aws_resource_id'] = \
                         group.id
                     output = securitygroup.SecurityGroup()\
-                        ._get_security_group_from_name(
+                        ._get_security_group_from_id(
                             group.id)
                     self.assertEqual(group.id, output.id)
 
