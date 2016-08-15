@@ -95,10 +95,14 @@ class KeyPair(AwsBaseNode):
     def create(self, args=None, **_):
         """Creates a keypair."""
 
-        key_pair_name = utils.get_resource_id()
+        create_args = {
+            'key_name': utils.get_resource_id()
+        }
+
+        create_args.update(args if args else {})
 
         kp = self.execute(self.client.create_key_pair,
-                          dict(key_name=key_pair_name), raise_on_falsy=True)
+                          create_args, raise_on_falsy=True)
 
         self._save_key_pair(kp)
 
@@ -114,9 +118,13 @@ class KeyPair(AwsBaseNode):
 
         key_pair_name = utils.get_external_resource_id_or_raise(
                 'delete key pair', ctx.instance)
+        delete_args = {
+            'key_name': key_pair_name
+        }
+        delete_args.update(args if args else {})
 
         return self.execute(self.client.delete_key_pair,
-                            dict(key_name=key_pair_name), raise_on_falsy=True)
+                            delete_args, raise_on_falsy=True)
 
     def post_delete(self):
 
