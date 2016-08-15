@@ -84,12 +84,12 @@ class ElbInstanceConnection(AwsBaseRelationship):
         except (exception.EC2ResponseError,
                 exception.BotoServerError,
                 exception.BotoClientError) as e:
-                raise NonRecoverableError('Instance not added to Load '
-                                          'Balancer {0}'.format(str(e)))
+            raise NonRecoverableError('Instance not added to Load '
+                                      'Balancer {0}'.format(str(e)))
 
         ctx.logger.info(
-                'Instance {0} added to Load Balancer {1}.'
-                .format(instance_id, elb_name))
+            'Instance {0} added to Load Balancer {1}.'
+            .format(instance_id, elb_name))
 
         self._add_instance_to_elb_list_in_properties(instance_id)
 
@@ -113,15 +113,16 @@ class ElbInstanceConnection(AwsBaseRelationship):
                 raise RecoverableError('Instance not removed from Load '
                                        'Balancer {0}'.format(str(e)))
 
-        self._remove_instance_from_elb_list_in_properties(self.source_resource_id)
+        self._remove_instance_from_elb_list_in_properties(
+            self.source_resource_id)
 
         return True
 
     def post_associate(self):
 
         ctx.logger.info(
-                'Instance {0} registrated to Load Balancer {1}.'
-                .format(self.source_resource_id, self.target_resource_id))
+            'Instance {0} registrated to Load Balancer {1}.'
+            .format(self.source_resource_id, self.target_resource_id))
 
         self._add_instance_to_elb_list_in_properties(self.source_resource_id)
 
@@ -133,13 +134,13 @@ class ElbInstanceConnection(AwsBaseRelationship):
                 ctx.target.instance.runtime_properties.keys():
             ctx.target.instance.runtime_properties['instance_list'] = []
 
-        ctx.target.instance.runtime_properties['instance_list']\
+        ctx.target.instance.runtime_properties['instance_list'] \
             .append(instance_id)
 
     def _remove_instance_from_elb_list_in_properties(self, instance_id):
         if instance_id in \
                 ctx.target.instance.runtime_properties['instance_list']:
-            ctx.target.instance.runtime_properties['instance_list']\
+            ctx.target.instance.runtime_properties['instance_list'] \
                 .remove(instance_id)
 
     def _get_instance_list(self):
@@ -165,8 +166,8 @@ class Elb(AwsBaseNode):
 
     def __init__(self):
         super(Elb, self).__init__(
-                constants.ELB['AWS_RESOURCE_TYPE'],
-                constants.ELB['REQUIRED_PROPERTIES']
+            constants.ELB['AWS_RESOURCE_TYPE'],
+            constants.ELB['REQUIRED_PROPERTIES']
         )
         self.client = connection.ELBConnectionClient().client()
         self.not_found_error = constants.ELB['NOT_FOUND_ERROR']
@@ -202,10 +203,10 @@ class Elb(AwsBaseNode):
 
         if not lb:
             raise NonRecoverableError(
-                    'Load Balancer not created. While the create '
-                    'request was completed'
-                    ' successfully, verifying the load balancer '
-                    'afterwards has failed')
+                'Load Balancer not created. While the create '
+                'request was completed'
+                ' successfully, verifying the load balancer '
+                'afterwards has failed')
 
         ctx.instance.runtime_properties['elb_name'] = params_dict['name']
         self.resource_id = params_dict['name']
@@ -236,9 +237,9 @@ class Elb(AwsBaseNode):
 
         hc = self._create_health_check(health_check)
         add_hc_args = dict(
-                            name=elb.name,
-                            health_check=hc
-                        )
+            name=elb.name,
+            health_check=hc
+        )
 
         try:
             self.execute(self.client.configure_health_check, add_hc_args,
@@ -250,8 +251,8 @@ class Elb(AwsBaseNode):
                                       'Balancer {0}'.format(str(e)))
 
         ctx.logger.info(
-                'Health check added to Load Balancer {0}.'
-                .format(elb.name))
+            'Health check added to Load Balancer {0}.'
+            .format(elb.name))
 
     def _create_elb_params(self):
         params_dict = {'listeners': ctx.node.properties['listeners'],
@@ -281,8 +282,8 @@ class Elb(AwsBaseNode):
             health_check = HealthCheck(**health_check)
         except exception.BotoClientError as e:
             raise NonRecoverableError(
-                    'Health Check not created due to bad definition: '
-                    '{0}'.format(str(e)))
+                'Health Check not created due to bad definition: '
+                '{0}'.format(str(e)))
 
         return health_check
 

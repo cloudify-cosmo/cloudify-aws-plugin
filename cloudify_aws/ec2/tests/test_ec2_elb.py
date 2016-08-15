@@ -24,7 +24,7 @@ from moto import mock_ec2
 
 # Cloudify Imports is imported and used in operations
 from cloudify.state import current_ctx
-from cloudify_aws import constants, connection
+from cloudify_aws import constants
 from cloudify.mocks import MockCloudifyContext
 from cloudify_aws.ec2 import elasticloadbalancer
 from cloudify.exceptions import NonRecoverableError
@@ -174,7 +174,7 @@ class TestLoadBalancer(testtools.TestCase):
     def test_create_elb_with_health_check(self):
         ctx = self.mock_elb_ctx('test_create_elb')
         current_ctx.set(ctx=ctx)
-        elasticloadbalancer.create(ctx=ctx)
+        elasticloadbalancer.create(args=None, ctx=ctx)
         self.assertIsNotNone(ctx.instance.runtime_properties.get('elb_name'))
         self.assertIsNotNone(ctx.node.properties.get('health_checks'))
 
@@ -183,7 +183,7 @@ class TestLoadBalancer(testtools.TestCase):
         ctx = self.mock_elb_ctx('test_remove_elb')
         current_ctx.set(ctx=ctx)
         self._create_external_elb()
-        elasticloadbalancer.delete(ctx=ctx)
+        elasticloadbalancer.delete(args=None, ctx=ctx)
         self.assertIsNone(ctx.instance.runtime_properties.get('elb_name'))
 
     @mock_ec2
@@ -240,7 +240,7 @@ class TestLoadBalancer(testtools.TestCase):
                 use_external_resource=True,
                 instance_list=[])
         current_ctx.set(elb_ctx)
-        self.assertTrue(elasticloadbalancer.delete(ctx=elb_ctx))
+        self.assertTrue(elasticloadbalancer.delete(args=None, ctx=elb_ctx))
 
     @mock_elb
     def test_validation_not_external(self):
