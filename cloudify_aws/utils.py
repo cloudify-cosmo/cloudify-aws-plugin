@@ -51,7 +51,6 @@ def get_external_resource_id_or_raise(operation, ctx_instance):
 
     :param operation: A string representing what is happening.
     :param ctx_instance: The CTX Node-Instance Context.
-    :param ctx:  The Cloudify ctx context.
     :returns The EXTERNAL_RESOURCE_ID runtime_property for a CTX Instance.
     :raises NonRecoverableError: If EXTERNAL_RESOURCE_ID has not been set.
     """
@@ -73,7 +72,7 @@ def set_external_resource_id(value, ctx_instance, external=True):
     """Sets the EXTERNAL_RESOURCE_ID runtime_property for a Node-Instance.
 
     :param value: the desired EXTERNAL_RESOURCE_ID runtime_property
-    :param ctx:  The Cloudify ctx context.
+    :param ctx_instance:  The Cloudify ctx context.
     :param external:  Boolean representing if it is external resource or not.
     """
 
@@ -98,7 +97,6 @@ def unassign_runtime_property_from_resource(property_name, ctx_instance):
 
     :param property_name: The runtime_property to remove.
     :param ctx_instance: The CTX Node-Instance Context.
-    :param ctx:  The Cloudify ctx context.
     """
 
     value = ctx_instance.runtime_properties.pop(property_name, None)
@@ -112,8 +110,7 @@ def use_external_resource(ctx_node_properties):
     logs the ID and answer to the debug log,
     and returns boolean False (if not external) or True.
 
-    :param node_properties: The ctx node properties for a node.
-    :param ctx:  The Cloudify ctx context.
+    :param ctx_node_properties: The ctx node properties for a node.
     :returns boolean: False if not external.
     """
 
@@ -133,7 +130,7 @@ def get_target_external_resource_ids(relationship_type, ctx_instance):
     """Gets a list of target node ids connected via a relationship to a node.
 
     :param relationship_type: A string representing the type of relationship.
-    :param ctx:  The Cloudify ctx context.
+    :param ctx_instance:  The Cloudify ctx context.
     :returns a list of security group ids.
     """
 
@@ -157,7 +154,6 @@ def get_resource_id():
     """Returns the resource id, if the user doesn't provide one,
     this will create one for them.
 
-    :param node_properties: The node properties dictionary.
     :return resource_id: A string.
     """
 
@@ -180,14 +176,14 @@ def get_provider_variables():
         constants.AGENTS_KEYPAIR:
             provider_config.get(constants.AGENTS_KEYPAIR, {}).get('id'),
         constants.AGENTS_SECURITY_GROUP:
-            provider_config.get(constants.AGENTS_SECURITY_GROUP, {})
-            .get('id'),
+            provider_config.get(constants.AGENTS_SECURITY_GROUP,
+                                {}).get('id'),
         constants.SUBNET['AWS_RESOURCE_TYPE']:
-            provider_config.get(constants.SUBNET['AWS_RESOURCE_TYPE'], {})
-            .get('id'),
+            provider_config.get(constants.SUBNET['AWS_RESOURCE_TYPE'],
+                                {}).get('id'),
         constants.VPC['AWS_RESOURCE_TYPE']:
-            provider_config.get(constants.VPC['AWS_RESOURCE_TYPE'], {})
-            .get('id'),
+            provider_config.get(constants.VPC['AWS_RESOURCE_TYPE'],
+                                {}).get('id'),
         constants.AGENTS_AWS_INSTANCE_PARAMETERS:
             provider_config.get(constants.AGENTS_AWS_INSTANCE_PARAMETERS, {})
     }
@@ -211,8 +207,8 @@ def get_instance_or_source_node_properties():
 
 
 def get_single_connected_node_by_type(
-        ctx, type_name, if_exists=False):
-    nodes = get_connected_nodes_by_type(ctx, type_name)
+        passed_ctx, type_name, if_exists=False):
+    nodes = get_connected_nodes_by_type(passed_ctx, type_name)
     check = len(nodes) > 1 if if_exists else len(nodes) != 1
     if check:
         raise NonRecoverableError(
@@ -222,8 +218,8 @@ def get_single_connected_node_by_type(
     return nodes[0] if nodes else None
 
 
-def get_connected_nodes_by_type(ctx, type_name):
-    return [rel.target.node for rel in ctx.instance.relationships
+def get_connected_nodes_by_type(passed_ctx, type_name):
+    return [rel.target.node for rel in passed_ctx.instance.relationships
             if rel.target.instance.runtime_properties.get(
                 constants.AWS_TYPE_PROPERTY) and
             rel.target.instance.runtime_properties.get(
