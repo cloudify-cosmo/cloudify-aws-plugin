@@ -247,10 +247,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create: aws.ec2.elasticip.allocate
-        delete: aws.ec2.elasticip.release
+        create: aws.cloudify_aws.ec2.elasticip.create
+        delete: aws.cloudify_aws.ec2.elasticip.delete
       cloudify.interfaces.validation:
-        creation: aws.ec2.elasticip.creation_validation
+        creation: aws.cloudify_aws.ec2.elasticip.creation_validation
 
   cloudify.aws.nodes.SecurityGroup:
     derived_from: cloudify.nodes.SecurityGroup
@@ -767,8 +767,8 @@ relationships:
     derived_from: cloudify.relationships.connected_to
     source_interfaces:
       cloudify.interfaces.relationship_lifecycle:
-        establish: aws.ec2.elasticip.associate
-        unlink: aws.ec2.elasticip.disassociate
+        establish: aws.cloudify_aws.ec2.elasticip.associate
+        unlink: aws.cloudify_aws.ec2.elasticip.disassociate
 
   cloudify.aws.relationships.instance_connected_to_keypair:
     derived_from: cloudify.relationships.connected_to
