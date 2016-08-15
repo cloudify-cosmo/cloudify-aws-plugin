@@ -170,10 +170,18 @@ class AwsBaseRelationship(AwsBase):
             self.raise_forbidden_external_resource(
                     self.source_resource_id)
 
-        ctx.logger.info(
-                'Assuming {0} is external, because the user '
-                'specified use_external_resource.Not associating it with {1}.'
-                .format(resource.id, self.target_resource_id))
+        if hasattr(resource, 'id'):
+            ctx.logger.info(
+                    'Assuming {0} is external, because the user '
+                    'specified use_external_resource. '
+                    'Not associating it with {1}.'
+                    .format(resource.id, self.target_resource_id))
+        else:
+            ctx.logger.info(
+                    'Assuming resource is external, because the user '
+                    'specified use_external_resource. '
+                    'Not associating it with {0}.'
+                    .format(self.target_resource_id))
 
         return True
 
@@ -186,14 +194,9 @@ class AwsBaseRelationship(AwsBase):
                 'Attempting to disassociate {0} from {1}.'
                 .format(self.source_resource_id, self.target_resource_id))
 
-        if args:
-            if self.disassociate_external_resource_naively() \
-                    or self.disassociate(args):
-                return self.post_disassociate()
-        else:
-            if self.disassociate_external_resource_naively() \
-                    or self.disassociate():
-                return self.post_disassociate()
+        if self.disassociate_external_resource_naively() \
+                or self.disassociate(args):
+            return self.post_disassociate()
 
         raise NonRecoverableError(
                 'Source is neither external resource, '
@@ -207,17 +210,32 @@ class AwsBaseRelationship(AwsBase):
 
         resource = self.get_source_resource()
 
-        ctx.logger.info(
-                'Assuming {0} is external, because the user specified '
-                'use_external_resource. Not disassociating it with {1}.'
-                .format(resource.id, self.target_resource_id))
+        if hasattr(resource, 'id'):
+            ctx.logger.info(
+                    'Assuming {0} is external, because the user specified '
+                    'use_external_resource. Not disassociating it with {1}.'
+                    .format(resource.id, self.target_resource_id))
+        else:
+            ctx.logger.info(
+                    'Assuming resource is external, because the user '
+                    'specified use_external_resource. '
+                    'Not disassociating it with {0}.'
+                    .format(self.target_resource_id))
 
         return True
 
     def post_associate(self):
+        ctx.logger.info(
+                'Associated {0} with {1}.'
+                .format(self.source_resource_id,
+                        self.target_resource_id))
         return True
 
     def post_disassociate(self):
+        ctx.logger.info(
+                'Disassociated {0} from {1}.'
+                .format(self.source_resource_id,
+                        self.target_resource_id))
         return True
 
     def get_source_resource(self):
@@ -330,8 +348,8 @@ class AwsBaseNode(AwsBase):
 
         ctx.logger.info(
                 'Attempting to modify instance attributes {0} {1}.'
-                    .format(self.aws_resource_type,
-                            self.cloudify_node_instance_id))
+                .format(self.aws_resource_type,
+                        self.cloudify_node_instance_id))
 
         if self.modify_attributes(new_attributes):
             return self.post_modify()
@@ -343,13 +361,13 @@ class AwsBaseNode(AwsBase):
 
         ctx.logger.info(
                 'Attempting to stop EC2 instance {0} {1}.'
-                    .format(self.aws_resource_type,
-                            self.cloudify_node_instance_id))
+                .format(self.aws_resource_type,
+                        self.cloudify_node_instance_id))
 
         if self.stop():
             return self.post_stop()
 
-    def delete(self):
+    def delete(self, args=None):
         return False
 
     def deleted(self, args=None):
@@ -467,9 +485,8 @@ class AwsBaseNode(AwsBase):
         utils.unassign_runtime_property_from_resource(
                 constants.EXTERNAL_RESOURCE_ID, ctx.instance)
 
-        ctx.logger.info(
-                'Terminated {0} {1}.'
-                    .format(self.aws_resource_type, self.resource_id))
+        ctx.logger.info('Terminated {0} {1}.'
+                        .format(self.aws_resource_type, self.resource_id))
 
         return True
 

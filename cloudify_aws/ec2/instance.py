@@ -606,4 +606,4 @@ class Instance(AwsBaseNode):
         return image_object
 
     def get_resource(self):
-        return self._get_instance_from_id(utils.get_resource_id())
+        return self._get_instance_from_id(self.resource_id)
