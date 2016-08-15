@@ -457,7 +457,10 @@ class Instance(AwsBaseNode):
 
         list_of_subnets = \
             utils.get_target_external_resource_ids(
-                    constants.INSTANCE_SUBNET_RELATIONSHIP, ctx.instance
+                constants.INSTANCE_SUBNET_RELATIONSHIP, ctx.instance
+            ) or utils.get_target_external_resource_ids(
+                constants.INSTANCE_SUBNET_CONNECTED_TO_RELATIONSHIP,
+                ctx.instance
             )
 
         if not list_of_subnets and provider_variables.get(

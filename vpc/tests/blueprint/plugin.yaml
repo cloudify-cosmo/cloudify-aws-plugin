@@ -859,5 +859,8 @@ relationships:
   cloudify.aws.relationships.instance_contained_in_subnet:
     derived_from: cloudify.relationships.contained_in
 
+  cloudify.aws.relationships.instance_connected_to_subnet:
+    derived_from: cloudify.relationships.connected_to
+
   cloudify.aws.relationships.security_group_contained_in_vpc:
     derived_from: cloudify.relationships.contained_in
