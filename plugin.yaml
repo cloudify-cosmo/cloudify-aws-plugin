@@ -287,11 +287,11 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create: aws.ec2.securitygroup.create
-        start: aws.ec2.securitygroup.start
-        delete: aws.ec2.securitygroup.delete
+        create: aws.cloudify_aws.ec2.securitygroup.create
+        start: aws.cloudify_aws.ec2.securitygroup.start
+        delete: aws.cloudify_aws.ec2.securitygroup.delete
       cloudify.interfaces.validation:
-        creation: aws.ec2.securitygroup.creation_validation
+        creation: aws.cloudify_aws.ec2.securitygroup.creation_validation
 
   cloudify.aws.nodes.Volume:
     derived_from: cloudify.nodes.Volume
