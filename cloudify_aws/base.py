@@ -392,14 +392,6 @@ class AwsBaseNode(AwsBase):
             'Neither external resource, nor Cloudify resource, '
             'unable to delete this resource.')
 
-    def terminate(self):
-        return False
-
-    def terminated(self):
-
-        if self.delete_external_resource_naively() or self.terminate():
-            return self.post_terminate()
-
     def delete_external_resource_naively(self):
 
         if not self.is_external_resource:
@@ -483,16 +475,6 @@ class AwsBaseNode(AwsBase):
         ctx.logger.info(
             'Removed {0} {1} from Cloudify.'
             .format(self.aws_resource_type, self.resource_id))
-
-        return True
-
-    def post_terminate(self):
-
-        utils.unassign_runtime_property_from_resource(
-            constants.EXTERNAL_RESOURCE_ID, ctx.instance)
-
-        ctx.logger.info('Terminated {0} {1}.'
-                        .format(self.aws_resource_type, self.resource_id))
 
         return True
 

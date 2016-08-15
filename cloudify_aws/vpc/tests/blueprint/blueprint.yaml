@@ -65,7 +65,7 @@ node_templates:
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
-          implementation: aws.vpc.subnet.create_subnet
+          implementation: aws.cloudify_aws.vpc.subnet.create_subnet
 
   existing_subnet:
     type: cloudify.aws.nodes.Subnet
@@ -214,7 +214,7 @@ node_templates:
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
-          implementation: aws.vpc.routetable.create_route_table
+          implementation: aws.cloudify_aws.vpc.routetable.create_route_table
           inputs:
             routes:
               - destination_cidr_block: { get_property: [ new_subnet, cidr_block ] }
@@ -231,7 +231,7 @@ node_templates:
         target_interfaces:
           cloudify.interfaces.relationship_lifecycle:
             establish:
-              implementation: aws.vpc.routetable.create_route_to_gateway
+              implementation: aws.cloudify_aws.vpc.routetable.create_route_to_gateway
               inputs:
                 destination_cidr_block: '54.0.0.0/16'
       - type: cloudify.aws.relationships.route_table_of_source_vpc_connected_to_target_peer_vpc
@@ -239,7 +239,7 @@ node_templates:
         target_interfaces:
           cloudify.interfaces.relationship_lifecycle:
             preconfigure:
-              implementation: aws.vpc.vpc.create_vpc_peering_connection
+              implementation: aws.cloudify_aws.vpc.vpc.create_vpc_peering_connection
               inputs:
                 target_account_id: '234567890123'
                 routes:

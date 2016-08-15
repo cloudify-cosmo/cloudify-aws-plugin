@@ -24,7 +24,7 @@ from boto.vpc import VPCConnection
 from boto.ec2 import get_region
 
 # Cloudify Imports
-from vpc import constants
+from cloudify_aws import constants
 from cosmo_tester.framework.testenv import TestCase
 
 

@@ -107,13 +107,14 @@ class VolumeInstanceConnection(AwsBaseRelationship):
                 'Cannot attach Volume {0} because it is in state {1}.'
                 .format(volume_object.id, volume_object.status))
 
-        attach_args = dict(
+        associate_args = dict(
             volume_id=volume_id,
             instance_id=instance_id,
             device=ctx.source.node.properties['device']
         )
+        associate_args = utils.update_args(associate_args, args)
 
-        return self.execute(self.client.attach_volume, attach_args,
+        return self.execute(self.client.attach_volume, associate_args,
                             raise_on_falsy=True)
 
     def associated(self, args=None):
@@ -127,17 +128,10 @@ class VolumeInstanceConnection(AwsBaseRelationship):
                 or self.associate(args):
             return self.post_associate()
 
-        elif not self.associate(args):
-            return ctx.operation.retry(
-                message='Failed to associate {0} with {1}.'
-                        .format(self.source_resource_id,
-                                self.target_resource_id))
-
-        raise NonRecoverableError(
-            'Source is neither external resource, '
-            'nor Cloudify resource, unable to associate {0} with {1}.'
-            .format(self.source_resource_id,
-                    self.target_resource_id))
+        return ctx.operation.retry(
+            message='Failed to associate {0} with {1}.'
+                    .format(self.source_resource_id,
+                            self.target_resource_id))
 
     def disassociate(self, args=None, **_):
 
@@ -154,15 +148,15 @@ class VolumeInstanceConnection(AwsBaseRelationship):
             raise NonRecoverableError(
                 'EBS volume {0} not found in account.'.format(volume_id))
 
-        detach_args = dict(
+        disassociate_args = dict(
             volume_id=volume_id,
             instance_id=instance_id,
             device=ctx.source.node.properties['device']
         )
-        if args:
-            detach_args.update(args)
 
-        return self.execute(self.client.detach_volume, detach_args,
+        disassociate_args = utils.update_args(disassociate_args, args)
+
+        return self.execute(self.client.detach_volume, disassociate_args,
                             raise_on_falsy=True)
 
     def post_associate(self):
@@ -203,9 +197,7 @@ class Ebs(AwsBaseNode):
             size=ctx.node.properties['size'],
             zone=ctx.node.properties[constants.ZONE]
         )
-        create_volume_args.update(args if args else {})
-
-        ctx.logger.info('ARGS: {0}'.format(create_volume_args))
+        create_volume_args = utils.update_args(create_volume_args, args)
 
         new_volume = self.execute(self.client.create_volume,
                                   create_volume_args, raise_on_falsy=True)
@@ -271,7 +263,7 @@ class Ebs(AwsBaseNode):
             return False
 
         delete_args = dict(volume_id=self.resource_id)
-        delete_args.update(args if args else {})
+        delete_args = utils.update_args(delete_args, args)
         return self.execute(self.client.delete_volume,
                             delete_args, raise_on_falsy=True)
 
@@ -287,15 +279,15 @@ class Ebs(AwsBaseNode):
             'Trying to create a snapshot of EBS volume {0}.'
             .format(volume_id))
 
-        if not args:
-            snapshot_desc = \
-                unicode(datetime.datetime.now()) + \
-                ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
-            args = dict(volume_id=volume_id, description=snapshot_desc)
+        snapshot_desc = \
+            unicode(datetime.datetime.now()) + \
+            ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
+        create_args = dict(volume_id=volume_id, description=snapshot_desc)
+        create_args = utils.update_args(create_args, args)
 
         try:
             new_snapshot = self.execute(self.client.create_snapshot,
-                                        args, raise_on_falsy=True)
+                                        create_args, raise_on_falsy=True)
         except (exception.EC2ResponseError,
                 exception.BotoServerError) as e:
             raise NonRecoverableError('{0}'.format(str(e)))

@@ -20,12 +20,11 @@ import mock
 from moto import mock_ec2
 
 # Cloudify Imports
-from vpc import vpc, subnet, routetable, dhcp
-
+from cloudify_aws import constants
+from cloudify_aws.vpc import vpc, subnet, routetable, dhcp
 from vpc_testcase import VpcTestCase
 from cloudify.state import current_ctx
 from cloudify.exceptions import NonRecoverableError
-from vpc import constants
 
 VPC_TYPE = 'cloudify.aws.nodes.VPC'
 SUBNET_TYPE = 'cloudify.aws.nodes.Subnet'
@@ -125,8 +124,9 @@ class TestSubnetModule(VpcTestCase):
             error.message)
 
     @mock_ec2
-    @mock.patch('core.base.AwsBase.get_target_ids_of_relationship_type',
-                return_value=[Vpc(), Vpc()])
+    @mock.patch(
+        'cloudify_aws.base.AwsBase.get_target_ids_of_relationship_type',
+        return_value=[Vpc(), Vpc()])
     def test_create(self, *_):
         ctx = self.get_mock_subnet_node_instance_context('test_create')
         error = self.assertRaises(NonRecoverableError, subnet.create_subnet,

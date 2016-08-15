@@ -7,7 +7,7 @@ plugins:
     executor: central_deployment_agent
     source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/master.zip
     package_name: cloudify-aws-plugin
-    package_version: '1.4.1'
+    package_version: '1.4.2.dev0'
 
 data_types:
 
@@ -166,6 +166,8 @@ node_types:
           The instance's size.
         type: string
         required: true
+      use_password:
+        default: false
       parameters:
         description: >
           The key value pair parameters allowed by Amazon API to the
@@ -182,16 +184,40 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
-          implementation: aws.ec2.instance.run_instances
+          implementation: aws.cloudify_aws.ec2.instance.create
         start:
-          implementation: aws.ec2.instance.start
+          implementation: aws.cloudify_aws.ec2.instance.start
+          inputs:
+            start_retry_interval:
+              description: Polling interval until the server is active in seconds
+              type: integer
+              default: 30
+            private_key_path:
+              description: >
+                Path to private key which matches the server's
+                public key. Will be used to decrypt password in case
+                the "use_password" property is set to "true"
+              type: string
+              default: ''
         stop:
-          implementation: aws.ec2.instance.stop
+          implementation: aws.cloudify_aws.ec2.instance.stop
         delete:
-          implementation: aws.ec2.instance.terminate
+          implementation: aws.cloudify_aws.ec2.instance.delete
       cloudify.interfaces.validation:
         creation:
-          implementation: aws.ec2.instance.creation_validation
+          implementation: aws.cloudify_aws.ec2.instance.creation_validation
+
+  cloudify.aws.nodes.WindowsInstance:
+    derived_from: cloudify.aws.nodes.Instance
+    properties:
+      use_password:
+        default: true
+      os_family:
+        default: windows
+      agent_config:
+        type: cloudify.datatypes.AgentConfig
+        default:
+          port: 5985
 
   cloudify.aws.nodes.ElasticIP:
     derived_from: cloudify.nodes.VirtualIP
@@ -212,7 +238,7 @@ node_types:
         required: true
       domain:
         description: >
-          Set this to 'VPC' if you want to use VPC.
+          Set this to 'vpc' if you want to use VPC.
         required: false
       aws_config:
         description: >
@@ -221,10 +247,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create: aws.ec2.elasticip.allocate
-        delete: aws.ec2.elasticip.release
+        create: aws.cloudify_aws.ec2.elasticip.create
+        delete: aws.cloudify_aws.ec2.elasticip.delete
       cloudify.interfaces.validation:
-        creation: aws.ec2.elasticip.creation_validation
+        creation: aws.cloudify_aws.ec2.elasticip.creation_validation
 
   cloudify.aws.nodes.SecurityGroup:
     derived_from: cloudify.nodes.SecurityGroup
@@ -261,10 +287,11 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create: aws.ec2.securitygroup.create
-        delete: aws.ec2.securitygroup.delete
+        create: aws.cloudify_aws.ec2.securitygroup.create
+        start: aws.cloudify_aws.ec2.securitygroup.start
+        delete: aws.cloudify_aws.ec2.securitygroup.delete
       cloudify.interfaces.validation:
-        creation: aws.ec2.securitygroup.creation_validation
+        creation: aws.cloudify_aws.ec2.securitygroup.creation_validation
 
   cloudify.aws.nodes.Volume:
     derived_from: cloudify.nodes.Volume
@@ -306,20 +333,20 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
-          implementation: aws.ec2.ebs.create
+          implementation: aws.cloudify_aws.ec2.ebs.create
           inputs:
             args:
               default: {}
         delete:
-          implementation: aws.ec2.ebs.delete
+          implementation: aws.cloudify_aws.ec2.ebs.delete
           inputs:
             args:
               default: {}
       cloudify.interfaces.validation:
-        creation: aws.ec2.ebs.creation_validation
+        creation: aws.cloudify_aws.ec2.ebs.creation_validation
       cloudify.interfaces.aws.snapshot:
         create:
-          implementation: aws.ec2.ebs.create_snapshot
+          implementation: aws.cloudify_aws.ec2.ebs.create_snapshot
           inputs:
             args:
               default: {}
@@ -355,10 +382,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create: aws.ec2.keypair.create
-        delete: aws.ec2.keypair.delete
+        create: aws.cloudify_aws.ec2.keypair.create
+        delete: aws.cloudify_aws.ec2.keypair.delete
       cloudify.interfaces.validation:
-        creation: aws.ec2.keypair.creation_validation
+        creation: aws.cloudify_aws.ec2.keypair.creation_validation
 
   cloudify.aws.nodes.ElasticLoadBalancer:
     derived_from: cloudify.nodes.LoadBalancer
@@ -444,12 +471,12 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
-          implementation: aws.ec2.elasticloadbalancer.create_elb
+          implementation: aws.cloudify_aws.ec2.elasticloadbalancer.create
         delete:
-          implementation: aws.ec2.elasticloadbalancer.delete_elb
+          implementation: aws.cloudify_aws.ec2.elasticloadbalancer.delete
       cloudify.interfaces.validation:
         creation:
-          implementation: aws.ec2.elasticloadbalancer.creation_validation
+          implementation: aws.cloudify_aws.ec2.elasticloadbalancer.creation_validation
 
   cloudify.aws.nodes.VPC:
     derived_from: cloudify.nodes.Network
@@ -486,10 +513,11 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create: aws.vpc.vpc.create_vpc
-        delete: aws.vpc.vpc.delete
+        create: aws.cloudify_aws.vpc.vpc.create_vpc
+        start: aws.cloudify_aws.vpc.vpc.start
+        delete: aws.cloudify_aws.vpc.vpc.delete
       cloudify.interfaces.validation:
-        creation: aws.vpc.vpc.creation_validation
+        creation: aws.cloudify_aws.vpc.vpc.creation_validation
 
   cloudify.aws.nodes.Subnet:
     derived_from: cloudify.nodes.Subnet
@@ -525,10 +553,11 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create: aws.vpc.subnet.create_subnet
-        delete: aws.vpc.subnet.delete_subnet
+        create: aws.cloudify_aws.vpc.subnet.create_subnet
+        start: aws.cloudify_aws.vpc.subnet.start_subnet
+        delete: aws.cloudify_aws.vpc.subnet.delete_subnet
       cloudify.interfaces.validation:
-        creation: aws.vpc.subnet.creation_validation
+        creation: aws.cloudify_aws.vpc.subnet.creation_validation
 
   cloudify.aws.nodes.Gateway:
     derived_from: cloudify.nodes.Root
@@ -554,7 +583,7 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.validation:
-        creation: aws.vpc.gateway.creation_validation
+        creation: aws.cloudify_aws.vpc.gateway.creation_validation
 
   cloudify.aws.nodes.InternetGateway:
     derived_from: cloudify.aws.nodes.Gateway
@@ -566,8 +595,8 @@ node_types:
         required: true
     interfaces:
       cloudify.interfaces.lifecycle:
-        create: aws.vpc.gateway.create_internet_gateway
-        delete: aws.vpc.gateway.delete_internet_gateway
+        create: aws.cloudify_aws.vpc.gateway.create_internet_gateway
+        delete: aws.cloudify_aws.vpc.gateway.delete_internet_gateway
 
   cloudify.aws.nodes.VPNGateway:
     derived_from: cloudify.aws.nodes.Gateway
@@ -584,8 +613,8 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create: aws.vpc.gateway.create_vpn_gateway
-        delete: aws.vpc.gateway.delete_vpn_gateway
+        create: aws.cloudify_aws.vpc.gateway.create_vpn_gateway
+        delete: aws.cloudify_aws.vpc.gateway.delete_vpn_gateway
 
   cloudify.aws.nodes.CustomerGateway:
     derived_from: cloudify.aws.nodes.Gateway
@@ -605,8 +634,8 @@ node_types:
         required: true
     interfaces:
       cloudify.interfaces.lifecycle:
-        create: aws.vpc.gateway.create_customer_gateway
-        delete: aws.vpc.gateway.delete_customer_gateway
+        create: aws.cloudify_aws.vpc.gateway.create_customer_gateway
+        delete: aws.cloudify_aws.vpc.gateway.delete_customer_gateway
 
   cloudify.aws.nodes.ACL:
     derived_from: cloudify.nodes.Root
@@ -637,10 +666,11 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create: aws.vpc.networkacl.create_network_acl
-        delete: aws.vpc.networkacl.delete_network_acl
+        create: aws.cloudify_aws.vpc.networkacl.create_network_acl
+        start: aws.cloudify_aws.vpc.networkacl.start_network_acl
+        delete: aws.cloudify_aws.vpc.networkacl.delete_network_acl
       cloudify.interfaces.validation:
-        creation: aws.vpc.networkacl.creation_validation
+        creation: aws.cloudify_aws.vpc.networkacl.creation_validation
 
   cloudify.aws.nodes.DHCPOptions:
     derived_from: cloudify.nodes.Root
@@ -690,10 +720,11 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create: aws.vpc.dhcp.create_dhcp_options
-        delete: aws.vpc.dhcp.delete_dhcp_options
+        create: aws.cloudify_aws.vpc.dhcp.create_dhcp_options
+        start: aws.cloudify_aws.vpc.dhcp.start_dhcp_options
+        delete: aws.cloudify_aws.vpc.dhcp.delete_dhcp_options
       cloudify.interfaces.validation:
-        creation: aws.vpc.dhcp.creation_validation
+        creation: aws.cloudify_aws.vpc.dhcp.creation_validation
 
   cloudify.aws.nodes.RouteTable:
     derived_from: cloudify.nodes.Root
@@ -720,23 +751,24 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
-          implementation: aws.vpc.routetable.create_route_table
+          implementation: aws.cloudify_aws.vpc.routetable.create_route_table
           inputs:
             routes:
               description: >
                 A list of cloudify.datatypes.aws.Route.
               default: []
-        delete: aws.vpc.routetable.delete_route_table
+        start: aws.cloudify_aws.vpc.routetable.start_route_table
+        delete: aws.cloudify_aws.vpc.routetable.delete_route_table
       cloudify.interfaces.validation:
-        creation: aws.vpc.routetable.creation_validation
+        creation: aws.cloudify_aws.vpc.routetable.creation_validation
 
 relationships:
   cloudify.aws.relationships.instance_connected_to_elastic_ip:
     derived_from: cloudify.relationships.connected_to
     source_interfaces:
       cloudify.interfaces.relationship_lifecycle:
-        establish: aws.ec2.elasticip.associate
-        unlink: aws.ec2.elasticip.disassociate
+        establish: aws.cloudify_aws.ec2.elasticip.associate
+        unlink: aws.cloudify_aws.ec2.elasticip.disassociate
 
   cloudify.aws.relationships.instance_connected_to_keypair:
     derived_from: cloudify.relationships.connected_to
@@ -748,16 +780,20 @@ relationships:
     derived_from: cloudify.relationships.connected_to
     source_interfaces:
       cloudify.interfaces.relationship_lifecycle:
-        establish: aws.ec2.elasticloadbalancer.add_instance_to_elb
-        unlink: aws.ec2.elasticloadbalancer.remove_instance_from_elb
+        establish: aws.cloudify_aws.ec2.elasticloadbalancer.associate
+        unlink: aws.cloudify_aws.ec2.elasticloadbalancer.disassociate
 
   cloudify.aws.relationships.volume_connected_to_instance:
     derived_from: cloudify.relationships.connected_to
     source_interfaces:
       cloudify.interfaces.relationship_lifecycle:
-        establish: aws.ec2.ebs.attach
+        establish:
+          implementation: aws.cloudify_aws.ec2.ebs.associate
+          inputs:
+            args:
+              default: {}
         unlink:
-          implementation: aws.ec2.ebs.detach
+          implementation: aws.cloudify_aws.ec2.ebs.disassociate
           inputs:
             args:
               default: {}
@@ -773,16 +809,16 @@ relationships:
     target_interfaces:
       cloudify.interfaces.relationship_lifecycle:
         establish:
-          implementation: aws.vpc.routetable.associate_route_table
+          implementation: aws.cloudify_aws.vpc.routetable.associate_route_table
         unlink:
-          implementation: aws.vpc.routetable.disassociate_route_table
+          implementation: aws.cloudify_aws.vpc.routetable.disassociate_route_table
 
   cloudify.aws.relationships.route_table_to_gateway:
     derived_from: cloudify.relationships.connected_to
     target_interfaces:
       cloudify.interfaces.relationship_lifecycle:
         establish:
-          implementation: aws.vpc.routetable.create_route_to_gateway
+          implementation: aws.cloudify_aws.vpc.routetable.create_route_to_gateway
           inputs:
             destination_cidr_block:
               description: >
@@ -792,14 +828,14 @@ relationships:
                 Otherwise, you need to provide this value.
               default: ''
         unlink:
-          implementation: aws.vpc.routetable.delete_route_from_gateway
+          implementation: aws.cloudify_aws.vpc.routetable.delete_route_from_gateway
 
   cloudify.aws.relationships.gateway_connected_to_vpc:
     derived_from: cloudify.relationships.connected_to
     target_interfaces:
       cloudify.interfaces.relationship_lifecycle:
-        establish: aws.vpc.gateway.attach_gateway
-        unlink: aws.vpc.gateway.detach_gateway
+        establish: aws.cloudify_aws.vpc.gateway.attach_gateway
+        unlink: aws.cloudify_aws.vpc.gateway.detach_gateway
 
   cloudify.aws.relationships.network_acl_contained_in_vpc:
     derived_from: cloudify.relationships.contained_in
@@ -808,15 +844,15 @@ relationships:
     derived_from: cloudify.relationships.connected_to
     target_interfaces:
       cloudify.interfaces.relationship_lifecycle:
-        establish: aws.vpc.networkacl.associate_network_acl
-        unlink: aws.vpc.networkacl.disassociate_network_acl
+        establish: aws.cloudify_aws.vpc.networkacl.associate_network_acl
+        unlink: aws.cloudify_aws.vpc.networkacl.disassociate_network_acl
 
   cloudify.aws.relationships.route_table_of_source_vpc_connected_to_target_peer_vpc:
     derived_from: cloudify.relationships.connected_to
     target_interfaces:
       cloudify.interfaces.relationship_lifecycle:
         preconfigure:
-          implementation: aws.vpc.vpc.create_vpc_peering_connection
+          implementation: aws.cloudify_aws.vpc.vpc.create_vpc_peering_connection
           inputs:
             target_account_id:
               description: >
@@ -827,25 +863,25 @@ relationships:
                 A list of cloudify.datatypes.aws.Route for assignment to the source Route Table.
               default: []
         postconfigure:
-          implementation: aws.vpc.vpc.accept_vpc_peering_connection
+          implementation: aws.cloudify_aws.vpc.vpc.accept_vpc_peering_connection
         unlink:
-          implementation: aws.vpc.vpc.delete_vpc_peering_connection
+          implementation: aws.cloudify_aws.vpc.vpc.delete_vpc_peering_connection
 
   cloudify.aws.relationships.dhcp_options_associated_with_vpc:
     derived_from: cloudify.relationships.connected_to
     target_interfaces:
       cloudify.interfaces.relationship_lifecycle:
         establish:
-          implementation: aws.vpc.dhcp.associate_dhcp_options
+          implementation: aws.cloudify_aws.vpc.dhcp.associate_dhcp_options
         unlink:
-          implementation: aws.vpc.dhcp.restore_dhcp_options
+          implementation: aws.cloudify_aws.vpc.dhcp.restore_dhcp_options
 
   cloudify.aws.relationships.customer_gateway_connected_to_vpn_gateway:
     derived_from: cloudify.relationships.connected_to
     target_interfaces:
       cloudify.interfaces.relationship_lifecycle:
         establish:
-          implementation: aws.vpc.gateway.create_vpn_connection
+          implementation: aws.cloudify_aws.vpc.gateway.create_vpn_connection
           inputs:
             routes:
               description: >
@@ -854,7 +890,7 @@ relationships:
                 However, you can only provide the destination_cidr_block and a vpn_connection_id.
               default: []
         unlink:
-          implementation: aws.vpc.gateway.delete_vpn_connection
+          implementation: aws.cloudify_aws.vpc.gateway.delete_vpn_connection
 
   cloudify.aws.relationships.instance_contained_in_subnet:
     derived_from: cloudify.relationships.contained_in

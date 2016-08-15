@@ -79,7 +79,7 @@ class ElasticIPInstanceConnection(AwsBaseRelationship):
                      ctx.target.instance.runtime_properties[
                              constants.ELASTICIP['ALLOCATION_ID']]})
 
-        associate_args.update(args if args else {})
+        associate_args = utils.update_args(associate_args, args)
 
         try:
             self.execute(self.client.associate_address, associate_args,
@@ -121,7 +121,7 @@ class ElasticIPInstanceConnection(AwsBaseRelationship):
                 association_id=elasticip_object.association_id
         )
 
-        disassociate_args.update(args if args else {})
+        disassociate_args = utils.update_args(disassociate_args, args)
 
         try:
             self.execute(self.client.disassociate_address,
@@ -207,7 +207,7 @@ class ElasticIP(AwsBaseNode):
             create_args[constants.ELASTICIP['ELASTIC_IP_DOMAIN_PROPERTY']] = \
                 constants.ELASTICIP['VPC_DOMAIN']
 
-        create_args.update(args if args else {})
+        create_args = utils.update_args(create_args, args)
 
         try:
             address_object = self.execute(self.client.allocate_address,
@@ -237,12 +237,19 @@ class ElasticIP(AwsBaseNode):
                     'Unable to release elasticip. Elasticip not in account.')
 
         delete_args = dict(public_ip=self.resource_id)
-        delete_args.update(args if args else {})
+        if constants.ELASTICIP['VPC_DOMAIN'] in address_object.domain:
+            delete_args.update(
+                {
+                    'public_ip': None,
+                    constants.ELASTICIP[
+                     'ALLOCATION_ID']: str(address_object.allocation_id)
+                }
+            )
+        delete_args = utils.update_args(delete_args, args)
 
         try:
             deleted = self.execute(self.client.release_address,
-                                   delete_args,
-                                   raise_on_falsy=True)
+                                   delete_args, raise_on_falsy=True)
         except (exception.EC2ResponseError,
                 exception.BotoServerError) as e:
             raise NonRecoverableError('{0}'.format(str(e)))
@@ -264,4 +271,12 @@ class ElasticIP(AwsBaseNode):
         return True
 
     def get_resource(self):
-        return self.get_all_matching(self.resource_id)
+
+        resources = self.get_all_matching(self.resource_id)
+
+        if resources:
+            for resource in resources:
+                if resource.public_ip == self.resource_id:
+                    return resource
+
+        return None

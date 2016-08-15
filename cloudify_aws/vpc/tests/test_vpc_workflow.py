@@ -77,8 +77,8 @@ class TestWorkflowClean(VpcTestCase):
         self.assertIn(message, output.message)
 
     @mock_ec2()
-    @mock.patch('vpc.dhcp.delete_dhcp_options', return_value=True)
-    @mock.patch('vpc.dhcp.restore_dhcp_options')
+    @mock.patch('cloudify_aws.vpc.dhcp.delete_dhcp_options', return_value=True)
+    @mock.patch('cloudify_aws.vpc.dhcp.restore_dhcp_options')
     def test_blueprint(self, *_):
         """ Tests the install workflow using the built in
             workflows.

@@ -14,8 +14,8 @@
 #    * limitations under the License.
 
 # Cloudify imports
-from . import constants
-from core.base import AwsBaseNode
+from cloudify_aws import constants, connection, utils
+from cloudify_aws.base import AwsBaseNode
 from cloudify import ctx
 from cloudify.decorators import operation
 from cloudify.exceptions import NonRecoverableError
@@ -27,18 +27,18 @@ def creation_validation(**_):
 
 
 @operation
-def create_subnet(**_):
-    return Subnet().created()
+def create_subnet(args=None, **_):
+    return Subnet().created(args)
 
 
 @operation
-def start_subnet(**_):
-    return Subnet().started()
+def start_subnet(args=None, **_):
+    return Subnet().started(args)
 
 
 @operation
-def delete_subnet(**_):
-    return Subnet().deleted()
+def delete_subnet(args=None, **_):
+    return Subnet().deleted(args)
 
 
 class Subnet(AwsBaseNode):
@@ -46,7 +46,8 @@ class Subnet(AwsBaseNode):
     def __init__(self):
         super(Subnet, self).__init__(
             constants.SUBNET['AWS_RESOURCE_TYPE'],
-            constants.SUBNET['REQUIRED_PROPERTIES']
+            constants.SUBNET['REQUIRED_PROPERTIES'],
+            client=connection.VPCConnectionClient().client()
         )
         self.not_found_error = constants.SUBNET['NOT_FOUND_ERROR']
         self.get_all_handler = {
@@ -54,8 +55,10 @@ class Subnet(AwsBaseNode):
             'argument': '{0}_ids'.format(constants.SUBNET['AWS_RESOURCE_TYPE'])
         }
 
-    def create(self):
-        create_args = self._generate_creation_args()
+    def create(self, args):
+        create_args = utils.update_args(
+            self._generate_creation_args(),
+            args)
         subnet = self.execute(self.client.create_subnet,
                               create_args, raise_on_falsy=True)
         self.resource_id = subnet.id
@@ -94,10 +97,11 @@ class Subnet(AwsBaseNode):
 
         return create_args
 
-    def start(self):
+    def start(self, args):
         return True
 
-    def delete(self):
+    def delete(self, args):
         delete_args = dict(subnet_id=self.resource_id)
+        delete_args = utils.update_args(delete_args, args)
         return self.execute(self.client.delete_subnet,
                             delete_args, raise_on_falsy=True)

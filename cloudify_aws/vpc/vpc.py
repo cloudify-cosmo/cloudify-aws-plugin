@@ -17,9 +17,8 @@
 from boto import exception
 
 # Cloudify imports
-from . import constants
-from . import connection
-from core.base import AwsBaseNode, AwsBaseRelationship, RouteMixin
+from cloudify_aws import constants, connection, utils
+from cloudify_aws.base import AwsBaseNode, AwsBaseRelationship, RouteMixin
 from cloudify import ctx
 from cloudify.decorators import operation
 from cloudify.exceptions import NonRecoverableError, RecoverableError
@@ -31,42 +30,45 @@ def creation_validation(**_):
 
 
 @operation
-def create_vpc(**_):
-    return Vpc().created()
+def create_vpc(args=None, **_):
+    return Vpc().created(args)
 
 
 @operation
-def start(**_):
-    return Vpc().started()
+def start(args=None, **_):
+    return Vpc().started(args)
 
 
 @operation
-def delete(**_):
-    return Vpc().deleted()
+def delete(args=None, **_):
+    return Vpc().deleted(args)
 
 
 @operation
-def create_vpc_peering_connection(target_account_id, routes, **_):
-    return VpcPeeringConnection(target_account_id, routes).associated()
+def create_vpc_peering_connection(target_account_id, routes, args=None, **_):
+    return VpcPeeringConnection(target_account_id, routes).associated(args)
 
 
 @operation
-def delete_vpc_peering_connection(**_):
-    return VpcPeeringConnection().disassociated()
+def delete_vpc_peering_connection(args=None, **_):
+    return VpcPeeringConnection().disassociated(args)
 
 
 @operation
-def accept_vpc_peering_connection(**_):
+def accept_vpc_peering_connection(args=None, **_):
     target_aws_config = ctx.target.node.properties['aws_config']
     client = \
         connection.VPCConnectionClient().client(aws_config=target_aws_config)
-    return VpcPeeringConnection(client=client).accept_vpc_peering_connection()
+    return VpcPeeringConnection(client=client).accept_vpc_peering_connection(
+        args)
 
 
 class VpcPeeringConnection(AwsBaseRelationship, RouteMixin):
 
     def __init__(self, target_account_id=None, routes=None, client=None):
-        super(VpcPeeringConnection, self).__init__(client=client)
+        super(VpcPeeringConnection, self).__init__(
+            client=connection.VPCConnectionClient().client()
+        )
         self.not_found_error = 'InvalidVpcPeeringConnectionId.NotFound'
         self.resource_id = None
         self.target_account_id = target_account_id \
@@ -98,23 +100,24 @@ class VpcPeeringConnection(AwsBaseRelationship, RouteMixin):
             '{0}_ids'.format(constants.ROUTE_TABLE['AWS_RESOURCE_TYPE'])
         }
 
-    def associated(self):
+    def associated(self, args):
         if self.use_source_external_resource_naively():
             ctx.logger.info(
                 'executing vpc peering connection association '
                 'despite the fact that this is an external relationship'
             )
-        if self.associate():
+        if self.associate(args):
             return self.post_associate()
 
         raise NonRecoverableError(
             'Unable to associate {0} with {1}.'
             .format(self.source_resource_id, self.target_resource_id))
 
-    def associate(self):
+    def associate(self, args):
 
-        associate_args = self._generate_association_args()
-        ctx.logger.info('ARGS: {0}'.format(associate_args))
+        associate_args = utils.update_args(
+            self._generate_association_args(),
+            args)
         vpc_peering_connection = \
             self.execute(self.client.create_vpc_peering_connection,
                          associate_args, raise_on_falsy=True)
@@ -137,11 +140,15 @@ class VpcPeeringConnection(AwsBaseRelationship, RouteMixin):
             peer_owner_id=self.target_account_id
         )
 
-    def disassociate(self):
+    def disassociate(self, args):
         self.delete_routes()
         disassociate_args = dict(
             vpc_peering_connection_id=self.source_vpc_peering_connection_id
         )
+        disassociate_args = utils.update_args(
+            disassociate_args,
+            args)
+
         return self.execute(self.client.delete_vpc_peering_connection,
                             disassociate_args, raise_on_falsy=True)
 
@@ -193,7 +200,7 @@ class VpcPeeringConnection(AwsBaseRelationship, RouteMixin):
 
         return None
 
-    def accept_vpc_peering_connection(self):
+    def accept_vpc_peering_connection(self, args):
 
         try:
             output = self.client.accept_vpc_peering_connection(
@@ -248,7 +255,8 @@ class Vpc(AwsBaseNode):
     def __init__(self):
         super(Vpc, self).__init__(
             constants.VPC['AWS_RESOURCE_TYPE'],
-            constants.VPC['REQUIRED_PROPERTIES']
+            constants.VPC['REQUIRED_PROPERTIES'],
+            client=connection.VPCConnectionClient().client()
         )
         self.not_found_error = constants.VPC['NOT_FOUND_ERROR']
         self.get_all_handler = {
@@ -271,13 +279,15 @@ class Vpc(AwsBaseNode):
 
         return True
 
-    def create(self):
+    def create(self, args):
 
         create_args = dict(
             cidr_block=ctx.node.properties['cidr_block'],
             instance_tenancy=ctx.node.properties['instance_tenancy']
         )
-
+        create_args = utils.update_args(
+            create_args,
+            args)
         vpc = self.execute(self.client.create_vpc,
                            create_args, raise_on_falsy=True)
         self.resource_id = vpc.id
@@ -286,9 +296,9 @@ class Vpc(AwsBaseNode):
 
         return True
 
-    def start(self):
+    def start(self, args):
         return True
 
-    def delete(self):
+    def delete(self, args):
         vpc = self.get_resource()
         return self.execute(vpc.delete, raise_on_falsy=True)

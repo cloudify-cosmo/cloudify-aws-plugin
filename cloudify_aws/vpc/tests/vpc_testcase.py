@@ -19,7 +19,7 @@ import testtools
 
 # Third-party Imports
 from boto.vpc import VPCConnection
-from vpc import constants
+from cloudify_aws import constants
 from cloudify.mocks import MockCloudifyContext
 
 VPC_TYPE = 'cloudify.aws.nodes.VPC'
@@ -51,7 +51,7 @@ class VpcTestCase(testtools.TestCase):
 
         if 'vpc' not in os.getcwd():
             blueprint_path = os.path.join(
-                'vpc/tests/blueprint', 'blueprint.yaml')
+                'cloudify_aws/vpc/tests/blueprint', 'blueprint.yaml')
         else:
             blueprint_path = os.path.join('blueprint', 'blueprint.yaml')
 

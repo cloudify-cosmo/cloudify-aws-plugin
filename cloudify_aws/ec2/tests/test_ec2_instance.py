@@ -120,7 +120,8 @@ class TestInstance(testtools.TestCase):
             .format(private_key_dir, name)
         test_instance = self.create_instance_for_checking()
 
-        with mock.patch('ec2.utils.get_single_connected_node_by_type') \
+        with mock.patch(
+                'cloudify_aws.utils.get_single_connected_node_by_type') \
                 as mock_get_single_connected_node_by_type:
             mock_get_single_connected_node_by_type.return_value = None
             ex = self.assertRaises(NonRecoverableError,

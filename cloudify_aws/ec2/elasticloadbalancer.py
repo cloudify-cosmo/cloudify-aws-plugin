@@ -20,7 +20,7 @@ from boto.ec2.elb.healthcheck import HealthCheck
 # Cloudify imports
 from cloudify import ctx
 from cloudify.decorators import operation
-from cloudify_aws import constants, connection
+from cloudify_aws import constants, connection, utils
 from cloudify.exceptions import RecoverableError
 from cloudify.exceptions import NonRecoverableError
 from cloudify_aws.base import AwsBaseNode, AwsBaseRelationship
@@ -76,7 +76,7 @@ class ElbInstanceConnection(AwsBaseRelationship):
         associate_args = dict(
             load_balancer_name=elb_name,
             instances=[instance_id])
-        associate_args.update(args if args else {})
+        associate_args = utils.update_args(associate_args, args)
 
         try:
             self.execute(self.client.register_instances, associate_args,
@@ -101,7 +101,7 @@ class ElbInstanceConnection(AwsBaseRelationship):
             load_balancer_name=self.target_resource_id,
             instances=[self.source_resource_id]
         )
-        disassociate_args.update(args if args else {})
+        disassociate_args = utils.update_args(disassociate_args, args)
 
         try:
             self.execute(self.client.deregister_instances, disassociate_args,
@@ -178,7 +178,7 @@ class Elb(AwsBaseNode):
 
     def create(self, args=None, **_):
 
-        lb = self._create_elb()
+        lb = self._create_elb(args)
 
         health_checks = ctx.node.properties.get('health_checks')
 
@@ -188,12 +188,13 @@ class Elb(AwsBaseNode):
 
         return True
 
-    def _create_elb(self):
+    def _create_elb(self, args):
 
-        params_dict = self._create_elb_params()
+        create_args = self._create_elb_params()
+        create_args = utils.update_args(create_args, args)
 
         try:
-            lb = self.execute(self.client.create_load_balancer, params_dict,
+            lb = self.execute(self.client.create_load_balancer, create_args,
                               raise_on_falsy=True)
         except (exception.EC2ResponseError,
                 exception.BotoServerError,
@@ -208,17 +209,20 @@ class Elb(AwsBaseNode):
                 ' successfully, verifying the load balancer '
                 'afterwards has failed')
 
-        ctx.instance.runtime_properties['elb_name'] = params_dict['name']
-        self.resource_id = params_dict['name']
+        ctx.instance.runtime_properties['elb_name'] = create_args['name']
+        self.resource_id = create_args['name']
 
         return lb
 
     def delete(self, args=None, **_):
 
-        elb_name = ctx.node.properties['elb_name']
+        delete_args = dict(
+            name=ctx.node.properties['elb_name']
+        )
+        delete_args = utils.update_args(delete_args, args)
 
         try:
-            self.execute(self.client.delete_load_balancer, dict(name=elb_name),
+            self.execute(self.client.delete_load_balancer, delete_args,
                          raise_on_falsy=True)
         except (exception.EC2ResponseError,
                 exception.BotoServerError,

@@ -23,7 +23,7 @@ from fabric import api as fabric_api
 from fabric.exceptions import CommandTimeout
 
 # Cloudify Imports
-from vpc import constants
+from cloudify_aws import constants
 from .vpc_test_utils import TestVpcBase
 from cloudify.workflows import local
 

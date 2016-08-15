@@ -14,9 +14,8 @@
 #    * limitations under the License.
 
 # Cloudify imports
-from ec2 import utils as ec2_utils
-from . import constants
-from core.base import AwsBaseNode, AwsBaseRelationship
+from cloudify_aws import constants, utils, connection
+from cloudify_aws.base import AwsBaseNode, AwsBaseRelationship
 from cloudify import ctx
 from cloudify.decorators import operation
 
@@ -32,73 +31,75 @@ def creation_validation(**_):
 
 
 @operation
-def create_internet_gateway(**_):
-    return InternetGateway().created()
+def create_internet_gateway(args=None, **_):
+    return InternetGateway().created(args)
 
 
-def start_internet_gateway(**_):
-    return InternetGateway().started()
-
-
-@operation
-def delete_internet_gateway(**_):
-    return InternetGateway().deleted()
+def start_internet_gateway(args=None, **_):
+    return InternetGateway().started(args)
 
 
 @operation
-def create_vpn_gateway(**_):
-    return VpnGateway().created()
+def delete_internet_gateway(args=None, **_):
+    return InternetGateway().deleted(args)
 
 
 @operation
-def start_vpn_gateway(**_):
-    return VpnGateway().started()
+def create_vpn_gateway(args=None, **_):
+    return VpnGateway().created(args)
 
 
 @operation
-def delete_vpn_gateway(**_):
-    return VpnGateway().deleted()
+def start_vpn_gateway(args=None, **_):
+    return VpnGateway().started(args)
 
 
 @operation
-def create_customer_gateway(**_):
-    return CustomerGateway().created()
+def delete_vpn_gateway(args=None, **_):
+    return VpnGateway().deleted(args)
 
 
 @operation
-def start_customer_gateway(**_):
-    return CustomerGateway().started()
+def create_customer_gateway(args=None, **_):
+    return CustomerGateway().created(args)
 
 
 @operation
-def delete_customer_gateway(**_):
-    return CustomerGateway().deleted()
+def start_customer_gateway(args=None, **_):
+    return CustomerGateway().started(args)
 
 
 @operation
-def create_vpn_connection(routes, **_):
-    return VpnConnection(routes).associated()
+def delete_customer_gateway(args=None, **_):
+    return CustomerGateway().deleted(args)
 
 
 @operation
-def delete_vpn_connection(**_):
-    return VpnConnection().disassociated()
+def create_vpn_connection(routes, args=None, **_):
+    return VpnConnection(routes).associated(args)
 
 
 @operation
-def attach_gateway(**_):
-    return GatewayVpcAttachment().associated()
+def delete_vpn_connection(args=None, **_):
+    return VpnConnection().disassociated(args)
 
 
 @operation
-def detach_gateway(**_):
-    return GatewayVpcAttachment().disassociated()
+def attach_gateway(args=None, **_):
+    return GatewayVpcAttachment().associated(args)
+
+
+@operation
+def detach_gateway(args=None, **_):
+    return GatewayVpcAttachment().disassociated(args)
 
 
 class VpnConnection(AwsBaseRelationship):
 
     def __init__(self, routes=None):
-        super(VpnConnection, self).__init__(routes)
+        super(VpnConnection, self).__init__(
+            client=connection.VPCConnectionClient().client()
+        )
         self.vpn_type = ctx.source.node.properties['type']
         self.routes = \
             routes if routes else \
@@ -115,8 +116,10 @@ class VpnConnection(AwsBaseRelationship):
             '{0}_ids'.format(constants.CUSTOMER_GATEWAY['AWS_RESOURCE_TYPE'])
         }
 
-    def associate(self):
-        associate_args = self.generate_associate_args(self.routes)
+    def associate(self, args):
+        associate_args = utils.update_args(
+            self.generate_associate_args(self.routes),
+            args)
         vpn_connection = self.execute(self.client.create_vpn_connection,
                                       associate_args, raise_on_falsy=True)
         ctx.source.instance.runtime_properties['vpn_connection'] = \
@@ -150,7 +153,7 @@ class VpnConnection(AwsBaseRelationship):
         )
         return args
 
-    def disassociate(self):
+    def disassociate(self, args):
         if self.routes:
             for route in self.routes:
                 args = self.generate_route_args(self.vpn_connection_id, route)
@@ -160,13 +163,16 @@ class VpnConnection(AwsBaseRelationship):
                     ctx.source.instance.runtime_properties['routes'].remove(
                         route)
         disassociate_args = dict(vpn_connection_id=self.vpn_connection_id)
+        disassociate_args = utils.update_args(disassociate_args, args)
         return self.execute(self.client.delete_vpn_connection,
                             disassociate_args, raise_on_falsy=True)
 
 
 class GatewayVpcAttachment(AwsBaseRelationship):
     def __init__(self, routes=None):
-        super(GatewayVpcAttachment, self).__init__()
+        super(GatewayVpcAttachment, self).__init__(
+            client=connection.VPCConnectionClient().client()
+        )
         self.vpn_type = 'ipsec.1'
         if self.is_vpn_gateway():
             self.attachment_function = self.client.attach_vpn_gateway
@@ -202,13 +208,15 @@ class GatewayVpcAttachment(AwsBaseRelationship):
                     constants.INTERNET_GATEWAY['AWS_RESOURCE_TYPE'])
             }
 
-    def associate(self):
+    def associate(self, args):
+        attachment_args = utils.update_args(self.attachment_args, args)
         return self.execute(self.attachment_function,
-                            self.attachment_args, raise_on_falsy=True)
+                            attachment_args, raise_on_falsy=True)
 
-    def disassociate(self):
+    def disassociate(self, args):
+        detachment_args = utils.update_args(self.detachment_args, args)
         return self.execute(self.detachment_function,
-                            self.detachment_args,
+                            detachment_args,
                             raise_on_falsy=True)
 
     def is_vpn_gateway(self):
@@ -224,7 +232,7 @@ class GatewayVpcAttachment(AwsBaseRelationship):
             self.target_resource_id
 
     def post_disassociate(self):
-        ec2_utils.unassign_runtime_property_from_resource(
+        utils.unassign_runtime_property_from_resource(
             'vpc_id', ctx.source.instance)
 
 
@@ -233,7 +241,8 @@ class InternetGateway(AwsBaseNode):
     def __init__(self):
         super(InternetGateway, self).__init__(
             constants.INTERNET_GATEWAY['AWS_RESOURCE_TYPE'],
-            constants.INTERNET_GATEWAY['REQUIRED_PROPERTIES']
+            constants.INTERNET_GATEWAY['REQUIRED_PROPERTIES'],
+            client=connection.VPCConnectionClient().client()
         )
         self.not_found_error = constants.INTERNET_GATEWAY['NOT_FOUND_ERROR']
         self.get_all_handler = {
@@ -242,17 +251,18 @@ class InternetGateway(AwsBaseNode):
             '{0}_ids'.format(constants.INTERNET_GATEWAY['AWS_RESOURCE_TYPE'])
         }
 
-    def create(self):
+    def create(self, args):
         gateway = self.execute(self.client.create_internet_gateway,
                                raise_on_falsy=True)
         self.resource_id = gateway.id
         return True
 
-    def start(self):
+    def start(self, args):
         return True
 
-    def delete(self):
+    def delete(self, args):
         delete_args = dict(internet_gateway_id=self.resource_id)
+        delete_args = utils.update_args(delete_args, args)
         return self.execute(self.client.delete_internet_gateway,
                             delete_args)
 
@@ -262,7 +272,8 @@ class VpnGateway(AwsBaseNode):
     def __init__(self):
         super(VpnGateway, self).__init__(
             constants.VPN_GATEWAY['AWS_RESOURCE_TYPE'],
-            constants.VPN_GATEWAY['REQUIRED_PROPERTIES']
+            constants.VPN_GATEWAY['REQUIRED_PROPERTIES'],
+            client=connection.VPCConnectionClient().client()
         )
         self.not_found_error = constants.VPN_GATEWAY['NOT_FOUND_ERROR']
         self.get_all_handler = {
@@ -271,22 +282,24 @@ class VpnGateway(AwsBaseNode):
             '{0}_ids'.format(constants.VPN_GATEWAY['AWS_RESOURCE_TYPE'])
         }
 
-    def create(self):
+    def create(self, args):
         create_args = dict(
             type=ctx.node.properties['type'],
             availability_zone=ctx.node.properties.get(
                 'availability_zone', None)
         )
+        create_args = utils.update_args(create_args, args)
         gateway = self.execute(self.client.create_vpn_gateway,
                                create_args, raise_on_falsy=True)
         self.resource_id = gateway.id
         return True
 
-    def start(self):
+    def start(self, args):
         return True
 
-    def delete(self):
+    def delete(self, args):
         delete_args = dict(vpn_gateway_id=self.resource_id)
+        delete_args = utils.update_args(delete_args, args)
         return self.execute(self.client.delete_vpn_gateway, delete_args)
 
 
@@ -295,7 +308,8 @@ class CustomerGateway(AwsBaseNode):
     def __init__(self):
         super(CustomerGateway, self).__init__(
             constants.CUSTOMER_GATEWAY['AWS_RESOURCE_TYPE'],
-            constants.CUSTOMER_GATEWAY['REQUIRED_PROPERTIES']
+            constants.CUSTOMER_GATEWAY['REQUIRED_PROPERTIES'],
+            client=connection.VPCConnectionClient().client()
         )
         self.not_found_error = constants.CUSTOMER_GATEWAY['NOT_FOUND_ERROR']
         self.get_all_handler = {
@@ -304,21 +318,23 @@ class CustomerGateway(AwsBaseNode):
             '{0}_ids'.format(constants.CUSTOMER_GATEWAY['AWS_RESOURCE_TYPE'])
         }
 
-    def create(self):
+    def create(self, args):
         create_args = dict(
             type=ctx.node.properties['type'],
             ip_address=ctx.node.properties['ip_address'],
             bgp_asn=ctx.node.properties['bgp_asn']
         )
+        create_args = utils.update_args(create_args, args)
         gateway = self.execute(self.client.create_customer_gateway,
                                create_args, raise_on_falsy=True)
         self.resource_id = gateway.id
         return True
 
-    def start(self):
+    def start(self, args):
         return True
 
-    def delete(self):
+    def delete(self, args):
         delete_args = dict(customer_gateway_id=self.resource_id)
+        delete_args = utils.update_args(delete_args, args)
         return self.execute(self.client.delete_customer_gateway,
                             delete_args)
