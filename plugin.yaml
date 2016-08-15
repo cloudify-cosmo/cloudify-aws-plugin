@@ -333,20 +333,20 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
-          implementation: aws.ec2.ebs.create
+          implementation: aws.cloudify_aws.ec2.ebs.create
           inputs:
             args:
               default: {}
         delete:
-          implementation: aws.ec2.ebs.delete
+          implementation: aws.cloudify_aws.ec2.ebs.delete
           inputs:
             args:
               default: {}
       cloudify.interfaces.validation:
-        creation: aws.ec2.ebs.creation_validation
+        creation: aws.cloudify_aws.ec2.ebs.creation_validation
       cloudify.interfaces.aws.snapshot:
         create:
-          implementation: aws.ec2.ebs.create_snapshot
+          implementation: aws.cloudify_aws.ec2.ebs.create_snapshot
           inputs:
             args:
               default: {}
@@ -787,9 +787,13 @@ relationships:
     derived_from: cloudify.relationships.connected_to
     source_interfaces:
       cloudify.interfaces.relationship_lifecycle:
-        establish: aws.ec2.ebs.attach
+        establish:
+          implementation: aws.cloudify_aws.ec2.ebs.associate
+          inputs:
+            args:
+              default: {}
         unlink:
-          implementation: aws.ec2.ebs.detach
+          implementation: aws.cloudify_aws.ec2.ebs.disassociate
           inputs:
             args:
               default: {}
