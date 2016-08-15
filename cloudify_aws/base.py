@@ -341,6 +341,32 @@ class AwsBaseNode(AwsBase):
         if self.use_external_resource_naively() or self.start(args):
             return self.post_start()
 
+    def modify_attributes(self, new_attributes):
+        return False
+
+    def modified(self, new_attributes):
+
+        ctx.logger.info(
+                'Attempting to modify instance attributes {0} {1}.'
+                .format(self.aws_resource_type,
+                        self.cloudify_node_instance_id))
+
+        if self.modify_attributes(new_attributes):
+            return self.post_modify()
+
+    def stop(self):
+        return False
+
+    def stopped(self):
+
+        ctx.logger.info(
+                'Attempting to stop EC2 instance {0} {1}.'
+                .format(self.aws_resource_type,
+                        self.cloudify_node_instance_id))
+
+        if self.stop():
+            return self.post_stop()
+
     def delete(self, args=None):
         return False
 
@@ -360,6 +386,14 @@ class AwsBaseNode(AwsBase):
         raise NonRecoverableError(
                 'Neither external resource, nor Cloudify resource, '
                 'unable to delete this resource.')
+
+    def terminate(self):
+        return False
+
+    def terminated(self):
+
+        if self.delete_external_resource_naively() or self.terminate():
+            return self.post_terminate()
 
     def delete_external_resource_naively(self):
 
@@ -444,6 +478,23 @@ class AwsBaseNode(AwsBase):
                 'Removed {0} {1} from Cloudify.'
                 .format(self.aws_resource_type, self.resource_id))
 
+        return True
+
+    def post_terminate(self):
+
+        utils.unassign_runtime_property_from_resource(
+                constants.EXTERNAL_RESOURCE_ID, ctx.instance)
+
+        ctx.logger.info('Terminated {0} {1}.'
+                        .format(self.aws_resource_type, self.resource_id))
+
+        return True
+
+    def post_modify(self):
+
+        ctx.logger.info(
+                'Modified {0} {1}.'
+                .format(self.aws_resource_type, self.resource_id))
         return True
 
 
