@@ -242,39 +242,6 @@ class TestLoadBalancer(testtools.TestCase):
         current_ctx.set(elb_ctx)
         self.assertTrue(elasticloadbalancer.delete(ctx=elb_ctx))
 
-    @mock_ec2
-    @mock_elb
-    def test_get_elbs(self):
-        elb_ctx = self.mock_relationship_context(
-                'test_get_elbs',
-                use_external_resource=True)
-        current_ctx.set(elb_ctx)
-        test_elasticloadbalancer = self\
-            .create_elbinstanceconnection_for_checking()
-
-        self.assertRaises(NonRecoverableError,
-                          test_elasticloadbalancer._get_elbs_by_names,
-                          ['fake'])
-
-    @mock_elb
-    @mock.patch('cloudify_aws.ec2.elasticloadbalancer'
-                '.ElbInstanceConnection.__init__')
-    def test_get_instance_list(self, *_):
-        ctx = self.mock_elb_ctx('test_get_instance_list')
-        self._create_external_elb()
-        current_ctx.set(ctx=ctx)
-
-        with mock.patch('cloudify_aws.ec2.elasticloadbalancer'
-                        '.ElbInstanceConnection.__init__') \
-                as mock_elbinstanceconnection_init:
-            mock_elbinstanceconnection_init.return_value = None
-            test_elbinstanceconnection = elasticloadbalancer \
-                .ElbInstanceConnection()
-            test_elbinstanceconnection.client = connection \
-                .ELBConnectionClient().client()
-            l = test_elbinstanceconnection._get_instance_list()
-            self.assertEquals([], l)
-
     @mock_elb
     def test_validation_not_external(self):
         """ Tests that creation_validation raises an error
@@ -291,30 +258,6 @@ class TestLoadBalancer(testtools.TestCase):
                                elasticloadbalancer.creation_validation,
                                ctx=ctx)
         self.assertIn('Not external resource, but the supplied', ex.message)
-
-    @mock_elb
-    @mock.patch('cloudify_aws.ec2.elasticloadbalancer'
-                '.ElbInstanceConnection.__init__')
-    def test_client_error_get_elbs_by_names(self, *_):
-        with mock.patch('cloudify_aws.ec2.elasticloadbalancer'
-                        '.ElbInstanceConnection._get_elbs_by_names',
-                        new=self.mock_raise_BotoClientError):
-            ctx = self.mock_elb_ctx('test_client_error_get_elbs_by_names',
-                                    use_external_resource=False,
-                                    resource_id='myelb')
-            current_ctx.set(ctx=ctx)
-
-            with mock.patch('cloudify_aws.ec2.elasticloadbalancer'
-                            '.ElbInstanceConnection.__init__') \
-                    as mock_elbinstanceconnection_init:
-                mock_elbinstanceconnection_init.return_value = None
-                test_elbinstanceconnection = elasticloadbalancer \
-                    .ElbInstanceConnection()
-                test_elbinstanceconnection.client = connection \
-                    .ELBConnectionClient().client()
-                self.assertRaises(boto.exception.BotoClientError,
-                                  test_elbinstanceconnection
-                                  ._get_instance_list)
 
     @mock_elb
     def test_client_error_create_elb(self):

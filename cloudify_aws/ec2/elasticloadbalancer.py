@@ -1,3 +1,9 @@
+########
+# Copyright (c) 2015 GigaSpaces Technologies Ltd. All rights reserved
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
 #        http://www.apache.org/licenses/LICENSE-2.0
 #
@@ -67,13 +73,13 @@ class ElbInstanceConnection(AwsBaseRelationship):
         ctx.logger.info('Attemping to add instance: {0} to elb {1}'
                         .format(instance_id, elb_name))
 
-        adding_args = dict(
-                            load_balancer_name=elb_name,
-                            instances=[instance_id]
-                        )
+        associate_args = dict(
+            load_balancer_name=elb_name,
+            instances=[instance_id])
+        associate_args.update(args if args else {})
 
         try:
-            self.execute(self.client.register_instances, adding_args,
+            self.execute(self.client.register_instances, associate_args,
                          raise_on_falsy=True)
         except (exception.EC2ResponseError,
                 exception.BotoServerError,
@@ -91,28 +97,23 @@ class ElbInstanceConnection(AwsBaseRelationship):
 
     def disassociate(self, args=None, **_):
 
-        elb_name = self.target_resource_id
-
-        instance_id = self.source_resource_id
-
-        instance_list = [instance_id]
-
-        deregister_args = dict(
-            load_balancer_name=elb_name,
-            instances=instance_list
+        disassociate_args = dict(
+            load_balancer_name=self.target_resource_id,
+            instances=[self.source_resource_id]
         )
+        disassociate_args.update(args if args else {})
 
         try:
-            self.execute(self.client.deregister_instances, deregister_args,
+            self.execute(self.client.deregister_instances, disassociate_args,
                          raise_on_falsy=True)
         except (exception.EC2ResponseError,
                 exception.BotoServerError,
                 exception.BotoClientError) as e:
-            if instance_id in self._get_instance_list():
+            if self.source_resource_id in self._get_instance_list():
                 raise RecoverableError('Instance not removed from Load '
                                        'Balancer {0}'.format(str(e)))
 
-        self._remove_instance_from_elb_list_in_properties(instance_id)
+        self._remove_instance_from_elb_list_in_properties(self.source_resource_id)
 
         return True
 
@@ -125,28 +126,6 @@ class ElbInstanceConnection(AwsBaseRelationship):
         self._add_instance_to_elb_list_in_properties(self.source_resource_id)
 
         return True
-
-    def _get_elbs_by_names(self, list_of_names):
-
-        ctx.logger.info(
-                'Attempting to get Load Balancers {0}.'.format(list_of_names))
-        total_elb_list = ''
-
-        try:
-            total_elb_list = self.client.get_all_load_balancers()
-            elb_list = self.client.get_all_load_balancers(
-                    load_balancer_names=list_of_names)
-        except (exception.EC2ResponseError,
-                exception.BotoServerError,
-                exception.BotoClientError) as e:
-            if 'LoadBalancerNotFound' in e:
-                ctx.logger.info('Unable to find load balancers matching: '
-                                '{0}'.format(list_of_names))
-                ctx.logger.info('load balancers available: '
-                                '{0}'.format(total_elb_list))
-            raise NonRecoverableError('Error when accessing ELB interface '
-                                      '{0}'.format(str(e)))
-        return elb_list
 
     def _add_instance_to_elb_list_in_properties(self, instance_id):
 
@@ -176,11 +155,10 @@ class ElbInstanceConnection(AwsBaseRelationship):
         return list_of_instances
 
     def get_target_resource(self, elb_name=None):
-        elbs = self._get_elbs_by_names([elb_name])
-        if elbs:
-            if elbs[0].name == elb_name:
-                return elbs[0]
-        return None
+        return self.filter_for_single_resource(
+            self.get_all_handler['function'],
+            [elb_name]
+        )
 
 
 class Elb(AwsBaseNode):
