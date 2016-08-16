@@ -17,14 +17,14 @@
 import testtools
 
 # Third Party Imports
-from boto.ec2 import EC2Connection
 from moto import mock_ec2
+from boto.ec2 import EC2Connection
 
 # Cloudify Imports is imported and used in operations
 from cloudify_aws.ec2 import ebs
-from cloudify_aws import constants, connection
 from cloudify.state import current_ctx
 from cloudify.mocks import MockContext
+from cloudify_aws import constants, connection
 from cloudify.mocks import MockCloudifyContext
 from cloudify.exceptions import NonRecoverableError
 
@@ -319,7 +319,7 @@ class TestEBS(testtools.TestCase):
             TEST_ZONE
         ctx.target.instance.runtime_properties['aws_resource_id'] = \
             instance_id
-        ebs.associate(ctx=ctx)
+        ebs.VolumeInstanceConnection().associate(ctx=ctx)
 
     @mock_ec2
     def test_good_volume_detach(self):
@@ -380,7 +380,7 @@ class TestEBS(testtools.TestCase):
         current_ctx.set(ctx=ctx)
         del(ctx.source.instance.runtime_properties['aws_resource_id'])
         ex = self.assertRaises(
-                NonRecoverableError, ebs.VolumeInstanceConnection().associate,
+                NonRecoverableError, ebs.associate,
                 ctx=ctx)
         self.assertIn(
                 'Cannot attach volume because aws_resource_id is not assigned',

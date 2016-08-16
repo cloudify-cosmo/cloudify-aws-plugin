@@ -20,10 +20,10 @@ import datetime
 from boto import exception
 
 # Cloudify imports
-from cloudify_aws import utils, constants
 from cloudify import ctx
-from cloudify.exceptions import NonRecoverableError
 from cloudify.decorators import operation
+from cloudify_aws import utils, constants
+from cloudify.exceptions import NonRecoverableError
 from cloudify_aws.base import AwsBaseNode, AwsBaseRelationship
 
 
@@ -120,24 +120,16 @@ class VolumeInstanceConnection(AwsBaseRelationship):
 
         ctx.logger.info(
                 'Attempting to associate {0} with {1}.'
-                    .format(self.source_resource_id,
-                            self.target_resource_id))
+                .format(self.source_resource_id,
+                        self.target_resource_id))
 
         if self.use_source_external_resource_naively() \
                 or self.associate(args):
             return self.post_associate()
 
-        elif not self.associate(args):
-            return ctx.operation.retry(
-                    message='Failed to associate {0} with {1}.'
-                        .format(self.source_resource_id, self.target_resource_id))
-
-        raise NonRecoverableError(
-                'Source is neither external resource, '
-                'nor Cloudify resource, unable to associate {0} with {1}.'
-                    .format(self.source_resource_id,
-                            self.target_resource_id))
-
+        return ctx.operation.retry(
+                message='Failed to associate {0} with {1}. Retrying...'
+                .format(self.source_resource_id, self.target_resource_id))
 
     def disassociate(self, args=None, **_):
 
@@ -226,31 +218,32 @@ class Ebs(AwsBaseNode):
         if not self._delete_volume():
             return False
 
-        utils.unassign_runtime_property_from_resource(
-                constants.ZONE, ctx.instance)
-
         return True
 
     def deleted(self, args=None):
 
         ctx.logger.info(
                 'Attempting to delete {0} {1}.'
-                    .format(self.aws_resource_type,
-                            self.cloudify_node_instance_id))
+                .format(self.aws_resource_type,
+                        self.cloudify_node_instance_id))
 
         if not self.get_resource():
             self.raise_forbidden_external_resource(self.resource_id)
 
         if self.delete_external_resource_naively() or self.delete(args):
             return self.post_delete()
-        elif not self.delete(args):
-            return ctx.operation.retry(
-                    message='Failed to delete volume {0}.'
-                    .format(self.resource_id))
-        else:
-            raise NonRecoverableError(
-                    'Neither external resource, nor Cloudify resource, '
-                    'unable to delete this resource.')
+
+        return ctx.operation.retry(
+                message='Failed to delete volume {0}. Retrying...'
+                .format(self.resource_id))
+
+    def post_delete(self):
+
+        utils.unassign_runtime_property_from_resource(
+                constants.ZONE, ctx.instance)
+        super(Ebs, self).post_delete()
+
+        return True
 
     def _delete_volume(self):
         """
@@ -325,3 +318,4 @@ class Ebs(AwsBaseNode):
         ctx.logger.info(
                 'Created snapshot of EBS volume {0}.'
                 .format(self.resource_id))
+        return True
