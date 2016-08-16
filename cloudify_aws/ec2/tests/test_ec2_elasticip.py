@@ -17,13 +17,13 @@
 import testtools
 
 # Third Party Imports
+from moto import mock_ec2
 from boto.ec2 import EC2Connection
 from boto.vpc import VPCConnection
-from moto import mock_ec2
 
 # Cloudify Imports is imported and used in operations
-from cloudify_aws.ec2 import elasticip
 from cloudify_aws import constants
+from cloudify_aws.ec2 import elasticip
 from cloudify.state import current_ctx
 from cloudify.mocks import MockContext
 from cloudify.mocks import MockCloudifyContext
