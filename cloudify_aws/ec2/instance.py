@@ -19,13 +19,13 @@ import os
 from boto import exception
 
 # Cloudify imports
-from cloudify_aws import utils, constants
 from cloudify import ctx
 from cloudify import compute
-from cloudify.exceptions import NonRecoverableError
-from cloudify.decorators import operation
 from cloudify_aws.ec2 import passwd
+from cloudify.decorators import operation
 from cloudify_aws.base import AwsBaseNode
+from cloudify_aws import utils, constants
+from cloudify.exceptions import NonRecoverableError
 
 
 @operation
@@ -39,8 +39,8 @@ def create(args=None, **_):
 
 
 @operation
-def start(start_retry_interval=30, private_key_path=None, args=None,  **_):
-    return Instance().started(args)
+def start(args=None, start_retry_interval=30, private_key_path=None, **_):
+    return Instance().started(args, start_retry_interval, private_key_path)
 
 
 @operation
@@ -101,10 +101,7 @@ class Instance(AwsBaseNode):
         instance = self._get_instance_from_id(instance_id)
 
         if instance is None:
-            return ctx.operation.retry(
-                    message='Waiting to verify that instance {0} '
-                            'has been added to your account.'
-                            .format(instance_id))
+            return False
 
         utils.set_external_resource_id(
                 instance_id, ctx.instance, external=False)
@@ -112,12 +109,26 @@ class Instance(AwsBaseNode):
 
         return True
 
+    def created(self, args=None):
+
+        ctx.logger.info(
+                'Attempting to create {0} {1}.'
+                .format(self.aws_resource_type,
+                        self.cloudify_node_instance_id))
+
+        if self.use_external_resource_naively() or self.create(args):
+            return self.post_create()
+
+        return ctx.operation.retry(
+                message='Waiting to verify that {0} {1} '
+                        'has been added to your account.'
+                        .format(self.aws_resource_type,
+                                self.cloudify_node_instance_id))
+
     def start(self, args=None, start_retry_interval=30,
               private_key_path=None, **_):
 
-        instance_id = \
-            utils.get_external_resource_id_or_raise(
-                    'start instance', ctx.instance)
+        instance_id = self.resource_id
 
         self._assign_runtime_properties_to_instance(
                     runtime_properties=constants.INSTANCE_INTERNAL_ATTRIBUTES)
@@ -128,10 +139,7 @@ class Instance(AwsBaseNode):
                         instance_id=instance_id,
                         private_key_path=private_key_path)
                 if not password_success:
-                    return ctx.operation.retry(
-                            message='Waiting for server to post '
-                                    'generated password',
-                            retry_after=start_retry_interval)
+                    return False
             return True
 
         ctx.logger.debug('Attempting to start instance: {0}.)'
@@ -154,15 +162,26 @@ class Instance(AwsBaseNode):
                         instance_id=instance_id,
                         private_key_path=private_key_path)
                 if not password_success:
-                    return ctx.operation.retry(
-                            message='Waiting for server to post '
-                                    'generated password',
-                            retry_after=start_retry_interval)
+                    return False
         else:
-            return ctx.operation.retry(
-                    message='Waiting server to be running. Retrying...',
-                    retry_after=start_retry_interval)
+            return False
         return True
+
+    def started(self, args=None, start_retry_interval=30,
+                private_key_path=None):
+
+        if self.aws_resource_type is 'instance':
+            ctx.logger.info(
+                    'Attempting to start instance {0}.'
+                    .format(self.cloudify_node_instance_id))
+
+        if self.use_external_resource_naively() or \
+                self.start(args, start_retry_interval, private_key_path):
+            return self.post_start()
+
+        return ctx.operation.retry(
+                message='Waiting server to be running. Retrying...',
+                retry_after=start_retry_interval)
 
     def _get_private_key(self, private_key_path):
         pk_node_by_rel = \
@@ -219,9 +238,7 @@ class Instance(AwsBaseNode):
 
     def stop(self, args=None, **_):
 
-        instance_id = \
-            utils.get_external_resource_id_or_raise(
-                    'stop instance', ctx.instance)
+        instance_id = self.resource_id
 
         try:
             self.execute(self.client.stop_instances,
@@ -231,13 +248,14 @@ class Instance(AwsBaseNode):
                 exception.BotoServerError) as e:
             raise NonRecoverableError('{0}'.format(str(e)))
 
-        return True
+        if self._get_instance_state() == constants.INSTANCE_STATE_STOPPED:
+            return True
+
+        return False
 
     def delete(self, args=None, **_):
 
-        instance_id = \
-            utils.get_external_resource_id_or_raise(
-                    'terminate instance', ctx.instance)
+        instance_id = self.resource_id
 
         try:
             self.execute(self.client.terminate_instances,
@@ -253,14 +271,20 @@ class Instance(AwsBaseNode):
             utils.unassign_runtime_property_from_resource(
                     constants.EXTERNAL_RESOURCE_ID, ctx.instance)
             return True
-        else:
-            return ctx.operation.retry(
-                    message='Waiting server to terminate. Retrying...')
+        return False
 
     def deleted(self, args=None):
 
+        ctx.logger.info(
+                'Attempting to delete {0} {1}.'
+                .format(self.aws_resource_type,
+                        self.cloudify_node_instance_id))
+
         if self.delete_external_resource_naively() or self.delete(args):
             return self.post_delete()
+
+        return ctx.operation.retry(
+                message='Waiting server to terminate. Retrying...')
 
     def _run_instances_if_needed(self, create_args):
 
@@ -275,7 +299,6 @@ class Instance(AwsBaseNode):
 
             self.resource_id = reservation.instances[0].id
             ctx.instance.runtime_properties['reservation_id'] = reservation.id
-
             return reservation.instances[0].id
 
         elif constants.EXTERNAL_RESOURCE_ID not in \
@@ -292,10 +315,8 @@ class Instance(AwsBaseNode):
                         'More than one instance was created by the'
                         ' install workflow. '
                         'Unable to handle request.')
-
             return instances[0].id
-
-        return ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
+        return self.resource_id
 
     def _instance_created_assign_runtime_properties(self):
         self._assign_runtime_properties_to_instance(
@@ -317,12 +338,10 @@ class Instance(AwsBaseNode):
 
     def modify_attributes(self, new_attributes, args=None, **_):
 
-        instance_id = \
-            ctx.instance.runtime_properties.get(
-                    constants.EXTERNAL_RESOURCE_ID)
+        instance_id = self.resource_id
 
         if not instance_id:
-            ctx.operation.retry('instance_id not yet set.')
+            return False
 
         for attribute, value in new_attributes.items():
             try:
@@ -355,8 +374,7 @@ class Instance(AwsBaseNode):
                     'is not set.'
                     .format(attribute, constants.EXTERNAL_RESOURCE_ID))
 
-        instance_id = \
-            ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
+        instance_id = self.resource_id
         instance_object = self._get_instance_from_id(instance_id)
 
         if not instance_object:
@@ -537,6 +555,8 @@ class Instance(AwsBaseNode):
         if self.modify_attributes(new_attributes, args):
             return self.post_modify()
 
+        return ctx.operation.retry('instance_id not yet set. Retrying...')
+
     def stopped(self, args=None):
 
         ctx.logger.info(
@@ -547,10 +567,12 @@ class Instance(AwsBaseNode):
         if self.delete_external_resource_naively() or self.stop(args):
             return self.post_stop()
 
+        return ctx.operation.retry('Waiting server to stop. Retrying...')
+
     def post_stop(self):
 
-        self._unassign_runtime_properties(
-                runtime_properties=constants.INSTANCE_INTERNAL_ATTRIBUTES,
+        utils.unassign_runtime_properties_from_resource(
+                property_names=constants.INSTANCE_INTERNAL_ATTRIBUTES,
                 ctx_instance=ctx.instance)
 
         ctx.logger.info(
@@ -565,11 +587,6 @@ class Instance(AwsBaseNode):
                 'Modified {0} {1}.'
                 .format(self.aws_resource_type, self.resource_id))
         return True
-
-    def _unassign_runtime_properties(self, runtime_properties, ctx_instance):
-        for property_name in runtime_properties:
-            utils.unassign_runtime_property_from_resource(
-                    property_name, ctx_instance)
 
     def _get_instance_state(self):
         """Gets the instance state code of a EC2 Instance
