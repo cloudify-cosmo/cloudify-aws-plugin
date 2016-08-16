@@ -224,3 +224,11 @@ def get_connected_nodes_by_type(passed_ctx, type_name):
                 constants.AWS_TYPE_PROPERTY) and
             rel.target.instance.runtime_properties.get(
                     constants.AWS_TYPE_PROPERTY) == type_name]
+
+
+def update_args(parameterized_args, args_from_inputs):
+    ctx.logger.debug('parameterized_args: {0}'.format(parameterized_args))
+    ctx.logger.debug('args_from_inputs: {0}'.format(args_from_inputs))
+    parameterized_args.update(args_from_inputs if args_from_inputs else {})
+    ctx.logger.debug('args passed to function: {0}'.format(parameterized_args))
+    return parameterized_args

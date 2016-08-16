@@ -14,48 +14,49 @@
 #    * limitations under the License.
 
 # Cloudify imports
-from ec2 import utils as ec2_utils
-from . import constants
-from core.base import AwsBaseNode, AwsBaseRelationship
+from cloudify_aws import constants, utils, connection
+from cloudify_aws.base import AwsBaseNode, AwsBaseRelationship
 from cloudify import ctx
 from cloudify.decorators import operation
 from cloudify.exceptions import NonRecoverableError
 
 
 @operation
-def creation_validation(**_):
+def creation_validation(args=None, **_):
     return NetworkAcl().creation_validation()
 
 
 @operation
-def create_network_acl(**_):
-    return NetworkAcl().created()
+def create_network_acl(args=None, **_):
+    return NetworkAcl().created(args)
 
 
 @operation
-def start_network_acl(**_):
-    return NetworkAcl().started()
+def start_network_acl(args=None, **_):
+    return NetworkAcl().started(args)
 
 
 @operation
-def delete_network_acl(**_):
-    return NetworkAcl().deleted()
+def delete_network_acl(args=None, **_):
+    return NetworkAcl().deleted(args)
 
 
 @operation
-def associate_network_acl(**_):
-    return NetworkAclSubnetAssociation().associated()
+def associate_network_acl(args=None, **_):
+    return NetworkAclSubnetAssociation().associated(args)
 
 
 @operation
-def disassociate_network_acl(**_):
-    return NetworkAclSubnetAssociation().disassociated()
+def disassociate_network_acl(args=None, **_):
+    return NetworkAclSubnetAssociation().disassociated(args)
 
 
 class NetworkAclSubnetAssociation(AwsBaseRelationship):
 
     def __init__(self):
-        super(NetworkAclSubnetAssociation, self).__init__()
+        super(NetworkAclSubnetAssociation, self).__init__(
+            client=connection.VPCConnectionClient().client()
+        )
         self.association_id = \
             ctx.source.instance.runtime_properties\
             .get('association_id', None)\
@@ -68,21 +69,25 @@ class NetworkAclSubnetAssociation(AwsBaseRelationship):
             '{0}_ids'.format(constants.NETWORK_ACL['AWS_RESOURCE_TYPE'])
         }
 
-    def associate(self):
+    def associate(self, args):
         assoicate_args = dict(
             network_acl_id=self.source_resource_id,
             subnet_id=self.target_resource_id
         )
+        assoicate_args = utils.update_args(assoicate_args, args)
+
         self.association_id = \
             self.execute(self.client.associate_network_acl,
                          assoicate_args, raise_on_falsy=True)
         return True
 
-    def disassociate(self):
+    def disassociate(self, args):
         disassociate_args = dict(
             subnet_id=self.target_resource_id,
             vpc_id=ctx.source.instance.runtime_properties['vpc_id']
         )
+        disassociate_args = utils.update_args(disassociate_args, args)
+
         return self.execute(self.client.disassociate_network_acl,
                             disassociate_args, raise_on_falsy=True)
 
@@ -91,7 +96,7 @@ class NetworkAclSubnetAssociation(AwsBaseRelationship):
             self.association_id
 
     def post_disassociate(self):
-        ec2_utils.unassign_runtime_property_from_resource(
+        utils.unassign_runtime_property_from_resource(
             'association_id', ctx.source.instance)
 
 
@@ -100,7 +105,8 @@ class NetworkAcl(AwsBaseNode):
     def __init__(self):
         super(NetworkAcl, self).__init__(
             constants.NETWORK_ACL['AWS_RESOURCE_TYPE'],
-            constants.NETWORK_ACL['REQUIRED_PROPERTIES']
+            constants.NETWORK_ACL['REQUIRED_PROPERTIES'],
+            client=connection.VPCConnectionClient().client()
         )
         self.not_found_error = constants.NETWORK_ACL['NOT_FOUND_ERROR']
         self.get_all_handler = {
@@ -109,8 +115,9 @@ class NetworkAcl(AwsBaseNode):
             '{0}_ids'.format(constants.NETWORK_ACL['AWS_RESOURCE_TYPE'])
         }
 
-    def create(self):
+    def create(self, args):
         create_args = self.generate_create_args()
+        create_args = utils.update_args(create_args, args)
         network_acl = self.execute(self.client.create_network_acl,
                                    create_args, raise_on_falsy=True)
         self.resource_id = network_acl.id
@@ -151,10 +158,11 @@ class NetworkAcl(AwsBaseNode):
         return self.execute(self.client.create_network_acl_entry,
                             args, raise_on_falsy=True)
 
-    def start(self):
+    def start(self, args):
         return True
 
-    def delete(self):
+    def delete(self, args):
         delete_args = dict(network_acl_id=self.resource_id)
+        delete_args = utils.update_args(delete_args, args)
         return self.execute(self.client.delete_network_acl,
                             delete_args, raise_on_falsy=True)

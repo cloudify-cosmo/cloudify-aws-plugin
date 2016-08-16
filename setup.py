@@ -30,9 +30,6 @@ setup(
 
     # This must correspond to the actual packages in the plugin.
     packages=[
-        'core',
-        'ec2',
-        'vpc',
         'cloudify_aws',
         'cloudify_aws.ec2',
         'cloudify_aws.vpc'

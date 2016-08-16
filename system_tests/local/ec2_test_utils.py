@@ -23,7 +23,7 @@ from boto.ec2 import EC2Connection
 from boto.ec2.elb import connect_to_region as connect_to_elb_region
 
 # Cloudify Imports
-from ec2 import constants
+from cloudify_aws import constants
 from cloudify.workflows import local
 from cloudify.mocks import MockContext
 from cloudify.mocks import MockCloudifyContext

@@ -18,12 +18,12 @@ from boto.exception import EC2ResponseError
 from boto.exception import BotoServerError
 
 # Cloudify Imports
-from ec2 import (
+from cloudify_aws import constants
+from cloudify_aws.ec2 import (
     securitygroup,
     keypair,
     elasticip,
-    instance,
-    constants
+    instance
 )
 from cloudify.state import current_ctx
 from cloudify.exceptions import NonRecoverableError

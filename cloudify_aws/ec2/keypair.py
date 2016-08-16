@@ -99,7 +99,7 @@ class KeyPair(AwsBaseNode):
             'key_name': utils.get_resource_id()
         }
 
-        create_args.update(args if args else {})
+        create_args = utils.update_args(create_args, args)
 
         kp = self.execute(self.client.create_key_pair,
                           create_args, raise_on_falsy=True)
@@ -121,7 +121,7 @@ class KeyPair(AwsBaseNode):
         delete_args = {
             'key_name': key_pair_name
         }
-        delete_args.update(args if args else {})
+        delete_args = utils.update_args(delete_args, args)
 
         return self.execute(self.client.delete_key_pair,
                             delete_args, raise_on_falsy=True)

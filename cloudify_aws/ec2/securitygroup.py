@@ -70,7 +70,7 @@ class SecurityGroup(AwsBaseNode):
                 vpc_id=self._get_connected_vpc()
         )
 
-        create_args.update(args if args else {})
+        create_args = utils.update_args(create_args, args)
 
         if ctx.operation.retry_number == 0 and constants.EXTERNAL_RESOURCE_ID \
                 not in ctx.instance.runtime_properties:
@@ -104,7 +104,7 @@ class SecurityGroup(AwsBaseNode):
     def delete(self, args=None, **_):
 
         delete_args = dict(group_id=self.resource_id)
-        delete_args.update(args if args else {})
+        delete_args = utils.update_args(delete_args, args)
         return self.execute(self.client.delete_security_group,
                             delete_args, raise_on_falsy=True)
 

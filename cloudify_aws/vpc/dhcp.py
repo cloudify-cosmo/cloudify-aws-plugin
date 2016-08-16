@@ -14,8 +14,8 @@
 #    * limitations under the License.
 
 # Cloudify imports
-from . import constants
-from core.base import AwsBaseNode, AwsBaseRelationship
+from cloudify_aws import constants, connection, utils
+from cloudify_aws.base import AwsBaseNode, AwsBaseRelationship
 from cloudify import ctx
 from cloudify.decorators import operation
 
@@ -26,50 +26,54 @@ def creation_validation(**_):
 
 
 @operation
-def create_dhcp_options(**_):
-    return DhcpOptions().created()
+def create_dhcp_options(args=None, **_):
+    return DhcpOptions().created(args)
 
 
 @operation
-def start_dhcp_options(**_):
-    return DhcpOptions().started()
+def start_dhcp_options(args=None, **_):
+    return DhcpOptions().started(args)
 
 
 @operation
-def delete_dhcp_options(**_):
-    return DhcpOptions().deleted()
+def delete_dhcp_options(args=None, **_):
+    return DhcpOptions().deleted(args)
 
 
 @operation
-def associate_dhcp_options(**_):
-    return DhcpAssociation().associated()
+def associate_dhcp_options(args=None, **_):
+    return DhcpAssociation().associated(args)
 
 
 @operation
-def restore_dhcp_options(**_):
-    return DhcpAssociation().disassociated()
+def restore_dhcp_options(args=None, **_):
+    return DhcpAssociation().disassociated(args)
 
 
 class DhcpAssociation(AwsBaseRelationship):
 
     def __init__(self):
-        super(DhcpAssociation, self).__init__()
+        super(DhcpAssociation, self).__init__(
+            client=connection.VPCConnectionClient().client()
+        )
         self.source_get_all_handler = {
             'function': self.client.get_all_dhcp_options,
             'argument':
             '{0}_ids'.format(constants.DHCP_OPTIONS['AWS_RESOURCE_TYPE'])
         }
 
-    def associate(self):
+    def associate(self, args):
         associate_args = dict(
             dhcp_options_id=self.source_resource_id,
             vpc_id=self.target_resource_id
         )
+        associate_args = utils.update_args(associate_args, args)
         return self.execute(self.client.associate_dhcp_options,
                             associate_args, raise_on_falsy=True)
 
-    def disassociate(self):
+    def disassociate(self, args):
         disassociate_args = self.generate_disassociate_args()
+        disassociate_args = utils.update_args(disassociate_args, args)
         return self.execute(self.client.associate_dhcp_options,
                             disassociate_args, raise_on_falsy=True)
 
@@ -87,7 +91,8 @@ class DhcpOptions(AwsBaseNode):
     def __init__(self):
         super(DhcpOptions, self).__init__(
             constants.DHCP_OPTIONS['AWS_RESOURCE_TYPE'],
-            constants.DHCP_OPTIONS['REQUIRED_PROPERTIES']
+            constants.DHCP_OPTIONS['REQUIRED_PROPERTIES'],
+            client=connection.VPCConnectionClient().client()
         )
         self.not_found_error = constants.DHCP_OPTIONS['NOT_FOUND_ERROR']
         self.get_all_handler = {
@@ -96,8 +101,9 @@ class DhcpOptions(AwsBaseNode):
             '{0}_ids'.format(constants.DHCP_OPTIONS['AWS_RESOURCE_TYPE'])
         }
 
-    def create(self):
+    def create(self, args):
         create_args = self.generate_create_args()
+        create_args = utils.update_args(create_args, args)
         dhcp_options = self.execute(self.client.create_dhcp_options,
                                     create_args, raise_on_falsy=True)
         self.resource_id = dhcp_options.id
@@ -112,10 +118,11 @@ class DhcpOptions(AwsBaseNode):
             netbios_node_type=ctx.node.properties['netbios_node_type']
         )
 
-    def start(self):
+    def start(self, args):
         return True
 
-    def delete(self):
+    def delete(self, args):
         delete_args = dict(dhcp_options_id=self.resource_id)
+        delete_args = utils.update_args(delete_args, args)
         return self.execute(self.client.delete_dhcp_options,
                             delete_args, raise_on_falsy=True)
