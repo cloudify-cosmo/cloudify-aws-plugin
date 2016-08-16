@@ -15,16 +15,16 @@
 
 # Built-in Imports
 import uuid
-
 import testtools
+
 # Third Party Imports
-from moto import mock_ec2
 import mock
+from moto import mock_ec2
 
 # Cloudify Imports is imported and used in operations
-from cloudify_aws import constants, connection
-from cloudify_aws.ec2 import securitygroup
 from cloudify.state import current_ctx
+from cloudify_aws.ec2 import securitygroup
+from cloudify_aws import constants, connection
 from cloudify.mocks import MockCloudifyContext
 from cloudify.exceptions import NonRecoverableError
 
