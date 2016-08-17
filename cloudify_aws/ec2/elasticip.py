@@ -17,10 +17,10 @@
 from boto import exception
 
 # Cloudify imports
-from cloudify_aws import utils, constants
 from cloudify import ctx
-from cloudify.exceptions import NonRecoverableError
 from cloudify.decorators import operation
+from cloudify_aws import utils, constants
+from cloudify.exceptions import NonRecoverableError
 from cloudify_aws.base import AwsBaseNode, AwsBaseRelationship
 
 
@@ -265,10 +265,25 @@ class ElasticIP(AwsBaseNode):
             utils.unassign_runtime_property_from_resource(
                     constants.ELASTICIP['ALLOCATION_ID'], ctx.instance)
         else:
-            return ctx.operation.retry(
-                    message='Elastic IP not released. Retrying...')
+            return False
 
         return True
+
+    def deleted(self, args=None):
+
+        ctx.logger.info(
+                'Attempting to delete {0} {1}.'
+                .format(self.aws_resource_type,
+                        self.cloudify_node_instance_id))
+
+        if not self.get_resource():
+            self.raise_forbidden_external_resource(self.resource_id)
+
+        if self.delete_external_resource_naively() or self.delete(args):
+            return self.post_delete()
+
+        return ctx.operation.retry(
+                message='Elastic IP not released. Retrying...')
 
     def get_resource(self):
 
