@@ -17,11 +17,11 @@
 from boto import exception
 
 # Cloudify imports
-from cloudify_aws import utils, constants
 from cloudify import ctx
-from cloudify.exceptions import NonRecoverableError
 from cloudify.decorators import operation
 from cloudify_aws.base import AwsBaseNode
+from cloudify_aws import utils, constants
+from cloudify.exceptions import NonRecoverableError
 
 
 @operation
@@ -89,14 +89,26 @@ class SecurityGroup(AwsBaseNode):
         security_group = self.get_resource()
 
         if not security_group:
-            return ctx.operation.retry(
-                    message='Waiting to verify that security group {0} '
-                            'has been added.'
-                            .format(constants.EXTERNAL_RESOURCE_ID))
+            return False
 
         self._create_group_rules(security_group)
 
         return True
+
+    def created(self, args=None):
+
+        ctx.logger.info(
+                'Attempting to create {0} {1}.'
+                .format(self.aws_resource_type,
+                        self.cloudify_node_instance_id))
+
+        if self.use_external_resource_naively() or self.create(args):
+            return self.post_create()
+
+        return ctx.operation.retry(
+                message='Waiting to verify that security group {0} '
+                        'has been added.'
+                        .format(constants.EXTERNAL_RESOURCE_ID))
 
     def start(self, args=None, **_):
         return True
