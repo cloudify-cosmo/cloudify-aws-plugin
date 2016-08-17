@@ -14,23 +14,23 @@
 #    * limitations under the License.
 
 # Built-in Imports
-import testtools
-import tempfile
 import uuid
+import tempfile
+import testtools
 
 # Third Party Imports
-from moto import mock_ec2
 import mock
+from moto import mock_ec2
 from boto.vpc import VPCConnection
 
 # Cloudify Imports is imported and used in operations
-from cloudify_aws import constants, connection
 from cloudify_aws.ec2 import instance
-from cloudify.context import BootstrapContext
 from cloudify.state import current_ctx
-from cloudify.mocks import MockCloudifyContext
-from cloudify.mocks import MockNodeContext
 from cloudify.mocks import MockContext
+from cloudify.mocks import MockNodeContext
+from cloudify.context import BootstrapContext
+from cloudify_aws import constants, connection
+from cloudify.mocks import MockCloudifyContext
 from cloudify.exceptions import NonRecoverableError
 
 TEST_AMI_IMAGE_ID = 'ami-e214778a'
