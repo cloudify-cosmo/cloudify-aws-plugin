@@ -93,7 +93,8 @@ class RouteTableGatewayAssociation(AwsBaseRelationship, RouteMixin):
 
     def disassociate(self, args):
         route = dict(
-            destination_cidr_block=ctx.target.node.properties['cidr_block'],
+            destination_cidr_block=ctx.target.node.properties.get(
+                'cidr_block'),
             gateway_id=ctx.target.instance.runtime_properties[
                 constants.EXTERNAL_RESOURCE_ID]
         )
