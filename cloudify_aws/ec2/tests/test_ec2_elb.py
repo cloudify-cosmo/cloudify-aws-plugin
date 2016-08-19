@@ -227,10 +227,10 @@ class TestLoadBalancer(testtools.TestCase):
                                              instance_context=instance_ctx,
                                              elb_context=elb_ctx)
         current_ctx.set(ctx=ctx)
-        self.assertRaises(NonRecoverableError,
-                          elasticloadbalancer.ElbInstanceConnection()
-                          .disassociate,
-                          ctx=ctx)
+        elasticloadbalancer.ElbInstanceConnection().disassociate(ctx=ctx)
+        self.assertEqual(0,
+                         len(ctx.target.instance.runtime_properties.get(
+                                 'instance_list')))
 
     @mock_ec2
     @mock_elb

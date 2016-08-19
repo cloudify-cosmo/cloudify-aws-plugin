@@ -104,8 +104,7 @@ class ElbInstanceConnection(AwsBaseRelationship):
         disassociate_args = utils.update_args(disassociate_args, args)
 
         try:
-            self.execute(self.client.deregister_instances, disassociate_args,
-                         raise_on_falsy=True)
+            self.execute(self.client.deregister_instances, disassociate_args)
         except (exception.EC2ResponseError,
                 exception.BotoServerError,
                 exception.BotoClientError) as e:

@@ -78,7 +78,10 @@ class TestWorkflowClean(VpcTestCase):
 
     @mock_ec2()
     @mock.patch('cloudify_aws.vpc.dhcp.delete_dhcp_options', return_value=True)
+    @mock.patch('cloudify_aws.vpc.gateway.CustomerGateway.delete',
+                return_value=True)
     @mock.patch('cloudify_aws.vpc.dhcp.restore_dhcp_options')
+    @mock.patch('cloudify_aws.vpc.gateway.delete_customer_gateway', return_value=True)
     def test_blueprint(self, *_):
         """ Tests the install workflow using the built in
             workflows.
@@ -197,6 +200,8 @@ class TestWorkflowClean(VpcTestCase):
             if ACL_TYPE in key:
                 self.assertEquals(3, len(value))
             elif ROUTE_TABLE_TYPE in key:
+                self.assertEquals(2, len(value))
+            elif CUSTOMER_GATEWAY_TYPE in key:
                 self.assertEquals(2, len(value))
             else:
                 self.assertEquals(1, len(value))
