@@ -81,7 +81,8 @@ class TestWorkflowClean(VpcTestCase):
     @mock.patch('cloudify_aws.vpc.gateway.CustomerGateway.delete',
                 return_value=True)
     @mock.patch('cloudify_aws.vpc.dhcp.restore_dhcp_options')
-    @mock.patch('cloudify_aws.vpc.gateway.delete_customer_gateway', return_value=True)
+    @mock.patch('cloudify_aws.vpc.gateway.delete_customer_gateway',
+                return_value=True)
     def test_blueprint(self, *_):
         """ Tests the install workflow using the built in
             workflows.
