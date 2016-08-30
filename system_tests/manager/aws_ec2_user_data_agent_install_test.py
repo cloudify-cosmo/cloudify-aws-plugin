@@ -29,13 +29,13 @@ class AWSEC2UserDataAgentInstallTest(TestCase):
             os.path.join(blueprint_path,
                          'user-data-agent-install-blueprint.yaml')
 
-        self.cfy.upload_blueprint(
-            blueprint_id=self.test_id,
-            blueprint_path=self.blueprint_yaml)
+        self.cfy.blueprints.upload(
+            self.blueprint_yaml,
+            blueprint_id=self.test_id)
 
-        self.cfy.create_deployment(
+        self.cfy.deployments.create(
+            self.test_id,
             blueprint_id=self.test_id,
-            deployment_id=self.test_id,
             inputs=self.get_inputs())
 
         deployment_env_creation_execution = self.repetitive(
