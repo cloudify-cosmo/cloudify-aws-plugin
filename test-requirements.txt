@@ -4,3 +4,4 @@ nose-cov
 testfixtures
 https://github.com/EarthmanT/moto/archive/master.zip
 mock
+tox

@@ -142,7 +142,8 @@ def get_target_external_resource_ids(relationship_type, ctx_instance):
         return ids
 
     for r in ctx_instance.relationships:
-        if relationship_type in r.type:
+        if relationship_type in r.type or \
+                        relationship_type in r.type_hierarchy:
             ids.append(
                     r.target.instance.runtime_properties[
                         constants.EXTERNAL_RESOURCE_ID])

@@ -274,7 +274,7 @@ class TestLoadBalancer(testtools.TestCase):
     @mock_elb
     def test_client_error_add_health_check_to_elb(self, *_):
         with mock.patch('cloudify_aws.connection.ELBConnectionClient',
-                        new=self.mock_elb_client_raise_NonRecoverableError):
+                        new=mock.Mock()):
             ctx = self.mock_elb_ctx('test_client_error_get_elbs_by_names',
                                     use_external_resource=False,
                                     resource_id='myelb')
