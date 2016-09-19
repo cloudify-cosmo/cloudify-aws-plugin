@@ -314,8 +314,15 @@ class TestKeyPair(testtools.TestCase):
         ctx.node.properties['use_external_resource'] = True
         ctx.node.properties['resource_id'] = kp.name
         ctx.instance.runtime_properties['aws_resource_id'] = kp.name
+
+        with open(ctx.node.properties['private_key_path'], 'wb') as fp:
+            fp.write(kp.material)
+            fp.close()
+
         keypair.delete(ctx=ctx)
         self.assertNotIn('aws_resource_id', ctx.instance.runtime_properties)
+        self.assertTrue(
+            os.path.exists(ctx.node.properties['private_key_path']))
 
     @mock_ec2
     def test_get_path_to_key_file(self):
