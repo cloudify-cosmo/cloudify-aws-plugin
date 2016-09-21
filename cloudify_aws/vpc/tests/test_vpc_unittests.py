@@ -129,6 +129,7 @@ class TestSubnetModule(VpcTestCase):
         return_value=[Vpc(), Vpc()])
     def test_create(self, *_):
         ctx = self.get_mock_subnet_node_instance_context('test_create')
+        ctx.operation._operation_context['retry_number'] = 0
         error = self.assertRaises(NonRecoverableError, subnet.create_subnet,
                                   args=None, ctx=ctx)
         self.assertIn('subnet can only be connected to one vpc', error.message)

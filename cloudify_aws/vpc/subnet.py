@@ -69,11 +69,19 @@ class Subnet(AwsBaseNode):
             # Get the resource object
             subnet = self.get_resource()
         # If the operation is still pending, set the ID and retry
-        if subnet.state == 'pending':
-            set_external_resource_id(self.resource_id, ctx.instance)
-            return ctx.operation.retry(
-                message='Waiting to verify that AWS resource {0} '
-                'has been added to your account.'.format(self.resource_id))
+        if hasattr(subnet, 'state'):
+            ctx.logger.debug('AWS resource {0} returned a state of "{1}"'
+                             .format(self.resource_id, subnet.state))
+            if subnet.state == 'pending':
+                set_external_resource_id(self.resource_id, ctx.instance)
+                return ctx.operation.retry(
+                    message='Waiting to verify that AWS resource {0} '
+                    'has been added to your account.'.format(self.resource_id))
+        else:
+            ctx.logger.warn('AWS resource {0} returned an '
+                            'unexpected response (missing state)'
+                            .format(self.resource_id))
+            return False
         return True
 
     def _generate_creation_args(self):
