@@ -70,10 +70,24 @@ def create(**_):
     # Find attached Security Groups
     params['groups'] = list(set(
         _find_attached_security_groups() + params.get('groups', list())))
-    # Create the Network Interface
-    ctx.logger.debug('create_network_interface({0})'.format(params))
     try:
-        iface_obj = ec2_client.create_network_interface(**params)
+        # Attempt to create the Network Interface
+        if ctx.operation.retry_number == 0:
+            ctx.logger.debug('create_network_interface({0})'.format(params))
+            iface_obj = ec2_client.create_network_interface(**params)
+            # Store the AWS resource ID for retry operations
+            ctx.instance.runtime_properties['aws_resource_id'] = iface_obj.id
+        else:
+            # Read the state of the resource
+            iface_obj = _get_network_interface_object(
+                ec2_client,
+                ctx.instance.runtime_properties['aws_resource_id'])
+        ctx.logger.debug('response: {0}'.format(vars(iface_obj)))
+        # Check if the resource is pending creation, retry if needed
+        if iface_obj.status == 'pending':
+            return ctx.operation.retry(
+                message='Waiting to verify that Network Interface {0} '
+                'has been added to your account.'.format(iface_obj.id))
         # Update Source/Dest check if needed
         if ctx.node.properties.get('source_dest_check') is not None:
             ec2_client.modify_network_interface_attribute(
@@ -91,6 +105,7 @@ def create(**_):
             boto.exception.BotoServerError) as ex:
         raise NonRecoverableError('{0}'.format(str(ex)))
     # Update the runtime properties
+    ctx.logger.debug('Updating runtime properties')
     _update_runtime_properties(iface_obj)
 
 
@@ -107,6 +122,7 @@ def delete(**_):
         except (boto.exception.EC2ResponseError,
                 boto.exception.BotoServerError) as ex:
             raise NonRecoverableError('{0}'.format(str(ex)))
+    ctx.instance.runtime_properties = dict()
 
 
 @operation
