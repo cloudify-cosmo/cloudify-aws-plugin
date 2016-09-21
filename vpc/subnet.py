@@ -16,6 +16,7 @@
 # Cloudify imports
 from . import constants
 from core.base import AwsBaseNode
+from ec2.utils import set_external_resource_id
 from cloudify import ctx
 from cloudify.decorators import operation
 from cloudify.exceptions import NonRecoverableError
@@ -55,10 +56,20 @@ class Subnet(AwsBaseNode):
         }
 
     def create(self):
-        create_args = self._generate_creation_args()
-        subnet = self.execute(self.client.create_subnet,
-                              create_args, raise_on_falsy=True)
-        self.resource_id = subnet.id
+        if ctx.operation.retry_number == 0:
+            create_args = self._generate_creation_args()
+            subnet = self.execute(self.client.create_subnet,
+                                  create_args, raise_on_falsy=True)
+            self.resource_id = subnet.id
+        else:
+            subnet = self.get_resource()
+        # If the operation is still pending, set the ID and retry
+        ctx.logger.debug('Subnet response: {0}'.format(vars(subnet)))
+        if subnet.state == 'pending':
+            set_external_resource_id(self.resource_id, ctx.instance)
+            return ctx.operation.retry(
+                message='Waiting to verify that AWS resource {0} '
+                'has been added to your account.'.format(self.resource_id))
         return True
 
     def _generate_creation_args(self):

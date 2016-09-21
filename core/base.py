@@ -286,12 +286,14 @@ class AwsBaseNode(AwsBase):
             .format(self.aws_resource_type,
                     self.cloudify_node_instance_id))
 
-        if self.use_external_resource_naively() or self.create():
+        ret = self.use_external_resource_naively() or self.create()
+        if ret is True:
             return self.post_create()
-
-        raise NonRecoverableError(
-            'Neither external resource, nor Cloudify resource, '
-            'unable to create this resource.')
+        elif ret is False:
+            raise NonRecoverableError(
+                'Neither external resource, nor Cloudify resource, '
+                'unable to create this resource.')
+        return ret
 
     def use_external_resource_naively(self):
 
