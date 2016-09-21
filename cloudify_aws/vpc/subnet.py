@@ -16,6 +16,7 @@
 # Cloudify imports
 from cloudify_aws import constants, connection, utils
 from cloudify_aws.base import AwsBaseNode
+from cloudify_aws.utils import set_external_resource_id
 from cloudify import ctx
 from cloudify.decorators import operation
 from cloudify.exceptions import NonRecoverableError
@@ -55,13 +56,32 @@ class Subnet(AwsBaseNode):
             'argument': '{0}_ids'.format(constants.SUBNET['AWS_RESOURCE_TYPE'])
         }
 
-    def create(self, args):
-        create_args = utils.update_args(
-            self._generate_creation_args(),
-            args)
-        subnet = self.execute(self.client.create_subnet,
-                              create_args, raise_on_falsy=True)
-        self.resource_id = subnet.id
+    def create(self, args=None):
+        '''Override for resource create operation'''
+        if ctx.operation.retry_number == 0:
+            # Create the resource
+            create_args = utils.update_args(
+                self._generate_creation_args(), args)
+            subnet = self.execute(self.client.create_subnet,
+                                  create_args, raise_on_falsy=True)
+            self.resource_id = subnet.id
+        else:
+            # Get the resource object
+            subnet = self.get_resource()
+        # If the operation is still pending, set the ID and retry
+        if hasattr(subnet, 'state'):
+            ctx.logger.debug('AWS resource {0} returned a state of "{1}"'
+                             .format(self.resource_id, subnet.state))
+            if subnet.state == 'pending':
+                set_external_resource_id(self.resource_id, ctx.instance)
+                return ctx.operation.retry(
+                    message='Waiting to verify that AWS resource {0} '
+                    'has been added to your account.'.format(self.resource_id))
+        else:
+            ctx.logger.warn('AWS resource {0} returned an '
+                            'unexpected response (missing state)'
+                            .format(self.resource_id))
+            return False
         return True
 
     def _generate_creation_args(self):

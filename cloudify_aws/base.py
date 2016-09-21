@@ -302,18 +302,23 @@ class AwsBaseNode(AwsBase):
         return False
 
     def created(self, args=None):
-
+        '''Helper to create resources'''
         ctx.logger.info(
             'Attempting to create {0} {1}.'
             .format(self.aws_resource_type,
                     self.cloudify_node_instance_id))
-
-        if self.use_external_resource_naively() or self.create(args):
+        # Create the resource, if needed
+        ret = self.use_external_resource_naively() or self.create(args)
+        # The resource either already exists or was created successfully
+        if ret is True:
             return self.post_create()
-
-        raise NonRecoverableError(
-            'Neither external resource, nor Cloudify resource, '
-            'unable to create this resource.')
+        # The resource does not exist or was not created successfully
+        elif ret is False:
+            raise NonRecoverableError(
+                'Neither external resource, nor Cloudify resource, '
+                'unable to create this resource.')
+        # The override likely returned a retry operation to pass along
+        return ret
 
     def use_external_resource_naively(self):
 
