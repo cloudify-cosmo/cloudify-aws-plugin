@@ -129,7 +129,8 @@ class KeyPair(AwsBaseNode):
     def post_delete(self):
 
         super(KeyPair, self).post_delete()
-        self._delete_key_file()
+        if not self.is_external_resource:
+            self._delete_key_file()
 
         return True
 
