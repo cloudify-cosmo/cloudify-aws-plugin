@@ -17,6 +17,8 @@ import os
 
 from cosmo_tester.framework.testenv import TestCase
 
+DEFAULT_EXECUTE_TIMEOUT = 1800
+
 
 class AWSEC2UserDataAgentInstallTest(TestCase):
 
@@ -29,27 +31,11 @@ class AWSEC2UserDataAgentInstallTest(TestCase):
             os.path.join(blueprint_path,
                          'user-data-agent-install-blueprint.yaml')
 
-        self.cfy.blueprints.upload(
-            self.blueprint_yaml,
-            blueprint_id=self.test_id)
+        self.upload_deploy_and_execute_install(
+            inputs=self.get_inputs(),
+            timeout=DEFAULT_EXECUTE_TIMEOUT
+        )
 
-        self.cfy.deployments.create(
-            self.test_id,
-            blueprint_id=self.test_id,
-            inputs=self.get_inputs())
-
-        deployment_env_creation_execution = self.repetitive(
-            lambda: self.client.executions.list(deployment_id=self.test_id)[0],
-            exception_class=IndexError)
-
-        self.logger.info('Waiting for create_deployment_environment workflow '
-                         'execution to terminate')
-        self.wait_for_execution(deployment_env_creation_execution, timeout=240)
-
-        execution = self.client.executions.start(deployment_id=self.test_id,
-                                                 workflow_id='install')
-        self.logger.info('Waiting for install workflow to terminate')
-        self.wait_for_execution(execution, timeout=2400)
         instance = self.client.node_instances.list(
             node_id='test_user_data_script', deployment_id=self.test_id)[0]
         self.assertIn('test', instance.runtime_properties.keys())

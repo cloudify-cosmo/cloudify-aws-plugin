@@ -4,7 +4,7 @@ tosca_definitions_version: cloudify_dsl_1_3
 
 imports:
   - types.yaml
-  - plugin.yaml
+  - ../../../../plugin.yaml
 
 dsl_definitions:
 

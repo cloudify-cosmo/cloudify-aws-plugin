@@ -314,9 +314,6 @@ node_types:
         description: >
           Configuration for Cloudify Manager
         default:
-          transient_deployment_workers_mode:
-            enabled: true
-            global_parallel_executions_limit: 50  # -1 means no limit
           resources_prefix: ''
           cloudify_agent:
             min_workers: 2
@@ -399,6 +396,10 @@ workflows:
     parameters:
       update_id:
         default: ''
+      skip_install:
+        default: false
+      skip_uninstall:
+        default: false
       added_instance_ids:
         default: []
       added_target_instances_ids:
@@ -417,8 +418,16 @@ workflows:
         default: []
       reduce_target_instance_ids:
         default: []
+      ignore_failure:
+        default: false
+        type: boolean
 
-  uninstall: default_workflows.cloudify.plugins.workflows.uninstall
+  uninstall:
+    mapping: default_workflows.cloudify.plugins.workflows.uninstall
+    parameters:
+      ignore_failure:
+        default: false
+        type: boolean
 
   execute_operation:
     mapping: default_workflows.cloudify.plugins.workflows.execute_operation
@@ -445,6 +454,9 @@ workflows:
       diagnose_value:
         description: Diagnosed reason of failure
         default: Not provided
+      ignore_failure:
+        default: true
+        type: boolean
 
   scale:
     mapping: default_workflows.cloudify.plugins.workflows.scale_entity
@@ -459,6 +471,7 @@ workflows:
             A positive number denotes increase of instances.
             A negative number denotes decrease of instances.
         default: 1
+        type: integer
       scale_compute:
         description: >
             If a node name is passed as the `scalable_entity_name` parameter
@@ -466,6 +479,9 @@ workflows:
             and this property is 'true', operate on the compute node instead
             of the specified node.
         default: false
+      ignore_failure:
+        default: false
+        type: boolean
 
   install_new_agents:
     mapping: default_workflows.cloudify.plugins.workflows.install_new_agents
@@ -480,6 +496,8 @@ workflows:
         default: True
       install:
         default: True
+      install_script:
+        default: ''
 
 ##################################################################################
 # Base data type definitions
