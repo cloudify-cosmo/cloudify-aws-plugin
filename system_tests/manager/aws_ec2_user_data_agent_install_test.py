@@ -36,18 +36,6 @@ class AWSEC2UserDataAgentInstallTest(TestCase):
             timeout=DEFAULT_EXECUTE_TIMEOUT
         )
 
-        # deployment_env_creation_execution = self.repetitive(
-        #     lambda: self.client.executions.list(deployment_id=self.test_id)[0],
-        #     exception_class=IndexError)
-        #
-        # self.logger.info('Waiting for create_deployment_environment workflow '
-        #                  'execution to terminate')
-        # self.wait_for_execution(deployment_env_creation_execution, timeout=240)
-        #
-        # execution = self.client.executions.start(deployment_id=self.test_id,
-        #                                          workflow_id='install')
-        # self.logger.info('Waiting for install workflow to terminate')
-        # self.wait_for_execution(execution, timeout=2400)
         instance = self.client.node_instances.list(
             node_id='test_user_data_script', deployment_id=self.test_id)[0]
         self.assertIn('test', instance.runtime_properties.keys())
