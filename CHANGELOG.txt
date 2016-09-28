@@ -1,3 +1,7 @@
 1.4.2
     - Moved EC2 and VPC to cloudify_aws package
     - Added an Instance-Subnet connected_to relationship
+1.4.3
+    - Add Subnet create retry operation
+    - Improvements to ELB creation
+    - Fix bug that delete External Resource keypairs
