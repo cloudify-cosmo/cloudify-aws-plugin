@@ -1,0 +1,63 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+description: >
+  Do things with S3, cause happiness.
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/3.4/types.yaml
+  - plugin.yaml
+
+inputs:
+  aws_access_key_id:
+    description: >
+      The access key ID used to access the AWS API
+  aws_secret_access_key:
+    description: >
+      The secret key used to access the AWS API
+  bucket_name:
+    description: >
+      The name of the bucket to create
+    default: cloudify-aws-plugin-s3-poc
+
+node_templates:
+  bucket:
+    type: cloudify.aws.nodes.S3Bucket
+    properties:
+      aws_config:
+        aws_access_key_id: { get_input: aws_access_key_id }
+        aws_secret_access_key: { get_input: aws_secret_access_key }
+      name: { get_input: bucket_name }
+      website_index_page: index.html
+      website_error_page: error.html
+      permissions: public-read
+
+  string_object:
+    type: cloudify.aws.nodes.S3Object
+    properties:
+      aws_config:
+        aws_access_key_id: { get_input: aws_access_key_id }
+        aws_secret_access_key: { get_input: aws_secret_access_key }
+      name: index.html
+      contents: '<html><head><title>Test bucket</title></head><body>This is a test bucket.</body></html>'
+      content_type: 'text/html'
+    relationships:
+      - target: bucket
+        type: cloudify.aws.relationships.s3_object_contained_in_bucket
+
+  error_object:
+    type: cloudify.aws.nodes.S3Object
+    properties:
+      aws_config:
+        aws_access_key_id: { get_input: aws_access_key_id }
+        aws_secret_access_key: { get_input: aws_secret_access_key }
+      name: error.html
+      filename: error-file.html
+      content_type: 'text/html'
+    relationships:
+      - target: bucket
+        type: cloudify.aws.relationships.s3_object_contained_in_bucket
+
+outputs:
+  endpoint:
+    description: The URL of your really well designed website.
+    value: { get_attribute: [ bucket, url ] }

@@ -1,0 +1,47 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+description: >
+  Do things with S3, cause happiness.
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/3.4/types.yaml
+  - plugin.yaml
+
+inputs:
+  aws_access_key_id:
+    description: >
+      The access key ID used to access the AWS API
+  aws_secret_access_key:
+    description: >
+      The secret key used to access the AWS API
+  bucket_name:
+    description: >
+      The name of the bucket to create
+    default: system-test-basic-bucket
+
+node_templates:
+  bucket:
+    type: cloudify.aws.nodes.S3Bucket
+    properties:
+      aws_config:
+        aws_access_key_id: { get_input: aws_access_key_id }
+        aws_secret_access_key: { get_input: aws_secret_access_key }
+      name: { get_input: bucket_name }
+      use_external_resource: true
+
+  string_object:
+    type: cloudify.aws.nodes.S3Object
+    properties:
+      aws_config:
+        aws_access_key_id: { get_input: aws_access_key_id }
+        aws_secret_access_key: { get_input: aws_secret_access_key }
+      name: testfile
+      contents: 'this is a test'
+    relationships:
+      - target: bucket
+        type: cloudify.aws.relationships.s3_object_contained_in_bucket
+
+outputs:
+  endpoint:
+    description: The URL of your bucket.
+    value: { get_attribute: [ bucket, url ] }

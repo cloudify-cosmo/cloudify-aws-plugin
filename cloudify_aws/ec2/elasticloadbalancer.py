@@ -181,6 +181,8 @@ class Elb(AwsBaseNode):
 
         lb = self._create_elb(args)
 
+        ctx.instance.runtime_properties['dns_name'] = lb.dns_name
+
         health_checks = ctx.node.properties.get('health_checks')
 
         if health_checks:

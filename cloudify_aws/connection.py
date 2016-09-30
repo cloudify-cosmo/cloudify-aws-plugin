@@ -24,6 +24,7 @@ from boto.ec2.elb import ELBConnection
 from boto.vpc import VPCConnection
 from boto.regioninfo import RegionInfo
 from boto.ec2.elb import connect_to_region as connect_to_elb_region
+import boto3
 
 # Cloudify Imports
 from . import utils, constants
@@ -36,6 +37,25 @@ class EC2ConnectionClient():
 
     def __init__(self):
         self.connection = None
+
+    def client3(self, service):
+        """An EC2 connection using boto3.
+
+        :param service: a string specifying a boto3 client type
+        e.g. ec2, ecs, s3, dynamodb, lambda, apigateway
+        :return: a boto3 client for the service requested
+        """
+        aws_config = (self._get_aws_config_property() or
+                      self._get_aws_config_from_file())
+        if aws_config:
+            aws_session = boto3.Session(
+                aws_config['aws_access_key_id'],
+                aws_config['aws_secret_access_key'],
+                region_name=aws_config.get('region', 'us-east-1'),
+            )
+        else:
+            aws_session = boto3.Session()
+        return aws_session.client(service)
 
     def client(self):
         """Represents the EC2Connection Client
@@ -167,12 +187,14 @@ class ELBConnectionClient(EC2ConnectionClient):
             elif type(aws_config['region']) is str:
                 elb_region = aws_config.pop('region')
                 return connect_to_elb_region(
-                        elb_region, **aws_config)
+                    elb_region, **aws_config
+                )
 
         raise NonRecoverableError(
-                'Cannot connect to ELB endpoint. '
-                'You must either provide elb_region_name or both '
-                'elb_region_name and elb_region_endpoint.')
+            'Cannot connect to ELB endpoint. '
+            'You must either provide elb_region_name or both '
+            'elb_region_name and elb_region_endpoint.'
+        )
 
 
 class VPCConnectionClient(EC2ConnectionClient):
