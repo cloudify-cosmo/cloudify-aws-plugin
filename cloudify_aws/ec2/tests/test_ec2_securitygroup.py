@@ -79,6 +79,61 @@ class TestSecurityGroup(testtools.TestCase):
         return securitygroup.SecurityGroup()
 
     @mock_ec2
+    def test_create_rules_in_args(self):
+        """This tests that create runs"""
+
+        test_properties = self.get_mock_properties()
+        ctx = self.security_group_mock('test_create', test_properties)
+        current_ctx.set(ctx=ctx)
+        rules = [
+            {
+                'ip_protocol': 'udp',
+                'from_port': '33333',
+                'to_port': '33333',
+                'cidr_ip': '127.0.0.2/32'
+            }
+        ]
+        ec2_client = connection.EC2ConnectionClient().client()
+        securitygroup.create(rules=rules, ctx=ctx)
+        group_id = \
+            ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
+        group_list = ec2_client.get_all_security_groups(group_ids=group_id)
+        group = group_list[0]
+        all_rules = rules + ctx.node.properties['rules']
+        self.assertEqual(len(all_rules), len(group.rules))
+
+    @mock_ec2
+    def test_update_rules(self):
+        """This tests that create creates the runtime_properties"""
+
+        test_properties = self.get_mock_properties()
+        ctx = self.security_group_mock(
+            'test_create_duplicate', test_properties)
+        current_ctx.set(ctx=ctx)
+        name = ctx.node.properties.get('resource_id')
+        description = ctx.node.properties.get('description')
+        ec2_client = connection.EC2ConnectionClient().client()
+        group = ec2_client.create_security_group(name, description)
+        ctx.node.properties['use_external_resource'] = True
+        ctx.node.properties['resource_id'] = group.id
+        securitygroup.create(ctx=ctx)
+        rules = [
+            {
+                'ip_protocol': 'udp',
+                'from_port': '33333',
+                'to_port': '33333',
+                'cidr_ip': '127.0.0.2/32'
+            }
+        ]
+        securitygroup.update_rules(rules=rules, ctx=ctx)
+        group_id = \
+            ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
+        group_list = ec2_client.get_all_security_groups(group_ids=group_id)
+        group = group_list[0]
+        all_rules = rules + ctx.node.properties['rules']
+        self.assertEqual(len(all_rules), len(group.rules))
+
+    @mock_ec2
     def test_create(self):
         """This tests that create runs"""
 
