@@ -30,13 +30,18 @@ def creation_validation(**_):
 
 
 @operation
-def create(args=None, **_):
-    return SecurityGroup().create_helper(args)
+def create(args=None, rules=[], **_):
+    return SecurityGroup().create_helper(args, rules)
 
 
 @operation
 def start(args=None, **_):
     return SecurityGroup().start_helper(args)
+
+
+@operation
+def update_rules(rules=[], **_):
+    return SecurityGroup().update_rules(rules)
 
 
 @operation
@@ -58,7 +63,7 @@ class SecurityGroup(AwsBaseNode):
             .format(constants.SECURITYGROUP['AWS_RESOURCE_TYPE'])
         }
 
-    def create(self, args=None, **_):
+    def create(self, args=None, rules=[], **_):
 
         """Creates an EC2 security group.
         """
@@ -91,18 +96,18 @@ class SecurityGroup(AwsBaseNode):
         if not security_group:
             return False
 
-        self._create_group_rules(security_group)
+        self._create_group_rules(security_group, rules)
 
         return True
 
-    def create_helper(self, args=None):
+    def create_helper(self, args=None, rules=[]):
 
         ctx.logger.info(
                 'Attempting to create {0} {1}.'
                 .format(self.aws_resource_type,
                         self.cloudify_node_instance_id))
 
-        if self.use_external_resource_naively() or self.create(args):
+        if self.use_external_resource_naively() or self.create(args, rules):
             return self.post_create()
 
         return ctx.operation.retry(
@@ -138,7 +143,16 @@ class SecurityGroup(AwsBaseNode):
 
         return list_of_vpcs[0] if list_of_vpcs else None
 
-    def _create_group_rules(self, group_object):
+    def update_rules(self, rules):
+
+        security_group = self.get_resource()
+
+        if not security_group:
+            return False
+
+        self._create_group_rules(security_group, rules)
+
+    def _create_group_rules(self, group_object, rules=[]):
         """For each rule listed in the blueprint,
         this will add the rule to the group with the given id.
         :param group: The group object that you want to add rules to.
@@ -146,7 +160,9 @@ class SecurityGroup(AwsBaseNode):
         from_port, to_port, and cidr_ip are not provided.
         """
 
-        for rule in ctx.node.properties['rules']:
+        ruleset = rules + ctx.node.properties['rules']
+
+        for rule in ruleset:
 
             if 'src_group_id' in rule:
 

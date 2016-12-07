@@ -1002,12 +1002,12 @@ relationships:
     source_interfaces:
       cloudify.interfaces.relationship_lifecycle:
         establish:
-          implementation: aws.cloudify_aws.ec2.eni.attach
+          implementation: aws.cloudify_aws.ec2.eni.associate
           inputs:
             args:
               default: {}
         unlink:
-          implementation: aws.cloudify_aws.ec2.eni.detach
+          implementation: aws.cloudify_aws.ec2.eni.disassociate
           inputs:
             args:
               default: {}
