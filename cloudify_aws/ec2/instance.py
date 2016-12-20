@@ -17,6 +17,7 @@ import os
 
 # Third-party Imports
 from boto import exception
+from boto.ec2 import blockdevicemapping
 
 # Cloudify imports
 from cloudify import ctx
@@ -90,7 +91,7 @@ class Instance(AwsBaseNode):
 
     def create(self, args=None, **_):
 
-        instance_parameters = self._get_instance_parameters()
+        instance_parameters = self._get_instance_parameters(args)
 
         ctx.logger.info(
                 'Attempting to create EC2 Instance with these API '
@@ -421,7 +422,7 @@ class Instance(AwsBaseNode):
 
         return parameters
 
-    def _get_instance_parameters(self):
+    def _get_instance_parameters(self, args=None):
         """The parameters to the run_instance boto call.
 
         :returns parameters dictionary
@@ -450,6 +451,11 @@ class Instance(AwsBaseNode):
 
         parameters.update(ctx.node.properties['parameters'])
         parameters = self._handle_userdata(parameters)
+        parameters = utils.update_args(parameters, args)
+        parameters['block_device_map'] = \
+            self._create_block_device_mapping(
+                parameters.get('block_device_map', {})
+            )
 
         return parameters
 
@@ -627,3 +633,59 @@ class Instance(AwsBaseNode):
 
     def get_resource(self):
         return self._get_instance_from_id(self.resource_id)
+
+    def _create_block_device_mapping(self, block_device_type_defs):
+        """Take user input as dict of BlockDeviceType(s).
+        See: https://github.com/boto/boto/blob/2.38.0/
+             boto/ec2/blockdevicemapping.py#L25
+
+        ``` Example Usage:
+        example_instance:
+          type: cloudify.aws.nodes.Instance
+          properties:
+            ...
+            parameters:
+              block_device_map:
+                '/dev/sda1':
+                  'size': 100
+                  'delete_on_termination': true
+        ```
+
+        :param block_device_type_definitions: A dict of BlockDeviceType(s).
+        :return: a boto BlockDeviceMapping object
+        """
+
+        ctx.logger.debug(
+            'Block device type defs: {0}'
+            .format(block_device_type_defs)
+        )
+
+        bdm = blockdevicemapping.BlockDeviceMapping()
+
+        for block_device_type_name in \
+                block_device_type_defs.keys():
+
+            current_block_device_type = \
+                blockdevicemapping.EBSBlockDeviceType()
+
+            ctx.logger.debug(
+                'setting attribute: {0}: {1}'
+                .format(block_device_type_name,
+                        block_device_type_defs[block_device_type_name])
+            )
+            for key in \
+                    block_device_type_defs[block_device_type_name].keys():
+                setattr(current_block_device_type,
+                        key,
+                        block_device_type_defs
+                        [block_device_type_name].get(key))
+
+            bdm[block_device_type_name] = \
+                current_block_device_type
+
+        ctx.logger.debug(
+            'BDM: {0}'
+            .format(bdm)
+        )
+
+        return bdm
