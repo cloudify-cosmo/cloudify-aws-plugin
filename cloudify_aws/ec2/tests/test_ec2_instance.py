@@ -672,3 +672,51 @@ class TestInstance(testtools.TestCase):
                           ctx.instance.id)
         self.assertEquals(instance_object.tags.get('deployment_id'),
                           ctx.deployment.id)
+
+    @mock_ec2
+    def test_with_block_storage_params(self):
+        """ The user provides a list of block device parameters
+        """
+
+        ctx = self.mock_ctx('test_with_block_storage_params')
+        block_device_map = {
+            'dev_sda1': {
+                'size': 100
+            }
+        }
+
+        ctx.node.properties['parameters']['block_device_map'] = \
+            block_device_map
+        current_ctx.set(ctx=ctx)
+        instance.create(ctx=ctx)
+        instance_id = ctx.instance.runtime_properties['aws_resource_id']
+        ec2_client = connection.EC2ConnectionClient().client()
+        reservations = ec2_client.get_all_reservations(instance_id)
+        instance_object = reservations[0].instances[0]
+        device_name = block_device_map.keys()[0]
+        self.assertEquals(instance_object.block_device_mapping.keys()[0],
+                          '/{0}/{1}'.format(device_name.split('_')[0],
+                                            device_name.split('_')[1]))
+
+    @mock_ec2
+    def test_with_block_storage_args(self):
+        """ The user provides a list of block device parameters
+        """
+
+        ctx = self.mock_ctx('test_with_block_storage_args')
+        block_device_map = {
+            'dev_sda1': {
+                'size': 100
+            }
+        }
+
+        current_ctx.set(ctx=ctx)
+        instance.create(ctx=ctx, args={'block_device_map': block_device_map})
+        instance_id = ctx.instance.runtime_properties['aws_resource_id']
+        ec2_client = connection.EC2ConnectionClient().client()
+        reservations = ec2_client.get_all_reservations(instance_id)
+        instance_object = reservations[0].instances[0]
+        device_name = block_device_map.keys()[0]
+        self.assertEquals(instance_object.block_device_mapping.keys()[0],
+                          '/{0}/{1}'.format(device_name.split('_')[0],
+                                            device_name.split('_')[1]))
