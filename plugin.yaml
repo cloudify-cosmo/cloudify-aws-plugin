@@ -133,7 +133,6 @@ data_types:
         type: integer
         required: true
 
-
 node_types:
 
   cloudify.aws.nodes.Instance:
