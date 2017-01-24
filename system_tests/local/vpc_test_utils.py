@@ -30,8 +30,7 @@ from cosmo_tester.framework.testenv import TestCase
 
 class TestVpcBase(TestCase):
 
-    def get_blueprint_path(self,
-                           blueprint_name='vpc_test_blueprint.yaml'):
+    def get_blueprint_path(self, blueprint_name='vpc_test_blueprint.yaml'):
 
         path = os.path.join(
             os.path.dirname(
@@ -66,18 +65,20 @@ class TestVpcBase(TestCase):
             inputs.update(override_inputs)
         return inputs
 
-    def _get_aws_config(self):
-
-        region = get_region(self.env.ec2_region_name)
-
-        return {
+    def _get_aws_config(self, set_boto_region=False):
+        aws_config = {
             'aws_access_key_id': self.env.aws_access_key_id,
-            'aws_secret_access_key': self.env.aws_secret_access_key,
-            'region': region
+            'aws_secret_access_key': self.env.aws_secret_access_key
         }
+        if set_boto_region:
+            aws_config['region'] = get_region(self.env.ec2_region_name)
+        else:
+            aws_config['ec2_region_name'] = self.env.ec2_region_name
+
+        return aws_config
 
     def vpc_client(self):
-        credentials = self._get_aws_config()
+        credentials = self._get_aws_config(set_boto_region=True)
         return VPCConnection(**credentials)
 
     def get_current_list_of_used_resources(self, vpc_client):
