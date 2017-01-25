@@ -40,10 +40,10 @@ class TestSecurityGroup(testtools.TestCase):
         }
 
         ctx = MockCloudifyContext(
-                node_id=test_name,
-                properties=test_properties,
-                deployment_id=str(uuid.uuid4()),
-                operation=operation
+            node_id=test_name,
+            properties=test_properties,
+            deployment_id=str(uuid.uuid4()),
+            operation=operation
         )
 
         return ctx
@@ -107,7 +107,7 @@ class TestSecurityGroup(testtools.TestCase):
 
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
-                'test_create_duplicate', test_properties)
+            'test_create_duplicate', test_properties)
         current_ctx.set(ctx=ctx)
         name = ctx.node.properties.get('resource_id')
         description = ctx.node.properties.get('description')
@@ -117,8 +117,8 @@ class TestSecurityGroup(testtools.TestCase):
         ctx.node.properties['resource_id'] = group.id
         securitygroup.create(ctx=ctx)
         self.assertEqual(
-                ctx.instance.runtime_properties['aws_resource_id'],
-                group.id)
+            ctx.instance.runtime_properties['aws_resource_id'],
+            group.id)
 
     @mock_ec2
     def test_start(self):
@@ -126,7 +126,7 @@ class TestSecurityGroup(testtools.TestCase):
 
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
-                'test_start', test_properties)
+            'test_start', test_properties)
         current_ctx.set(ctx=ctx)
 
         ec2_client = connection.EC2ConnectionClient().client()
@@ -163,14 +163,14 @@ class TestSecurityGroup(testtools.TestCase):
 
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
-                'test_create_duplicate', test_properties)
+            'test_create_duplicate', test_properties)
         current_ctx.set(ctx=ctx)
         name = ctx.node.properties.get('resource_id')
         description = ctx.node.properties.get('description')
         ec2_client = connection.EC2ConnectionClient().client()
         ec2_client.create_security_group(name, description)
         ex = self.assertRaises(
-                NonRecoverableError, securitygroup.create, ctx=ctx)
+            NonRecoverableError, securitygroup.create, ctx=ctx)
         self.assertIn('InvalidGroup.Duplicate', ex.message)
 
     @mock_ec2
@@ -181,7 +181,7 @@ class TestSecurityGroup(testtools.TestCase):
 
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
-                'test_delete_deleted', test_properties)
+            'test_delete_deleted', test_properties)
         current_ctx.set(ctx=ctx)
         ec2_client = connection.EC2ConnectionClient().client()
         group = ec2_client.create_security_group('test_delete_deleted',
@@ -189,7 +189,7 @@ class TestSecurityGroup(testtools.TestCase):
         ctx.instance.runtime_properties['aws_resource_id'] = group.id
         ec2_client.delete_security_group(group_id=group.id)
         ex = self.assertRaises(
-                NonRecoverableError, securitygroup.delete, ctx=ctx)
+            NonRecoverableError, securitygroup.delete, ctx=ctx)
         self.assertIn('Cannot use_external_resource because resource',
                       ex.message)
 
@@ -200,7 +200,7 @@ class TestSecurityGroup(testtools.TestCase):
         """
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
-                'test_delete_existing', test_properties)
+            'test_delete_existing', test_properties)
         current_ctx.set(ctx=ctx)
         ec2_client = connection.EC2ConnectionClient().client()
         group = ec2_client.create_security_group('test_delete_existing',
@@ -210,8 +210,8 @@ class TestSecurityGroup(testtools.TestCase):
         ctx.instance.runtime_properties['aws_resource_id'] = group.id
         securitygroup.delete(ctx=ctx)
         self.assertNotIn(
-                'aws_resource_id',
-                ctx.instance.runtime_properties)
+            'aws_resource_id',
+            ctx.instance.runtime_properties)
 
     @mock_ec2
     def test_use_external_not_existing(self):
@@ -221,14 +221,14 @@ class TestSecurityGroup(testtools.TestCase):
 
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
-                'test_use_external_not_existing', test_properties)
+            'test_use_external_not_existing', test_properties)
         current_ctx.set(ctx=ctx)
         ctx.node.properties['use_external_resource'] = True
         ctx.node.properties['resource_id'] = 'sg-73cd3f1e'
         ex = self.assertRaises(
-                NonRecoverableError, securitygroup.create, ctx=ctx)
+            NonRecoverableError, securitygroup.create, ctx=ctx)
         self.assertIn(
-                'is not in this account', ex.message)
+            'is not in this account', ex.message)
 
     @mock_ec2
     def test_creation_validation_existing(self):
@@ -238,15 +238,15 @@ class TestSecurityGroup(testtools.TestCase):
 
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
-                'test_creation_validation_existing', test_properties)
+            'test_creation_validation_existing', test_properties)
         current_ctx.set(ctx=ctx)
         ctx.node.properties['use_external_resource'] = True
         ctx.node.properties['resource_id'] = 'sg-73cd3f1e'
         ex = self.assertRaises(
-                NonRecoverableError, securitygroup.creation_validation,
-                ctx=ctx)
+            NonRecoverableError, securitygroup.creation_validation,
+            ctx=ctx)
         self.assertIn(
-                'External resource, but the supplied group', ex.message)
+            'External resource, but the supplied group', ex.message)
 
     @mock_ec2
     def test_creation_validation_not_existing(self):
@@ -256,20 +256,20 @@ class TestSecurityGroup(testtools.TestCase):
 
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
-                'test_creation_validation_not_existing', test_properties)
+            'test_creation_validation_not_existing', test_properties)
         current_ctx.set(ctx=ctx)
         ctx.node.properties['use_external_resource'] = False
         ec2_client = connection.EC2ConnectionClient().client()
         group = ec2_client.create_security_group(
-                'test_creation_validation_not_existing',
-                'this is a test')
+            'test_creation_validation_not_existing',
+            'this is a test')
         ctx.node.properties['resource_id'] = group.id
         ex = self.assertRaises(
-                NonRecoverableError, securitygroup.creation_validation,
-                ctx=ctx)
+            NonRecoverableError, securitygroup.creation_validation,
+            ctx=ctx)
         self.assertIn(
-                'Not external resource, but the supplied group',
-                ex.message)
+            'Not external resource, but the supplied group',
+            ex.message)
 
     @mock_ec2
     def test_create_group_rules(self):
@@ -280,7 +280,7 @@ class TestSecurityGroup(testtools.TestCase):
 
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
-                'test_create_group_rules', test_properties)
+            'test_create_group_rules', test_properties)
         current_ctx.set(ctx=ctx)
         test_securitygroup = self.create_sg_for_checking()
 
@@ -289,9 +289,9 @@ class TestSecurityGroup(testtools.TestCase):
                                                  'this is test')
         test_securitygroup._create_group_rules(group)
         self.assertEqual(
-                str(group.rules),
-                str(ec2_client.get_all_security_groups(
-                        groupnames='test_create_group_rules')[0].rules))
+            str(group.rules),
+            str(ec2_client.get_all_security_groups(
+                groupnames='test_create_group_rules')[0].rules))
 
     @mock_ec2
     def test_create_group_rules_no_src_group_id_or_cidr(self):
@@ -302,22 +302,22 @@ class TestSecurityGroup(testtools.TestCase):
         ec2_client = connection.EC2ConnectionClient().client()
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
-                'test_create_group_rules_no_src_group_id_or_cidr',
-                test_properties)
+            'test_create_group_rules_no_src_group_id_or_cidr',
+            test_properties)
         current_ctx.set(ctx=ctx)
         test_securitygroup = self.create_sg_for_checking()
 
         del ctx.node.properties['rules'][0]['cidr_ip']
         group = ec2_client.create_security_group(
-                'test_create_group_rules_no_src_group_id_or_cidr',
-                'this is test')
+            'test_create_group_rules_no_src_group_id_or_cidr',
+            'this is test')
         ex = self.assertRaises(
-                NonRecoverableError,
-                test_securitygroup._create_group_rules,
-                group)
+            NonRecoverableError,
+            test_securitygroup._create_group_rules,
+            group)
         self.assertIn(
-                'You need to pass either src_group_id OR cidr_ip.',
-                ex.message)
+            'You need to pass either src_group_id OR cidr_ip.',
+            ex.message)
 
     @mock_ec2
     def test_create_group_rules_both_src_group_id_cidr(self):
@@ -327,26 +327,26 @@ class TestSecurityGroup(testtools.TestCase):
 
         ec2_client = connection.EC2ConnectionClient().client()
         group = ec2_client.create_security_group(
-                'test_create_group_rules_both_src_group_id_or_cidr',
-                'this is test')
+            'test_create_group_rules_both_src_group_id_or_cidr',
+            'this is test')
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
-                'test_create_group_rules_both_src_group_id_or_cidr',
-                test_properties)
+            'test_create_group_rules_both_src_group_id_or_cidr',
+            test_properties)
         current_ctx.set(ctx=ctx)
         test_securitygroup = self.create_sg_for_checking()
 
         group_object = ec2_client.create_security_group(
-                'dummy',
-                'this is test')
+            'dummy',
+            'this is test')
         ctx.node.properties['rules'][0]['src_group_id'] = group_object
         ex = self.assertRaises(
-                NonRecoverableError,
-                test_securitygroup._create_group_rules,
-                group)
+            NonRecoverableError,
+            test_securitygroup._create_group_rules,
+            group)
         self.assertIn(
-                'You need to pass either src_group_id OR cidr_ip.',
-                ex.message)
+            'You need to pass either src_group_id OR cidr_ip.',
+            ex.message)
 
     @mock_ec2
     def test_create_group_rules_src_group(self):
@@ -358,10 +358,10 @@ class TestSecurityGroup(testtools.TestCase):
         ec2_client = connection.EC2ConnectionClient().client()
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
-                'test_create_group_rules_src_group', test_properties)
+            'test_create_group_rules_src_group', test_properties)
         group_object = ec2_client.create_security_group(
-                'dummy',
-                'this is test')
+            'dummy',
+            'this is test')
         ctx.node.properties['rules'][0]['src_group_id'] = group_object.id
         del ctx.node.properties['rules'][0]['cidr_ip']
         current_ctx.set(ctx=ctx)
@@ -381,8 +381,8 @@ class TestSecurityGroup(testtools.TestCase):
 
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
-                'test_create_external_securitygroup_not_external',
-                test_properties)
+            'test_create_external_securitygroup_not_external',
+            test_properties)
         current_ctx.set(ctx=ctx)
         test_securitygroup = self.create_sg_for_checking()
 
@@ -399,8 +399,8 @@ class TestSecurityGroup(testtools.TestCase):
 
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
-                'test_delete_external_securitygroup_not_external',
-                test_properties)
+            'test_delete_external_securitygroup_not_external',
+            test_properties)
         current_ctx.set(ctx=ctx)
         test_securitygroup = self.create_sg_for_checking()
 

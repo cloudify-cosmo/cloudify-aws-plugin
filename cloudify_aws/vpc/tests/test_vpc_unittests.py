@@ -143,7 +143,7 @@ class TestSubnetModule(VpcTestCase):
         vpc_client = self.create_client()
         vpc = vpc_client.create_vpc(TEST_VPC_CIDR)
         new_subnet = vpc_client.create_subnet(
-                vpc.id, TEST_SUBNET_CIDR)
+            vpc.id, TEST_SUBNET_CIDR)
         subnet_id = new_subnet.id
         ctx.instance.runtime_properties['aws_resource_id'] = subnet_id
         subnet.start_subnet(ctx=ctx)
@@ -198,7 +198,7 @@ class TestRouteTableModule(VpcTestCase):
     def test_start_route_table(self, *_):
 
         ctx = self.get_mock_route_table_node_instance_context(
-                'test_start_route_table')
+            'test_start_route_table')
         ctx.node.properties['name'] = 'test_start_route_table'
         current_ctx.set(ctx=ctx)
 
@@ -254,7 +254,7 @@ class TestDhcpModule(VpcTestCase):
     def test_start_dhcp_options(self, *_):
 
         ctx = self.get_mock_dhcp_node_instance_context(
-                'test_start_dhcp_options')
+            'test_start_dhcp_options')
         ctx.node.properties['name'] = 'test_start_dhcp_options'
         current_ctx.set(ctx=ctx)
 

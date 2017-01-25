@@ -63,7 +63,7 @@ def get_windows_passwd(private_key_path, password_data):
         key = RSA.importKey(key_lines)
     except ValueError as e:
         raise NonRecoverableError(
-                'Could not import SSH Key: {0}'.format(str(e)))
+            'Could not import SSH Key: {0}'.format(str(e)))
 
     password = _decrypt_password(key, password_data)
 

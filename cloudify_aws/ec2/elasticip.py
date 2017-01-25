@@ -75,9 +75,9 @@ class ElasticIPInstanceConnection(AwsBaseRelationship):
                 ctx.target.instance.runtime_properties:
             associate_args.pop('public_ip')
             associate_args.update(
-                    {constants.ELASTICIP['ALLOCATION_ID']:
-                     ctx.target.instance.runtime_properties[
-                             constants.ELASTICIP['ALLOCATION_ID']]})
+                {constants.ELASTICIP['ALLOCATION_ID']:
+                 ctx.target.instance.runtime_properties[
+                 constants.ELASTICIP['ALLOCATION_ID']]})
 
         associate_args = utils.update_args(associate_args, args)
 
@@ -114,11 +114,11 @@ class ElasticIPInstanceConnection(AwsBaseRelationship):
 
         if not elasticip_object:
             raise NonRecoverableError(
-                    'no matching elastic ip in account: {0}'.format(elasticip))
+                'no matching elastic ip in account: {0}'.format(elasticip))
 
         disassociate_args = dict(
-                public_ip=elasticip_object.public_ip,
-                association_id=elasticip_object.association_id
+            public_ip=elasticip_object.public_ip,
+            association_id=elasticip_object.association_id
         )
 
         disassociate_args = utils.update_args(disassociate_args, args)
@@ -135,9 +135,9 @@ class ElasticIPInstanceConnection(AwsBaseRelationship):
     def post_disassociate(self):
         super(ElasticIPInstanceConnection, self).post_disassociate()
         utils.unassign_runtime_property_from_resource(
-                'public_ip_address', ctx.source.instance)
+            'public_ip_address', ctx.source.instance)
         utils.unassign_runtime_property_from_resource(
-                'instance_id', ctx.target.instance)
+            'instance_id', ctx.target.instance)
         if ctx.source.instance.runtime_properties.get('vpc_id'):
             utils.unassign_runtime_property_from_resource(
                 'vpc_id', ctx.target.instance)
@@ -182,8 +182,8 @@ class ElasticIP(AwsBaseNode):
 
     def __init__(self):
         super(ElasticIP, self).__init__(
-                constants.ELASTICIP['AWS_RESOURCE_TYPE'],
-                constants.ELASTICIP['REQUIRED_PROPERTIES']
+            constants.ELASTICIP['AWS_RESOURCE_TYPE'],
+            constants.ELASTICIP['REQUIRED_PROPERTIES']
         )
         self.allocation_id = None
         self.not_found_error = constants.ELASTICIP['NOT_FOUND_ERROR']
@@ -201,7 +201,7 @@ class ElasticIP(AwsBaseNode):
 
         create_args = {}
         domain = ctx.node.properties.get(
-                constants.ELASTICIP['ELASTIC_IP_DOMAIN_PROPERTY']) or \
+            constants.ELASTICIP['ELASTIC_IP_DOMAIN_PROPERTY']) or \
             provider_variables.get(constants.ELASTICIP['VPC_DOMAIN'])
         if domain:
             create_args[constants.ELASTICIP['ELASTIC_IP_DOMAIN_PROPERTY']] = \
@@ -234,7 +234,7 @@ class ElasticIP(AwsBaseNode):
 
         if not address_object:
             raise NonRecoverableError(
-                    'Unable to release elasticip. Elasticip not in account.')
+                'Unable to release elasticip. Elasticip not in account.')
 
         delete_args = dict(public_ip=self.resource_id)
         if constants.ELASTICIP['VPC_DOMAIN'] in address_object.domain:
@@ -242,7 +242,7 @@ class ElasticIP(AwsBaseNode):
                 {
                     'public_ip': None,
                     constants.ELASTICIP[
-                     'ALLOCATION_ID']: str(address_object.allocation_id)
+                        'ALLOCATION_ID']: str(address_object.allocation_id)
                 }
             )
         delete_args = utils.update_args(delete_args, args)
@@ -256,14 +256,14 @@ class ElasticIP(AwsBaseNode):
 
         if not deleted:
             raise NonRecoverableError(
-                    'Elastic IP {0} deletion failed for an unknown reason.'
-                    .format(address_object.public_ip))
+                'Elastic IP {0} deletion failed for an unknown reason.'
+                .format(address_object.public_ip))
 
         address = self.get_resource()
 
         if not address:
             utils.unassign_runtime_property_from_resource(
-                    constants.ELASTICIP['ALLOCATION_ID'], ctx.instance)
+                constants.ELASTICIP['ALLOCATION_ID'], ctx.instance)
         else:
             return False
 
@@ -272,9 +272,9 @@ class ElasticIP(AwsBaseNode):
     def deleted(self, args=None):
 
         ctx.logger.info(
-                'Attempting to delete {0} {1}.'
-                .format(self.aws_resource_type,
-                        self.cloudify_node_instance_id))
+            'Attempting to delete {0} {1}.'
+            .format(self.aws_resource_type,
+                    self.cloudify_node_instance_id))
 
         if not self.get_resource():
             self.raise_forbidden_external_resource(self.resource_id)
@@ -283,7 +283,7 @@ class ElasticIP(AwsBaseNode):
             return self.post_delete()
 
         return ctx.operation.retry(
-                message='Elastic IP not released. Retrying...')
+            message='Elastic IP not released. Retrying...')
 
     def get_resource(self):
 

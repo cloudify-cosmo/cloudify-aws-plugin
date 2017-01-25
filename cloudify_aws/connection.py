@@ -167,12 +167,12 @@ class ELBConnectionClient(EC2ConnectionClient):
             elif type(aws_config['region']) is str:
                 elb_region = aws_config.pop('region')
                 return connect_to_elb_region(
-                        elb_region, **aws_config)
+                    elb_region, **aws_config)
 
         raise NonRecoverableError(
-                'Cannot connect to ELB endpoint. '
-                'You must either provide elb_region_name or both '
-                'elb_region_name and elb_region_endpoint.')
+            'Cannot connect to ELB endpoint. '
+            'You must either provide elb_region_name or both '
+            'elb_region_name and elb_region_endpoint.')
 
 
 class VPCConnectionClient(EC2ConnectionClient):

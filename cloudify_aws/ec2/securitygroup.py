@@ -48,8 +48,8 @@ class SecurityGroup(AwsBaseNode):
 
     def __init__(self):
         super(SecurityGroup, self).__init__(
-                constants.SECURITYGROUP['AWS_RESOURCE_TYPE'],
-                constants.SECURITYGROUP['REQUIRED_PROPERTIES']
+            constants.SECURITYGROUP['AWS_RESOURCE_TYPE'],
+            constants.SECURITYGROUP['REQUIRED_PROPERTIES']
         )
         self.not_found_error = constants.SECURITYGROUP['NOT_FOUND_ERROR']
         self.get_all_handler = {
@@ -65,9 +65,9 @@ class SecurityGroup(AwsBaseNode):
         name = utils.get_resource_id()
 
         create_args = dict(
-                name=name,
-                description=ctx.node.properties['description'],
-                vpc_id=self._get_connected_vpc()
+            name=name,
+            description=ctx.node.properties['description'],
+            vpc_id=self._get_connected_vpc()
         )
 
         create_args = utils.update_args(create_args, args)
@@ -76,13 +76,13 @@ class SecurityGroup(AwsBaseNode):
                 not in ctx.instance.runtime_properties:
             try:
                 security_group = self.execute(
-                        self.client.create_security_group, create_args,
-                        raise_on_falsy=True)
+                    self.client.create_security_group, create_args,
+                    raise_on_falsy=True)
             except (exception.EC2ResponseError,
                     exception.BotoServerError) as e:
                 raise NonRecoverableError('{0}'.format(str(e)))
             utils.set_external_resource_id(
-                    security_group.id, ctx.instance, external=False)
+                security_group.id, ctx.instance, external=False)
 
         self.resource_id = \
             ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
@@ -98,17 +98,17 @@ class SecurityGroup(AwsBaseNode):
     def created(self, args=None):
 
         ctx.logger.info(
-                'Attempting to create {0} {1}.'
-                .format(self.aws_resource_type,
-                        self.cloudify_node_instance_id))
+            'Attempting to create {0} {1}.'
+            .format(self.aws_resource_type,
+                    self.cloudify_node_instance_id))
 
         if self.use_external_resource_naively() or self.create(args):
             return self.post_create()
 
         return ctx.operation.retry(
-                message='Waiting to verify that security group {0} '
-                        'has been added.'
-                        .format(constants.EXTERNAL_RESOURCE_ID))
+            message='Waiting to verify that security group {0} '
+                    'has been added.'
+                    .format(constants.EXTERNAL_RESOURCE_ID))
 
     def start(self, args=None, **_):
         return True
@@ -124,9 +124,9 @@ class SecurityGroup(AwsBaseNode):
 
         list_of_vpcs = \
             utils.get_target_external_resource_ids(
-                    constants.SECURITY_GROUP_VPC_RELATIONSHIP, ctx.instance
+                constants.SECURITY_GROUP_VPC_RELATIONSHIP, ctx.instance
             )
-        manager_vpc = utils.get_provider_variables()\
+        manager_vpc = utils.get_provider_variables() \
             .get(constants.VPC['AWS_RESOURCE_TYPE'])
 
         if manager_vpc:
@@ -134,7 +134,7 @@ class SecurityGroup(AwsBaseNode):
 
         if len(list_of_vpcs) > 1:
             raise NonRecoverableError(
-                    'security group may only be attached to one vpc')
+                'security group may only be attached to one vpc')
 
         return list_of_vpcs[0] if list_of_vpcs else None
 
@@ -152,25 +152,25 @@ class SecurityGroup(AwsBaseNode):
 
                 if 'cidr_ip' in rule:
                     raise NonRecoverableError(
-                            'You need to pass either src_group_id OR cidr_ip.')
+                        'You need to pass either src_group_id OR cidr_ip.')
 
                 if not group_object.vpc_id:
                     src_group_object = self.get_resource()
                 else:
                     src_group_object = self._get_vpc_security_group_from_name(
-                            rule['src_group_id'])
+                        rule['src_group_id'])
 
                 if not src_group_object:
                     raise NonRecoverableError(
-                            'Supplied src_group_id {0} doesn ot exist in '
-                            'the given account.'.format(rule['src_group_id']))
+                        'Supplied src_group_id {0} doesn ot exist in '
+                        'the given account.'.format(rule['src_group_id']))
 
                 del rule['src_group_id']
                 rule['src_group'] = src_group_object
 
             elif 'cidr_ip' not in rule:
                 raise NonRecoverableError(
-                        'You need to pass either src_group_id OR cidr_ip.')
+                    'You need to pass either src_group_id OR cidr_ip.')
 
             try:
                 group_object.authorize(**rule)
@@ -196,8 +196,8 @@ class SecurityGroup(AwsBaseNode):
 
         if not group_to_delete:
             raise NonRecoverableError(
-                    'Unable to delete security group {0}, because the group '
-                    'does not exist in the account'.format(group_id))
+                'Unable to delete security group {0}, because the group '
+                'does not exist in the account'.format(group_id))
 
         try:
             self.execute(self.client.delete_security_group,
