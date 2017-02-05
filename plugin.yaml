@@ -816,6 +816,45 @@ node_types:
       cloudify.interfaces.validation:
         creation: aws.cloudify_aws.vpc.routetable.creation_validation
 
+  cloudify.aws.nodes.Interface:
+    derived_from: cloudify.nodes.Port
+    properties:
+      use_external_resource:
+        description: >
+          Indicate whether the resource exists or if Cloudify should create the resource,
+          true if you are bringing an existing resource, false if you want cloudify to create it.
+        type: boolean
+        default: false
+        required: true
+      resource_id:
+        description: >
+          The AWS resource ID of the external resource, if use_external_resource is true.
+          Otherwise it is an empty string.
+        type: string
+        default: ''
+      parameters:
+        description: >
+          Any parameters accepted by the create_network_interface operation.
+        default: {}
+        required: false
+      aws_config:
+        description: >
+          A dictionary of values to pass to authenticate with the AWS API.
+        type: cloudify.datatypes.aws.Config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.cloudify_aws.ec2.eni.create
+          inputs:
+            args:
+              default: {}
+        delete:
+          implementation: aws.cloudify_aws.ec2.eni.delete
+          inputs:
+            args:
+              default: {}
+
 relationships:
   cloudify.aws.relationships.instance_connected_to_elastic_ip:
     derived_from: cloudify.relationships.connected_to
@@ -954,3 +993,21 @@ relationships:
 
   cloudify.aws.relationships.security_group_contained_in_vpc:
     derived_from: cloudify.relationships.contained_in
+
+  cloudify.aws.relationships.connected_to_subnet:
+    derived_from: cloudify.relationships.connected_to
+
+  cloudify.aws.relationships.eni_connected_to_instance:
+    derived_from: cloudify.relationships.connected_to
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish:
+          implementation: aws.cloudify_aws.ec2.eni.attach
+          inputs:
+            args:
+              default: {}
+        unlink:
+          implementation: aws.cloudify_aws.ec2.eni.detach
+          inputs:
+            args:
+              default: {}

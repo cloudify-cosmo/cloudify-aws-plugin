@@ -187,7 +187,7 @@ class TestEBS(testtools.TestCase):
         volume = ec2_client.create_volume(TEST_SIZE, TEST_ZONE)
         volume_id = volume.id
         ctx.instance.runtime_properties['aws_resource_id'] = volume_id
-        ebs.start(ctx=ctx)
+        ebs.start(args=None, ctx=ctx)
         volume_list = ec2_client.get_all_volumes(volume_ids=volume_id)
         volume_object = volume_list[0]
         self.assertEquals(volume_object.tags.get('resource_id'),
