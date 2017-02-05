@@ -38,8 +38,7 @@ def create(args, **_):
 
 
 @operation
-<<<<<<< HEAD
-def start(**_):
+def start(args, **_):
     return Ebs().start_helper(args)
 
 
