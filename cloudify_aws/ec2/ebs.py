@@ -38,13 +38,13 @@ def create(args, **_):
 
 
 @operation
-def delete(args=None, **_):
-    return Ebs().deleted(args)
+def start(**_):
+    return Ebs().started()
 
 
 @operation
-def start(args=None, **_):
-    return Ebs().started(args)
+def delete(args=None, **_):
+    return Ebs().deleted(args)
 
 
 @operation

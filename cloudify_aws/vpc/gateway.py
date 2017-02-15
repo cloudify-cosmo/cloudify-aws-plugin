@@ -106,10 +106,8 @@ class VpnConnection(AwsBaseRelationship):
             ctx.source.instance.runtime_properties.get('routes', None)
         self.vpn_connection_id = \
             ctx.source.instance.runtime_properties.get(
-                'vpn_connection') if \
-            'vpn_connection' in \
-            ctx.source.instance.runtime_properties.keys() else \
-            None
+                'vpn_connection') if 'vpn_connection' in \
+            ctx.source.instance.runtime_properties.keys() else None
         self.source_get_all_handler = {
             'function': self.client.get_all_customer_gateways,
             'argument':
@@ -204,8 +202,8 @@ class GatewayVpcAttachment(AwsBaseRelationship):
             self.source_get_all_handler = {
                 'function': self.client.get_all_internet_gateways,
                 'argument':
-                '{0}_ids'.format(
-                    constants.INTERNET_GATEWAY['AWS_RESOURCE_TYPE'])
+                    '{0}_ids'.format(
+                        constants.INTERNET_GATEWAY['AWS_RESOURCE_TYPE'])
             }
 
     def associate(self, args):
@@ -279,7 +277,7 @@ class VpnGateway(AwsBaseNode):
         self.get_all_handler = {
             'function': self.client.get_all_vpn_gateways,
             'argument':
-            '{0}_ids'.format(constants.VPN_GATEWAY['AWS_RESOURCE_TYPE'])
+                '{0}_ids'.format(constants.VPN_GATEWAY['AWS_RESOURCE_TYPE'])
         }
 
     def create(self, args):
