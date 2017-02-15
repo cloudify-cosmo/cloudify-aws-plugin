@@ -54,6 +54,8 @@ class TestSecurityGroup(testtools.TestCase):
             constants.AWS_CONFIG_PROPERTY: {},
             'use_external_resource': False,
             'resource_id': 'test_security_group',
+            'tags': {},
+            'name': 'test_security_group',
             'description': 'This is a test.',
             'rules': [
                 {

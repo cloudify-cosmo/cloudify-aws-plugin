@@ -432,22 +432,30 @@ class AwsBaseNode(AwsBase):
 
     def tag_resource(self, resource):
 
-        name = ctx.node.properties.get('name')
-        if name:
-            self._tag_resource(resource, 'Name', name)
-        else:
-            self._tag_resource(resource, 'Name', uuid.uuid4())
-
-        self._tag_resource(resource, 'resource_id', ctx.instance.id)
-
+        tags = ctx.node.properties.get('tags', {})
+        name = ctx.node.properties.get('name', 'namey')
         deployment_id = ctx.deployment.id
-        if deployment_id:
-            self._tag_resource(resource, 'deployment_id', deployment_id)
 
-    def _tag_resource(self, resource, tag_key, tag_value):
+        if not tags and not name:
+            return
+
+        if 'name' not in tags.keys() and name:
+            tags.update({'name': name})
+        else:
+            tags.update({'name': uuid.uuid4()})
+
+        if 'resource_id' not in tags.keys():
+            tags.update({'resource_id': ctx.instance.id})
+
+        if deployment_id and 'deployment_id' not in tags.keys():
+            tags.update({'deployment_id': deployment_id})
+
+        self._tag_resource(resource, tags)
+
+    def _tag_resource(self, resource, tags):
 
         try:
-            output = resource.add_tag(tag_key, tag_value)
+            output = resource.add_tags(tags)
         except (exception.EC2ResponseError,
                 exception.BotoServerError) as e:
             raise NonRecoverableError(
