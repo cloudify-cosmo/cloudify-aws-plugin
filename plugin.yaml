@@ -151,6 +151,10 @@ node_types:
           Otherwise it is an empty string.
         type: string
         default: ''
+      tags:
+        description: >
+          A dictionary of key/value pairs of tags you want to add.
+        default: {}
       name:
         description: >
           Optional field if you want to add a specific name to the instance.
@@ -236,6 +240,10 @@ node_types:
         type: string
         default: ''
         required: true
+      tags:
+        description: >
+          A dictionary of key/value pairs of tags you want to add.
+        default: {}
       domain:
         description: >
           Set this to 'vpc' if you want to use VPC.
@@ -269,6 +277,10 @@ node_types:
         type: string
         default: ''
         required: true
+      tags:
+        description: >
+          A dictionary of key/value pairs of tags you want to add.
+        default: {}
       description:
         description: >
           The description field that is required for every security group that you create
@@ -310,6 +322,10 @@ node_types:
         type: string
         default: ''
         required: true
+      tags:
+        description: >
+          A dictionary of key/value pairs of tags you want to add.
+        default: {}
       size:
         description: >
           The size of the volume in GB.
@@ -337,6 +353,7 @@ node_types:
           inputs:
             args:
               default: {}
+        start: aws.cloudify_aws.ec2.ebs.start
         delete:
           implementation: aws.cloudify_aws.ec2.ebs.delete
           inputs:
@@ -368,6 +385,10 @@ node_types:
         type: string
         default: ''
         required: true
+      tags:
+        description: >
+          A dictionary of key/value pairs of tags you want to add.
+        default: {}
       private_key_path:
         description: >
           The path where the key should be saved on the machine. If this is a bootstrap
@@ -383,6 +404,7 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create: aws.cloudify_aws.ec2.keypair.create
+        start: aws.cloudify_aws.ec2.keypair.start
         delete: aws.cloudify_aws.ec2.keypair.delete
       cloudify.interfaces.validation:
         creation: aws.cloudify_aws.ec2.keypair.creation_validation
@@ -404,6 +426,10 @@ node_types:
         type: string
         default: ''
         required: true
+      tags:
+        description: >
+          A dictionary of key/value pairs of tags you want to add.
+        default: {}
       elb_name:
         type: string
         description: >
@@ -472,6 +498,7 @@ node_types:
       cloudify.interfaces.lifecycle:
         create:
           implementation: aws.cloudify_aws.ec2.elasticloadbalancer.create
+        start: aws.cloudify_aws.ec2.elasticloadbalancer.start
         delete:
           implementation: aws.cloudify_aws.ec2.elasticloadbalancer.delete
       cloudify.interfaces.validation:
@@ -495,6 +522,10 @@ node_types:
         type: string
         default: ''
         required: true
+      tags:
+        description: >
+          A dictionary of key/value pairs of tags you want to add.
+        default: {}
       cidr_block:
         description: >
           The CIDR Block that you will split this VPCs subnets across.
@@ -536,6 +567,10 @@ node_types:
         type: string
         default: ''
         required: true
+      tags:
+        description: >
+          A dictionary of key/value pairs of tags you want to add.
+        default: {}
       cidr_block:
         description: >
           The CIDR Block that instances will be on.
@@ -576,6 +611,10 @@ node_types:
         type: string
         default: ''
         required: true
+      tags:
+        description: >
+          A dictionary of key/value pairs of tags you want to add.
+        default: {}
       aws_config:
         description: >
           A dictionary of values to pass to authenticate with the AWS API.
@@ -596,6 +635,7 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create: aws.cloudify_aws.vpc.gateway.create_internet_gateway
+        start: aws.cloudify_aws.vpc.gateway.start_internet_gateway
         delete: aws.cloudify_aws.vpc.gateway.delete_internet_gateway
 
   cloudify.aws.nodes.VPNGateway:
@@ -614,6 +654,7 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create: aws.cloudify_aws.vpc.gateway.create_vpn_gateway
+        start: aws.cloudify_aws.vpc.gateway.start_vpn_gateway
         delete: aws.cloudify_aws.vpc.gateway.delete_vpn_gateway
 
   cloudify.aws.nodes.CustomerGateway:
@@ -635,6 +676,7 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create: aws.cloudify_aws.vpc.gateway.create_customer_gateway
+        create: aws.cloudify_aws.vpc.gateway.start_customer_gateway
         delete: aws.cloudify_aws.vpc.gateway.delete_customer_gateway
 
   cloudify.aws.nodes.ACL:
@@ -654,6 +696,10 @@ node_types:
         type: string
         default: ''
         required: true
+      tags:
+        description: >
+          A dictionary of key/value pairs of tags you want to add.
+        default: {}
       acl_network_entries:
         description: >
           A list of rules of data type cloudify.datatypes.aws.NetworkAclEntry (see above).
@@ -689,6 +735,10 @@ node_types:
         type: string
         default: ''
         required: true
+      tags:
+        description: >
+          A dictionary of key/value pairs of tags you want to add.
+        default: {}
       domain_name:
         description: >
           A domain name.
@@ -743,6 +793,10 @@ node_types:
         type: string
         default: ''
         required: true
+      tags:
+        description: >
+          A dictionary of key/value pairs of tags you want to add.
+        default: {}
       aws_config:
         description: >
           A dictionary of values to pass to authenticate with the AWS API.

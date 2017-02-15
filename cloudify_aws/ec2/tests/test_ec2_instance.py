@@ -56,6 +56,8 @@ class TestInstance(testtools.TestCase):
             constants.AWS_CONFIG_PROPERTY: {},
             'use_external_resource': False,
             'resource_id': '',
+            'name': '',
+            'tags': {},
             'image_id': TEST_AMI_IMAGE_ID,
             'instance_type': TEST_INSTANCE_TYPE,
             'cloudify_agent': {},
@@ -705,18 +707,18 @@ class TestInstance(testtools.TestCase):
         """
 
         ctx = self.mock_ctx('test_start_clean')
-        ctx.node.properties['name'] = 'test_start_and_tag_name'
-        current_ctx.set(ctx=ctx)
         ec2_client = connection.EC2ConnectionClient().client()
         reservation = ec2_client.run_instances(
                 TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
         instance_id = reservation.instances[0].id
         ctx.instance.runtime_properties['aws_resource_id'] = instance_id
         ec2_client.stop_instances(instance_id)
+        ctx.node.properties['name'] = 'test_start_and_tag_name'
+        current_ctx.set(ctx=ctx)
         instance.start(ctx=ctx)
         reservations = ec2_client.get_all_reservations(instance_id)
         instance_object = reservations[0].instances[0]
-        self.assertEquals(instance_object.tags.get('Name'),
+        self.assertEquals(instance_object.tags.get('name'),
                           ctx.node.properties['name'])
         self.assertEquals(instance_object.tags.get('resource_id'),
                           ctx.instance.id)

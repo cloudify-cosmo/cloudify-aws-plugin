@@ -47,6 +47,8 @@ class TestEBS(testtools.TestCase):
             constants.AWS_CONFIG_PROPERTY: {},
             'use_external_resource': False,
             'resource_id': '',
+            'tags': {},
+            'name': test_name,
             'size': TEST_SIZE,
             constants.ZONE: zone,
             'device': TEST_DEVICE
@@ -66,6 +68,8 @@ class TestEBS(testtools.TestCase):
             constants.AWS_CONFIG_PROPERTY: {},
             'use_external_resource': False,
             'resource_id': '',
+            'tags': {},
+            'name': test_name,
             constants.ZONE: '',
             'size': '',
             'device': ''
