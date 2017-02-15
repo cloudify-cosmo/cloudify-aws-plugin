@@ -34,17 +34,17 @@ def creation_validation(**_):
 
 @operation
 def create(args, **_):
-    return Ebs().created(args)
+    return Ebs().create_helper(args)
 
 
 @operation
 def delete(args=None, **_):
-    return Ebs().deleted(args)
+    return Ebs().delete_helper(args)
 
 
 @operation
 def start(args=None, **_):
-    return Ebs().started(args)
+    return Ebs().start_helper(args)
 
 
 @operation
@@ -54,12 +54,12 @@ def create_snapshot(args, **_):
 
 @operation
 def associate(args=None, **_):
-    return VolumeInstanceConnection().associated(args)
+    return VolumeInstanceConnection().associate_helper(args)
 
 
 @operation
 def disassociate(args, **_):
-    return VolumeInstanceConnection().disassociated(args)
+    return VolumeInstanceConnection().disassociate_helper(args)
 
 
 class VolumeInstanceConnection(AwsBaseRelationship):
@@ -117,7 +117,7 @@ class VolumeInstanceConnection(AwsBaseRelationship):
         return self.execute(self.client.attach_volume, associate_args,
                             raise_on_falsy=True)
 
-    def associated(self, args=None):
+    def associate_helper(self, args=None):
 
         ctx.logger.info(
                 'Attempting to associate {0} with {1}.'
@@ -218,7 +218,7 @@ class Ebs(AwsBaseNode):
 
         return True
 
-    def deleted(self, args=None):
+    def delete_helper(self, args=None):
 
         ctx.logger.info(
                 'Attempting to delete {0} {1}.'
