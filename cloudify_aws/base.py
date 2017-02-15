@@ -142,7 +142,7 @@ class AwsBaseRelationship(AwsBase):
     def associate(self, args=None):
         return False
 
-    def associated(self, args=None):
+    def associate_helper(self, args=None):
 
         ctx.logger.info(
             'Attempting to associate {0} with {1}.'
@@ -188,7 +188,7 @@ class AwsBaseRelationship(AwsBase):
     def disassociate(self, args=None):
         return False
 
-    def disassociated(self, args=None):
+    def disassociate_helper(self, args=None):
 
         ctx.logger.info(
             'Attempting to disassociate {0} from {1}.'
@@ -301,7 +301,7 @@ class AwsBaseNode(AwsBase):
     def create(self, args=None):
         return False
 
-    def created(self, args=None):
+    def create_helper(self, args=None):
         '''Helper to create resources'''
         ctx.logger.info(
             'Attempting to create {0} {1}.'
@@ -338,7 +338,7 @@ class AwsBaseNode(AwsBase):
     def start(self, args=None):
         return False
 
-    def started(self, args=None):
+    def start_helper(self, args=None):
 
         if self.aws_resource_type is 'instance':
             ctx.logger.info(
@@ -351,7 +351,7 @@ class AwsBaseNode(AwsBase):
     def modify_attributes(self, new_attributes):
         return False
 
-    def modified(self, new_attributes):
+    def modify__helper(self, new_attributes):
 
         ctx.logger.info(
             'Attempting to modify instance attributes {0} {1}.'
@@ -367,7 +367,7 @@ class AwsBaseNode(AwsBase):
     def post_stop(self):
         return True
 
-    def stopped(self):
+    def stop_helper(self):
 
         ctx.logger.info(
             'Attempting to stop EC2 instance {0} {1}.'
@@ -380,7 +380,7 @@ class AwsBaseNode(AwsBase):
     def delete(self, args=None):
         return False
 
-    def deleted(self, args=None):
+    def delete_helper(self, args=None):
 
         ctx.logger.info(
             'Attempting to delete {0} {1}.'

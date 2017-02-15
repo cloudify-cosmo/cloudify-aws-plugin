@@ -28,38 +28,38 @@ def creation_validation(**_):
 
 @operation
 def create_route_table(routes, args=None, **_):
-    return RouteTable(routes).created(args)
+    return RouteTable(routes).create_helper(args)
 
 
 @operation
 def start_route_table(args=None, **_):
-    return RouteTable().started(args)
+    return RouteTable().start_helper(args)
 
 
 @operation
 def delete_route_table(args=None, **_):
-    return RouteTable().deleted(args)
+    return RouteTable().delete_helper(args)
 
 
 @operation
 def associate_route_table(**_):
-    return RouteTableSubnetAssociation().associated()
+    return RouteTableSubnetAssociation().associate_helper()
 
 
 @operation
 def disassociate_route_table(**_):
-    return RouteTableSubnetAssociation().disassociated()
+    return RouteTableSubnetAssociation().disassociate_helper()
 
 
 @operation
 def create_route_to_gateway(destination_cidr_block, args=None, **_):
     return RouteTableGatewayAssociation(
-        destination_cidr_block).associated(args)
+        destination_cidr_block).associate_helper(args)
 
 
 @operation
 def delete_route_from_gateway(**_):
-    return RouteTableGatewayAssociation().disassociated()
+    return RouteTableGatewayAssociation().disassociate_helper()
 
 
 class RouteTableGatewayAssociation(AwsBaseRelationship, RouteMixin):

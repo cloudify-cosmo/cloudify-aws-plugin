@@ -35,27 +35,28 @@ def creation_validation(**_):
 
 @operation
 def create(args=None, **_):
-    return Instance().created(args)
+    return Instance().create_helper(args)
 
 
 @operation
 def start(args=None, start_retry_interval=30, private_key_path=None, **_):
-    return Instance().started(args, start_retry_interval, private_key_path)
+    return Instance().start_helper(
+        args, start_retry_interval, private_key_path)
 
 
 @operation
 def delete(args=None, **_):
-    return Instance().deleted(args)
+    return Instance().delete_helper(args)
 
 
 @operation
 def modify_attributes(new_attributes, args=None, **_):
-    return Instance().modified(new_attributes, args)
+    return Instance().modify_helper(new_attributes, args)
 
 
 @operation
 def stop(args=None, **_):
-    return Instance().stopped(args)
+    return Instance().stop_helper(args)
 
 
 class Instance(AwsBaseNode):
@@ -109,7 +110,7 @@ class Instance(AwsBaseNode):
 
         return True
 
-    def created(self, args=None):
+    def create_helper(self, args=None):
 
         ctx.logger.info(
                 'Attempting to create {0} {1}.'
@@ -164,13 +165,15 @@ class Instance(AwsBaseNode):
             return True
         return False
 
-    def started(self, args=None, start_retry_interval=30,
-                private_key_path=None):
+    def start_helper(self,
+                     args=None,
+                     start_retry_interval=30,
+                     private_key_path=None):
 
         if self.aws_resource_type is 'instance':
             ctx.logger.info(
-                    'Attempting to start instance {0}.'
-                    .format(self.cloudify_node_instance_id))
+                'Attempting to start instance {0}.'
+                .format(self.cloudify_node_instance_id))
 
         if self.use_external_resource_naively() or \
                 self.start(args, start_retry_interval, private_key_path):
@@ -270,7 +273,7 @@ class Instance(AwsBaseNode):
             return True
         return False
 
-    def deleted(self, args=None):
+    def delete_helper(self, args=None):
 
         ctx.logger.info(
                 'Attempting to delete {0} {1}.'
@@ -552,7 +555,7 @@ class Instance(AwsBaseNode):
 
         return True
 
-    def modified(self, new_attributes, args=None):
+    def modify_helper(self, new_attributes, args=None):
 
         ctx.logger.info(
                 'Attempting to modify instance attributes {0} {1}.'
@@ -564,7 +567,7 @@ class Instance(AwsBaseNode):
 
         return ctx.operation.retry('instance_id not yet set. Retrying...')
 
-    def stopped(self, args=None):
+    def stop_helper(self, args=None):
 
         ctx.logger.info(
                 'Attempting to stop EC2 instance {0} {1}.'

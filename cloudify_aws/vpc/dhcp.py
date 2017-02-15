@@ -27,27 +27,27 @@ def creation_validation(**_):
 
 @operation
 def create_dhcp_options(args=None, **_):
-    return DhcpOptions().created(args)
+    return DhcpOptions().create_helper(args)
 
 
 @operation
 def start_dhcp_options(args=None, **_):
-    return DhcpOptions().started(args)
+    return DhcpOptions().start_helper(args)
 
 
 @operation
 def delete_dhcp_options(args=None, **_):
-    return DhcpOptions().deleted(args)
+    return DhcpOptions().delete_helper(args)
 
 
 @operation
 def associate_dhcp_options(args=None, **_):
-    return DhcpAssociation().associated(args)
+    return DhcpAssociation().associate_helper(args)
 
 
 @operation
 def restore_dhcp_options(args=None, **_):
-    return DhcpAssociation().disassociated(args)
+    return DhcpAssociation().disassociate_helper(args)
 
 
 class DhcpAssociation(AwsBaseRelationship):

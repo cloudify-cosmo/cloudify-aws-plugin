@@ -154,7 +154,7 @@ class TestSecurityGroup(testtools.TestCase):
         group = ec2_client.create_security_group('test',
                                                  'this is test')
         ctx.instance.runtime_properties['aws_resource_id'] = group.id
-        securitygroup.SecurityGroup().deleted()
+        securitygroup.SecurityGroup().delete_helper()
         self.assertNotIn('aws_resource_id', ctx.instance.runtime_properties)
 
     @mock_ec2

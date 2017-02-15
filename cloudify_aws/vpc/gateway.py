@@ -32,66 +32,66 @@ def creation_validation(**_):
 
 @operation
 def create_internet_gateway(args=None, **_):
-    return InternetGateway().created(args)
+    return InternetGateway().create_helper(args)
 
 
 def start_internet_gateway(args=None, **_):
-    return InternetGateway().started(args)
+    return InternetGateway().start_helper(args)
 
 
 @operation
 def delete_internet_gateway(args=None, **_):
-    return InternetGateway().deleted(args)
+    return InternetGateway().delete_helper(args)
 
 
 @operation
 def create_vpn_gateway(args=None, **_):
-    return VpnGateway().created(args)
+    return VpnGateway().create_helper(args)
 
 
 @operation
 def start_vpn_gateway(args=None, **_):
-    return VpnGateway().started(args)
+    return VpnGateway().start_helper(args)
 
 
 @operation
 def delete_vpn_gateway(args=None, **_):
-    return VpnGateway().deleted(args)
+    return VpnGateway().delete_helper(args)
 
 
 @operation
 def create_customer_gateway(args=None, **_):
-    return CustomerGateway().created(args)
+    return CustomerGateway().create_helper(args)
 
 
 @operation
 def start_customer_gateway(args=None, **_):
-    return CustomerGateway().started(args)
+    return CustomerGateway().start_helper(args)
 
 
 @operation
 def delete_customer_gateway(args=None, **_):
-    return CustomerGateway().deleted(args)
+    return CustomerGateway().delete_helper(args)
 
 
 @operation
 def create_vpn_connection(routes, args=None, **_):
-    return VpnConnection(routes).associated(args)
+    return VpnConnection(routes).associate_helper(args)
 
 
 @operation
 def delete_vpn_connection(args=None, **_):
-    return VpnConnection().disassociated(args)
+    return VpnConnection().disassociate_helper(args)
 
 
 @operation
 def attach_gateway(args=None, **_):
-    return GatewayVpcAttachment().associated(args)
+    return GatewayVpcAttachment().associate_helper(args)
 
 
 @operation
 def detach_gateway(args=None, **_):
-    return GatewayVpcAttachment().disassociated(args)
+    return GatewayVpcAttachment().disassociate_helper(args)
 
 
 class VpnConnection(AwsBaseRelationship):

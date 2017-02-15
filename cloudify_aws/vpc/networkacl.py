@@ -28,27 +28,27 @@ def creation_validation(args=None, **_):
 
 @operation
 def create_network_acl(args=None, **_):
-    return NetworkAcl().created(args)
+    return NetworkAcl().create_helper(args)
 
 
 @operation
 def start_network_acl(args=None, **_):
-    return NetworkAcl().started(args)
+    return NetworkAcl().start_helper(args)
 
 
 @operation
 def delete_network_acl(args=None, **_):
-    return NetworkAcl().deleted(args)
+    return NetworkAcl().delete_helper(args)
 
 
 @operation
 def associate_network_acl(args=None, **_):
-    return NetworkAclSubnetAssociation().associated(args)
+    return NetworkAclSubnetAssociation().associate_helper(args)
 
 
 @operation
 def disassociate_network_acl(args=None, **_):
-    return NetworkAclSubnetAssociation().disassociated(args)
+    return NetworkAclSubnetAssociation().disassociate_helper(args)
 
 
 class NetworkAclSubnetAssociation(AwsBaseRelationship):
