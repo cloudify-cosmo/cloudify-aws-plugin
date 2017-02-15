@@ -72,7 +72,7 @@ class TestKeyPair(testtools.TestCase):
         current_ctx.set(ctx=ctx)
 
         key_path = self.create_dummy_key_path(ctx=ctx)
-        keypair.KeyPair().created()
+        keypair.KeyPair().create_helper()
         self.addCleanup(os.remove, key_path)
         self.assertIn('aws_resource_id',
                       ctx.instance.runtime_properties.keys())
@@ -92,7 +92,7 @@ class TestKeyPair(testtools.TestCase):
         self.assertEqual('keypair',
                          ctx.instance.runtime_properties['external_type'])
 
-        keypair.KeyPair().deleted()
+        keypair.KeyPair().delete_helper()
         self.assertNotIn('external_type',
                          ctx.instance.runtime_properties.keys())
 

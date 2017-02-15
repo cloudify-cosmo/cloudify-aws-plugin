@@ -31,22 +31,22 @@ def creation_validation(**_):
 
 @operation
 def create(args=None, **_):
-    return ElasticIP().created(args)
+    return ElasticIP().create_helper(args)
 
 
 @operation
 def delete(args=None, **_):
-    return ElasticIP().deleted(args)
+    return ElasticIP().delete_helper(args)
 
 
 @operation
 def associate(args=None, **_):
-    return ElasticIPInstanceConnection().associated(args)
+    return ElasticIPInstanceConnection().associate_helper(args)
 
 
 @operation
 def disassociate(args=None, **_):
-    return ElasticIPInstanceConnection().disassociated(args)
+    return ElasticIPInstanceConnection().disassociate_helper(args)
 
 
 class ElasticIPInstanceConnection(AwsBaseRelationship):
@@ -269,7 +269,7 @@ class ElasticIP(AwsBaseNode):
 
         return True
 
-    def deleted(self, args=None):
+    def delete_helper(self, args=None):
 
         ctx.logger.info(
                 'Attempting to delete {0} {1}.'

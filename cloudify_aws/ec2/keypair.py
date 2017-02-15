@@ -31,7 +31,7 @@ def creation_validation(**_):
 
 @operation
 def create(args=None, **_):
-    return KeyPair().created(args)
+    return KeyPair().create_helper(args)
 
 
 @operation
@@ -41,7 +41,7 @@ def start(**_):
 
 @operation
 def delete(args=None, **_):
-    return KeyPair().deleted(args)
+    return KeyPair().delete_helper(args)
 
 
 class KeyPair(AwsBaseNode):

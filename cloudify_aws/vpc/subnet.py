@@ -29,17 +29,17 @@ def creation_validation(**_):
 
 @operation
 def create_subnet(args=None, **_):
-    return Subnet().created(args)
+    return Subnet().create_helper(args)
 
 
 @operation
 def start_subnet(args=None, **_):
-    return Subnet().started(args)
+    return Subnet().start_helper(args)
 
 
 @operation
 def delete_subnet(args=None, **_):
-    return Subnet().deleted(args)
+    return Subnet().delete_helper(args)
 
 
 class Subnet(AwsBaseNode):

@@ -33,7 +33,7 @@ def creation_validation(**_):
 
 @operation
 def create(args=None, **_):
-    return Elb().created(args)
+    return Elb().create_helper(args)
 
 
 @operation
@@ -43,17 +43,17 @@ def start(**_):
 
 @operation
 def delete(args=None, **_):
-    return Elb().deleted(args)
+    return Elb().delete_helper(args)
 
 
 @operation
 def associate(args=None, **_):
-    return ElbInstanceConnection().associated(args)
+    return ElbInstanceConnection().associate_helper(args)
 
 
 @operation
 def disassociate(args=None, **_):
-    return ElbInstanceConnection().disassociated(args)
+    return ElbInstanceConnection().disassociate_helper(args)
 
 
 class ElbInstanceConnection(AwsBaseRelationship):
