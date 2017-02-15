@@ -52,9 +52,9 @@ class TestElasticIP(testtools.TestCase):
         }
 
         ctx = MockCloudifyContext(
-                node_id=test_node_id,
-                properties=test_properties,
-                provider_context={'resources': {}}
+            node_id=test_node_id,
+            properties=test_properties,
+            provider_context={'resources': {}}
         )
 
         return ctx
@@ -70,8 +70,8 @@ class TestElasticIP(testtools.TestCase):
         }
 
         ctx = MockCloudifyContext(
-                node_id=test_node_id,
-                properties=test_properties
+            node_id=test_node_id,
+            properties=test_properties
         )
 
         return ctx
@@ -111,8 +111,8 @@ class TestElasticIP(testtools.TestCase):
         })
 
         relationship_context = MockCloudifyContext(
-                node_id=testname, source=instance_context,
-                target=elasticip_context)
+            node_id=testname, source=instance_context,
+            target=elasticip_context)
 
         return relationship_context
 
@@ -127,7 +127,7 @@ class TestElasticIP(testtools.TestCase):
 
     def run_instance(self, client):
         return client.run_instances(
-                TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
+            TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
 
     def get_address(self):
         client = self.get_client()
@@ -188,14 +188,14 @@ class TestElasticIP(testtools.TestCase):
         """
 
         ctx = self.mock_relationship_context(
-                'test_associate_external_elasticip_or_instance')
+            'test_associate_external_elasticip_or_instance')
         current_ctx.set(ctx=ctx)
         test_elasticipinstanceconnection = \
             self.create_elasticipinstanceconnection_for_checking()
         ctx.source.node.properties['use_external_resource'] = False
         test_elasticipinstanceconnection.resource_id = '127.0.0.1'
         output = \
-            test_elasticipinstanceconnection\
+            test_elasticipinstanceconnection \
             .use_source_external_resource_naively()
 
         self.assertEqual(False, output)
@@ -207,7 +207,7 @@ class TestElasticIP(testtools.TestCase):
         """
 
         ctx = self.mock_ctx(
-                'test_release_external_elasticip')
+            'test_release_external_elasticip')
         current_ctx.set(ctx=ctx)
         ctx.node.properties['use_external_resource'] = False
         test_elasticip = self.create_elasticip_for_checking()
@@ -238,7 +238,7 @@ class TestElasticIP(testtools.TestCase):
         """
 
         ctx = self.mock_ctx(
-                'test_allocate_external_elasticip')
+            'test_allocate_external_elasticip')
         current_ctx.set(ctx=ctx)
         ctx.node.properties['use_external_resource'] = False
         test_elasticip = self.create_elasticip_for_checking()
@@ -272,14 +272,14 @@ class TestElasticIP(testtools.TestCase):
         """
 
         ctx = self.mock_relationship_context(
-                'test_disassociate_external_elasticip_or_instance')
+            'test_disassociate_external_elasticip_or_instance')
         current_ctx.set(ctx=ctx)
         ctx.source.node.properties['use_external_resource'] = False
         test_elasticipinstanceconnection = \
             self.create_elasticipinstanceconnection_for_checking()
 
         output = \
-            test_elasticipinstanceconnection\
+            test_elasticipinstanceconnection \
             .disassociate_external_resource_naively()
 
         self.assertEqual(False, output)
@@ -295,10 +295,10 @@ class TestElasticIP(testtools.TestCase):
         ctx.instance.runtime_properties['aws_resource_id'] = \
             '127.0.0.1'
         ex = self.assertRaises(
-                NonRecoverableError, elasticip.ElasticIP().delete, ctx=ctx)
+            NonRecoverableError, elasticip.ElasticIP().delete, ctx=ctx)
         self.assertIn(
-                'Unable to release elasticip. Elasticip not in account.',
-                ex.message)
+            'Unable to release elasticip. Elasticip not in account.',
+            ex.message)
 
     @mock_ec2
     def test_good_address_associate(self):
@@ -317,7 +317,7 @@ class TestElasticIP(testtools.TestCase):
                       ctx.target.instance.runtime_properties)
         self.assertEquals(instance_id,
                           ctx.target.instance.runtime_properties.get(
-                                  'instance_id'))
+                              'instance_id'))
 
     @mock_ec2
     def test_good_address_associate_with_new_domain_property(self):
@@ -339,7 +339,7 @@ class TestElasticIP(testtools.TestCase):
                       ctx.target.instance.runtime_properties)
         self.assertEquals(instance_id,
                           ctx.target.instance.runtime_properties.get(
-                                  'instance_id'))
+                              'instance_id'))
         self.assertIn('vpc_id', ctx.target.instance.runtime_properties)
 
     @mock_ec2
@@ -420,8 +420,8 @@ class TestElasticIP(testtools.TestCase):
         ctx.node.properties['resource_id'] = '127.0.0.1'
         current_ctx.set(ctx=ctx)
         ex = self.assertRaises(
-                NonRecoverableError,
-                elasticip.ElasticIP().creation_validation)
+            NonRecoverableError,
+            elasticip.ElasticIP().creation_validation)
         self.assertIn('elasticip does not exist', ex.message)
 
     @mock_ec2
@@ -437,8 +437,8 @@ class TestElasticIP(testtools.TestCase):
         ctx.node.properties['use_external_resource'] = False
         ctx.node.properties['resource_id'] = address.public_ip
         ex = self.assertRaises(
-                NonRecoverableError,
-                elasticip.ElasticIP().creation_validation)
+            NonRecoverableError,
+            elasticip.ElasticIP().creation_validation)
         self.assertIn('Not external resource, but the supplied', ex.message)
 
     @mock_ec2
@@ -451,11 +451,11 @@ class TestElasticIP(testtools.TestCase):
         current_ctx.set(ctx=ctx)
         del(ctx.source.instance.runtime_properties['aws_resource_id'])
         ex = self.assertRaises(
-                NonRecoverableError,
-                elasticip.associate, ctx=ctx)
+            NonRecoverableError,
+            elasticip.associate, ctx=ctx)
         self.assertIn(
-                'does not exist',
-                ex.message)
+            'does not exist',
+            ex.message)
 
     @mock_ec2
     def test_bad_address_external_resource(self):
@@ -465,11 +465,11 @@ class TestElasticIP(testtools.TestCase):
         ctx.node.properties['use_external_resource'] = True
         ctx.node.properties['resource_id'] = '127.0.0.1'
         ex = self.assertRaises(
-                NonRecoverableError,
-                elasticip.ElasticIP().raise_forbidden_external_resource, ctx)
+            NonRecoverableError,
+            elasticip.ElasticIP().raise_forbidden_external_resource, ctx)
         self.assertIn(
-                'is not in this account',
-                ex.message)
+            'is not in this account',
+            ex.message)
 
     @mock_ec2
     def test_release_existing(self):
@@ -484,7 +484,7 @@ class TestElasticIP(testtools.TestCase):
         ctx.node.properties['use_external_resource'] = True
         elasticip.delete(ctx=ctx)
         self.assertNotIn(
-                'aws_resource_id', ctx.instance.runtime_properties)
+            'aws_resource_id', ctx.instance.runtime_properties)
         ec2_client = self.get_client()
         self.assertIsNotNone(ec2_client.get_all_addresses(address.public_ip))
 
@@ -509,8 +509,8 @@ class TestElasticIP(testtools.TestCase):
             instance_id
         elasticip.associate(ctx=ctx)
         self.assertEqual(
-                address.public_ip,
-                ctx.source.instance.runtime_properties['public_ip_address'])
+            address.public_ip,
+            ctx.source.instance.runtime_properties['public_ip_address'])
 
     @mock_ec2
     def test_existing_address_disassociate(self):
@@ -520,7 +520,7 @@ class TestElasticIP(testtools.TestCase):
         """
 
         ctx = self.mock_relationship_context(
-                'test_existing_address_disassociate')
+            'test_existing_address_disassociate')
         current_ctx.set(ctx=ctx)
         address = self.get_address()
         instance_id = self.get_instance_id()
@@ -536,7 +536,7 @@ class TestElasticIP(testtools.TestCase):
             address.public_ip
         elasticip.disassociate(ctx=ctx)
         self.assertNotIn(
-                'public_ip_address', ctx.source.instance.runtime_properties)
+            'public_ip_address', ctx.source.instance.runtime_properties)
 
     @mock_ec2
     def test_disassociate_external_elasticip(self):
@@ -547,7 +547,7 @@ class TestElasticIP(testtools.TestCase):
         """
 
         ctx = self.mock_relationship_context(
-                'test_disassociate_external_elasticip')
+            'test_disassociate_external_elasticip')
         current_ctx.set(ctx=ctx)
         address = self.get_address()
         instance_id = self.get_instance_id()
@@ -561,6 +561,6 @@ class TestElasticIP(testtools.TestCase):
             self.create_elasticipinstanceconnection_for_checking()
 
         output = \
-            test_elasticipinstanceconnection\
+            test_elasticipinstanceconnection \
             .disassociate_external_resource_naively()
         self.assertEqual(False, output)

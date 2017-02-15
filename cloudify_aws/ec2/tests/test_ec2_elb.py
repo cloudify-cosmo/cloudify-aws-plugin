@@ -51,16 +51,16 @@ class TestLoadBalancer(testtools.TestCase):
 
     def _create_external_elb(self):
         return boto.connect_elb().create_load_balancer(
-                name='myelb', zones='us-east-1a',
-                listeners=[[80, 8080, 'http'], [443, 8443, 'tcp']])
+            name='myelb', zones='us-east-1a',
+            listeners=[[80, 8080, 'http'], [443, 8443, 'tcp']])
 
     def _get_elbs(self):
         return boto.connect_elb().get_all_load_balancers(
-                load_balancer_names=['myelb'])
+            load_balancer_names=['myelb'])
 
     def _get_elb_instances(self):
         instance_list = boto.connect_elb().get_all_load_balancers(
-                load_balancer_names=['myelb'])[0].instances
+            load_balancer_names=['myelb'])[0].instances
         l = []
         for i in instance_list:
             l.append(i.id)
@@ -68,7 +68,7 @@ class TestLoadBalancer(testtools.TestCase):
 
     def _create_external_instance(self):
         return boto.connect_ec2().run_instances(
-                image_id=TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
+            image_id=TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
 
     def mock_instance_ctx(self, test_name, use_external_resource=False,
                           instance_id='i-nstance'):
@@ -96,10 +96,10 @@ class TestLoadBalancer(testtools.TestCase):
         }
 
         ctx = MockCloudifyContext(
-                node_id=test_node_id,
-                properties=test_properties,
-                operation=operation,
-                runtime_properties=runtime_properties
+            node_id=test_node_id,
+            properties=test_properties,
+            operation=operation,
+            runtime_properties=runtime_properties
         )
         ctx.node.type_hierarchy = ['cloudify.nodes.Compute']
         return ctx
@@ -132,9 +132,9 @@ class TestLoadBalancer(testtools.TestCase):
                               'instance_list': instance_list}
 
         ctx = MockCloudifyContext(
-                node_id=test_node_id,
-                properties=test_properties,
-                runtime_properties=runtime_properties
+            node_id=test_node_id,
+            properties=test_properties,
+            runtime_properties=runtime_properties
         )
         ctx.node.type_hierarchy = ['cloudify.nodes.LoadBalancer']
 
@@ -149,18 +149,18 @@ class TestLoadBalancer(testtools.TestCase):
 
         if not elb_context:
             elb_context = self.mock_elb_ctx(
-                    'target_{0}'.format(testname),
-                    use_external_resource=use_external_resource)
+                'target_{0}'.format(testname),
+                use_external_resource=use_external_resource)
 
         if not instance_context:
             instance_context = self.mock_instance_ctx(
-                    'source_{0}'.format(testname),
-                    use_external_resource=use_external_resource)
+                'source_{0}'.format(testname),
+                use_external_resource=use_external_resource)
 
         relationship_context = MockCloudifyContext(
-                node_id=testname,
-                source=instance_context,
-                target=elb_context)
+            node_id=testname,
+            source=instance_context,
+            target=elb_context)
 
         return relationship_context
 
@@ -192,8 +192,8 @@ class TestLoadBalancer(testtools.TestCase):
         self._create_external_elb()
         instance_id = self._create_external_instance().id
         instance_ctx = self.mock_instance_ctx(
-                'source_test_add_instance_to_elb',
-                instance_id=instance_id, use_external_resource=True)
+            'source_test_add_instance_to_elb',
+            instance_id=instance_id, use_external_resource=True)
         ctx = self.mock_relationship_context('test_add_instance_to_elb',
                                              use_external_resource=True,
                                              instance_context=instance_ctx)
@@ -204,10 +204,10 @@ class TestLoadBalancer(testtools.TestCase):
         test_elbinstanceconnection.associate()
         self.assertEqual(1,
                          len(ctx.target.instance.runtime_properties.get(
-                                 'instance_list')))
+                             'instance_list')))
         self.assertIn(instance_id,
                       ctx.target.instance.runtime_properties.get(
-                              'instance_list'))
+                          'instance_list'))
         self.assertIn(instance_id, self._get_elb_instances())
 
     @mock_ec2
@@ -216,12 +216,12 @@ class TestLoadBalancer(testtools.TestCase):
         self._create_external_elb()
         instance_id = self._create_external_instance().id
         instance_ctx = self.mock_instance_ctx(
-                'source_test_remove_instance_from_elb',
-                instance_id=instance_id, use_external_resource=True)
+            'source_test_remove_instance_from_elb',
+            instance_id=instance_id, use_external_resource=True)
         elb_ctx = self.mock_elb_ctx(
-                'source_test_remove_instance_from_elb',
-                use_external_resource=True,
-                instance_list=[instance_id])
+            'source_test_remove_instance_from_elb',
+            use_external_resource=True,
+            instance_list=[instance_id])
         ctx = self.mock_relationship_context('test_remove_instance_from_elb',
                                              use_external_resource=True,
                                              instance_context=instance_ctx,
@@ -230,15 +230,15 @@ class TestLoadBalancer(testtools.TestCase):
         elasticloadbalancer.ElbInstanceConnection().disassociate(ctx=ctx)
         self.assertEqual(0,
                          len(ctx.target.instance.runtime_properties.get(
-                                 'instance_list')))
+                             'instance_list')))
 
     @mock_ec2
     @mock_elb
     def test_delete_external_elb(self):
         elb_ctx = self.mock_elb_ctx(
-                'test_delete_external_elb',
-                use_external_resource=True,
-                instance_list=[])
+            'test_delete_external_elb',
+            use_external_resource=True,
+            instance_list=[])
         current_ctx.set(elb_ctx)
         self.assertTrue(elasticloadbalancer.delete(args=None, ctx=elb_ctx))
 

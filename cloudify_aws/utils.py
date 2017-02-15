@@ -30,7 +30,7 @@ def validate_node_property(key, ctx_node_properties):
 
     if key not in ctx_node_properties:
         raise NonRecoverableError(
-                '{0} is a required input. Unable to create.'.format(key))
+            '{0} is a required input. Unable to create.'.format(key))
 
 
 def log_available_resources(list_of_resources):
@@ -56,14 +56,14 @@ def get_external_resource_id_or_raise(operation, ctx_instance):
     """
 
     ctx.logger.debug(
-            'Checking if {0} in instance runtime_properties, for {0} '
-            'operation.'
-            .format(constants.EXTERNAL_RESOURCE_ID, operation))
+        'Checking if {0} in instance runtime_properties, for {0} '
+        'operation.'
+        .format(constants.EXTERNAL_RESOURCE_ID, operation))
 
     if constants.EXTERNAL_RESOURCE_ID not in ctx_instance.runtime_properties:
         raise NonRecoverableError(
-                'Cannot {0} because {1} is not assigned.'
-                .format(operation, constants.EXTERNAL_RESOURCE_ID))
+            'Cannot {0} because {1} is not assigned.'
+            .format(operation, constants.EXTERNAL_RESOURCE_ID))
 
     return ctx_instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
 
@@ -89,7 +89,7 @@ def unassign_runtime_properties_from_resource(property_names, ctx_instance):
     for property_name in property_names:
         if property_name in ctx_instance.runtime_properties:
             unassign_runtime_property_from_resource(
-                    property_name, ctx_instance)
+                property_name, ctx_instance)
 
 
 def unassign_runtime_property_from_resource(property_name, ctx_instance):
@@ -101,8 +101,8 @@ def unassign_runtime_property_from_resource(property_name, ctx_instance):
 
     value = ctx_instance.runtime_properties.pop(property_name, None)
     ctx.logger.debug(
-            'Unassigned {0} runtime property: {1}'.format(property_name,
-                                                          value))
+        'Unassigned {0} runtime property: {1}'.format(property_name,
+                                                      value))
 
 
 def use_external_resource(ctx_node_properties):
@@ -116,13 +116,13 @@ def use_external_resource(ctx_node_properties):
 
     if not ctx_node_properties['use_external_resource']:
         ctx.logger.debug(
-                'Using Cloudify resource_id: {0}.'
-                .format(ctx_node_properties['resource_id']))
+            'Using Cloudify resource_id: {0}.'
+            .format(ctx_node_properties['resource_id']))
         return False
     else:
         ctx.logger.debug(
-                'Using external resource_id: {0}.'
-                .format(ctx_node_properties['resource_id']))
+            'Using external resource_id: {0}.'
+            .format(ctx_node_properties['resource_id']))
         return True
 
 
@@ -143,10 +143,10 @@ def get_target_external_resource_ids(relationship_type, ctx_instance):
 
     for r in ctx_instance.relationships:
         if relationship_type in r.type or \
-                        relationship_type in r.type_hierarchy:
+                relationship_type in r.type_hierarchy:
             ids.append(
-                    r.target.instance.runtime_properties[
-                        constants.EXTERNAL_RESOURCE_ID])
+                r.target.instance.runtime_properties[
+                    constants.EXTERNAL_RESOURCE_ID])
 
     return ids
 
@@ -200,11 +200,11 @@ def get_instance_or_source_node_properties():
         return ctx.node.properties
     else:
         raise NonRecoverableError(
-                'Invalid use of ctx. '
-                'get_instance_or_source_node_properties '
-                'called in a context that is not {0} or {1}.'
-                .format(constants.RELATIONSHIP_INSTANCE,
-                        constants.NODE_INSTANCE))
+            'Invalid use of ctx. '
+            'get_instance_or_source_node_properties '
+            'called in a context that is not {0} or {1}.'
+            .format(constants.RELATIONSHIP_INSTANCE,
+                    constants.NODE_INSTANCE))
 
 
 def get_single_connected_node_by_type(
@@ -213,9 +213,9 @@ def get_single_connected_node_by_type(
     check = len(nodes) > 1 if if_exists else len(nodes) != 1
     if check:
         raise NonRecoverableError(
-                'Expected {0} one {1} node. got {2}'
-                .format('at most' if if_exists else 'exactly',
-                        type_name, len(nodes)))
+            'Expected {0} one {1} node. got {2}'
+            .format('at most' if if_exists else 'exactly',
+                    type_name, len(nodes)))
     return nodes[0] if nodes else None
 
 
@@ -224,7 +224,7 @@ def get_connected_nodes_by_type(passed_ctx, type_name):
             if rel.target.instance.runtime_properties.get(
                 constants.AWS_TYPE_PROPERTY) and
             rel.target.instance.runtime_properties.get(
-                    constants.AWS_TYPE_PROPERTY) == type_name]
+                constants.AWS_TYPE_PROPERTY) == type_name]
 
 
 def update_args(parameterized_args, args_from_inputs):

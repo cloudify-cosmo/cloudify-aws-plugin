@@ -380,8 +380,8 @@ class TestEBS(testtools.TestCase):
         current_ctx.set(ctx=ctx)
         del(ctx.source.instance.runtime_properties['aws_resource_id'])
         ex = self.assertRaises(
-                NonRecoverableError, ebs.associate,
-                ctx=ctx)
+            NonRecoverableError, ebs.associate,
+            ctx=ctx)
         self.assertIn(
             'Cannot attach volume because aws_resource_id is not assigned',
             ex.message)

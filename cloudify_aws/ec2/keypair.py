@@ -43,8 +43,8 @@ class KeyPair(AwsBaseNode):
 
     def __init__(self):
         super(KeyPair, self).__init__(
-                constants.KEYPAIR['AWS_RESOURCE_TYPE'],
-                constants.KEYPAIR['REQUIRED_PROPERTIES']
+            constants.KEYPAIR['AWS_RESOURCE_TYPE'],
+            constants.KEYPAIR['REQUIRED_PROPERTIES']
         )
         self.not_found_error = constants.KEYPAIR['NOT_FOUND_ERROR']
         self.get_all_handler = {
@@ -65,30 +65,30 @@ class KeyPair(AwsBaseNode):
         if ctx.node.properties['use_external_resource']:
             if not key_file_in_filesystem:
                 raise NonRecoverableError(
-                        'External resource, but the key file '
-                        'does not exist locally.')
+                    'External resource, but the key file '
+                    'does not exist locally.')
             try:
                 if not self.get_all_matching(
                         ctx.node.properties['resource_id']):
                     raise NonRecoverableError(self.not_found_error)
             except NonRecoverableError as e:
                 raise NonRecoverableError(
-                        'External resource, '
-                        'but the key pair does not exist in the account: '
-                        '{0}'.format(str(e)))
+                    'External resource, '
+                    'but the key pair does not exist in the account: '
+                    '{0}'.format(str(e)))
         else:
             if key_file_in_filesystem:
                 raise NonRecoverableError(
-                        'Not external resource, '
-                        'but the key file exists locally.')
+                    'Not external resource, '
+                    'but the key file exists locally.')
             try:
                 self.get_all_matching(ctx.node.properties['resource_id'])
             except NonRecoverableError:
                 pass
             else:
                 raise NonRecoverableError(
-                        'Not external resource, '
-                        'but the key pair exists in the account.')
+                    'Not external resource, '
+                    'but the key pair exists in the account.')
 
         return True
 
@@ -117,7 +117,7 @@ class KeyPair(AwsBaseNode):
         """Deletes a keypair."""
 
         key_pair_name = utils.get_external_resource_id_or_raise(
-                'delete key pair', ctx.instance)
+            'delete key pair', ctx.instance)
         delete_args = {
             'key_name': key_pair_name
         }
@@ -144,7 +144,7 @@ class KeyPair(AwsBaseNode):
 
         if 'private_key_path' not in ctx.node.properties:
             raise NonRecoverableError(
-                    'Unable to get key file path, private_key_path not set.')
+                'Unable to get key file path, private_key_path not set.')
 
         return os.path.expanduser(ctx.node.properties['private_key_path'])
 
@@ -170,13 +170,13 @@ class KeyPair(AwsBaseNode):
 
         if not key_pair_object.material:
             raise NonRecoverableError(
-                    'Cannot save key. KeyPair contains no material.')
+                'Cannot save key. KeyPair contains no material.')
 
         file_path = self._get_path_to_key_file()
         if os.path.exists(file_path):
             raise NonRecoverableError(
-                    '{0} already exists, it will not be overwritten.'.format(
-                            file_path))
+                '{0} already exists, it will not be overwritten.'.format(
+                    file_path))
         fp = open(file_path, 'wb')
         fp.write(key_pair_object.material)
         fp.close()
@@ -189,8 +189,8 @@ class KeyPair(AwsBaseNode):
             os.chmod(key_file, 0o600)
         else:
             ctx.logger.error(
-                    'Unable to set permissions key file: {0}.'
-                    .format(key_file))
+                'Unable to set permissions key file: {0}.'
+                .format(key_file))
 
     def _delete_key_file(self):
         """ Deletes the key pair in the file specified in the blueprint.
@@ -206,8 +206,8 @@ class KeyPair(AwsBaseNode):
                 os.remove(key_path)
             except OSError as e:
                 raise NonRecoverableError(
-                        'Unable to delete key pair: {0}.'
-                        .format(str(e)))
+                    'Unable to delete key pair: {0}.'
+                    .format(str(e)))
 
     def use_external_resource_naively(self):
         """If use_external_resource is True, this will set the runtime_properties,
@@ -226,14 +226,14 @@ class KeyPair(AwsBaseNode):
         key_pair_in_account = self.get_resource()
         key_path_in_filesystem = self._get_path_to_key_file()
         ctx.logger.debug(
-                'Path to key file: {0}.'.format(key_path_in_filesystem))
+            'Path to key file: {0}.'.format(key_path_in_filesystem))
         if not key_pair_in_account:
             raise NonRecoverableError(
-                    'External resource, but the key pair is '
-                    'not in the account.')
+                'External resource, but the key pair is '
+                'not in the account.')
         if not self._search_for_key_file(key_path_in_filesystem):
             raise NonRecoverableError(
-                    'External resource, but the key file does not exist.')
+                'External resource, but the key file does not exist.')
         return True
 
     def get_resource(self):

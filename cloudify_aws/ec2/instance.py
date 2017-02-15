@@ -62,9 +62,9 @@ class Instance(AwsBaseNode):
 
     def __init__(self, client=None):
         super(Instance, self).__init__(
-                constants.INSTANCE['AWS_RESOURCE_TYPE'],
-                constants.INSTANCE['REQUIRED_PROPERTIES'],
-                client=client
+            constants.INSTANCE['AWS_RESOURCE_TYPE'],
+            constants.INSTANCE['REQUIRED_PROPERTIES'],
+            client=client
         )
         self.not_found_error = constants.INSTANCE['NOT_FOUND_ERROR']
         self.get_all_handler = {
@@ -82,8 +82,8 @@ class Instance(AwsBaseNode):
 
         if 'available' not in image_object.state:
             raise NonRecoverableError(
-                    'image_id {0} not available to this account.'
-                    .format(image_id))
+                'image_id {0} not available to this account.'
+                .format(image_id))
 
         return True
 
@@ -92,9 +92,9 @@ class Instance(AwsBaseNode):
         instance_parameters = self._get_instance_parameters()
 
         ctx.logger.info(
-                'Attempting to create EC2 Instance with these API '
-                'parameters: {0}.'
-                .format(instance_parameters))
+            'Attempting to create EC2 Instance with these API '
+            'parameters: {0}.'
+            .format(instance_parameters))
 
         instance_id = self._run_instances_if_needed(instance_parameters)
 
@@ -104,7 +104,7 @@ class Instance(AwsBaseNode):
             return False
 
         utils.set_external_resource_id(
-                instance_id, ctx.instance, external=False)
+            instance_id, ctx.instance, external=False)
         self._instance_created_assign_runtime_properties()
 
         return True
@@ -112,18 +112,18 @@ class Instance(AwsBaseNode):
     def created(self, args=None):
 
         ctx.logger.info(
-                'Attempting to create {0} {1}.'
-                .format(self.aws_resource_type,
-                        self.cloudify_node_instance_id))
+            'Attempting to create {0} {1}.'
+            .format(self.aws_resource_type,
+                    self.cloudify_node_instance_id))
 
         if self.use_external_resource_naively() or self.create(args):
             return self.post_create()
 
         return ctx.operation.retry(
-                message='Waiting to verify that {0} {1} '
-                        'has been added to your account.'
-                        .format(self.aws_resource_type,
-                                self.cloudify_node_instance_id))
+            message='Waiting to verify that {0} {1} '
+                    'has been added to your account.'
+                    .format(self.aws_resource_type,
+                            self.cloudify_node_instance_id))
 
     def start(self, args=None, start_retry_interval=30,
               private_key_path=None, **_):
@@ -131,13 +131,13 @@ class Instance(AwsBaseNode):
         instance_id = self.resource_id
 
         self._assign_runtime_properties_to_instance(
-                    runtime_properties=constants.INSTANCE_INTERNAL_ATTRIBUTES)
+            runtime_properties=constants.INSTANCE_INTERNAL_ATTRIBUTES)
 
         if self._get_instance_state() == constants.INSTANCE_STATE_STARTED:
             if ctx.node.properties['use_password']:
                 password_success = self._retrieve_windows_pass(
-                        instance_id=instance_id,
-                        private_key_path=private_key_path)
+                    instance_id=instance_id,
+                    private_key_path=private_key_path)
                 if not password_success:
                     return False
             return True
@@ -159,8 +159,8 @@ class Instance(AwsBaseNode):
         if self._get_instance_state() == constants.INSTANCE_STATE_STARTED:
             if ctx.node.properties['use_password']:
                 password_success = self._retrieve_windows_pass(
-                        instance_id=instance_id,
-                        private_key_path=private_key_path)
+                    instance_id=instance_id,
+                    private_key_path=private_key_path)
                 if not password_success:
                     return False
         else:
@@ -172,21 +172,21 @@ class Instance(AwsBaseNode):
 
         if self.aws_resource_type is 'instance':
             ctx.logger.info(
-                    'Attempting to start instance {0}.'
-                    .format(self.cloudify_node_instance_id))
+                'Attempting to start instance {0}.'
+                .format(self.cloudify_node_instance_id))
 
         if self.use_external_resource_naively() or \
                 self.start(args, start_retry_interval, private_key_path):
             return self.post_start()
 
         return ctx.operation.retry(
-                message='Waiting server to be running. Retrying...',
-                retry_after=start_retry_interval)
+            message='Waiting server to be running. Retrying...',
+            retry_after=start_retry_interval)
 
     def _get_private_key(self, private_key_path):
         pk_node_by_rel = \
             utils.get_single_connected_node_by_type(
-                    ctx, constants.KEYPAIR['AWS_RESOURCE_TYPE'], True)
+                ctx, constants.KEYPAIR['AWS_RESOURCE_TYPE'], True)
 
         if private_key_path:
             if pk_node_by_rel:
@@ -269,22 +269,22 @@ class Instance(AwsBaseNode):
                 constants.INSTANCE_STATE_TERMINATED:
             ctx.logger.info('Terminated instance: {0}.'.format(instance_id))
             utils.unassign_runtime_property_from_resource(
-                    constants.EXTERNAL_RESOURCE_ID, ctx.instance)
+                constants.EXTERNAL_RESOURCE_ID, ctx.instance)
             return True
         return False
 
     def deleted(self, args=None):
 
         ctx.logger.info(
-                'Attempting to delete {0} {1}.'
-                .format(self.aws_resource_type,
-                        self.cloudify_node_instance_id))
+            'Attempting to delete {0} {1}.'
+            .format(self.aws_resource_type,
+                    self.cloudify_node_instance_id))
 
         if self.delete_external_resource_naively() or self.delete(args):
             return self.post_delete()
 
         return ctx.operation.retry(
-                message='Waiting server to terminate. Retrying...')
+            message='Waiting server to terminate. Retrying...')
 
     def _run_instances_if_needed(self, create_args):
 
@@ -308,20 +308,20 @@ class Instance(AwsBaseNode):
 
             if not instances:
                 raise NonRecoverableError(
-                        'Instance failed for an unknown reason. Node ID: {0}.'
-                        .format(ctx.instance.id))
+                    'Instance failed for an unknown reason. Node ID: {0}.'
+                    .format(ctx.instance.id))
             elif len(instances) != 1:
                 raise NonRecoverableError(
-                        'More than one instance was created by the'
-                        ' install workflow. '
-                        'Unable to handle request.')
+                    'More than one instance was created by the'
+                    ' install workflow. '
+                    'Unable to handle request.')
             return instances[0].id
         return self.resource_id
 
     def _instance_created_assign_runtime_properties(self):
         self._assign_runtime_properties_to_instance(
-                runtime_properties=constants.
-                INSTANCE_INTERNAL_ATTRIBUTES_POST_CREATE)
+            runtime_properties=constants.
+            INSTANCE_INTERNAL_ATTRIBUTES_POST_CREATE)
 
     def _assign_runtime_properties_to_instance(self, runtime_properties):
 
@@ -370,9 +370,9 @@ class Instance(AwsBaseNode):
         if constants.EXTERNAL_RESOURCE_ID not in \
                 ctx.instance.runtime_properties:
             raise NonRecoverableError(
-                    'Unable to get instance attibute {0}, because {1} '
-                    'is not set.'
-                    .format(attribute, constants.EXTERNAL_RESOURCE_ID))
+                'Unable to get instance attibute {0}, because {1} '
+                'is not set.'
+                .format(attribute, constants.EXTERNAL_RESOURCE_ID))
 
         instance_id = self.resource_id
         instance_object = self._get_instance_from_id(instance_id)
@@ -382,21 +382,21 @@ class Instance(AwsBaseNode):
                 instances = self._get_instances_from_reservation_id()
                 if not instances:
                     raise NonRecoverableError(
-                            'Unable to get instance attibute {0}, because '
-                            'no instance with id {1} exists in this account.'
-                            .format(attribute, instance_id))
+                        'Unable to get instance attibute {0}, because '
+                        'no instance with id {1} exists in this account.'
+                        .format(attribute, instance_id))
                 elif len(instances) != 1:
                     raise NonRecoverableError(
-                            'Unable to get instance attibute {0}, '
-                            'because more than one instance with id {1} '
-                            'exists in this account.'
-                            .format(attribute, instance_id))
+                        'Unable to get instance attibute {0}, '
+                        'because more than one instance with id {1} '
+                        'exists in this account.'
+                        .format(attribute, instance_id))
                 instance_object = instances[0]
             else:
                 raise NonRecoverableError(
-                        'External resource, but the supplied '
-                        'instance id {0} is not in the account.'
-                        .format(instance_id))
+                    'External resource, but the supplied '
+                    'instance id {0} is not in the account.'
+                    .format(instance_id))
 
         attribute = getattr(instance_object, attribute)
         return attribute
@@ -415,7 +415,7 @@ class Instance(AwsBaseNode):
             final_userdata = existing_userdata
         else:
             final_userdata = compute.create_multi_mimetype_userdata(
-                    [existing_userdata, install_agent_userdata])
+                [existing_userdata, install_agent_userdata])
 
         parameters['user_data'] = final_userdata
 
@@ -431,12 +431,12 @@ class Instance(AwsBaseNode):
 
         attached_group_ids = \
             utils.get_target_external_resource_ids(
-                    constants.INSTANCE_SECURITY_GROUP_RELATIONSHIP,
-                    ctx.instance)
+                constants.INSTANCE_SECURITY_GROUP_RELATIONSHIP,
+                ctx.instance)
 
         if provider_variables.get(constants.AGENTS_SECURITY_GROUP):
             attached_group_ids.append(
-                    provider_variables[constants.AGENTS_SECURITY_GROUP])
+                provider_variables[constants.AGENTS_SECURITY_GROUP])
 
         parameters = \
             provider_variables.get(constants.AGENTS_AWS_INSTANCE_PARAMETERS)
@@ -459,15 +459,15 @@ class Instance(AwsBaseNode):
         """
         list_of_keypairs = \
             utils.get_target_external_resource_ids(
-                    constants.INSTANCE_KEYPAIR_RELATIONSHIP, ctx.instance)
+                constants.INSTANCE_KEYPAIR_RELATIONSHIP, ctx.instance)
 
         if not list_of_keypairs and \
                 provider_variables.get(constants.AGENTS_KEYPAIR):
             list_of_keypairs.append(provider_variables[
-                                        constants.AGENTS_KEYPAIR])
+                                    constants.AGENTS_KEYPAIR])
         elif len(list_of_keypairs) > 1:
             raise NonRecoverableError(
-                    'Only one keypair may be attached to an instance.')
+                'Only one keypair may be attached to an instance.')
 
         return list_of_keypairs[0] if list_of_keypairs else None
 
@@ -484,10 +484,10 @@ class Instance(AwsBaseNode):
         if not list_of_subnets and provider_variables.get(
                 constants.SUBNET['AWS_RESOURCE_TYPE']):
             list_of_subnets.append(provider_variables[
-                                       constants.SUBNET['AWS_RESOURCE_TYPE']])
+                                   constants.SUBNET['AWS_RESOURCE_TYPE']])
         elif len(list_of_subnets) > 1:
             raise NonRecoverableError(
-                    'instance may only be attached to one subnet')
+                'instance may only be attached to one subnet')
 
         return list_of_subnets[0] if list_of_subnets else None
 
@@ -506,11 +506,11 @@ class Instance(AwsBaseNode):
 
         try:
             reservations = self.client.get_all_instances(
-                    filters={
-                        'reservation-id':
-                            ctx.instance.runtime_properties[
-                                'reservation_id']
-                    })
+                filters={
+                    'reservation-id':
+                        ctx.instance.runtime_properties[
+                            'reservation_id']
+                })
         except (exception.EC2ResponseError,
                 exception.BotoServerError) as e:
             raise NonRecoverableError('{0}'.format(str(e)))
@@ -529,7 +529,7 @@ class Instance(AwsBaseNode):
 
         try:
             reservations = self.client.get_all_reservations(
-                    list_of_instance_ids)
+                list_of_instance_ids)
         except exception.EC2ResponseError as e:
             if 'InvalidInstanceID.NotFound' in e:
                 instances = [instance for res in
@@ -558,9 +558,9 @@ class Instance(AwsBaseNode):
     def modified(self, new_attributes, args=None):
 
         ctx.logger.info(
-                'Attempting to modify instance attributes {0} {1}.'
-                .format(self.aws_resource_type,
-                        self.cloudify_node_instance_id))
+            'Attempting to modify instance attributes {0} {1}.'
+            .format(self.aws_resource_type,
+                    self.cloudify_node_instance_id))
 
         if self.modify_attributes(new_attributes, args):
             return self.post_modify()
@@ -570,9 +570,9 @@ class Instance(AwsBaseNode):
     def stopped(self, args=None):
 
         ctx.logger.info(
-                'Attempting to stop EC2 instance {0} {1}.'
-                .format(self.aws_resource_type,
-                        self.cloudify_node_instance_id))
+            'Attempting to stop EC2 instance {0} {1}.'
+            .format(self.aws_resource_type,
+                    self.cloudify_node_instance_id))
 
         if self.delete_external_resource_naively() or self.stop(args):
             return self.post_stop()
@@ -582,20 +582,20 @@ class Instance(AwsBaseNode):
     def post_stop(self):
 
         utils.unassign_runtime_properties_from_resource(
-                property_names=constants.INSTANCE_INTERNAL_ATTRIBUTES,
-                ctx_instance=ctx.instance)
+            property_names=constants.INSTANCE_INTERNAL_ATTRIBUTES,
+            ctx_instance=ctx.instance)
 
         ctx.logger.info(
-                'Stopped {0} {1}.'
-                .format(self.aws_resource_type, self.resource_id))
+            'Stopped {0} {1}.'
+            .format(self.aws_resource_type, self.resource_id))
 
         return True
 
     def post_modify(self):
 
         ctx.logger.info(
-                'Modified {0} {1}.'
-                .format(self.aws_resource_type, self.resource_id))
+            'Modified {0} {1}.'
+            .format(self.aws_resource_type, self.resource_id))
         return True
 
     def _get_instance_state(self):
@@ -615,7 +615,7 @@ class Instance(AwsBaseNode):
 
         if not image_id:
             raise NonRecoverableError(
-                    'No image_id was provided.')
+                'No image_id was provided.')
 
         try:
             image_object = self.client.get_image(image_id)

@@ -159,11 +159,12 @@ class EC2LocalTestUtils(TestCase):
 
         if 'volume' in test_node_id:
             ctx.instance.__setattr__(
-                    'relationship', self.mock_volume_relationship_context(
-                            test_name))
+                'relationship',
+                self.mock_volume_relationship_context(test_name))
         else:
             ctx.instance.__setattr__(
-                    'relationship', self.mock_relationship_context(test_name))
+                'relationship',
+                self.mock_relationship_context(test_name))
 
         return ctx
 
