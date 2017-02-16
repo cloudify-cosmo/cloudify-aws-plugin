@@ -2,6 +2,6 @@ testtools
 nose
 nose-cov
 testfixtures
-https://github.com/EarthmanT/moto/archive/master.zip
+moto
 mock
 tox

@@ -81,6 +81,8 @@ class TestLoadBalancer(testtools.TestCase):
             constants.AWS_CONFIG_PROPERTY: {},
             'use_external_resource': use_external_resource,
             'resource_id': '',
+            'name': '',
+            'tags': {},
             'image_id': TEST_AMI_IMAGE_ID,
             'instance_type': TEST_INSTANCE_TYPE,
             'cloudify_agent': {},

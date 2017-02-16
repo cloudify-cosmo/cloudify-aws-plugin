@@ -37,6 +37,11 @@ def create(args=None, **_):
 
 
 @operation
+def start(**_):
+    return Elb().started()
+
+
+@operation
 def delete(args=None, **_):
     return Elb().deleted(args)
 
