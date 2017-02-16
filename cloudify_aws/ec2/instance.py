@@ -133,13 +133,7 @@ class Instance(AwsBaseNode):
         self._assign_runtime_properties_to_instance(
                     runtime_properties=constants.INSTANCE_INTERNAL_ATTRIBUTES)
 
-        if self._get_instance_state() == constants.INSTANCE_STATE_STARTED:
-            if ctx.node.properties['use_password']:
-                password_success = self._retrieve_windows_pass(
-                        instance_id=instance_id,
-                        private_key_path=private_key_path)
-                if not password_success:
-                    return False
+        if self._check_if_instance_started(instance_id, private_key_path):
             return True
 
         ctx.logger.debug('Attempting to start instance: {0}.)'
@@ -156,6 +150,10 @@ class Instance(AwsBaseNode):
         ctx.logger.debug('Attempted to start instance {0}.'
                          .format(instance_id))
 
+        return self._check_if_instance_started(instance_id, private_key_path)
+
+    def _check_if_instance_started(self, instance_id, private_key_path):
+
         if self._get_instance_state() == constants.INSTANCE_STATE_STARTED:
             if ctx.node.properties['use_password']:
                 password_success = self._retrieve_windows_pass(
@@ -163,9 +161,8 @@ class Instance(AwsBaseNode):
                         private_key_path=private_key_path)
                 if not password_success:
                     return False
-        else:
-            return False
-        return True
+            return True
+        return False
 
     def started(self, args=None, start_retry_interval=30,
                 private_key_path=None):
