@@ -154,6 +154,23 @@ DHCP_OPTIONS = dict(
         REQUIRED_PROPERTIES=[]
 )
 
+# AWS Elastic Map Reduce (EMR)
+EMR_CLUSTER = dict(
+    AWS_RESOURCE_TYPE='emr_cluster',
+    CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.emr.Cluster',
+    ID_FORMAT=r'^j\-[0-9a-zA-Z]{8-13}$',
+    NOT_FOUND_ERROR='InvalidInstanceID.NotFound',
+    REQUIRED_PROPERTIES=[])
+
+EMR_STEP = dict(
+    AWS_RESOURCE_TYPE='emr_step',
+    CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.emr.Step',
+    ID_FORMAT=r'^s\-[0-9a-zA-Z]{8-13}$',
+    NOT_FOUND_ERROR='InvalidInstanceID.NotFound',
+    REQUIRED_PROPERTIES=[])
+
+
+# Relationships
 GATEWAY_VPC_RELATIONSHIP = \
     'cloudify.aws.relationships.gateway_connected_to_vpc'
 SUBNET_IN_VPC = \
@@ -174,6 +191,10 @@ DHCP_VPC_RELATIONSHIP = \
     'cloudify.aws.relationships.dhcp_options_associated_with_vpc'
 CUSTOMER_VPC_RELATIONSHIP = \
     'cloudify.aws.relationships.customer_gateway_connected_to_vpn_gateway'
+EMR_CLUSTER_GROUP_RELATIONSHIP = \
+    'cloudify.aws.relationships.emr.cluster_connected_to_instance_group'
+EMR_STEP_IN_CLUSTER_RELATIONSHIP = \
+    'cloudify.aws.relationships.emr.step_contained_in_cluster'
 
 INSTANCE_INTERNAL_ATTRIBUTES_POST_CREATE = \
     ['vpc_id', 'subnet_id', 'placement']
@@ -199,6 +220,9 @@ RUN_INSTANCE_PARAMETERS = {
     'instance_profile_arn': None, 'tenancy': None, 'ebs_optimized': False,
     'network_interfaces': None, 'dry_run': False
 }
+
+EMR_INSTANCE_GROUP_KEYS = [
+    'name', 'role', 'type', 'num_instances', 'market', 'bidprice']
 
 AWS_CONFIG_PATH_ENV_VAR_NAME = "AWS_CONFIG_PATH"
 

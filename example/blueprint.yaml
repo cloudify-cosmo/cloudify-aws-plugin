@@ -1,0 +1,70 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+
+description: >
+  Example blueprint for AWS EMR functionality
+
+
+imports:
+- http://www.getcloudify.org/spec/cloudify/3.4.1/types.yaml
+- ../plugin.yaml
+
+
+dsl_definitions:
+  aws_config: &aws_config
+    aws_access_key_id: < YOUR AWS ID >
+    aws_secret_access_key: < YOUR AWS KEY >
+    ec2_region_name: us-east-1
+
+
+node_templates:
+  #existing_cluster:
+  #  type: cloudify.aws.nodes.emr.Cluster
+  #  properties:
+  #    resource_id: j-1TYUFU96RV8YQ
+  #    use_external_resource: true
+  #    aws_config: *aws_config
+      
+  step_wordcount:
+    type: cloudify.aws.nodes.emr.StreamingStep
+    properties:
+      name: Sample Word Count
+      input: "s3://elasticmapreduce/samples/wordcount/input"
+      mapper: wordSplitter.py
+      reducer: aggregate
+      output: "s3://cloudify-emr-logs-j8dxz/output"
+      step_args:
+      - hadoop-streaming
+      - "-files"
+      - "s3://elasticmapreduce/samples/wordcount/wordSplitter.py"
+      aws_config: *aws_config
+    relationships:
+    - target: new_cluster
+      type: cloudify.aws.relationships.emr.step_contained_in_cluster
+  
+  new_cluster:
+    type: cloudify.aws.nodes.emr.Cluster
+    properties:
+      name: Cloudify Hadoop Cluster
+      log_uri: s3://cloudify-emr-logs-j8dxz/
+      aws_config: *aws_config
+    relationships:
+    - target: group_master
+      type: cloudify.aws.relationships.emr.cluster_connected_to_instance_group
+    - target: group_core
+      type: cloudify.aws.relationships.emr.cluster_connected_to_instance_group
+    
+  group_master:
+    type: cloudify.aws.nodes.emr.InstanceGroup
+    properties:
+      name: Master node
+      role: MASTER
+      type: m1.medium
+      
+  group_core:
+    type: cloudify.aws.nodes.emr.InstanceGroup
+    properties:
+      name: Core node
+      role: CORE
+      type: m3.xlarge
+      

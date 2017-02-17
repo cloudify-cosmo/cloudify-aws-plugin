@@ -5,7 +5,8 @@
 plugins:
   aws:
     executor: central_deployment_agent
-    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/1.4.3.zip
+    # source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/1.4.3.zip
+    source: ../../
     package_name: cloudify-aws-plugin
     package_version: '1.4.3'
 
@@ -49,6 +50,12 @@ data_types:
       elb_region_endpoint:
         description: >
           The endpoint for the given ELB region.
+        type: string
+        required: false
+      emr_region_name:
+        description: >
+          The EMR Region RegionName, such as us-east-1. Defaults to the value
+          given to ec2_region_name
         type: string
         required: false
 
@@ -762,6 +769,172 @@ node_types:
       cloudify.interfaces.validation:
         creation: aws.cloudify_aws.vpc.routetable.creation_validation
 
+  cloudify.aws.nodes.emr.Cluster:
+    derived_from: cloudify.nodes.Root
+    properties:
+      use_external_resource:
+        type: boolean
+        default: false
+        required: true
+      resource_id:
+        type: string
+        default: ''
+        required: true
+      aws_config:
+        type: cloudify.datatypes.aws.Config
+        required: false
+      # Type-specific properties (see link for full descriptions)
+      # http://boto.cloudhackers.com/en/latest/ref/emr.html#boto.emr.connection.EmrConnection.run_jobflow
+      name:
+        description: >
+          Human-readable name for the EMR cluster.
+          Required if the resource is not external.
+        type: string
+        required: false
+      log_uri:
+        required: false
+      hadoop_version:
+        required: false
+      ec2_keyname:
+        required: false
+      availability_zone:
+        required: false
+      # If true, sets auto-terminate to false and vice versa
+      keep_alive:
+        required: true
+        default: true
+      action_on_failure:
+        required: true
+        default: TERMINATE_JOB_FLOW
+      log_uri:
+        required: false
+      job_flow_role:
+        type: string
+        default: EMR_EC2_DefaultRole
+        required: true
+      service_role:
+        type: string
+        default: EMR_DefaultRole
+        required: false
+      # API (non-boto) properties
+      # http://docs.aws.amazon.com/ElasticMapReduce/latest/API/API_RunJobFlow.html#API_RunJobFlow_RequestSyntax
+      release_label:
+        description: >
+          The release label for the Amazon EMR release.
+        default: emr-5.3.1
+        required: true
+      # Applications to install during cluster creation
+      # http://docs.aws.amazon.com/ElasticMapReduce/latest/API/API_RunJobFlow.html#EMR-RunJobFlow-request-Applications
+      # http://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-release-components.html#d0e667
+      applications:
+        default:
+        - Hive
+        - Pig
+        - Ganglia
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: aws.cloudify_aws.emr.cluster.create
+
+  cloudify.aws.nodes.emr.InstanceGroup:
+    derived_from: cloudify.nodes.Root
+    properties:
+      # Type-specific properties
+      name:
+        description: >
+          Human-readable name for the EMR cluster instance group
+        type: string
+        required: true
+      role:
+        description: >
+          Role of the instance group [MASTER, CORE, TASK]
+        type: string
+        required: true
+      type:
+        description: >
+          AWS instance size to use for all instances in the group
+        type: string
+        required: true
+        default: m1.small
+      num_instances:
+        description: >
+          Number of instances in the group
+        type: integer
+        required: true
+        default: 1
+      market:
+        description: >
+          AWS instance market to use [ON_DEMAND, SPOT]
+        type: string
+        required: true
+        default: ON_DEMAND
+      bidprice:
+        description: >
+          AWS instance market bid price (only when market is set to SPOT)
+        type: string
+        required: false
+        
+  cloudify.aws.nodes.emr.StreamingStep:
+    derived_from: cloudify.nodes.Root
+    properties:
+      use_external_resource:
+        type: boolean
+        default: false
+        required: true
+      resource_id:
+        type: string
+        default: ''
+        required: true
+      aws_config:
+        type: cloudify.datatypes.aws.Config
+        required: false
+      # Type-specific properties
+      # http://docs.aws.amazon.com/emr/latest/ReleaseGuide/CLI_CreateStreaming.html
+      name:
+        description: >
+          Human-readable name for the EMR cluster step
+        type: string
+        required: true
+      input:
+        description: >
+          Input AWS S3 location - s3://<bucket-name>/<folder>/
+        type: string
+        required: true
+      output:
+        description: >
+          Output AWS S3 location - s3://<bucket-name>/<folder>/ (must not exist!)
+        type: string
+        required: true
+      mapper:
+        type: string
+        required: true
+      reducer:
+        type: string
+        required: false
+      combiner:
+        type: string
+        required: false
+      step_args:
+        description: >
+           A list of arguments to pass to the step
+        required: false
+      action_on_failure:
+        description: >
+           An action, defined in the EMR docs to take on failure.
+        type: string
+        required: true
+        default: CANCEL_AND_WAIT
+      jar:
+        description: >
+          The hadoop streaming JAR. This can be either a local path on
+          the master node, or an s3:// URI. Do not modify unless you're 
+          absolutely sure what you're doing!
+        required: false
+        default: command-runner.jar
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: aws.cloudify_aws.emr.step.create
+
+
 relationships:
   cloudify.aws.relationships.instance_connected_to_elastic_ip:
     derived_from: cloudify.relationships.connected_to
@@ -899,4 +1072,10 @@ relationships:
     derived_from: cloudify.relationships.connected_to
 
   cloudify.aws.relationships.security_group_contained_in_vpc:
+    derived_from: cloudify.relationships.contained_in
+    
+  cloudify.aws.relationships.emr.cluster_connected_to_instance_group:
+    derived_from: cloudify.relationships.connected_to
+    
+  cloudify.aws.relationships.emr.step_contained_in_cluster:
     derived_from: cloudify.relationships.contained_in

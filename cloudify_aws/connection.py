@@ -22,6 +22,8 @@ from boto.ec2 import get_region
 from boto.ec2 import EC2Connection
 from boto.ec2.elb import ELBConnection
 from boto.vpc import VPCConnection
+from boto.emr import EmrConnection as EMRConnection
+from boto.emr import connect_to_region as connect_to_emr_region
 from boto.regioninfo import RegionInfo
 from boto.ec2.elb import connect_to_region as connect_to_elb_region
 
@@ -214,3 +216,44 @@ class VPCConnectionClient(EC2ConnectionClient):
         node_properties = \
             utils.get_instance_or_source_node_properties()
         return node_properties[constants.AWS_CONFIG_PROPERTY]
+
+
+class EMRConnectionClient(EC2ConnectionClient):
+    """Provides functions for getting the EMR Client
+    """
+
+    def client(self, aws_config=None):
+        '''
+            Builds an AWS EMR connection client
+
+        :param dict aws_config: AWS connection configuration overrides
+        :returns: An AWS EMR boto2 client
+        :rtype: `boto.emr.connection.EmrConnection`
+        :raises: :exc:`boto.exception.EmrResponseError`,
+                 :exc:`cloudify.exceptions.NonRecoverableError`
+        '''
+        aws_config_whitelist = [
+            'aws_access_key_id', 'aws_secret_access_key',
+            'is_secure', 'port',
+            'proxy', 'proxy_port', 'proxy_user', 'proxy_pass',
+            'debug', 'https_connection_factory', 'region_name', 'path',
+            'security_token', 'validate_certs', 'profile_name'
+        ]
+        aws_config_property = aws_config or (
+            self._get_aws_config_property() or
+            self._get_aws_config_from_file())
+        # No config given. What could possibly go wrong?
+        if not aws_config_property:
+            return EMRConnection()
+        # Copy config
+        aws_config = aws_config_property.copy()
+        # Get the region name
+        aws_config['region_name'] = aws_config_property.get(
+            'emr_region_name', aws_config_property.get('ec2_region_name'))
+        # Debugging
+        aws_config['debug'] = 0
+        # Delete all non-whitelisted keys
+        aws_config = {k: v for k, v in aws_config.iteritems()
+                      if k in aws_config_whitelist}
+        # Return the connection
+        return connect_to_emr_region(**aws_config)
