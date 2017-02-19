@@ -22,6 +22,7 @@ import testtools
 import mock
 from moto import mock_ec2
 from boto.vpc import VPCConnection
+from boto.exception import EC2ResponseError
 
 # Cloudify Imports is imported and used in operations
 from cloudify_aws.ec2 import instance
@@ -45,7 +46,7 @@ class TestInstance(testtools.TestCase):
     def create_vpc_client(self):
         return VPCConnection()
 
-    def mock_ctx(self, test_name):
+    def mock_ctx(self, test_name, retry_number=0):
         """ Creates a mock context for the instance
             tests
         """
@@ -67,7 +68,7 @@ class TestInstance(testtools.TestCase):
         }
 
         operation = {
-            'retry_number': 0
+            'retry_number': retry_number
         }
         ctx = MockCloudifyContext(
                 node_id=test_node_id,
@@ -213,7 +214,7 @@ class TestInstance(testtools.TestCase):
                 'cloudify_aws.ec2.instance.Instance._get_windows_password') \
                 as mock_get_windows_password:
             mock_get_windows_password.return_value = 'pass'
-            instance.Instance().start(ctx=ctx)
+            instance.start(ctx=ctx)
             self.assertEqual(ctx.instance.runtime_properties
                              [constants.ADMIN_PASSWORD_PROPERTY], 'pass')
 
@@ -317,7 +318,7 @@ class TestInstance(testtools.TestCase):
             }
         }
         current_ctx.set(ctx=ctx)
-        instance.Instance().create(ctx=ctx)
+        instance.create(ctx=ctx)
         self.assertIn('aws_resource_id',
                       ctx.instance.runtime_properties.keys())
         self.assertIn('subnet_id',
@@ -348,7 +349,7 @@ class TestInstance(testtools.TestCase):
         }
         current_ctx.set(ctx=ctx)
         e = self.assertRaises(NonRecoverableError,
-                              instance.Instance().create, ctx=ctx)
+                              instance.create, ctx=ctx)
         self.assertIn(SUBNET_ID, e.message)
 
     @mock_ec2
@@ -371,7 +372,7 @@ class TestInstance(testtools.TestCase):
         ctx.instance.runtime_properties['public_ip_address'] = '0.0.0.0'
         ctx.instance.runtime_properties['ip'] = '0.0.0.0'
         ctx.instance.runtime_properties['placement'] = TEST_AVAILABILITY_ZONE
-        instance.Instance().stop(ctx=ctx)
+        instance.stop(ctx=ctx)
         reservations = ec2_client.get_all_reservations(instance_id)
         instance_object = reservations[0].instances[0]
         state = instance_object.update()
@@ -392,7 +393,7 @@ class TestInstance(testtools.TestCase):
         instance_id = reservation.instances[0].id
         ctx.instance.runtime_properties['aws_resource_id'] = instance_id
         ec2_client.stop_instances(instance_id)
-        instance.Instance().start(ctx=ctx)
+        instance.start(ctx=ctx)
         reservations = ec2_client.get_all_reservations(instance_id)
         instance_object = reservations[0].instances[0]
         state = instance_object.update()
@@ -412,7 +413,7 @@ class TestInstance(testtools.TestCase):
                 TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
         instance_id = reservation.instances[0].id
         ctx.instance.runtime_properties['aws_resource_id'] = instance_id
-        instance.Instance().delete(ctx=ctx)
+        instance.delete(ctx=ctx)
         reservations = ec2_client.get_all_reservations(instance_id)
         instance_object = reservations[0].instances[0]
         state = instance_object.update()
@@ -449,7 +450,7 @@ class TestInstance(testtools.TestCase):
         ctx.instance.runtime_properties['public_ip_address'] = '0.0.0.0'
         ctx.instance.runtime_properties['ip'] = '0.0.0.0'
         ex = self.assertRaises(
-                NonRecoverableError, instance.Instance().stop, ctx=ctx)
+                NonRecoverableError, instance.stop, ctx=ctx)
         self.assertIn('InvalidInstanceID', ex.message)
 
     @mock_ec2
@@ -467,7 +468,7 @@ class TestInstance(testtools.TestCase):
         ctx.instance.runtime_properties['public_ip_address'] = '0.0.0.0'
         ctx.instance.runtime_properties['ip'] = '0.0.0.0'
         ex = self.assertRaises(NonRecoverableError,
-                               instance.Instance().delete, ctx=ctx)
+                               instance.delete, ctx=ctx)
         self.assertIn('InvalidInstanceID.NotFound', ex.message)
 
     @mock_ec2
@@ -482,7 +483,7 @@ class TestInstance(testtools.TestCase):
         current_ctx.set(ctx=ctx)
 
         ex = self.assertRaises(
-                NonRecoverableError, instance.Instance().create, ctx=ctx)
+                NonRecoverableError, instance.create, ctx=ctx)
         self.assertIn('InvalidSubnetID.NotFound', ex.message)
 
     @mock_ec2
@@ -499,7 +500,7 @@ class TestInstance(testtools.TestCase):
         instance_id = reservation.instances[0].id
         ctx.node.properties['use_external_resource'] = True
         ctx.node.properties['resource_id'] = instance_id
-        instance.Instance().create(ctx=ctx)
+        instance.create(ctx=ctx)
         self.assertIn('aws_resource_id',
                       ctx.instance.runtime_properties.keys())
 
@@ -593,13 +594,39 @@ class TestInstance(testtools.TestCase):
         self.assertIsNone(output)
 
     @mock_ec2
+    @mock.patch('cloudify_aws.utils.log_available_resources')
+    def test_get_all_instances_response_error(self, *_):
+        """this checks that _get_all_instances raises an error
+        when get_all_reservations fails due
+        to response error.
+        """
+
+        ctx = self.mock_ctx('test_get_all_instances_response_error')
+        current_ctx.set(ctx=ctx)
+        test_instance = self.create_instance_for_checking()
+
+        with mock.patch(
+                'boto.ec2.connection.EC2Connection.get_all_reservations') \
+                as mock_get_all_reservations:
+
+            with self.assertRaisesRegexp(
+                    EC2ResponseError,
+                    'InvalidInstanceID.NotFound'):
+                mock_get_all_reservations.side_effect = EC2ResponseError(
+                        mock.Mock(return_value={'status': 404}),
+                        'InvalidInstanceID.NotFound')
+                output = test_instance._get_all_instances(
+                        list_of_instance_ids='')
+                self.assertIsNone(output)
+
+    @mock_ec2
     def test_get_instance_attribute_no_instance(self):
         """ This tests that _get_instance_attribute raises an
         error when use_external_resource is true and there
         is no such resource.
         """
 
-        ctx = self.mock_ctx('test_get_private_dns_name')
+        ctx = self.mock_ctx('test_get_instance_attribute_no_instance')
         current_ctx.set(ctx=ctx)
         test_instance = self.create_instance_for_checking()
         ctx.instance.runtime_properties['aws_resource_id'] = \
@@ -611,6 +638,29 @@ class TestInstance(testtools.TestCase):
                 'state_code')
         self.assertIn(
                 'External resource, but the supplied', ex.message)
+
+    @mock_ec2
+    def test_get_instance_attribute_multiple_instances(self):
+        """ This tests that _get_instance_attribute raises an
+        error when there is more than one resource.
+        """
+
+        ctx = self.mock_ctx('test_get_instance_attribute_multiple_instances')
+        current_ctx.set(ctx=ctx)
+        test_instance = self.create_instance_for_checking()
+        ctx.instance.runtime_properties['aws_resource_id'] = \
+            'i-4339wSD9'
+
+        with mock.patch('cloudify_aws.ec2.instance.Instance.'
+                        '_get_instances_from_reservation_id') \
+                as mock_get_instances_from_reservation_id:
+            mock_get_instances_from_reservation_id.return_value = \
+                ['i-0000000', 'i-1111111']
+
+            with self.assertRaisesRegexp(
+                    NonRecoverableError,
+                    'because more than one instance with id'):
+                test_instance._get_instance_attribute('state_code')
 
     @mock_ec2
     def test_get_instance_parameters(self):
@@ -646,7 +696,7 @@ class TestInstance(testtools.TestCase):
         with self.assertRaisesRegexp(
                 NonRecoverableError,
                 'Invalid id:'):
-            instance.Instance().creation_validation(ctx=ctx)
+            instance.creation_validation(ctx=ctx)
 
     @mock_ec2
     def test_start_and_tag_name(self):
@@ -672,3 +722,122 @@ class TestInstance(testtools.TestCase):
                           ctx.instance.id)
         self.assertEquals(instance_object.tags.get('deployment_id'),
                           ctx.deployment.id)
+
+    @mock_ec2
+    def test_modify_attributes(self):
+        """This tests that modify attributes function
+        modifies an instance attribute and return True.
+        """
+
+        ctx = self.mock_ctx('test_modify_attributes')
+        current_ctx.set(ctx=ctx)
+        instance.create(ctx=ctx)
+        new_attributes = {'blockDeviceMapping': ['/dev/sda1=true']}
+        message = instance.modify_attributes(new_attributes)
+
+        self.assertEquals(True, message)
+
+    @mock_ec2
+    def test_modify_attributes_bad_attribute(self):
+        """This tests that modify attributes function
+        raises an NonRecoverableError when bad attribute
+        is given.
+        """
+
+        ctx = self.mock_ctx('test_modify_attributes_bad_attribute')
+        current_ctx.set(ctx=ctx)
+        new_attributes = {'sourceDestCheck': 'bad'}
+        self.assertIsNone(instance.modify_attributes(new_attributes))
+
+    @mock_ec2
+    @mock.patch('cloudify_aws.ec2.instance.Instance._get_image')
+    def test_creation_validation_unavailable_image(self, *_):
+        """This tests that creation validation function
+        return NonRecoverableError if the image_id
+        is not available.
+        """
+
+        ctx = self.mock_ctx('test_creation_validation_unavailable_image')
+        current_ctx.set(ctx=ctx)
+        ctx.node.properties['image_id'] = TEST_AMI_IMAGE_ID
+        ctx.node.properties['instance_type'] = TEST_INSTANCE_TYPE
+
+        with self.assertRaisesRegexp(
+                        NonRecoverableError,
+                        'not available to this account'):
+            instance.creation_validation(ctx=ctx)
+
+    @mock_ec2
+    @mock.patch('cloudify_aws.ec2.instance.Instance.'
+                '_get_instances_from_reservation_id')
+    def test__run_instances_retry(self, *_):
+        """This tests that the function run instances
+        runs when retry.
+        """
+
+        name = 'test__run_instances_retry'
+        ctx = self.mock_ctx(name, 1)
+        current_ctx.set(ctx=ctx)
+
+        args = dict(
+                image_id=TEST_AMI_IMAGE_ID,
+                instance_type=TEST_INSTANCE_TYPE)
+
+        ctx.instance.runtime_properties['aws_resource_id'] = None
+        test_instance = self.create_instance_for_checking()
+        test_instance._run_instances_if_needed(create_args=args)
+
+    @mock_ec2
+    def test__run_instances_retry_no_instance(self, *_):
+        """This tests that the function run instances
+        with retry raises NonRecoverableError when the
+        instance failed.
+        """
+
+        name = 'test__run_instances_retry_no_instance'
+        ctx = self.mock_ctx(name, 1)
+        current_ctx.set(ctx=ctx)
+        args = dict(
+                image_id=TEST_AMI_IMAGE_ID,
+                instance_type=TEST_INSTANCE_TYPE)
+
+        test_instance = self.create_instance_for_checking()
+
+        with mock.patch(
+                'cloudify_aws.ec2.instance.Instance.'
+                '_get_instances_from_reservation_id') \
+                as mock_get_instances_from_reservation_id:
+            mock_get_instances_from_reservation_id.return_value = None
+
+            with self.assertRaisesRegexp(
+                    NonRecoverableError,
+                    'Instance failed for an unknown reason'):
+                test_instance._run_instances_if_needed(create_args=args)
+
+    @mock_ec2
+    def test__run_instances_retry_multiple_instances(self, *_):
+        """This tests that the function run instances
+        with retry raises NonRecoverableError when the
+        instance failed.
+        """
+
+        name = 'test__run_instances_retry_multiple_instances'
+        ctx = self.mock_ctx(name, 1)
+        current_ctx.set(ctx=ctx)
+        args = dict(
+                image_id=TEST_AMI_IMAGE_ID,
+                instance_type=TEST_INSTANCE_TYPE)
+
+        test_instance = self.create_instance_for_checking()
+
+        with mock.patch(
+                'cloudify_aws.ec2.instance.Instance.'
+                '_get_instances_from_reservation_id') \
+                as mock_get_instances_from_reservation_id:
+            mock_get_instances_from_reservation_id.return_value = \
+                ['i-0000000', 'i-1111111']
+
+            with self.assertRaisesRegexp(
+                    NonRecoverableError,
+                    'More than one instance was created'):
+                test_instance._run_instances_if_needed(create_args=args)
