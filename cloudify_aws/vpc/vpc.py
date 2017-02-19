@@ -31,27 +31,28 @@ def creation_validation(**_):
 
 @operation
 def create_vpc(args=None, **_):
-    return Vpc().created(args)
+    return Vpc().create_helper(args)
 
 
 @operation
 def start(args=None, **_):
-    return Vpc().started(args)
+    return Vpc().start_helper(args)
 
 
 @operation
 def delete(args=None, **_):
-    return Vpc().deleted(args)
+    return Vpc().delete_helper(args)
 
 
 @operation
 def create_vpc_peering_connection(target_account_id, routes, args=None, **_):
-    return VpcPeeringConnection(target_account_id, routes).associated(args)
+    return VpcPeeringConnection(target_account_id,
+                                routes).associate_helper(args)
 
 
 @operation
 def delete_vpc_peering_connection(args=None, **_):
-    return VpcPeeringConnection().disassociated(args)
+    return VpcPeeringConnection().disassociate_helper(args)
 
 
 @operation
@@ -100,7 +101,7 @@ class VpcPeeringConnection(AwsBaseRelationship, RouteMixin):
             '{0}_ids'.format(constants.ROUTE_TABLE['AWS_RESOURCE_TYPE'])
         }
 
-    def associated(self, args):
+    def associate_helper(self, args):
         if self.use_source_external_resource_naively():
             ctx.logger.info(
                 'executing vpc peering connection association '

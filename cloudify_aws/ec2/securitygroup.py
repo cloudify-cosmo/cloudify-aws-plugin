@@ -31,17 +31,17 @@ def creation_validation(**_):
 
 @operation
 def create(args=None, **_):
-    return SecurityGroup().created(args)
+    return SecurityGroup().create_helper(args)
 
 
 @operation
 def start(args=None, **_):
-    return SecurityGroup().started(args)
+    return SecurityGroup().start_helper(args)
 
 
 @operation
 def delete(args=None, **_):
-    return SecurityGroup().deleted(args)
+    return SecurityGroup().delete_helper(args)
 
 
 class SecurityGroup(AwsBaseNode):
@@ -95,7 +95,7 @@ class SecurityGroup(AwsBaseNode):
 
         return True
 
-    def created(self, args=None):
+    def create_helper(self, args=None):
 
         ctx.logger.info(
                 'Attempting to create {0} {1}.'

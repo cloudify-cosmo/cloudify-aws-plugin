@@ -250,7 +250,7 @@ class TestEBS(testtools.TestCase):
         test_volume = self.create_volume_for_checking()
 
         output = \
-            test_volume.created()
+            test_volume.create_helper()
 
         self.assertEqual(True, output)
 
@@ -480,7 +480,7 @@ class TestEBS(testtools.TestCase):
         ctx.source.instance.runtime_properties['instance_id'] = \
             instance_id
         args = dict(force=True)
-        ebs.VolumeInstanceConnection().disassociated(args)
+        ebs.VolumeInstanceConnection().disassociate_helper(args)
         self.assertNotIn(
             'instance_id', ctx.source.instance.runtime_properties)
 
