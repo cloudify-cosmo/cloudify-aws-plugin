@@ -183,6 +183,7 @@ AGENTS_AWS_INSTANCE_PARAMETERS = 'agents_instance_parameters'
 INSTANCE_KEYPAIR_RELATIONSHIP = 'instance_connected_to_keypair'
 INSTANCE_SUBNET_RELATIONSHIP = 'instance_contained_in_subnet'
 INSTANCE_SUBNET_CONNECTED_TO_RELATIONSHIP = 'instance_connected_to_subnet'
+INSTANCE_ENI_RELATIONSHIP = 'instance_connected_to_eni'
 
 ADMIN_PASSWORD_PROPERTY = 'password'  # the server's password
 

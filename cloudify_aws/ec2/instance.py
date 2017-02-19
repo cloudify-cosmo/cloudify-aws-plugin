@@ -18,11 +18,13 @@ import os
 # Third-party Imports
 from boto import exception
 from boto.ec2 import blockdevicemapping
+from boto.ec2 import networkinterface
 
 # Cloudify imports
 from cloudify import ctx
 from cloudify import compute
 from cloudify_aws.ec2 import passwd
+from .eni import Interface
 from cloudify.decorators import operation
 from cloudify_aws.base import AwsBaseNode
 from cloudify_aws import utils, constants
@@ -445,9 +447,21 @@ class Instance(AwsBaseNode):
             'image_id': ctx.node.properties['image_id'],
             'instance_type': ctx.node.properties['instance_type'],
             'security_group_ids': attached_group_ids,
-            'key_name': self._get_instance_keypair(provider_variables),
-            'subnet_id': self._get_instance_subnet(provider_variables)
+            'key_name': self._get_instance_keypair(provider_variables)
         })
+
+        network_interfaces_collection = \
+            self._get_network_interfaces(
+                parameters.get('network_interfaces', []))
+
+        if network_interfaces_collection:
+            parameters.update({
+                'network_interfaces': network_interfaces_collection
+            })
+        else:
+            parameters.update({
+                'subnet_id': self._get_instance_subnet(provider_variables)
+            })
 
         parameters.update(ctx.node.properties['parameters'])
         parameters = self._handle_userdata(parameters)
@@ -458,6 +472,32 @@ class Instance(AwsBaseNode):
             )
 
         return parameters
+
+    def _get_network_interfaces(self, ifs_from_params):
+        interface_specs = []
+        ids_from_rels = \
+            utils.get_target_external_resource_ids(
+                constants.INSTANCE_ENI_RELATIONSHIP,
+                ctx.instance)
+        if ids_from_rels:
+            ifs = ifs_from_params + \
+                  Interface().get_all_matching(list_of_ids=ids_from_rels)
+        else:
+            ifs = ifs_from_params
+
+        for index in range(0, len(ifs)):
+
+            if index < len(ifs_from_params):
+                interface = ifs[index]
+            else:
+                interface = {
+                    'network_interface_id': ifs[index].id,
+                    'device_index': index,
+                }
+
+            interface_specs.append(
+                networkinterface.NetworkInterfaceSpecification(**interface))
+        return networkinterface.NetworkInterfaceCollection(*interface_specs)
 
     def _get_instance_keypair(self, provider_variables):
         """Gets the instance key pair. If more or less than one is provided,

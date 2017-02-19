@@ -718,7 +718,7 @@ class TestInstance(testtools.TestCase):
         instance.start(ctx=ctx)
         reservations = ec2_client.get_all_reservations(instance_id)
         instance_object = reservations[0].instances[0]
-        self.assertEquals(instance_object.tags.get('name'),
+        self.assertEquals(instance_object.tags.get('Name'),
                           ctx.node.properties['name'])
         self.assertEquals(instance_object.tags.get('resource_id'),
                           ctx.instance.id)

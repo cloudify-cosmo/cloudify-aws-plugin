@@ -167,6 +167,14 @@ class Interface(AwsBaseNode):
                 'A network interface can only exist in one subnet.'
             )
 
+        list_of_groups = \
+            utils.get_target_external_resource_ids(
+                'cloudify.aws.relationships.connected_to_security_group',
+                ctx.instance
+            )
+        if list_of_groups:
+            create_args.update({'groups': list_of_groups})
+
         create_args = utils.update_args(create_args, args)
 
         ctx.logger.info(
