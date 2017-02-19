@@ -849,6 +849,7 @@ node_types:
           inputs:
             args:
               default: {}
+        start: aws.cloudify_aws.ec2.eni.start
         delete:
           implementation: aws.cloudify_aws.ec2.eni.delete
           inputs:

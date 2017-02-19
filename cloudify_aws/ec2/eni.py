@@ -32,6 +32,11 @@ def create(args=None, **_):
 
 
 @operation
+def start(args, **_):
+    return Interface().start_helper(args)
+
+
+@operation
 def delete(args=None, **_):
     """ Delete the Network Interface """
     return Interface().delete_helper(args)
