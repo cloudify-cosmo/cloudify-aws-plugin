@@ -20,6 +20,28 @@
 # pylint: disable=R0903
 
 
+def build_applications_list(app_defs):
+    '''
+        Creates a Boto-formatted dictionary of EMR
+        cluster applications for use with the cluster
+        creation process (api_params).
+
+    :param list app_defs: This can either be a list of
+        strings (names) or a dict with keys matching
+        the requirements of the `cloudify_aws.emr.boto2_compat.Application`
+        class.
+    '''
+    apps = dict()
+    label = 'Applications.member.%d'
+    app_objs = [Application(**x) for x in [
+        dict(name=x) if isinstance(x, basestring) else x
+        for x in app_defs]]
+    # Update the api_params dict
+    for idx, app in enumerate(app_objs):
+        apps.update(app.build(label % (idx + 1)))
+    return apps
+
+
 class Application(object):
     '''AWS EMR Application'''
     def __init__(self, name, version=None, args=None, additional_info=None):

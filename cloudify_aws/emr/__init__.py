@@ -17,42 +17,40 @@
     ~~~
     AWS EMR base interface
 '''
+from logging import NullHandler
 # Cloudify
+from cloudify.logs import init_cloudify_logger
 from cloudify.exceptions import NonRecoverableError
+
 # Cloudify AWS
-from cloudify_aws import constants, connection
+from cloudify_aws import connection
 
 
 class EMRBase(object):
     '''
         AWS EMR base interface
     '''
-    def __init__(self, ctx, client=None, logger=None):
+    def __init__(self, resource_id=None, client=None, logger=None):
         self.client = client or connection.EMRConnectionClient().client()
-        self.ctx = ctx
-        self.logger = logger or self.ctx.logger
+        self.logger = logger or init_cloudify_logger(NullHandler(), 'EMRBase')
+        self.resource_id = resource_id
 
     @property
-    def is_external(self):
-        '''Checks if the instance is external'''
-        return self.ctx.node.properties['use_external_resource']
+    def status(self):
+        '''Gets the status of an external resource'''
+        raise NotImplementedError()
 
-    @property
-    def resource_id(self):
-        '''Get current AWS resource ID'''
-        return self.ctx.node.properties.get('resource_id') or \
-            self.ctx.instance.runtime_properties.get(
-                constants.EXTERNAL_RESOURCE_ID)
+    def delete(self):
+        '''
+            Deletes an EMR resource.
 
-    def update_resource_id(self, resource_id):
-        '''Updates runtime property resource_id'''
-        self.ctx.instance.runtime_properties[
-            constants.EXTERNAL_RESOURCE_ID] = resource_id
-
-    def update_runtime_properties(self, props):
-        '''Updates runtime properties from a dict'''
-        for key, val in props.iteritems():
-            self.ctx.instance.runtime_properties[key] = val
+        .. note:
+            AWS EMR objects generally perform operations
+            asynchronously. This method triggers the start
+            of such an operation and does not wait until
+            the resource has been deleted.
+        '''
+        raise NotImplementedError()
 
     @staticmethod
     def raise_bad_state(status):

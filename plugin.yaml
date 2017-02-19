@@ -834,6 +834,7 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create: aws.cloudify_aws.emr.cluster.create
+        delete: aws.cloudify_aws.emr.cluster.delete
 
   cloudify.aws.nodes.emr.InstanceGroup:
     derived_from: cloudify.nodes.Root
@@ -854,7 +855,7 @@ node_types:
           AWS instance size to use for all instances in the group
         type: string
         required: true
-        default: m1.small
+        default: m3.xlarge
       num_instances:
         description: >
           Number of instances in the group
@@ -933,6 +934,27 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create: aws.cloudify_aws.emr.step.create
+
+
+workflows:
+  scale_emr_cluster_instance_group:
+    # Package.Module.File.Function
+    mapping: aws.cloudify_aws.emr.workflows.scale_instance_group
+    parameters:
+      cluster_node:
+        required: true
+        type: string
+      instance_group_id:
+        required: true
+        description: >
+          AWS ID of the EMR instance group to scale
+        type: string
+      delta:
+        required: true
+        description: >
+          Amount to scale by (positive integer for scaling up
+          or negative integer for scaling down)
+        type: integer
 
 
 relationships:
@@ -1078,4 +1100,7 @@ relationships:
     derived_from: cloudify.relationships.connected_to
     
   cloudify.aws.relationships.emr.step_contained_in_cluster:
+    derived_from: cloudify.relationships.contained_in
+    
+  cloudify.aws.relationships.emr.instance_group_contained_in_cluster:
     derived_from: cloudify.relationships.contained_in
