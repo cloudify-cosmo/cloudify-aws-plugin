@@ -36,7 +36,7 @@ def create(args=None, **_):
 
 @operation
 def start(**_):
-    return KeyPair().started()
+    return KeyPair().start_helper()
 
 
 @operation

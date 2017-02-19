@@ -114,6 +114,11 @@ class TestElasticIP(testtools.TestCase):
                 node_id=testname, source=instance_context,
                 target=elasticip_context)
 
+        setattr(relationship_context.source.node,
+                'type_hierarchy',
+                ['cloudify.nodes.Compute', 'cloudify.aws.nodes.Instance']
+                )
+
         return relationship_context
 
     def get_client(self):

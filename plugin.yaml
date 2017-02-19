@@ -832,6 +832,10 @@ node_types:
           Otherwise it is an empty string.
         type: string
         default: ''
+      tags:
+        description: >
+          A dictionary of key/value pairs of tags you want to add.
+        default: {}
       parameters:
         description: >
           Any parameters accepted by the create_network_interface operation.
@@ -857,18 +861,24 @@ node_types:
               default: {}
 
 relationships:
-  cloudify.aws.relationships.instance_connected_to_elastic_ip:
+  cloudify.aws.relationships.connected_to_elastic_ip:
     derived_from: cloudify.relationships.connected_to
     source_interfaces:
       cloudify.interfaces.relationship_lifecycle:
         establish: aws.cloudify_aws.ec2.elasticip.associate
         unlink: aws.cloudify_aws.ec2.elasticip.disassociate
 
+  cloudify.aws.relationships.instance_connected_to_elastic_ip:
+    derived_from: cloudify.aws.relationships.connected_to_elastic_ip
+
   cloudify.aws.relationships.instance_connected_to_keypair:
     derived_from: cloudify.relationships.connected_to
 
-  cloudify.aws.relationships.instance_connected_to_security_group:
+  cloudify.aws.relationships.connected_to_security_group:
     derived_from: cloudify.relationships.connected_to
+
+  cloudify.aws.relationships.instance_connected_to_security_group:
+    derived_from: cloudify.aws.relationships.connected_to_security_group
 
   cloudify.aws.relationships.instance_connected_to_load_balancer:
     derived_from: cloudify.relationships.connected_to
@@ -1012,3 +1022,6 @@ relationships:
           inputs:
             args:
               default: {}
+
+  cloudify.aws.relationships.instance_connected_to_eni:
+    derived_from: cloudify.relationships.connected_to

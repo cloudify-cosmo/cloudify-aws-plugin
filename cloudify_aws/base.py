@@ -439,10 +439,10 @@ class AwsBaseNode(AwsBase):
         if not tags and not name:
             return
 
-        if 'name' not in tags.keys() and name:
-            tags.update({'name': name})
+        if 'Name' not in tags.keys() and name:
+            tags.update({'Name': name})
         else:
-            tags.update({'name': uuid.uuid4()})
+            tags.update({'Name': uuid.uuid4()})
 
         if 'resource_id' not in tags.keys():
             tags.update({'resource_id': ctx.instance.id})

@@ -66,10 +66,14 @@ class ElasticIPInstanceConnection(AwsBaseRelationship):
         that was also created by Cloudify.
         """
 
-        instance_id = self.source_resource_id
+        source_id = self.source_resource_id
         elasticip = self.target_resource_id
 
-        associate_args = dict(instance_id=instance_id, public_ip=elasticip)
+        if 'cloudify.aws.nodes.Instance' in ctx.source.node.type_hierarchy:
+            associate_args = dict(instance_id=source_id, public_ip=elasticip)
+        elif 'cloudify.aws.nodes.Interface' in ctx.source.node.type_hierarchy:
+            associate_args = dict(network_interface_id=source_id,
+                                  public_ip=elasticip)
 
         if constants.ELASTICIP['ALLOCATION_ID'] in \
                 ctx.target.instance.runtime_properties:
