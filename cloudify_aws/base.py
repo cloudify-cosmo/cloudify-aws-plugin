@@ -433,7 +433,7 @@ class AwsBaseNode(AwsBase):
     def tag_resource(self, resource):
 
         tags = ctx.node.properties.get('tags', {})
-        name = ctx.node.properties.get('name', 'namey')
+        name = ctx.node.properties.get('name', '')
         deployment_id = ctx.deployment.id
 
         if not tags and not name:
