@@ -63,9 +63,17 @@ inputs:
     
   emr_custom_hive_udf_path:
     description: >
-      Custom UDF to fetch and place on cluster
+      S3 bucket path of a custom UDF to place on the cluster
     type: string
     default: s3://01000101-hadoop-scripts/udfs/UDFStrToDate.java
+    
+  emr_wordcount_output_path:
+    description: >
+      S3 bucket path to put the WordCount step results. The bucket
+      should exist, but the path directory should not. It will be
+      created by EMR and will fail if it exists.
+    type: string
+    default: s3://cloudify-emr-logs-j8dxz/output
 
 
 dsl_definitions:
@@ -151,7 +159,7 @@ node_templates:
       input: "s3://elasticmapreduce/samples/wordcount/input"
       mapper: wordSplitter.py
       reducer: aggregate
-      output: "s3://cloudify-emr-logs-j8dxz/output"
+      output: { get_input: emr_wordcount_output_path }
       step_args:
       - hadoop-streaming
       - "-files"
