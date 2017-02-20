@@ -2,7 +2,24 @@ tosca_definitions_version: cloudify_dsl_1_3
 
 
 description: >
-  Example blueprint for AWS EMR functionality
+  Example blueprint for AWS EMR functionality.
+  
+  Prerequisites:
+  1. S3 bucket for cluster logging (emr_cluster_s3_log_path)
+  2. AWS API credentials (aws_access_key_id & aws_secret_access_key)
+  
+  This will spin up a new EMR cluster with a MASTER node and 1 or more
+  CORE nodes. It will have a couple of bootstrap actions, 1 to
+  install Node.js and 1 to copy a custom UDF (or whatever you specify
+  in emr_custom_hive_udf_path) to the cluster. Then it will
+  start a new cluster step (process) and run the example
+  WordCount step from Amazon.
+  
+  To scale the number of CORE nodes in the cluster, run the
+  scale_emr_cluster_instance_group workflow. Note, scaling
+  can only work if there was an instance group created with the
+  cluster at deployment time. AWS does not allow for creating
+  cluster instance groups at run-time. 
 
 
 imports:
@@ -37,13 +54,18 @@ inputs:
     description: >
       S3 path to a folder to hold EMR cluster logs
     type: string
-    default: s3://cloudify-emr-logs-j8dxz/
     
   emr_cluster_core_instances:
     description: >
       Number of CORE cluster instances to spawn on create
     type: integer
     default: 1
+    
+  emr_custom_hive_udf_path:
+    description: >
+      Custom UDF to fetch and place on cluster
+    type: string
+    default: s3://01000101-hadoop-scripts/udfs/UDFStrToDate.java
 
 
 dsl_definitions:
@@ -108,8 +130,7 @@ node_templates:
       bootstrap_action_args:
       - s3
       - cp
-      # Not a proper UDF (not compiled), but the format is the same
-      - "s3://01000101-hadoop-scripts/udfs/UDFStrToDate.java"
+      - { get_input: emr_custom_hive_udf_path }
       - "/home/hadoop/"
 
   # Run a bootstrap action directly from S3
@@ -126,7 +147,7 @@ node_templates:
   step_wordcount:
     type: cloudify.aws.nodes.emr.StreamingStep
     properties:
-      name: Sample Word Count 2
+      name: Sample Word Count
       input: "s3://elasticmapreduce/samples/wordcount/input"
       mapper: wordSplitter.py
       reducer: aggregate
