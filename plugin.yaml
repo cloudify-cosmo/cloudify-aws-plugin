@@ -827,10 +827,7 @@ node_types:
       # http://docs.aws.amazon.com/ElasticMapReduce/latest/API/API_RunJobFlow.html#EMR-RunJobFlow-request-Applications
       # http://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-release-components.html#d0e667
       applications:
-        default:
-        - Hive
-        - Pig
-        - Ganglia
+        default: []
     interfaces:
       cloudify.interfaces.lifecycle:
         create: aws.cloudify_aws.emr.cluster.create
@@ -873,6 +870,25 @@ node_types:
           AWS instance market bid price (only when market is set to SPOT)
         type: string
         required: false
+        
+  cloudify.aws.nodes.emr.BootstrapAction:
+    derived_from: cloudify.nodes.Root
+    properties:
+      name:
+        description: >
+          Human-readable name for the EMR Bootstrap Action
+        type: string
+        required: true
+      path:
+        description: >
+          Path of the bootstrap action script (can be S3 location)
+        type: string
+        required: true
+      bootstrap_action_args:
+        description: >
+          A list of strings to be passed as arguments to `path`
+        required: true
+        default: []
         
   cloudify.aws.nodes.emr.StreamingStep:
     derived_from: cloudify.nodes.Root
@@ -1099,8 +1115,8 @@ relationships:
   cloudify.aws.relationships.emr.cluster_connected_to_instance_group:
     derived_from: cloudify.relationships.connected_to
     
-  cloudify.aws.relationships.emr.step_contained_in_cluster:
-    derived_from: cloudify.relationships.contained_in
+  cloudify.aws.relationships.emr.cluster_connected_to_bootstrap_action:
+    derived_from: cloudify.relationships.connected_to
     
-  cloudify.aws.relationships.emr.instance_group_contained_in_cluster:
+  cloudify.aws.relationships.emr.step_contained_in_cluster:
     derived_from: cloudify.relationships.contained_in

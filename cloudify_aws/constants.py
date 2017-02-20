@@ -193,6 +193,8 @@ CUSTOMER_VPC_RELATIONSHIP = \
     'cloudify.aws.relationships.customer_gateway_connected_to_vpn_gateway'
 EMR_CLUSTER_GROUP_RELATIONSHIP = \
     'cloudify.aws.relationships.emr.cluster_connected_to_instance_group'
+EMR_CLUSTER_ACTION_RELATIONSHIP = \
+    'cloudify.aws.relationships.emr.cluster_connected_to_bootstrap_action'
 EMR_STEP_IN_CLUSTER_RELATIONSHIP = \
     'cloudify.aws.relationships.emr.step_contained_in_cluster'
 
@@ -223,6 +225,8 @@ RUN_INSTANCE_PARAMETERS = {
 
 EMR_INSTANCE_GROUP_KEYS = [
     'name', 'role', 'type', 'num_instances', 'market', 'bidprice']
+EMR_BOOTSTRAP_ACTION_KEYS = [
+    'name', 'path', 'bootstrap_action_args']
 
 AWS_CONFIG_PATH_ENV_VAR_NAME = "AWS_CONFIG_PATH"
 

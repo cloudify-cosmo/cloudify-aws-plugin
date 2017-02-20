@@ -23,11 +23,14 @@ from cloudify.exceptions import OperationRetry, NonRecoverableError
 from cloudify_aws.constants import (
     EXTERNAL_RESOURCE_ID,
     EMR_CLUSTER_GROUP_RELATIONSHIP,
-    EMR_INSTANCE_GROUP_KEYS)
+    EMR_CLUSTER_ACTION_RELATIONSHIP,
+    EMR_INSTANCE_GROUP_KEYS,
+    EMR_BOOTSTRAP_ACTION_KEYS)
 from cloudify_aws.emr import utils, EMRBase
 from cloudify_aws.emr.boto_compat import build_applications_list
 # Boto
 from boto.emr.instance_group import InstanceGroup
+from boto.emr.bootstrap_action import BootstrapAction
 
 STEP_TYPE_CUSTOM_JAR = 'cloudify.aws.nodes.emr.CustomJAR'
 STEP_TYPE_STREAMING = 'cloudify.aws.nodes.emr.StreamingStep'
@@ -102,27 +105,34 @@ def create_cluster_if_needed(ctx):
         keep_alive=props['keep_alive'],
         action_on_failure=props['action_on_failure'],
         availability_zone=props.get('availability_zone'),
-        instance_groups=list_connected_instance_groups(ctx.instance),
+        bootstrap_actions=cloudify_rels_to_boto(
+            ctx.instance, BootstrapAction,
+            EMR_CLUSTER_ACTION_RELATIONSHIP, EMR_BOOTSTRAP_ACTION_KEYS),
+        instance_groups=cloudify_rels_to_boto(
+            ctx.instance, InstanceGroup,
+            EMR_CLUSTER_GROUP_RELATIONSHIP, EMR_INSTANCE_GROUP_KEYS),
         job_flow_role=props.get('job_flow_role'),
         service_role=props.get('service_role'),
         api_params=api_params))
     ctx.instance.runtime_properties[EXTERNAL_RESOURCE_ID] = resource_id
 
 
-def list_connected_instance_groups(
-        ctx_instance, rel_type=EMR_CLUSTER_GROUP_RELATIONSHIP):
+def cloudify_rels_to_boto(ctx_instance, cls, rel_type, keys):
     '''
-        Builds a list of InstanceGroup types based on
-        a node instances' relationships. It searches (by default) for all
-        relationship types connecting a cluster to an instance
-        group and converts the target nodes' properties to
-        a boto-consumable list.
+        Finds all specified relationships of the Cloudify
+        instance and converts its properties into a Boto
+        class instance specified.
+
+    :param class cls: Boto class to instantiate from
+    :param str rel_type: Cloudify relationship type to search
+        ctx_instance.relationships for.
+    :param list keys: Keys (strings) that will be taken,
+        as-is, from the relationship target's properties and
+        passed to the `cls` class as keywords arguments.
     '''
-    return [InstanceGroup(**{
-        k: v for k, v in rel.target.node.properties.iteritems()
-        if k in EMR_INSTANCE_GROUP_KEYS
-    }) for rel in ctx_instance.relationships
-            if rel_type in rel.type_hierarchy]
+    return [cls(**{
+        k: v for k, v in rel.target.node.properties.iteritems() if k in keys
+    }) for rel in ctx_instance.relationships if rel_type in rel.type_hierarchy]
 
 
 class EMRCluster(EMRBase):

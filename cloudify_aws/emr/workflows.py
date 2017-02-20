@@ -91,4 +91,4 @@ def scale_instance_group(ctx, cluster_node, instance_group_id, delta, **_):
                instance.publicipaddress if
                hasattr(instance, 'publicipaddress') else None,
                instance.privateipaddress if
-               hasattr(instance, 'privateipaddress') else None,))
+               hasattr(instance, 'privateipaddress') else None))

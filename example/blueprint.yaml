@@ -10,11 +10,47 @@ imports:
 - ../plugin.yaml
 
 
+inputs:
+  aws_access_key_id:
+    type: string
+  
+  aws_secret_access_key:
+    type: string
+    
+  aws_region_name:
+    type: string
+    default: us-east-1
+  
+  emr_cluster_name:
+    description: >
+      Name of the EMR cluster to create
+    type: string
+    default: Cloudify Hadoop Cluster
+  
+  emr_cluster_ec2_keyname:
+    description: >
+      Name of AWS EC2 keypair to use for the EMR cluster
+    type: string
+    default: hostpool-test
+    
+  emr_cluster_s3_log_path:
+    description: >
+      S3 path to a folder to hold EMR cluster logs
+    type: string
+    default: s3://cloudify-emr-logs-j8dxz/
+    
+  emr_cluster_core_instances:
+    description: >
+      Number of CORE cluster instances to spawn on create
+    type: integer
+    default: 1
+
+
 dsl_definitions:
   aws_config: &aws_config
-    aws_access_key_id: < AWS ACCESS ID >
-    aws_secret_access_key: < AWS SECRET KEY >
-    ec2_region_name: us-east-1
+    aws_access_key_id: { get_input: aws_access_key_id }
+    aws_secret_access_key: { get_input: aws_secret_access_key }
+    ec2_region_name: { get_input: aws_region_name }
 
 
 node_templates:
@@ -24,7 +60,69 @@ node_templates:
   #    resource_id: j-28MTL6RV3L6FX
   #    use_external_resource: true
   #    aws_config: *aws_config
+
+  emr_cluster:
+    type: cloudify.aws.nodes.emr.Cluster
+    properties:
+      name: { get_input: emr_cluster_name }
+      log_uri: { get_input: emr_cluster_s3_log_path }
+      ec2_keyname: { get_input: emr_cluster_ec2_keyname }
+      applications: [Hive, Pig, Ganglia]
+      aws_config: *aws_config
+    relationships:
+    - target: bootstrap_copy_hive_udf
+      type: cloudify.aws.relationships.emr.cluster_connected_to_bootstrap_action
+    - target: bootstrap_install_nodejs
+      type: cloudify.aws.relationships.emr.cluster_connected_to_bootstrap_action
+    - target: instance_group_master
+      type: cloudify.aws.relationships.emr.cluster_connected_to_instance_group
+    - target: instance_group_core
+      type: cloudify.aws.relationships.emr.cluster_connected_to_instance_group
+    
+  ###
+  # Cluster Instance Groups
+  ###
+  instance_group_master:
+    type: cloudify.aws.nodes.emr.InstanceGroup
+    properties:
+      name: Master node
+      role: MASTER
+      type: m1.medium
       
+  instance_group_core:
+    type: cloudify.aws.nodes.emr.InstanceGroup
+    properties:
+      name: Core node
+      role: CORE
+      num_instances: { get_input: emr_cluster_core_instances }
+
+  ###
+  # Cluster Bootstrap Actions
+  ###
+  # Use local scripts to fetch external resources in S3
+  bootstrap_copy_hive_udf:
+    type: cloudify.aws.nodes.emr.BootstrapAction
+    properties:
+      name: "Copy Custom Hive UDF"
+      path: "file:///usr/bin/aws"
+      bootstrap_action_args:
+      - s3
+      - cp
+      # Not a proper UDF (not compiled), but the format is the same
+      - "s3://01000101-hadoop-scripts/udfs/UDFStrToDate.java"
+      - "/home/hadoop/"
+
+  # Run a bootstrap action directly from S3
+  bootstrap_install_nodejs:
+    type: cloudify.aws.nodes.emr.BootstrapAction
+    properties:
+      name: "Install Node.js"
+      path: "s3://01000101-hadoop-scripts/node/install-nodejs.sh"
+
+  ###
+  # Cluster Steps
+  ###
+  # This is the traditional WordCount EMR example step from Amazon
   step_wordcount:
     type: cloudify.aws.nodes.emr.StreamingStep
     properties:
@@ -41,36 +139,3 @@ node_templates:
     relationships:
     - target: emr_cluster
       type: cloudify.aws.relationships.emr.step_contained_in_cluster
-
-  #bootstrap_copy_hive_udf:
-  #  type: cloudify.aws.nodes.emr.BootstrapAction
-  #  properties:
-  #    path: "file:/usr/share/aws/emr/scripts/s3get"
-  #    args:
-  #    - "--src="
-  #    - "--dst=/usr/lib/hive/"
-
-  emr_cluster:
-    type: cloudify.aws.nodes.emr.Cluster
-    properties:
-      name: Cloudify Hadoop Cluster
-      log_uri: s3://cloudify-emr-logs-j8dxz/
-      aws_config: *aws_config
-    relationships:
-    - target: instance_group_master
-      type: cloudify.aws.relationships.emr.cluster_connected_to_instance_group
-    - target: instance_group_core
-      type: cloudify.aws.relationships.emr.cluster_connected_to_instance_group
-    
-  instance_group_master:
-    type: cloudify.aws.nodes.emr.InstanceGroup
-    properties:
-      name: Master node
-      role: MASTER
-      type: m1.medium
-      
-  instance_group_core:
-    type: cloudify.aws.nodes.emr.InstanceGroup
-    properties:
-      name: Core node
-      role: CORE
