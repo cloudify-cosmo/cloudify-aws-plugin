@@ -48,7 +48,8 @@ class Subnet(AwsBaseNode):
         super(Subnet, self).__init__(
             constants.SUBNET['AWS_RESOURCE_TYPE'],
             constants.SUBNET['REQUIRED_PROPERTIES'],
-            client=connection.VPCConnectionClient().client()
+            client=connection.VPCConnectionClient().client(),
+            resource_states=constants.SUBNET['STATES']
         )
         self.not_found_error = constants.SUBNET['NOT_FOUND_ERROR']
         self.get_all_handler = {
@@ -58,6 +59,7 @@ class Subnet(AwsBaseNode):
 
     def create(self, args=None):
         '''Override for resource create operation'''
+
         if ctx.operation.retry_number == 0:
             # Create the resource
             create_args = utils.update_args(

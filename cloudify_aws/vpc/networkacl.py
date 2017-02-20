@@ -106,7 +106,8 @@ class NetworkAcl(AwsBaseNode):
         super(NetworkAcl, self).__init__(
             constants.NETWORK_ACL['AWS_RESOURCE_TYPE'],
             constants.NETWORK_ACL['REQUIRED_PROPERTIES'],
-            client=connection.VPCConnectionClient().client()
+            client=connection.VPCConnectionClient().client(),
+            resource_states=constants.NETWORK_ACL['STATES']
         )
         self.not_found_error = constants.NETWORK_ACL['NOT_FOUND_ERROR']
         self.get_all_handler = {

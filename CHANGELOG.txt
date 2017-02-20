@@ -12,3 +12,4 @@
     - Support EC2 elastic network interfaces
     - Support Block Device Mapping in EC2 Instances
     - Support Security Group rule overrides via args
+    - Support resource state verification

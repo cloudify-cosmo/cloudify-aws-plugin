@@ -68,7 +68,8 @@ class Instance(AwsBaseNode):
         super(Instance, self).__init__(
                 constants.INSTANCE['AWS_RESOURCE_TYPE'],
                 constants.INSTANCE['REQUIRED_PROPERTIES'],
-                client=client
+                client=client,
+                resource_states=constants.INSTANCE['STATES']
         )
         self.not_found_error = constants.INSTANCE['NOT_FOUND_ERROR']
         self.get_all_handler = {

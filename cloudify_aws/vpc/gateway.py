@@ -240,7 +240,8 @@ class InternetGateway(AwsBaseNode):
         super(InternetGateway, self).__init__(
             constants.INTERNET_GATEWAY['AWS_RESOURCE_TYPE'],
             constants.INTERNET_GATEWAY['REQUIRED_PROPERTIES'],
-            client=connection.VPCConnectionClient().client()
+            client=connection.VPCConnectionClient().client(),
+            resource_states=constants.INTERNET_GATEWAY['STATES']
         )
         self.not_found_error = constants.INTERNET_GATEWAY['NOT_FOUND_ERROR']
         self.get_all_handler = {
@@ -271,7 +272,8 @@ class VpnGateway(AwsBaseNode):
         super(VpnGateway, self).__init__(
             constants.VPN_GATEWAY['AWS_RESOURCE_TYPE'],
             constants.VPN_GATEWAY['REQUIRED_PROPERTIES'],
-            client=connection.VPCConnectionClient().client()
+            client=connection.VPCConnectionClient().client(),
+            resource_states=constants.VPN_GATEWAY['STATES']
         )
         self.not_found_error = constants.VPN_GATEWAY['NOT_FOUND_ERROR']
         self.get_all_handler = {
@@ -307,7 +309,8 @@ class CustomerGateway(AwsBaseNode):
         super(CustomerGateway, self).__init__(
             constants.CUSTOMER_GATEWAY['AWS_RESOURCE_TYPE'],
             constants.CUSTOMER_GATEWAY['REQUIRED_PROPERTIES'],
-            client=connection.VPCConnectionClient().client()
+            client=connection.VPCConnectionClient().client(),
+            resource_states=constants.CUSTOMER_GATEWAY['STATES']
         )
         self.not_found_error = constants.CUSTOMER_GATEWAY['NOT_FOUND_ERROR']
         self.get_all_handler = {
