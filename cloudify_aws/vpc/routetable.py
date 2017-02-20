@@ -156,7 +156,8 @@ class RouteTable(AwsBaseNode, RouteMixin):
         super(RouteTable, self).__init__(
             constants.ROUTE_TABLE['AWS_RESOURCE_TYPE'],
             constants.ROUTE_TABLE['REQUIRED_PROPERTIES'],
-            client=connection.VPCConnectionClient().client()
+            client=connection.VPCConnectionClient().client(),
+            resource_states=constants.ROUTE_TABLE['STATES']
         )
         self.not_found_error = constants.ROUTE_TABLE['NOT_FOUND_ERROR']
         self.get_all_handler = {

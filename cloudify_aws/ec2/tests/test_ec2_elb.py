@@ -242,7 +242,8 @@ class TestLoadBalancer(testtools.TestCase):
                 use_external_resource=True,
                 instance_list=[])
         current_ctx.set(elb_ctx)
-        self.assertTrue(elasticloadbalancer.delete(args=None, ctx=elb_ctx))
+        out = elasticloadbalancer.delete(args=None, ctx=elb_ctx)
+        self.assertIsNone(out)
 
     @mock_elb
     def test_validation_not_external(self):

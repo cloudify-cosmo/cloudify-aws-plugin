@@ -54,7 +54,8 @@ class SecurityGroup(AwsBaseNode):
     def __init__(self):
         super(SecurityGroup, self).__init__(
                 constants.SECURITYGROUP['AWS_RESOURCE_TYPE'],
-                constants.SECURITYGROUP['REQUIRED_PROPERTIES']
+                constants.SECURITYGROUP['REQUIRED_PROPERTIES'],
+                resource_states=constants.SECURITYGROUP['STATES']
         )
         self.not_found_error = constants.SECURITYGROUP['NOT_FOUND_ERROR']
         self.get_all_handler = {

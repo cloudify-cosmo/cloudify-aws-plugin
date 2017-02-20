@@ -21,7 +21,7 @@ from boto import exception
 from cloudify import ctx
 from cloudify.decorators import operation
 from cloudify_aws.base import AwsBaseNode, AwsBaseRelationship
-from cloudify_aws import utils
+from cloudify_aws import constants, utils
 from cloudify.exceptions import NonRecoverableError, RecoverableError
 
 
@@ -132,14 +132,16 @@ class Interface(AwsBaseNode):
 
     def __init__(self, client=None):
         super(Interface, self).__init__(
-            'network_interface',
-            [],
+            constants.ENI['AWS_RESOURCE_TYPE'],
+            constants.ENI['REQUIRED_PROPERTIES'],
+            resource_states=constants.ENI['STATES'],
             client=client
         )
         self.get_all_handler = {
             'function': self.client.get_all_network_interfaces,
-            'argument': '{0}_ids'.format('network_interface')
+            'argument': '{0}_ids'.format(constants.ENI['AWS_RESOURCE_TYPE'])
         }
+        self.state_attribute = 'status'
 
     def create(self, args=None, **_):
 
@@ -224,6 +226,9 @@ class Interface(AwsBaseNode):
 
         delete_args = dict(network_interface_id=network_interface_id)
         delete_args = utils.update_args(delete_args, args)
+
+        # resource = self.get_resource()
+        # ctx.logger.info('resource: {0}'.format(resource.__dict__))
 
         try:
             output = self.execute(self.client.delete_network_interface,

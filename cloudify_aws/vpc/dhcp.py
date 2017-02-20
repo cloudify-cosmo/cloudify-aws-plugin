@@ -92,7 +92,8 @@ class DhcpOptions(AwsBaseNode):
         super(DhcpOptions, self).__init__(
             constants.DHCP_OPTIONS['AWS_RESOURCE_TYPE'],
             constants.DHCP_OPTIONS['REQUIRED_PROPERTIES'],
-            client=connection.VPCConnectionClient().client()
+            client=connection.VPCConnectionClient().client(),
+            resource_states=constants.DHCP_OPTIONS['STATES']
         )
         self.not_found_error = constants.DHCP_OPTIONS['NOT_FOUND_ERROR']
         self.get_all_handler = {

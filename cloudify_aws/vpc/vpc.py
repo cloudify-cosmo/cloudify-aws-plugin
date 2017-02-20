@@ -257,7 +257,8 @@ class Vpc(AwsBaseNode):
         super(Vpc, self).__init__(
             constants.VPC['AWS_RESOURCE_TYPE'],
             constants.VPC['REQUIRED_PROPERTIES'],
-            client=connection.VPCConnectionClient().client()
+            client=connection.VPCConnectionClient().client(),
+            resource_states=constants.VPC['STATES']
         )
         self.not_found_error = constants.VPC['NOT_FOUND_ERROR']
         self.get_all_handler = {
