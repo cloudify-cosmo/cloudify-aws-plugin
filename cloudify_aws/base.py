@@ -251,12 +251,34 @@ class AwsBaseRelationship(AwsBase):
         return resource
 
 
+class State(object):
+    def __init__(self, **kwargs):
+        for kw in kwargs.keys():
+            setattr(self, kw, kwargs.get(kw))
+
+
+class AwsResourceStates(object):
+    def __init__(self, states):
+        if not isinstance(states, list):
+            raise TypeError('AwsResourceStates takes a list.')
+        for state in states:
+            name = state.get('name')
+            if name:
+                setattr(self,
+                        state.get('name'),
+                        State(**state))
+            else:
+                ctx.logger.warn(
+                    'Invalid resource State definition.')
+
+
 class AwsBaseNode(AwsBase):
 
     def __init__(self,
                  aws_resource_type,
                  required_properties,
-                 client=None
+                 client=None,
+                 resource_states=None
                  ):
         super(AwsBaseNode, self).__init__(client)
 
@@ -275,6 +297,8 @@ class AwsBaseNode(AwsBase):
         self.required_properties = required_properties
         self.get_all_handler = {'function': dummy, 'argument': ''}
         self.not_found_error = ''
+        self.state_attribute = 'state'
+        self.states = AwsResourceStates(resource_states)
 
     def creation_validation(self):
         """ This validates all Nodes before bootstrap.
@@ -298,28 +322,78 @@ class AwsBaseNode(AwsBase):
                 'exists in the account.'
                 .format(self.aws_resource_type))
 
-    def create(self, args=None):
-        return False
+    # Methods related to state verification
+    def verify_created(self):
 
-    def create_helper(self, args=None):
-        '''Helper to create resources'''
-        ctx.logger.info(
-            'Attempting to create {0} {1}.'
-            .format(self.aws_resource_type,
-                    self.cloudify_node_instance_id))
-        # Create the resource, if needed
-        ret = self.use_external_resource_naively() or self.create(args)
-        # The resource either already exists or was created successfully
-        if ret is True:
-            return self.post_create()
-        # The resource does not exist or was not created successfully
-        elif ret is False:
-            raise NonRecoverableError(
-                'Neither external resource, nor Cloudify resource, '
-                'unable to create this resource.')
-        # The override likely returned a retry operation to pass along
-        return ret
+        resource_state = self.get_resource_state()
+        return self.cloudify_operation_exit_handler(resource_state, 'create')
 
+    def verify_started(self):
+
+        resource_state = self.get_resource_state()
+        return self.cloudify_operation_exit_handler(resource_state, 'start')
+
+    def verify_stopped(self):
+
+        resource_state = self.get_resource_state()
+        return self.cloudify_operation_exit_handler(resource_state, 'stop')
+
+    def verify_deleted(self):
+
+        resource = self.get_resource()
+        if not resource:
+            return True
+        resource_state = self.get_resource_state(resource=resource)
+        return self.cloudify_operation_exit_handler(resource_state, 'delete')
+
+    def cloudify_operation_exit_handler(self,
+                                        resource_state,
+                                        operation_name):
+        """
+        This function controls the Cloudify operation exit.
+
+        :param resource_state:
+        :param operation_name:
+        :return: True if successful or cloudify.operation.retry if waiting.
+        :raises: NonRecoverableError if state is failed.
+                 RecoverableError if state is indeterminate.
+        """
+
+        ctx.logger.debug(
+            'Cloudify operation: {0}'
+            'AWS Resource: {1} '
+            'State in AWS: {2} '
+            .format(operation_name,
+                    self.resource_id,
+                    resource_state))
+
+        operation_states = getattr(self.states, operation_name, None)
+
+        if operation_states is None:
+            ctx.logger.warn(
+                'Resource type {0} does not specify '
+                'a state validation for operation {1}. '
+                'Resource id is {2}'
+                .format(self.aws_resource_type,
+                        operation_name,
+                        self.resource_id)
+            )
+            return
+        elif resource_state in operation_states.success:
+            return True
+        elif resource_state in operation_states.failed:
+            raise NonRecoverableError('Resource is in failed state.')
+        elif resource_state in operation_states.waiting:
+            _message = \
+                'Waiting to verify that {0} {1} is in desired state.' \
+                .format(self.aws_resource_type, self.resource_id)
+            return ctx.operation.retry(message=_message)
+
+        raise RecoverableError(
+            'The resource is not in state '
+            'that is recognized as success, failed, or waiting.')
+
+    # Methods related to handling external resources
     def use_external_resource_naively(self):
 
         if not self.is_external_resource:
@@ -335,68 +409,6 @@ class AwsBaseNode(AwsBase):
 
         return True
 
-    def start(self, args=None):
-        return False
-
-    def start_helper(self, args=None):
-
-        if self.aws_resource_type is 'instance':
-            ctx.logger.info(
-                'Attempting to start instance {0}.'
-                .format(self.cloudify_node_instance_id))
-
-        if self.use_external_resource_naively() or self.start(args):
-            return self.post_start()
-
-    def modify_attributes(self, new_attributes):
-        return False
-
-    def modify__helper(self, new_attributes):
-
-        ctx.logger.info(
-            'Attempting to modify instance attributes {0} {1}.'
-            .format(self.aws_resource_type,
-                    self.cloudify_node_instance_id))
-
-        if self.modify_attributes(new_attributes):
-            return self.post_modify()
-
-    def stop(self):
-        return False
-
-    def post_stop(self):
-        return True
-
-    def stop_helper(self):
-
-        ctx.logger.info(
-            'Attempting to stop EC2 instance {0} {1}.'
-            .format(self.aws_resource_type,
-                    self.cloudify_node_instance_id))
-
-        if self.stop():
-            return self.post_stop()
-
-    def delete(self, args=None):
-        return False
-
-    def delete_helper(self, args=None):
-
-        ctx.logger.info(
-            'Attempting to delete {0} {1}.'
-            .format(self.aws_resource_type,
-                    self.cloudify_node_instance_id))
-
-        if not self.get_resource():
-            self.raise_forbidden_external_resource(self.resource_id)
-
-        if self.delete_external_resource_naively() or self.delete(args):
-            return self.post_delete()
-
-        raise NonRecoverableError(
-            'Neither external resource, nor Cloudify resource, '
-            'unable to delete this resource.')
-
     def delete_external_resource_naively(self):
 
         if not self.is_external_resource:
@@ -410,6 +422,78 @@ class AwsBaseNode(AwsBase):
 
         return True
 
+    # Cloudify workflow operation helpers
+    def create_helper(self, args=None):
+        '''Helper to create resources'''
+        ctx.logger.info(
+            'Attempting to create {0} {1}.'
+            .format(self.aws_resource_type,
+                    self.cloudify_node_instance_id))
+        # Create the resource, if needed
+        ret = self.use_external_resource_naively() or self.create(args)
+        # The resource either already exists or was created successfully
+        if ret is True:
+            # utils.set_external_resource_id(self.resource_id, ctx.instance)
+            self.post_create()
+        # The resource does not exist or was not created successfully
+        elif ret is False:
+            raise NonRecoverableError(
+                'Neither external resource, nor Cloudify resource, '
+                'unable to create this resource.')
+        # The override likely returned a retry operation to pass along
+        return self.verify_created()
+
+    def start_helper(self, args=None):
+
+        if self.aws_resource_type is 'instance':
+            ctx.logger.info(
+                'Attempting to start instance {0}.'
+                .format(self.cloudify_node_instance_id))
+
+        if self.use_external_resource_naively() or self.start(args):
+            self.post_start()
+        return self.verify_started()
+
+    def stop_helper(self):
+
+        ctx.logger.info(
+            'Attempting to stop EC2 instance {0} {1}.'
+            .format(self.aws_resource_type,
+                    self.cloudify_node_instance_id))
+
+        if self.stop():
+            self.post_stop()
+        return self.verify_stopped()
+
+    def delete_helper(self, args=None):
+
+        ctx.logger.info(
+            'Attempting to delete {0} {1}.'
+            .format(self.aws_resource_type,
+                    self.cloudify_node_instance_id))
+
+        if not self.get_resource():
+            self.raise_forbidden_external_resource(self.resource_id)
+
+        if self.delete_external_resource_naively() or self.delete(args):
+            self.post_delete()
+        return self.verify_deleted()
+
+        raise NonRecoverableError(
+            'Neither external resource, nor Cloudify resource, '
+            'unable to delete this resource.')
+
+    def modify__helper(self, new_attributes):
+
+        ctx.logger.info(
+            'Attempting to modify instance attributes {0} {1}.'
+            .format(self.aws_resource_type,
+                    self.cloudify_node_instance_id))
+
+        if self.modify_attributes(new_attributes):
+            return self.post_modify()
+
+    # generic resource related methods
     def get_all_matching(self, list_of_ids=None):
 
         matches = self.get_and_filter_resources_by_matcher(
@@ -429,6 +513,10 @@ class AwsBaseNode(AwsBase):
         )
 
         return resource
+
+    def get_resource_state(self, resource=None):
+        resource = resource or self.get_resource()
+        return getattr(resource, self.state_attribute, None)
 
     def tag_resource(self, resource):
 
@@ -463,6 +551,23 @@ class AwsBaseNode(AwsBase):
 
         return output
 
+    # Abstract methods for API calls
+    def create(self, args=None):
+        return False
+
+    def start(self, args=None):
+        return False
+
+    def stop(self):
+        return False
+
+    def delete(self, args=None):
+        return False
+
+    def modify_attributes(self, new_attributes):
+        return False
+
+    # Generic methods run after the API call
     def post_create(self):
 
         utils.set_external_resource_id(self.resource_id, ctx.instance)
@@ -478,6 +583,9 @@ class AwsBaseNode(AwsBase):
         resource = self.get_resource()
         self.tag_resource(resource)
 
+        return True
+
+    def post_stop(self):
         return True
 
     def post_delete(self):

@@ -49,7 +49,8 @@ class KeyPair(AwsBaseNode):
     def __init__(self):
         super(KeyPair, self).__init__(
                 constants.KEYPAIR['AWS_RESOURCE_TYPE'],
-                constants.KEYPAIR['REQUIRED_PROPERTIES']
+                constants.KEYPAIR['REQUIRED_PROPERTIES'],
+                resource_states=constants.KEYPAIR['STATES']
         )
         self.not_found_error = constants.KEYPAIR['NOT_FOUND_ERROR']
         self.get_all_handler = {

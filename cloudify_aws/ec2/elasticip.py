@@ -187,7 +187,8 @@ class ElasticIP(AwsBaseNode):
     def __init__(self):
         super(ElasticIP, self).__init__(
                 constants.ELASTICIP['AWS_RESOURCE_TYPE'],
-                constants.ELASTICIP['REQUIRED_PROPERTIES']
+                constants.ELASTICIP['REQUIRED_PROPERTIES'],
+                resource_states=constants.ELASTICIP['STATES']
         )
         self.allocation_id = None
         self.not_found_error = constants.ELASTICIP['NOT_FOUND_ERROR']

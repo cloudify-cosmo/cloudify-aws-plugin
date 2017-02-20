@@ -175,6 +175,7 @@ class Elb(AwsBaseNode):
             constants.ELB['AWS_RESOURCE_TYPE'],
             constants.ELB['REQUIRED_PROPERTIES'],
             self.client,
+            resource_states=constants.ELB['STATES']
         )
         self.not_found_error = constants.ELB['NOT_FOUND_ERROR']
         self.get_all_handler = {

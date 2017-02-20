@@ -180,13 +180,15 @@ class Ebs(AwsBaseNode):
     def __init__(self):
         super(Ebs, self).__init__(
             constants.EBS['AWS_RESOURCE_TYPE'],
-            constants.EBS['REQUIRED_PROPERTIES']
+            constants.EBS['REQUIRED_PROPERTIES'],
+            resource_states=constants.EBS['STATES']
         )
         self.not_found_error = constants.EBS['NOT_FOUND_ERROR']
         self.get_all_handler = {
             'function': self.client.get_all_volumes,
             'argument': '{0}_ids'.format(constants.EBS['AWS_RESOURCE_TYPE'])
         }
+        self.state_attribute = 'status'
 
     def create(self, args=None, **_):
         """Creates an EBS volume.
