@@ -282,9 +282,6 @@ class AwsBaseNode(AwsBase):
                  ):
         super(AwsBaseNode, self).__init__(client)
 
-        def dummy():
-            pass
-
         self.aws_resource_type = aws_resource_type
         self.cloudify_node_instance_id = ctx.instance.id
         self.resource_id = ctx.instance.runtime_properties.get(
@@ -295,7 +292,7 @@ class AwsBaseNode(AwsBase):
         self.is_external_resource = \
             ctx.node.properties['use_external_resource']
         self.required_properties = required_properties
-        self.get_all_handler = {'function': dummy, 'argument': ''}
+        self.get_all_handler = {'function': basestring, 'argument': ''}
         self.not_found_error = ''
         self.state_attribute = 'state'
         self.states = AwsResourceStates(resource_states)
