@@ -46,7 +46,7 @@ class TestInstance(testtools.TestCase):
     def create_vpc_client(self):
         return VPCConnection()
 
-    def mock_ctx(self, test_name, retry_number=0):
+    def mock_ctx(self, test_name, retry_number=0, operation_name='create'):
         """ Creates a mock context for the instance
             tests
         """
@@ -70,6 +70,7 @@ class TestInstance(testtools.TestCase):
         }
 
         operation = {
+            'name': operation_name,
             'retry_number': retry_number
         }
         ctx = MockCloudifyContext(

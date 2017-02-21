@@ -32,6 +32,11 @@ def create(args=None, **_):
 
 
 @operation
+def start(args=None, **_):
+    return Interface().start_helper(args)
+
+
+@operation
 def delete(args=None, **_):
     """ Delete the Network Interface """
     return Interface().delete_helper(args)
@@ -220,6 +225,9 @@ class Interface(AwsBaseNode):
 
         return True
 
+    def start(self, args):
+        return True
+
     def delete(self, args=None, **_):
 
         network_interface_id = self.resource_id
@@ -227,15 +235,8 @@ class Interface(AwsBaseNode):
         delete_args = dict(network_interface_id=network_interface_id)
         delete_args = utils.update_args(delete_args, args)
 
-        # resource = self.get_resource()
-        # ctx.logger.info('resource: {0}'.format(resource.__dict__))
-
-        try:
-            output = self.execute(self.client.delete_network_interface,
-                                  delete_args,
-                                  raise_on_falsy=True)
-        except (exception.EC2ResponseError,
-                exception.BotoServerError) as e:
-            raise NonRecoverableError('{0}'.format(str(e)))
+        output = self.execute(self.client.delete_network_interface,
+                              delete_args,
+                              raise_on_falsy=True)
 
         return output

@@ -246,11 +246,20 @@ class VpcTestCase(testtools.TestCase):
         return resources
 
     def mock_node_context(self, test_name,
-                          node_properties=None, relationships=None):
+                          node_properties=None,
+                          relationships=None,
+                          operation=None):
+
+        if not operation:
+            operation = {
+                'name': 'create',
+                'retry_number': 0
+            }
 
         ctx = MockCloudifyContext(
             node_id=test_name,
             properties=node_properties,
+            operation=operation,
             deployment_id='d1'
         )
 
