@@ -419,6 +419,17 @@ class AwsBaseNode(AwsBase):
 
         return True
 
+    def cloudify_resource_state_change_handler(self, naive_resource_function):
+        """
+        Take steps to create a desired resource state.
+        If the operation is a retry do not try to call the state change again.
+
+        :return:
+        """
+
+        if ctx.operation.retry_number == 0:
+            return naive_resource_function()
+
     # Cloudify workflow operation helpers
     def create_helper(self, args=None):
         '''Helper to create resources'''
@@ -426,17 +437,18 @@ class AwsBaseNode(AwsBase):
             'Attempting to create {0} {1}.'
             .format(self.aws_resource_type,
                     self.cloudify_node_instance_id))
+        ret = self.cloudify_resource_state_change_handler(
+                self.use_external_resource_naively) or self.create(args)
         # Create the resource, if needed
-        ret = self.use_external_resource_naively() or self.create(args)
+        if ret is False:
+            raise NonRecoverableError(
+                    'Neither external resource, nor Cloudify resource, '
+                    'unable to create this resource.')
         # The resource either already exists or was created successfully
         if ret is True:
             # utils.set_external_resource_id(self.resource_id, ctx.instance)
             self.post_create()
         # The resource does not exist or was not created successfully
-        elif ret is False:
-            raise NonRecoverableError(
-                'Neither external resource, nor Cloudify resource, '
-                'unable to create this resource.')
         # The override likely returned a retry operation to pass along
         return self.verify_created()
 
@@ -447,7 +459,9 @@ class AwsBaseNode(AwsBase):
                 'Attempting to start instance {0}.'
                 .format(self.cloudify_node_instance_id))
 
-        if self.use_external_resource_naively() or self.start(args):
+        ret = self.cloudify_resource_state_change_handler(
+                self.use_external_resource_naively) or self.start(args)
+        if ret:
             self.post_start()
         return self.verify_started()
 
@@ -472,13 +486,11 @@ class AwsBaseNode(AwsBase):
         if not self.get_resource():
             self.raise_forbidden_external_resource(self.resource_id)
 
-        if self.delete_external_resource_naively() or self.delete(args):
+        ret = self.cloudify_resource_state_change_handler(
+                self.delete_external_resource_naively) or self.delete(args)
+        if ret:
             self.post_delete()
         return self.verify_deleted()
-
-        raise NonRecoverableError(
-            'Neither external resource, nor Cloudify resource, '
-            'unable to delete this resource.')
 
     def modify__helper(self, new_attributes):
 
