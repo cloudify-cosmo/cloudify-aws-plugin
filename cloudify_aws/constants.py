@@ -48,16 +48,16 @@ INSTANCE = dict(
                  'waiting': ['pending'],
                  'failed': []},
                 {'name': 'start',
-                 'success': ['running'],
+                 'success': ['running', 16],
                  'waiting': ['pending'],
                  'failed': []},
                 {'name': 'stop',
-                 'success': ['stopped'],
+                 'success': ['stopped', 80],
                  'waiting': ['stopping'],
                  'failed': []},
                 {'name': 'delete',
                  'success': ['terminated'],
-                 'waiting': ['shutting-down'],
+                 'waiting': ['shutting-down', 48],
                  'failed': []}]
 )
 

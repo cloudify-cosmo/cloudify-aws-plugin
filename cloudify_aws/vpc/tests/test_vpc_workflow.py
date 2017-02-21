@@ -89,6 +89,8 @@ class TestWorkflowClean(VpcTestCase):
                 return_value=True)
     @mock.patch('cloudify_aws.vpc.networkacl.delete_network_acl',
                 return_value=True)
+    @mock.patch('cloudify_aws.vpc.gateway.CustomerGateway.get_resource_state',
+                return_value='available')
     def test_blueprint(self, *_):
         """ Tests the install workflow using the built in
             workflows.

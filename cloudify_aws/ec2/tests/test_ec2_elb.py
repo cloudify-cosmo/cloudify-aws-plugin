@@ -71,7 +71,7 @@ class TestLoadBalancer(testtools.TestCase):
                 image_id=TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
 
     def mock_instance_ctx(self, test_name, use_external_resource=False,
-                          instance_id='i-nstance'):
+                          instance_id='i-nstance', operation_name='create'):
         """ Creates a mock context for the instance
             tests
         """
@@ -94,6 +94,7 @@ class TestLoadBalancer(testtools.TestCase):
         }
         runtime_properties = {'aws_resource_id': instance_id}
         operation = {
+            'name': operation_name,
             'retry_number': 0
         }
 
@@ -108,7 +109,7 @@ class TestLoadBalancer(testtools.TestCase):
 
     def mock_elb_ctx(self, test_name, use_external_resource=False,
                      elb_name='myelb', instance_list=[], resource_id='',
-                     bad_health_checks=False):
+                     bad_health_checks=False, operation_name='create'):
         """ Creates a mock context for the elb
             tests
         """
@@ -132,9 +133,14 @@ class TestLoadBalancer(testtools.TestCase):
             test_properties['health_checks'] = [{'target': 'tp:321'}]
         runtime_properties = {'aws_resource_id': 'myelb',
                               'instance_list': instance_list}
+        operation = {
+            'name': operation_name,
+            'retry_number': 0
+        }
 
         ctx = MockCloudifyContext(
                 node_id=test_node_id,
+                operation=operation,
                 properties=test_properties,
                 runtime_properties=runtime_properties
         )
@@ -182,7 +188,7 @@ class TestLoadBalancer(testtools.TestCase):
 
     @mock_elb
     def test_remove_elb(self):
-        ctx = self.mock_elb_ctx('test_remove_elb')
+        ctx = self.mock_elb_ctx('test_remove_elb', operation_name='delete')
         current_ctx.set(ctx=ctx)
         self._create_external_elb()
         elasticloadbalancer.delete(args=None, ctx=ctx)
@@ -240,7 +246,7 @@ class TestLoadBalancer(testtools.TestCase):
         elb_ctx = self.mock_elb_ctx(
                 'test_delete_external_elb',
                 use_external_resource=True,
-                instance_list=[])
+                instance_list=[], operation_name='delete')
         current_ctx.set(elb_ctx)
         out = elasticloadbalancer.delete(args=None, ctx=elb_ctx)
         self.assertIsNone(out)

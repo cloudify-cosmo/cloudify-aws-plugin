@@ -108,8 +108,7 @@ class Instance(AwsBaseNode):
         if instance is None:
             return False
 
-        utils.set_external_resource_id(
-                instance_id, ctx.instance, external=False)
+        utils.set_external_resource_id(instance_id, ctx.instance)
         self._instance_created_assign_runtime_properties()
 
         return True

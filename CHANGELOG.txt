@@ -13,3 +13,4 @@
     - Support Block Device Mapping in EC2 Instances
     - Support Security Group rule overrides via args
     - Support resource state verification
+    - Clearer log messages

@@ -404,7 +404,6 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create: aws.cloudify_aws.ec2.keypair.create
-        start: aws.cloudify_aws.ec2.keypair.start
         delete: aws.cloudify_aws.ec2.keypair.delete
       cloudify.interfaces.validation:
         creation: aws.cloudify_aws.ec2.keypair.creation_validation
