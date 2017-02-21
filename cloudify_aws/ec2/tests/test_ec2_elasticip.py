@@ -17,9 +17,11 @@
 import testtools
 
 # Third Party Imports
+import mock
 from moto import mock_ec2
 from boto.ec2 import EC2Connection
 from boto.vpc import VPCConnection
+from boto.exception import EC2ResponseError
 
 # Cloudify Imports is imported and used in operations
 from cloudify_aws import constants
@@ -414,6 +416,62 @@ class TestElasticIP(testtools.TestCase):
         self.assertIn('InvalidAddress.NotFound', ex.message)
 
     @mock_ec2
+    def test_invalid_target_resource(self):
+        """ Tests that NonRecoverableError: Address NotFound is
+            raised when a target address that is not in the user's
+            EC2 account is provided to the detach function
+        """
+
+        ctx = self.mock_relationship_context('test_invalid_target_resource')
+        current_ctx.set(ctx=ctx)
+        ctx.target.instance.runtime_properties['aws_resource_id'] = '0.0.0.0'
+        ctx.source.instance.runtime_properties['public_ip_address'] = '0.0.0.0'
+
+        with mock.patch(
+                'cloudify_aws.base.AwsBase.execute') \
+                as mock_get_target_resource:
+            mock_get_target_resource.side_effect = EC2ResponseError(
+                    mock.Mock(return_value={'status': 404}),
+                    'InvalidAddress.NotFound')
+            ex = self.assertRaises(
+                    NonRecoverableError,
+                    elasticip.disassociate)
+            self.assertIn(
+                    'no matching elastic ip in account', ex.message)
+
+    @mock_ec2
+    def test_invalid_source_resource(self):
+        """ Tests that NonRecoverableError: Instance NotFound is
+            raised when a source instance that is not in the user's
+            EC2 account is provided to the detach function NEW
+        """
+
+        ctx = self.mock_relationship_context('test_invalid_source_resource')
+        current_ctx.set(ctx=ctx)
+        ctx.target.instance.runtime_properties['aws_resource_id'] = '0.0.0.0'
+        ctx.source.instance.runtime_properties['public_ip_address'] = '0.0.0.0'
+
+        with mock.patch(
+                'cloudify_aws.base.AwsBase.execute') \
+                as mock_execute:
+            mock_execute.side_effect = EC2ResponseError(
+                    mock.Mock(return_value={'status': 404}),
+                    'InvalidInstanceID.NotFound')
+            with mock.patch(
+                    'boto.ec2.connection.EC2Connection.get_all_instances') \
+                    as mock_get_all_instances:
+
+                with self.assertRaisesRegexp(
+                        EC2ResponseError,
+                        'InvalidInstanceID.NotFound'):
+                    mock_get_all_instances.side_effect = EC2ResponseError(
+                            mock.Mock(return_value={'status': 404}),
+                            'InvalidInstanceID.NotFound')
+                    output = elasticip.ElasticIPInstanceConnection()\
+                        .get_source_resource()
+                    self.assertIsNone(output)
+
+    @mock_ec2
     def test_validation(self):
         """ Tests that creation_validation raises an error
         the Elastic IP doesn't exist in the account and use_external_resource
@@ -569,3 +627,104 @@ class TestElasticIP(testtools.TestCase):
             test_elasticipinstanceconnection\
             .disassociate_external_resource_naively()
         self.assertEqual(False, output)
+
+    @mock_ec2
+    def test_release_response_error(self):
+        """this checks that delete raises an error
+        when release_address fails due
+        to response error.
+        """
+
+        ctx = self.mock_ctx('test_release_response_error')
+        current_ctx.set(ctx=ctx)
+        address = self.get_address()
+        ctx.instance.runtime_properties['aws_resource_id'] = \
+            address.public_ip
+        ctx.instance.runtime_properties['allocation_id'] = 'random'
+
+        with mock.patch(
+                'cloudify_aws.base.AwsBase.execute') \
+                as mock_execute_release_address:
+            mock_execute_release_address.side_effect = EC2ResponseError(
+                    mock.Mock(return_value={'status': 404}),
+                    'error')
+            ex = self.assertRaises(
+                    NonRecoverableError,
+                    elasticip.delete)
+            self.assertIn(
+                    'error', ex.message)
+
+    @mock_ec2
+    def test_allocate_response_error(self):
+        """this checks that create raises an error
+        when release_address fails due
+        to response error.
+        """
+
+        ctx = self.mock_ctx('test_allocate_response_error')
+        current_ctx.set(ctx=ctx)
+
+        with mock.patch(
+                'cloudify_aws.base.AwsBase.execute') \
+                as mock_execute_release_address:
+            mock_execute_release_address.side_effect = EC2ResponseError(
+                    mock.Mock(return_value={'status': 404}),
+                    'error')
+            ex = self.assertRaises(
+                    NonRecoverableError,
+                    elasticip.create)
+            self.assertIn(
+                    'error', ex.message)
+
+    @mock_ec2
+    @mock.patch('boto.ec2.connection.EC2Connection.get_list')
+    def test_disassociate_response_error(self, *_):
+        """this checks that disassociate raises an error
+        when disassociate_address fails due
+        to response error.
+        """
+
+        ctx = self.mock_relationship_context(
+                'test_disassociate_response_error')
+        current_ctx.set(ctx=ctx)
+        address = self.get_address()
+
+        with mock.patch(
+                'cloudify_aws.ec2.elasticip.ElasticIPInstanceConnection'
+                '.get_target_resource') \
+                as mock_get_target_resource:
+            mock_get_target_resource.return_value = \
+                self.get_client().get_all_addresses(addresses=[address])
+            with mock.patch(
+                    'cloudify_aws.base.AwsBase.execute') \
+                    as mock_execute_disassociate_address:
+                mock_execute_disassociate_address.side_effect = \
+                    EC2ResponseError(
+                        mock.Mock(return_value={'status': 404}),
+                        'error')
+                ex = self.assertRaises(
+                        NonRecoverableError,
+                        elasticip.disassociate)
+                self.assertIn(
+                        'error', ex.message)
+
+    @mock_ec2
+    @mock.patch('cloudify_aws.base.AwsBase.execute')
+    def test_associate_with_allocate_id(self, *_):
+        """ This tests that this function returns True
+        when associating with allocation_id.
+        """
+
+        ctx = self.mock_relationship_context(
+                'test_associate_with_allocate_id')
+        current_ctx.set(ctx=ctx)
+        address = self.get_address()
+        instance_id = self.get_instance_id()
+        ctx.target.instance.runtime_properties['aws_resource_id'] = \
+            address.public_ip
+        ctx.source.instance.runtime_properties['aws_resource_id'] = \
+            instance_id
+        ctx.target.instance.runtime_properties['allocation_id'] = 'random'
+        output = \
+            elasticip.associate()
+        self.assertEqual(True, output)
