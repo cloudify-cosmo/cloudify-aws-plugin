@@ -66,6 +66,7 @@ class TestVpcModule(VpcTestCase):
         new_vpc = vpc_client.create_vpc(TEST_VPC_CIDR)
         vpc_id = new_vpc.id
         ctx.instance.runtime_properties['aws_resource_id'] = vpc_id
+        ctx.operation._operation_context['name'] = 'start'
         vpc.start(ctx=ctx)
         vpc_list = vpc_client.get_all_vpcs(vpc_id)
         vpc_object = vpc_list[0]
@@ -78,12 +79,9 @@ class TestVpcModule(VpcTestCase):
     def test_delete_invalid_vpc_id(self):
         ctx = self.get_mock_vpc_node_instance_context(
             'test_delete_invalid_vpc_id')
-        ctx.instance.runtime_properties['aws_resource_id'] = 'vpc-0123abcd'
-        error = self.assertRaises(NonRecoverableError, vpc.delete, ctx=ctx)
-        self.assertIn(
-            'Cannot use_external_resource because resource '
-            'vpc-0123abcd is not in this account',
-            error.message)
+        ctx.instance.runtime_properties['aws_resource_id'] = 'vpcsubnet'
+        ctx.operation._operation_context['name'] = 'delete'
+        self.assertEquals(True, vpc.delete(ctx=ctx))
 
 
 class TestSubnetModule(VpcTestCase):
@@ -116,11 +114,11 @@ class TestSubnetModule(VpcTestCase):
         ctx = self.get_mock_subnet_node_instance_context(
             'test_delete_invalid_subnet_id')
         ctx.instance.runtime_properties['aws_resource_id'] = 'subnet-0123abcd'
+        ctx.operation._operation_context['name'] = 'delete'
         error = self.assertRaises(NonRecoverableError, subnet.delete_subnet,
                                   ctx=ctx)
         self.assertIn(
-            'Cannot use_external_resource because resource '
-            'subnet-0123abcd is not in this account',
+            'InvalidSubnetID.NotFound',
             error.message)
 
     @mock_ec2
@@ -146,6 +144,7 @@ class TestSubnetModule(VpcTestCase):
                 vpc.id, TEST_SUBNET_CIDR)
         subnet_id = new_subnet.id
         ctx.instance.runtime_properties['aws_resource_id'] = subnet_id
+        ctx.operation._operation_context['name'] = 'start'
         subnet.start_subnet(ctx=ctx)
         subnet_list = vpc_client.get_all_subnets(subnet_id)
         subnet_object = subnet_list[0]
@@ -207,6 +206,7 @@ class TestRouteTableModule(VpcTestCase):
         new_route_table = vpc_client.create_route_table(vpc.id)
         route_table_id = new_route_table.id
         ctx.instance.runtime_properties['aws_resource_id'] = route_table_id
+        ctx.operation._operation_context['name'] = 'start'
         routetable.start_route_table(ctx=ctx)
         route_table_route = vpc_client.get_all_route_tables(route_table_id)
         route_table_object = route_table_route[0]
@@ -228,6 +228,7 @@ class TestRouteTableModule(VpcTestCase):
         client.create_route(route_table_id=route_table.id,
                             destination_cidr_block='10.0.0.0/24')
         ctx.instance.runtime_properties['routes'] = self.get_routes()
+        ctx.operation._operation_context['name'] = 'delete'
         routetable.delete_route_table(ctx=ctx)
         self.assertNotIn(ctx.instance.runtime_properties,
                          constants.EXTERNAL_RESOURCE_ID)
@@ -262,6 +263,8 @@ class TestDhcpModule(VpcTestCase):
         new_dhcp = vpc_client.create_dhcp_options()
         dhcp_id = new_dhcp.id
         ctx.instance.runtime_properties['aws_resource_id'] = dhcp_id
+        ctx.operation._operation_context['name'] = 'start'
+
         dhcp.start_dhcp_options(ctx=ctx)
         dhcp_list = vpc_client.get_all_dhcp_options(dhcp_id)
         dhcp_object = dhcp_list[0]
@@ -282,6 +285,7 @@ class TestDhcpModule(VpcTestCase):
             'test_delete_dhcp_option_set')
         ctx.instance.runtime_properties[
             constants.EXTERNAL_RESOURCE_ID] = dhcp_options.id
+        ctx.operation._operation_context['name'] = 'delete'
         error = self.assertRaises(
             NonRecoverableError, dhcp.delete_dhcp_options, ctx=ctx)
         self.assertIn('returned False', error.message)

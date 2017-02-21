@@ -38,7 +38,7 @@ FQDN = '((?:[a-z][a-z\\.\\d\\-]+)\\.(?:[a-z][a-z\\-]+))(?![\\w\\.])'
 
 class TestElasticIP(testtools.TestCase):
 
-    def mock_ctx(self, test_name):
+    def mock_ctx(self, test_name, retry_number=0, operation_name='create'):
 
         test_node_id = test_name
         test_properties = {
@@ -52,16 +52,24 @@ class TestElasticIP(testtools.TestCase):
             },
             'domain': '',
         }
+        operation = {
+            'name': operation_name,
+            'retry_number': retry_number
+        }
 
         ctx = MockCloudifyContext(
                 node_id=test_node_id,
                 properties=test_properties,
+                operation=operation,
                 provider_context={'resources': {}}
         )
 
         return ctx
 
-    def mock_elastic_ip_node(self, test_name):
+    def mock_elastic_ip_node(self,
+                             test_name,
+                             retry_number=0,
+                             operation_name='create'):
 
         test_node_id = test_name
         test_properties = {
@@ -70,10 +78,15 @@ class TestElasticIP(testtools.TestCase):
             'resource_id': '',
             'domain': ''
         }
+        operation = {
+            'name': operation_name,
+            'retry_number': retry_number
+        }
 
         ctx = MockCloudifyContext(
                 node_id=test_node_id,
-                properties=test_properties
+                properties=test_properties,
+                operation=operation
         )
 
         return ctx

@@ -16,6 +16,7 @@
 # Built-in Imports
 import uuid
 import testtools
+import mock
 
 # Third Party Imports
 from moto import mock_ec2
@@ -30,12 +31,17 @@ from cloudify.exceptions import NonRecoverableError
 
 class TestSecurityGroup(testtools.TestCase):
 
-    def security_group_mock(self, test_name, test_properties, retry_number=0):
+    def security_group_mock(self,
+                            test_name,
+                            test_properties,
+                            retry_number=0,
+                            operation_name='create'):
         """ Creates a mock context for security group tests
             with given properties
         """
 
         operation = {
+            'name': operation_name,
             'retry_number': retry_number
         }
 
@@ -183,7 +189,7 @@ class TestSecurityGroup(testtools.TestCase):
 
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
-                'test_start', test_properties)
+                'test_start', test_properties, operation_name='start')
         current_ctx.set(ctx=ctx)
 
         ec2_client = connection.EC2ConnectionClient().client()
@@ -203,14 +209,19 @@ class TestSecurityGroup(testtools.TestCase):
         """This tests that delete removes the runtime_properties"""
 
         test_properties = self.get_mock_properties()
-        ctx = self.security_group_mock('test_delete', test_properties)
+        ctx = self.security_group_mock('test_delete',
+                                       test_properties,
+                                       operation_name='delete')
         current_ctx.set(ctx=ctx)
         ec2_client = connection.EC2ConnectionClient().client()
         group = ec2_client.create_security_group('test',
                                                  'this is test')
         ctx.instance.runtime_properties['aws_resource_id'] = group.id
-        securitygroup.SecurityGroup().delete_helper()
-        self.assertNotIn('aws_resource_id', ctx.instance.runtime_properties)
+        with mock.patch('cloudify_aws.base.AwsBaseNode.get_resource',
+                        return_value=[]):
+            securitygroup.SecurityGroup().delete_helper()
+            self.assertNotIn('aws_resource_id',
+                             ctx.instance.runtime_properties)
 
     @mock_ec2
     def test_create_duplicate(self):
@@ -237,18 +248,21 @@ class TestSecurityGroup(testtools.TestCase):
         """
 
         test_properties = self.get_mock_properties()
+        test_properties['use_external_resource'] = True
         ctx = self.security_group_mock(
-                'test_delete_deleted', test_properties)
+                'test_delete_deleted',
+                test_properties,
+                operation_name='delete')
         current_ctx.set(ctx=ctx)
         ec2_client = connection.EC2ConnectionClient().client()
         group = ec2_client.create_security_group('test_delete_deleted',
                                                  'this is test')
         ctx.instance.runtime_properties['aws_resource_id'] = group.id
         ec2_client.delete_security_group(group_id=group.id)
-        ex = self.assertRaises(
-                NonRecoverableError, securitygroup.delete, ctx=ctx)
-        self.assertIn('Cannot use_external_resource because resource',
-                      ex.message)
+        with mock.patch('cloudify_aws.base.AwsBaseNode.get_resource',
+                        return_value=None):
+            out = securitygroup.delete()
+            self.assertEquals(True, out)
 
     @mock_ec2
     def test_delete_existing(self):
@@ -257,7 +271,9 @@ class TestSecurityGroup(testtools.TestCase):
         """
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
-                'test_delete_existing', test_properties)
+                'test_delete_existing',
+                test_properties,
+                operation_name='delete')
         current_ctx.set(ctx=ctx)
         ec2_client = connection.EC2ConnectionClient().client()
         group = ec2_client.create_security_group('test_delete_existing',
@@ -265,10 +281,12 @@ class TestSecurityGroup(testtools.TestCase):
         ctx.node.properties['use_external_resource'] = True
         ctx.node.properties['resource_id'] = group.id
         ctx.instance.runtime_properties['aws_resource_id'] = group.id
-        securitygroup.delete(ctx=ctx)
-        self.assertNotIn(
-                'aws_resource_id',
-                ctx.instance.runtime_properties)
+        with mock.patch('cloudify_aws.base.AwsBaseNode.get_resource',
+                        return_value=[]):
+            securitygroup.delete(ctx=ctx)
+            self.assertNotIn(
+                    'aws_resource_id',
+                    ctx.instance.runtime_properties)
 
     @mock_ec2
     def test_use_external_not_existing(self):

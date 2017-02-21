@@ -34,7 +34,7 @@ class TestKeyPair(testtools.TestCase):
     def setUp(self):
         super(TestKeyPair, self).setUp()
 
-    def mock_ctx(self, test_name):
+    def mock_ctx(self, test_name, operation_name='create'):
 
         private_key_path = tempfile.mkdtemp()
 
@@ -47,9 +47,14 @@ class TestKeyPair(testtools.TestCase):
                     private_key_path,
                     test_name)
         }
+        operation = {
+            'name': operation_name,
+            'retry_number': 0
+        }
 
         ctx = MockCloudifyContext(
                 node_id=test_node_id,
+                operation=operation,
                 properties=test_properties
         )
 
@@ -91,6 +96,7 @@ class TestKeyPair(testtools.TestCase):
                       ctx.instance.runtime_properties.keys())
         self.assertEqual('keypair',
                          ctx.instance.runtime_properties['external_type'])
+        ctx.operation._operation_context['name'] = 'delete'
 
         keypair.KeyPair().delete_helper()
         self.assertNotIn('external_type',
@@ -116,7 +122,7 @@ class TestKeyPair(testtools.TestCase):
         """ this tests that keypair delete removes the keypair from
             the account
         """
-        ctx = self.mock_ctx('test_delete')
+        ctx = self.mock_ctx('test_delete', operation_name='delete')
         current_ctx.set(ctx=ctx)
 
         ec2_client = connection.EC2ConnectionClient().client()
@@ -249,15 +255,16 @@ class TestKeyPair(testtools.TestCase):
 
         ctx = self.mock_ctx('test_create_use_external')
         current_ctx.set(ctx=ctx)
-
         ec2_client = connection.EC2ConnectionClient().client()
         kp = ec2_client.create_key_pair('test_create_use_external')
+        with open(ctx.node.properties['private_key_path'], 'wb') as fp:
+            fp.write(kp.material)
+            fp.close()
         ctx.node.properties['use_external_resource'] = True
         ctx.node.properties['resource_id'] = kp.name
-        ex = self.assertRaises(NonRecoverableError, keypair.create, ctx=ctx)
-        self.assertIn(
-                'External resource, but the key file does not exist',
-                ex.message)
+        keypair.create()
+        self.assertIn('aws_resource_id',
+                      ctx.instance.runtime_properties.keys())
 
     @mock_ec2
     def test_get_key_file_path_missing_property(self):
@@ -305,7 +312,8 @@ class TestKeyPair(testtools.TestCase):
         runtime_properties for external resource.
         """
 
-        ctx = self.mock_ctx('test_delete_use_external')
+        ctx = self.mock_ctx('test_delete_use_external',
+                            operation_name='delete')
         current_ctx.set(ctx=ctx)
 
         ec2_client = connection.EC2ConnectionClient().client()
@@ -389,13 +397,15 @@ class TestKeyPair(testtools.TestCase):
         """
         temp_key = tempfile.mktemp()
         ctx = self.mock_ctx(
-                'test_delete_different_resource_id_and_file_path')
+                'test_delete_different_resource_id_and_file_path'
+        )
         ctx.node.properties['private_key_path'] = temp_key
         ctx.node.properties['resource_id'] = 'something_else'
         current_ctx.set(ctx=ctx)
         keypair.create(ctx=ctx)
         self.assertTrue(
                 os.path.exists(temp_key))
+        ctx.operation._operation_context['name'] = 'delete'
         keypair.delete(ctx=ctx)
         self.assertFalse(
                 os.path.exists(temp_key))

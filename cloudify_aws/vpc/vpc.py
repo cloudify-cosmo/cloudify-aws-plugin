@@ -303,4 +303,6 @@ class Vpc(AwsBaseNode):
 
     def delete(self, args):
         vpc = self.get_resource()
+        if not vpc:
+            return True
         return self.execute(vpc.delete, raise_on_falsy=True)
