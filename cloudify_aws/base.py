@@ -461,6 +461,11 @@ class AwsBaseNode(AwsBase):
 
         ret = self.cloudify_resource_state_change_handler(
                 self.use_external_resource_naively) or self.start(args)
+
+        if ret is False:
+            raise NonRecoverableError(
+                    'Neither external resource, nor Cloudify resource, '
+                    'unable to start this resource.')
         if ret:
             self.post_start()
         return self.verify_started()
@@ -488,6 +493,12 @@ class AwsBaseNode(AwsBase):
 
         ret = self.cloudify_resource_state_change_handler(
                 self.delete_external_resource_naively) or self.delete(args)
+
+        if ret is False:
+            raise NonRecoverableError(
+                    'Neither external resource, nor Cloudify resource, '
+                    'unable to delete this resource.')
+
         if ret:
             self.post_delete()
         return self.verify_deleted()

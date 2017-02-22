@@ -256,7 +256,7 @@ class TestKeyPair(testtools.TestCase):
         ctx.node.properties['resource_id'] = kp.name
         ex = self.assertRaises(NonRecoverableError, keypair.create, ctx=ctx)
         self.assertIn(
-                'External resource, but the key file does not exist',
+                'already exists',
                 ex.message)
 
     @mock_ec2

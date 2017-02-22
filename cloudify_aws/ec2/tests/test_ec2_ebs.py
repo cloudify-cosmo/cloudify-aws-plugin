@@ -17,6 +17,7 @@
 import testtools
 
 # Third Party Imports
+import mock
 from moto import mock_ec2
 from boto.ec2 import EC2Connection
 
@@ -228,7 +229,10 @@ class TestEBS(testtools.TestCase):
         self.assertEqual(False, output)
 
     @mock_ec2
-    def test_external_resource(self):
+    @mock.patch('cloudify_aws.base.AwsBaseNode.execute')
+    @mock.patch('cloudify_aws.base.AwsBaseNode'
+                '.cloudify_operation_exit_handler')
+    def test_external_resource(self, *_):
         """ This tests that create sets the aws_resource_id
         runtime_properties
         """
@@ -398,11 +402,15 @@ class TestEBS(testtools.TestCase):
         ctx.node.properties['use_external_resource'] = True
         ctx.node.properties['resource_id'] = BAD_VOLUME_ID
         args = dict()
-        ex = self.assertRaises(
-            NonRecoverableError, ebs.create, args, ctx=ctx)
-        self.assertIn(
-            'Cannot use_external_resource because resource',
-            ex.message)
+        with mock.patch('cloudify_aws.base.AwsBaseNode.get_resource',
+                        return_value=False):
+            with mock.patch('cloudify_aws.ec2.ebs.Ebs.create',
+                            return_value=False):
+                ex = self.assertRaises(
+                        NonRecoverableError, ebs.create, args, ctx=ctx)
+                self.assertIn(
+                        'unable to create this resource',
+                        ex.message)
 
     @mock_ec2
     def test_delete_existing(self):

@@ -196,7 +196,10 @@ class TestNetworkInterface(testtools.TestCase):
         self.assertIn('aws_resource_id', ctx.instance.runtime_properties)
 
     @mock_ec2
-    def test_create_external_resource_id_exists(self):
+    @mock.patch('cloudify_aws.base.AwsBaseNode.execute')
+    @mock.patch('cloudify_aws.base.AwsBaseNode'
+                '.cloudify_operation_exit_handler')
+    def test_create_external_resource_id_exists(self, *_):
         """ Uses an existing EIN and tries to add it to Cloudify."""
 
         ctx = self.mock_network_interface_node(
@@ -232,7 +235,7 @@ class TestNetworkInterface(testtools.TestCase):
             eni.create,
             ctx=ctx
         )
-        self.assertIn('Cannot use_external_resource because', output.message)
+        self.assertIn('does not exist', output.message)
 
     @mock_ec2
     def test_attach_external_interface_instance(self):
