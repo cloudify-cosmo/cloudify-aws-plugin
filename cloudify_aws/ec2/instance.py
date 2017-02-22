@@ -191,7 +191,7 @@ class Instance(AwsBaseNode):
             if os.path.isfile(key_path):
                 return key_path
 
-        err_message = 'Cannot find private key file'
+        err_message = 'Cannot locate key file'
         if key_path:
             err_message += '; expected file path was {0}'.format(key_path)
         raise NonRecoverableError(err_message)
@@ -605,9 +605,13 @@ class Instance(AwsBaseNode):
         return True
 
     def post_stop(self):
-
+        props_to_delete = \
+            [li for li in
+             constants.INSTANCE_INTERNAL_ATTRIBUTES
+             if li not in
+             constants.INSTANCE_INTERNAL_ATTRIBUTES_POST_STOP]
         utils.unassign_runtime_properties_from_resource(
-                property_names=constants.INSTANCE_INTERNAL_ATTRIBUTES,
+                property_names=props_to_delete,
                 ctx_instance=ctx.instance)
 
         ctx.logger.info(
