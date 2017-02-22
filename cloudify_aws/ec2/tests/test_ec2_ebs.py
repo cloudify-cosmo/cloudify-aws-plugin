@@ -41,7 +41,7 @@ BAD_INSTANCE_ID = 'i-4339wSD9'
 
 class TestEBS(testtools.TestCase):
 
-    def mock_ctx(self, test_name, zone=TEST_ZONE):
+    def mock_ctx(self, test_name, zone=TEST_ZONE, retry_number=0, operation_name='create'):
 
         test_node_id = test_name
         test_properties = {
@@ -55,14 +55,20 @@ class TestEBS(testtools.TestCase):
             'device': TEST_DEVICE
         }
 
+        operation = {
+            'name': operation_name,
+            'retry_number': retry_number
+        }
+
         ctx = MockCloudifyContext(
             node_id=test_node_id,
+            operation=operation,
             properties=test_properties
         )
 
         return ctx
 
-    def mock_volume_node(self, test_name):
+    def mock_volume_node(self, test_name, retry_number=0, operation_name='create'):
 
         test_node_id = test_name
         test_properties = {
@@ -76,8 +82,14 @@ class TestEBS(testtools.TestCase):
             'device': ''
         }
 
+        operation = {
+            'name': operation_name,
+            'retry_number': retry_number
+        }
+
         ctx = MockCloudifyContext(
             node_id=test_node_id,
+            operation=operation,
             properties=test_properties
         )
 
@@ -181,7 +193,7 @@ class TestEBS(testtools.TestCase):
     def test_start(self):
         """This tests that start adds tags"""
 
-        ctx = self.mock_ctx('test_start')
+        ctx = self.mock_ctx('test_start', operation_name='start')
         current_ctx.set(ctx=ctx)
 
         ec2_client = connection.EC2ConnectionClient().client()
@@ -408,9 +420,7 @@ class TestEBS(testtools.TestCase):
                             return_value=False):
                 ex = self.assertRaises(
                         NonRecoverableError, ebs.create, args, ctx=ctx)
-                self.assertIn(
-                        'unable to create this resource',
-                        ex.message)
+                self.assertIn('Cannot use_external_resource because resource', ex.message)
 
     @mock_ec2
     def test_delete_existing(self):

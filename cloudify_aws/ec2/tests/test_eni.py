@@ -38,26 +38,31 @@ FQDN = '((?:[a-z][a-z\\.\\d\\-]+)\\.(?:[a-z][a-z\\-]+))(?![\\w\\.])'
 class TestNetworkInterface(testtools.TestCase):
 
     @staticmethod
-    def mock_ctx(test_name):
+    def mock_ctx(test_name, retry_number=0, operation_name='create'):
 
         test_node_id = test_name
         test_properties = {
             constants.AWS_CONFIG_PROPERTY: {},
             'use_external_resource': False,
             'resource_id': '',
-            'security_group_ids': ['sg-73cd3f1e']
+            'security_group_ids': ['sg-73cd3f1e']}
+
+        operation = {
+            'name': operation_name,
+            'retry_number': retry_number
         }
 
         ctx = MockCloudifyContext(
             node_id=test_node_id,
             properties=test_properties,
+            operation=operation,
             provider_context={'resources': {}}
         )
 
         return ctx
 
     @staticmethod
-    def mock_network_interface_node(test_name):
+    def mock_network_interface_node(test_name, retry_number=0, operation_name='create'):
 
         test_node_id = test_name
         test_properties = {
@@ -70,9 +75,15 @@ class TestNetworkInterface(testtools.TestCase):
             }
         }
 
+        operation = {
+            'name': operation_name,
+            'retry_number': retry_number
+        }
+
         ctx = MockCloudifyContext(
             node_id=test_node_id,
-            properties=test_properties
+            properties=test_properties,
+            operation=operation
         )
 
         return ctx
@@ -235,7 +246,7 @@ class TestNetworkInterface(testtools.TestCase):
             eni.create,
             ctx=ctx
         )
-        self.assertIn('does not exist', output.message)
+        self.assertIn('Cannot use_external_resource because resource', output.message)
 
     @mock_ec2
     def test_attach_external_interface_instance(self):
@@ -400,6 +411,7 @@ class TestNetworkInterface(testtools.TestCase):
         ctx.node.properties['parameters']['subnet_id'] = subnet.id
         current_ctx.set(ctx=ctx)
         eni.create(ctx=ctx)
+        ctx.operation._operation_context['name'] = 'delete'
         eni.delete(ctx=ctx)
         self.assertNotIn('aws_resource_id', ctx.instance.runtime_properties)
 
@@ -419,10 +431,12 @@ class TestNetworkInterface(testtools.TestCase):
         ec2_client = self.get_client()
         ein_id = ctx.instance.runtime_properties['aws_resource_id']
         ec2_client.delete_network_interface(network_interface_id=ein_id)
+        ctx.operation._operation_context['name'] = 'delete'
+        ctx.operation._operation_context['retry_number'] = 0
         output = self.assertRaises(
             NonRecoverableError,
             eni.delete,
             ctx=ctx
         )
-        self.assertIn('Cannot use_external_resource because resource',
+        self.assertIn('InvalidNetworkInterfaceID.NotFound',
                       output.message)
