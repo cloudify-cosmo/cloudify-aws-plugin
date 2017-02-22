@@ -379,7 +379,7 @@ class AwsBaseNode(AwsBase):
         if not self.is_external_resource:
             return False
 
-        ctx.logger.info('{0} ID# {1} is user-provided.'
+        ctx.logger.info('AWS {0} ID# {1} is user-provided.'
                         .format(self.aws_resource_type,
                                 self.resource_id))
 
@@ -397,7 +397,7 @@ class AwsBaseNode(AwsBase):
         if not self.is_external_resource:
             return False
 
-        ctx.logger.info('{0} ID# {1} is user-provided '
+        ctx.logger.info('AWS {0} ID# {1} is user-provided '
                         '- superficial deletion only.'
                         .format(self.aws_resource_type,
                                 self.resource_id))
@@ -453,7 +453,7 @@ class AwsBaseNode(AwsBase):
         ctx.instance.runtime_properties['aws_resource_state'] = resource_state
         if not resource_state:
             ctx.logger.info(
-                'Unable to verify {0} ID# {1} state.'
+                'Unable to verify AWS {0} ID# {1} state.'
                 .format(self.aws_resource_type, self.resource_id))
         return self.cloudify_operation_exit_handler(resource_state,
                                                     short_operation_name)
