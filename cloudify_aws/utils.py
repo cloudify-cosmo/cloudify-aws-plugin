@@ -105,27 +105,6 @@ def unassign_runtime_property_from_resource(property_name, ctx_instance):
                                                           value))
 
 
-def use_external_resource(ctx_node_properties):
-    """Checks if use_external_resource node property is true,
-    logs the ID and answer to the debug log,
-    and returns boolean False (if not external) or True.
-
-    :param ctx_node_properties: The ctx node properties for a node.
-    :returns boolean: False if not external.
-    """
-
-    if not ctx_node_properties['use_external_resource']:
-        ctx.logger.debug(
-                'Using Cloudify resource_id: {0}.'
-                .format(ctx_node_properties['resource_id']))
-        return False
-    else:
-        ctx.logger.debug(
-                'Using external resource_id: {0}.'
-                .format(ctx_node_properties['resource_id']))
-        return True
-
-
 def get_target_external_resource_ids(relationship_type, ctx_instance):
     """Gets a list of target node ids connected via a relationship to a node.
 
