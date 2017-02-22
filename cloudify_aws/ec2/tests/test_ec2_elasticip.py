@@ -66,7 +66,10 @@ class TestElasticIP(testtools.TestCase):
 
         return ctx
 
-    def mock_elastic_ip_node(self, test_name, retry_number=0, operation_name='create'):
+    def mock_elastic_ip_node(self,
+                             test_name,
+                             retry_number=0,
+                             operation_name='create'):
 
         test_node_id = test_name
         test_properties = {

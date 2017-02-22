@@ -423,7 +423,8 @@ class AwsBaseNode(AwsBase):
             if ret is False:
                 raise NonRecoverableError(
                     'Neither external resource, nor Cloudify resource, '
-                    'unable to {0} this resource.'.format(short_operation_name))
+                    'unable to {0} this resource.'
+                    .format(short_operation_name))
             post_operation_funtion()
         resource = self.get_resource()
         if not resource and 'delete' in short_operation_name:

@@ -41,7 +41,11 @@ BAD_INSTANCE_ID = 'i-4339wSD9'
 
 class TestEBS(testtools.TestCase):
 
-    def mock_ctx(self, test_name, zone=TEST_ZONE, retry_number=0, operation_name='create'):
+    def mock_ctx(self,
+                 test_name,
+                 zone=TEST_ZONE,
+                 retry_number=0,
+                 operation_name='create'):
 
         test_node_id = test_name
         test_properties = {
@@ -68,7 +72,10 @@ class TestEBS(testtools.TestCase):
 
         return ctx
 
-    def mock_volume_node(self, test_name, retry_number=0, operation_name='create'):
+    def mock_volume_node(self,
+                         test_name,
+                         retry_number=0,
+                         operation_name='create'):
 
         test_node_id = test_name
         test_properties = {
@@ -420,7 +427,9 @@ class TestEBS(testtools.TestCase):
                             return_value=False):
                 ex = self.assertRaises(
                         NonRecoverableError, ebs.create, args, ctx=ctx)
-                self.assertIn('Cannot use_external_resource because resource', ex.message)
+                self.assertIn(
+                    'Cannot use_external_resource because resource',
+                    ex.message)
 
     @mock_ec2
     def test_delete_existing(self):

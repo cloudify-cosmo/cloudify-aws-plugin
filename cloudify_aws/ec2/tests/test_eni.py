@@ -62,7 +62,9 @@ class TestNetworkInterface(testtools.TestCase):
         return ctx
 
     @staticmethod
-    def mock_network_interface_node(test_name, retry_number=0, operation_name='create'):
+    def mock_network_interface_node(test_name,
+                                    retry_number=0,
+                                    operation_name='create'):
 
         test_node_id = test_name
         test_properties = {
@@ -246,7 +248,9 @@ class TestNetworkInterface(testtools.TestCase):
             eni.create,
             ctx=ctx
         )
-        self.assertIn('Cannot use_external_resource because resource', output.message)
+        self.assertIn(
+            'Cannot use_external_resource because resource',
+            output.message)
 
     @mock_ec2
     def test_attach_external_interface_instance(self):

@@ -246,7 +246,9 @@ class VpcTestCase(testtools.TestCase):
         return resources
 
     def mock_node_context(self, test_name,
-                          node_properties=None, relationships=None, operation=None):
+                          node_properties=None,
+                          relationships=None,
+                          operation=None):
 
         if not operation:
             operation = {

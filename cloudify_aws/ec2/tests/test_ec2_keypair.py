@@ -263,7 +263,8 @@ class TestKeyPair(testtools.TestCase):
         ctx.node.properties['use_external_resource'] = True
         ctx.node.properties['resource_id'] = kp.name
         keypair.create()
-        self.assertIn('aws_resource_id', ctx.instance.runtime_properties.keys())
+        self.assertIn('aws_resource_id',
+                      ctx.instance.runtime_properties.keys())
 
     @mock_ec2
     def test_get_key_file_path_missing_property(self):
@@ -311,7 +312,8 @@ class TestKeyPair(testtools.TestCase):
         runtime_properties for external resource.
         """
 
-        ctx = self.mock_ctx('test_delete_use_external', operation_name='delete')
+        ctx = self.mock_ctx('test_delete_use_external',
+                            operation_name='delete')
         current_ctx.set(ctx=ctx)
 
         ec2_client = connection.EC2ConnectionClient().client()
