@@ -100,21 +100,6 @@ class SecurityGroup(AwsBaseNode):
 
         return True
 
-    # def create_helper(self, args=None):
-    #
-    #     ctx.logger.info(
-    #             'Attempting to create {0} {1}.'
-    #             .format(self.aws_resource_type,
-    #                     self.cloudify_node_instance_id))
-    #
-    #     if self.use_external_resource_naively() or self.create(args, rules):
-    #         return self.post_create()
-    #
-    #     return ctx.operation.retry(
-    #             message='Waiting to verify that security group {0} '
-    #                     'has been added.'
-    #                     .format(constants.EXTERNAL_RESOURCE_ID))
-
     def start(self, args=None, **_):
         return True
 
