@@ -101,7 +101,8 @@ class TestSecurityGroup(testtools.TestCase):
         ]
         ec2_client = connection.EC2ConnectionClient().client()
         with mock.patch(
-                'cloudify_aws.ec2.securitygroup.SecurityGroup.get_resource_state'
+                'cloudify_aws.ec2.securitygroup.'
+                'SecurityGroup.get_resource_state'
                 ) as securitygroup_state:
             securitygroup_state.return_value = 'available'
             securitygroup.create(rules=rules, ctx=ctx)
@@ -127,7 +128,8 @@ class TestSecurityGroup(testtools.TestCase):
         ctx.node.properties['use_external_resource'] = True
         ctx.node.properties['resource_id'] = group.id
         with mock.patch(
-                'cloudify_aws.ec2.securitygroup.SecurityGroup.get_resource_state'
+                'cloudify_aws.ec2.securitygroup.'
+                'SecurityGroup.get_resource_state'
                 ) as securitygroup_state:
             securitygroup_state.return_value = 'available'
             securitygroup.create(ctx=ctx)
@@ -155,7 +157,8 @@ class TestSecurityGroup(testtools.TestCase):
         ctx = self.security_group_mock('test_create', test_properties)
         current_ctx.set(ctx=ctx)
         with mock.patch(
-                'cloudify_aws.ec2.securitygroup.SecurityGroup.get_resource_state'
+                'cloudify_aws.ec2.securitygroup.'
+                'SecurityGroup.get_resource_state'
                 ) as securitygroup_state:
             securitygroup_state.return_value = 'available'
             securitygroup.create(ctx=ctx)
@@ -175,7 +178,8 @@ class TestSecurityGroup(testtools.TestCase):
         ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID] = \
             group.id
         with mock.patch(
-                'cloudify_aws.ec2.securitygroup.SecurityGroup.get_resource_state'
+                'cloudify_aws.ec2.securitygroup.'
+                'SecurityGroup.get_resource_state'
                 ) as securitygroup_state:
             securitygroup_state.return_value = 'available'
             securitygroup.create(ctx=ctx)
@@ -195,7 +199,8 @@ class TestSecurityGroup(testtools.TestCase):
         ctx.node.properties['use_external_resource'] = True
         ctx.node.properties['resource_id'] = group.id
         with mock.patch(
-                'cloudify_aws.ec2.securitygroup.SecurityGroup.get_resource_state'
+                'cloudify_aws.ec2.securitygroup.'
+                'SecurityGroup.get_resource_state'
                 ) as securitygroup_state:
             securitygroup_state.return_value = 'available'
             securitygroup.create(ctx=ctx)
@@ -461,7 +466,8 @@ class TestSecurityGroup(testtools.TestCase):
         del ctx.node.properties['rules'][0]['cidr_ip']
         current_ctx.set(ctx=ctx)
         with mock.patch(
-                'cloudify_aws.ec2.securitygroup.SecurityGroup.get_resource_state'
+                'cloudify_aws.ec2.securitygroup.'
+                'SecurityGroup.get_resource_state'
                 ) as securitygroup_state:
             securitygroup_state.return_value = 'available'
             securitygroup.create(ctx=ctx)
