@@ -67,10 +67,7 @@ SECURITYGROUP = dict(
         ID_FORMAT='^sg\-[0-9a-z]{8}$',
         NOT_FOUND_ERROR='InvalidGroup.NotFound',
         REQUIRED_PROPERTIES=['description', 'rules'],
-        STATES=[{'name': 'create',
-                 'success': ['available'],
-                 'waiting': ['pending'],
-                 'failed': []}]
+        STATES=[{}]
 )
 
 SUBNET = dict(

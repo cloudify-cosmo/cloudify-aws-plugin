@@ -341,8 +341,7 @@ class AwsBaseNode(AwsBase):
         # an error we log a warning.
         if operation_states is None:
             ctx.logger.debug(
-                'AWS type {0} has no state-validation '
-                'reference for {1} sequence. Exit sequence.'
+                'AWS type {0} has no {1} state-validation reference. '
                 .format(self.aws_resource_type, operation_name))
             return
 
@@ -367,7 +366,7 @@ class AwsBaseNode(AwsBase):
             return ctx.operation.retry(message=_message)
 
         # This is potentially a serious issue.
-        # Either AWS Failed and could possible recover.
+        # Either AWS Failed and could possibly recover.
         # OR this plugin has a bug.
         raise RecoverableError(
             'The resource is not in state '
@@ -555,8 +554,9 @@ class AwsBaseNode(AwsBase):
         return True
 
     def post_start(self):
-        resource = self.get_resource()
-        self.tag_resource(resource)
+        if not self.is_external_resource:
+            resource = self.get_resource()
+            self.tag_resource(resource)
         return True
 
     def post_stop(self):
