@@ -31,7 +31,8 @@ def creation_validation(**_):
 
 @operation
 def create(args=None, rules=[], **_):
-    return SecurityGroup().create_helper(args, rules)
+    ctx.instance.runtime_properties['rules_from_args'] = rules
+    return SecurityGroup().create_helper(args)
 
 
 @operation
@@ -64,10 +65,11 @@ class SecurityGroup(AwsBaseNode):
             .format(constants.SECURITYGROUP['AWS_RESOURCE_TYPE'])
         }
 
-    def create(self, args=None, rules=[], **_):
+    def create(self, args=None, **_):
 
         """Creates an EC2 security group.
         """
+        rules = ctx.instance.runtime_properties['rules_from_args']
         name = utils.get_resource_id()
 
         create_args = dict(
@@ -78,16 +80,14 @@ class SecurityGroup(AwsBaseNode):
 
         create_args = utils.update_args(create_args, args)
 
-        if ctx.operation.retry_number == 0 and constants.EXTERNAL_RESOURCE_ID \
-                not in ctx.instance.runtime_properties:
-            try:
-                security_group = self.execute(
-                        self.client.create_security_group, create_args,
-                        raise_on_falsy=True)
-            except (exception.EC2ResponseError,
-                    exception.BotoServerError) as e:
-                raise NonRecoverableError('{0}'.format(str(e)))
-            utils.set_external_resource_id(security_group.id, ctx.instance)
+        try:
+            security_group = self.execute(
+                    self.client.create_security_group, create_args,
+                    raise_on_falsy=True)
+        except (exception.EC2ResponseError,
+                exception.BotoServerError) as e:
+            raise NonRecoverableError('{0}'.format(str(e)))
+        utils.set_external_resource_id(security_group.id, ctx.instance)
 
         self.resource_id = \
             ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
@@ -100,20 +100,20 @@ class SecurityGroup(AwsBaseNode):
 
         return True
 
-    def create_helper(self, args=None, rules=[]):
-
-        ctx.logger.info(
-                'Attempting to create {0} {1}.'
-                .format(self.aws_resource_type,
-                        self.cloudify_node_instance_id))
-
-        if self.use_external_resource_naively() or self.create(args, rules):
-            return self.post_create()
-
-        return ctx.operation.retry(
-                message='Waiting to verify that security group {0} '
-                        'has been added.'
-                        .format(constants.EXTERNAL_RESOURCE_ID))
+    # def create_helper(self, args=None):
+    #
+    #     ctx.logger.info(
+    #             'Attempting to create {0} {1}.'
+    #             .format(self.aws_resource_type,
+    #                     self.cloudify_node_instance_id))
+    #
+    #     if self.use_external_resource_naively() or self.create(args, rules):
+    #         return self.post_create()
+    #
+    #     return ctx.operation.retry(
+    #             message='Waiting to verify that security group {0} '
+    #                     'has been added.'
+    #                     .format(constants.EXTERNAL_RESOURCE_ID))
 
     def start(self, args=None, **_):
         return True
