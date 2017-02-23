@@ -578,13 +578,6 @@ class Instance(AwsBaseNode):
 
         return instances
 
-    def post_start(self):
-
-        resource = self._get_instance_from_id(self.resource_id)
-        self.tag_resource(resource)
-
-        return True
-
     def modify_helper(self, new_attributes, args=None):
 
         ctx.logger.info(
