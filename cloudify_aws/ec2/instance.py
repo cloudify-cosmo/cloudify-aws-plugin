@@ -113,22 +113,6 @@ class Instance(AwsBaseNode):
 
         return True
 
-    def create_helper(self, args=None):
-
-        ctx.logger.info(
-                'Attempting to create {0} {1}.'
-                .format(self.aws_resource_type,
-                        self.cloudify_node_instance_id))
-
-        if self.use_external_resource_naively() or self.create(args):
-            return self.post_create()
-
-        return ctx.operation.retry(
-                message='Waiting to verify that {0} {1} '
-                        'has been added to your account.'
-                        .format(self.aws_resource_type,
-                                self.cloudify_node_instance_id))
-
     def start(self, args=None, start_retry_interval=30,
               private_key_path=None, **_):
 
