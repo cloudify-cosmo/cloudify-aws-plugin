@@ -87,8 +87,7 @@ class SecurityGroup(AwsBaseNode):
             except (exception.EC2ResponseError,
                     exception.BotoServerError) as e:
                 raise NonRecoverableError('{0}'.format(str(e)))
-            utils.set_external_resource_id(
-                    security_group.id, ctx.instance, external=False)
+            utils.set_external_resource_id(security_group.id, ctx.instance)
 
         self.resource_id = \
             ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]

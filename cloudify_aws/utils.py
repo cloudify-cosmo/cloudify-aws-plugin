@@ -68,20 +68,15 @@ def get_external_resource_id_or_raise(operation, ctx_instance):
     return ctx_instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
 
 
-def set_external_resource_id(value, ctx_instance, external=True):
+def set_external_resource_id(value, ctx_instance):
     """Sets the EXTERNAL_RESOURCE_ID runtime_property for a Node-Instance.
 
     :param value: the desired EXTERNAL_RESOURCE_ID runtime_property
     :param ctx_instance:  The Cloudify ctx context.
-    :param external:  Boolean representing if it is external resource or not.
     """
 
-    if not external:
-        resource_type = 'Cloudify'
-    else:
-        resource_type = 'external'
-
-    ctx.logger.info('Using {0} resource: {1}'.format(resource_type, value))
+    ctx.logger.info(
+        'Stored reference ID# {0} in Cloudify.'.format(value))
     ctx_instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID] = value
 
 
