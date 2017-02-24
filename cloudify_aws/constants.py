@@ -33,6 +33,13 @@ INSTANCE_INTERNAL_ATTRIBUTES = \
     ['private_dns_name', 'public_dns_name',
      'public_ip_address', 'ip']
 
+ENI_INTERNAL_ATTRIBUTES = \
+    ['subnet_id', 'vpc_id',
+     'description', 'owner_id', 'requester_managed',
+     'status', 'mac_address', 'private_ip_address',
+     'source_dest_check', 'groups',
+     'private_ip_addresses']
+
 AWS_TYPE_PROPERTY = 'external_type'  # resource's openstack type
 RELATIONSHIP_INSTANCE = 'relationship-instance'
 NODE_INSTANCE = 'node-instance'

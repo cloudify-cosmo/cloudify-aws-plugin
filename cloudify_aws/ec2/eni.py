@@ -199,29 +199,42 @@ class Interface(AwsBaseNode):
 
         self.resource_id = network_interface.id
 
-        ctx.instance.runtime_properties['subnet_id'] = \
-            network_interface.subnet_id
-        ctx.instance.runtime_properties['vpc_id'] = \
-            network_interface.vpc_id
-        ctx.instance.runtime_properties['description'] = \
-            network_interface.description
-        ctx.instance.runtime_properties['owner_id'] = \
-            network_interface.owner_id
-        ctx.instance.runtime_properties['requester_managed'] = \
-            network_interface.requester_managed
-        ctx.instance.runtime_properties['status'] = \
-            network_interface.status
-        ctx.instance.runtime_properties['mac_address'] = \
-            network_interface.mac_address
-        ctx.instance.runtime_properties['private_ip_address'] = \
-            network_interface.private_ip_address
-        ctx.instance.runtime_properties['source_dest_check'] = \
-            network_interface.source_dest_check
-        ctx.instance.runtime_properties['groups'] = \
-            [group.id for group in network_interface.groups]
-        ctx.instance.runtime_properties['private_ip_addresses'] = \
-            [(private_ip.private_ip_address, private_ip.primary)
-             for private_ip in network_interface.private_ip_addresses]
+        return True
+
+    def post_create(self):
+        utils.set_external_resource_id(self.resource_id, ctx.instance)
+        network_interface = self.get_resource()
+        for req_runtime_prop in constants.ENI_INTERNAL_ATTRIBUTES:
+            if req_runtime_prop == 'private_ip_addresses':
+                ctx.instance.runtime_properties['private_ip_addresses'] = \
+                    [(private_ip.private_ip_address, private_ip.primary)
+                     for private_ip in network_interface.private_ip_addresses]
+        else:
+            ctx.instance.runtime_properties[req_runtime_prop] = \
+                getattr(network_interface, req_runtime_prop)
+        # ctx.instance.runtime_properties['subnet_id'] = \
+        #     network_interface.subnet_id
+        # ctx.instance.runtime_properties['vpc_id'] = \
+        #     network_interface.vpc_id
+        # ctx.instance.runtime_properties['description'] = \
+        #     network_interface.description
+        # ctx.instance.runtime_properties['owner_id'] = \
+        #     network_interface.owner_id
+        # ctx.instance.runtime_properties['requester_managed'] = \
+        #     network_interface.requester_managed
+        # ctx.instance.runtime_properties['status'] = \
+        #     network_interface.status
+        # ctx.instance.runtime_properties['mac_address'] = \
+        #     network_interface.mac_address
+        # ctx.instance.runtime_properties['private_ip_address'] = \
+        #     network_interface.private_ip_address
+        # ctx.instance.runtime_properties['source_dest_check'] = \
+        #     network_interface.source_dest_check
+        # ctx.instance.runtime_properties['groups'] = \
+        #     [group.id for group in network_interface.groups]
+        # ctx.instance.runtime_properties['private_ip_addresses'] = \
+        #     [(private_ip.private_ip_address, private_ip.primary)
+        #      for private_ip in network_interface.private_ip_addresses]
 
         return True
 
