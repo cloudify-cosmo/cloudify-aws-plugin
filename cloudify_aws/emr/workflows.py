@@ -18,7 +18,7 @@
     AWS EMR workflows
 '''
 # Cloudify imports
-from cloudify.exceptions import OperationRetry
+from cloudify.exceptions import OperationRetry, NonRecoverableError
 from cloudify_aws.emr import utils
 from cloudify_aws.emr.cluster import EMRCluster
 # Cloudify AWS
@@ -40,8 +40,11 @@ def scale_instance_group(ctx, cluster_node, instance_group_id, delta, **_):
     # Naive type casting from string
     delta = int(delta)
     cluster_node = ctx.get_node(cluster_node)
+    if not cluster_node.number_of_instances:
+        raise NonRecoverableError(
+            'Cluster node (%s) has no running instances!' % cluster_node.id)
     cluster_id = utils.get_resource_id(
-        cluster_node, raise_on_missing=True)
+        cluster_node, cluster_node.instances[0], raise_on_missing=True)
     ctx.logger.debug('EMR Cluster: %s ("%s")' % (cluster_node.id, cluster_id))
     client = connection.EMRConnectionClient().client(
         cluster_node.properties[AWS_CONFIG_PROPERTY])
