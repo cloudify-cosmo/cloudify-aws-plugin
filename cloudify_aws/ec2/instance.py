@@ -108,9 +108,6 @@ class Instance(AwsBaseNode):
         if instance is None:
             return False
 
-        utils.set_external_resource_id(instance_id, ctx.instance)
-        self._instance_created_assign_runtime_properties()
-
         return True
 
     def start(self, args=None, start_retry_interval=30,
@@ -601,6 +598,11 @@ class Instance(AwsBaseNode):
             return self.post_stop()
 
         return ctx.operation.retry('Waiting server to stop. Retrying...')
+
+    def post_create(self):
+        utils.set_external_resource_id(self.resource_id, ctx.instance)
+        self._instance_created_assign_runtime_properties()
+        return True
 
     def post_stop(self):
 

@@ -221,13 +221,17 @@ class ElasticIP(AwsBaseNode):
                 exception.BotoServerError) as e:
             raise NonRecoverableError('{0}'.format(str(e)))
 
+        self.resource_id = address_object.public_ip
+
+        return True
+
+    def post_create(self):
+        utils.set_external_resource_id(self.resource_id, ctx.instance)
+        address_object = self.get_resource()
         if constants.ELASTICIP['VPC_DOMAIN'] in address_object.domain:
             ctx.instance.runtime_properties[constants.ELASTICIP[
                 'ALLOCATION_ID']] = address_object.allocation_id
             self.allocation_id = address_object.allocation_id
-
-        self.resource_id = address_object.public_ip
-
         return True
 
     def delete(self, args=None, **_):
