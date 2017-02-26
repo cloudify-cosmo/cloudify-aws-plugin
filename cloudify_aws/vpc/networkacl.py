@@ -119,10 +119,14 @@ class NetworkAcl(AwsBaseNode):
     def create(self, args):
         create_args = self.generate_create_args()
         create_args = utils.update_args(create_args, args)
+        ctx.instance.runtime_properties['vpc_id'] = create_args['vpc_id']
         network_acl = self.execute(self.client.create_network_acl,
                                    create_args, raise_on_falsy=True)
         self.resource_id = network_acl.id
-        ctx.instance.runtime_properties['vpc_id'] = create_args['vpc_id']
+        return True
+
+    def post_create(self):
+        utils.set_external_resource_id(self.resource_id, ctx.instance)
         self.add_entries_to_network_acl()
         return True
 

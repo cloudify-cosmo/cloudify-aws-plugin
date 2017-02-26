@@ -202,10 +202,10 @@ class RouteTable(AwsBaseNode, RouteMixin):
         return vpc
 
     def post_create(self):
+        utils.set_external_resource_id(self.resource_id, ctx.instance)
         vpc = self.get_containing_vpc()
         ctx.instance.runtime_properties['vpc_id'] = vpc.id
         ctx.instance.runtime_properties['routes'] = self.routes
-        utils.set_external_resource_id(self.resource_id, ctx.instance)
         ctx.logger.info(
             'Added {0} {1} to Cloudify.'
             .format(self.aws_resource_type, self.resource_id))

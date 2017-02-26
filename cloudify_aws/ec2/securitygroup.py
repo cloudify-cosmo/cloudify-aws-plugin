@@ -13,8 +13,11 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
+# Built-in Imports
+
 # Third-party Imports
 from boto import exception
+import ipaddress
 
 # Cloudify imports
 from cloudify import ctx
@@ -69,7 +72,7 @@ class SecurityGroup(AwsBaseNode):
 
         """Creates an EC2 security group.
         """
-        rules = ctx.instance.runtime_properties['rules_from_args']
+
         name = utils.get_resource_id()
 
         create_args = dict(
@@ -87,17 +90,18 @@ class SecurityGroup(AwsBaseNode):
         except (exception.EC2ResponseError,
                 exception.BotoServerError) as e:
             raise NonRecoverableError('{0}'.format(str(e)))
-        utils.set_external_resource_id(security_group.id, ctx.instance)
 
-        self.resource_id = \
-            ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
+        self.resource_id = security_group.id
+
+        return True
+
+    def post_create(self):
+        utils.set_external_resource_id(self.resource_id, ctx.instance)
+        rules = ctx.instance.runtime_properties['rules_from_args']
         security_group = self.get_resource()
-
         if not security_group:
             return False
-
         self._create_group_rules(security_group, rules)
-
         return True
 
     def start(self, args=None, **_):
@@ -128,6 +132,66 @@ class SecurityGroup(AwsBaseNode):
 
         return list_of_vpcs[0] if list_of_vpcs else None
 
+    @staticmethod
+    def format_rule(protocol,
+                    from_port,
+                    to_port,
+                    target):
+
+        rule_format = {
+            'ip_protocol': protocol,
+            'from_port': from_port,
+            'to_port': to_port
+        }
+        if not target:
+            raise NonRecoverableError(
+                '{0} is not a valid rule target cidr_ip or src_group_ip'
+                .format(target))
+        try:
+            ipaddress.ip_network(target)
+        except (ipaddress.AddressValueError, ValueError):
+            try:
+                ipaddress.ip_address(target)
+            except (ipaddress.AddressValueError, ValueError):
+                rule_format.update({'src_group_id': target})
+            else:
+                rule_format.update({'cidr_ip': target})
+        else:
+            rule_format.update({'cidr_ip': target})
+
+        return rule_format
+
+    def rules_cleanup(self, group, rules):
+        """
+        Make sure that no rule in rules already
+        exists in group.rules, if so, remove it from new rules.
+
+        :param group: a boto.ec2.securitygroup object.
+        :param rules:
+        :return: clean_rules (a list of cleaned, non-conflicting rules.)
+        """
+
+        clean_rules = []
+        for rule in rules:
+            if rule.get('cidr_ip') and rule.get('src_group_id'):
+                raise NonRecoverableError(
+                    'You cannot pass both cidr_ip and src_group_id.')
+            clean_rules.append(
+                self.format_rule(rule['ip_protocol'],
+                                 rule['from_port'],
+                                 rule['to_port'],
+                                 rule.get('cidr_ip') or
+                                 rule.get('src_group_id')))
+        for ip_permission in group.rules:
+            for grant in ip_permission.grants:
+                existing_rule = self.format_rule(ip_permission.ip_protocol,
+                                                 ip_permission.from_port,
+                                                 ip_permission.to_port,
+                                                 str(grant))
+                if existing_rule in clean_rules:
+                    clean_rules.remove(existing_rule)
+        return clean_rules
+
     def update_rules(self, rules):
 
         security_group = self.get_resource()
@@ -145,15 +209,11 @@ class SecurityGroup(AwsBaseNode):
         from_port, to_port, and cidr_ip are not provided.
         """
 
-        ruleset = rules + ctx.node.properties['rules']
-
-        for rule in ruleset:
+        for rule in self.rules_cleanup(group_object,
+                                       rules + ctx.node.properties['rules']
+                                       ):
 
             if 'src_group_id' in rule:
-
-                if 'cidr_ip' in rule:
-                    raise NonRecoverableError(
-                            'You need to pass either src_group_id OR cidr_ip.')
 
                 if not group_object.vpc_id:
                     src_group_object = self.get_resource()

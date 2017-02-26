@@ -68,13 +68,13 @@ class TestSecurityGroup(testtools.TestCase):
                     'ip_protocol': 'tcp',
                     'from_port': '22',
                     'to_port': '22',
-                    'cidr_ip': '127.0.0.1/32'
+                    'cidr_ip': '192.168.122.0/24'
                 },
                 {
                     'ip_protocol': 'tcp',
                     'from_port': '80',
                     'to_port': '80',
-                    'cidr_ip': '127.0.0.1/32'
+                    'cidr_ip': '192.168.122.0/24'
                 }
             ]
         }
@@ -96,7 +96,7 @@ class TestSecurityGroup(testtools.TestCase):
                 'ip_protocol': 'udp',
                 'from_port': '33333',
                 'to_port': '33333',
-                'cidr_ip': '127.0.0.2/32'
+                'cidr_ip': '192.168.122.40/32'
             }
         ]
         ec2_client = connection.EC2ConnectionClient().client()
@@ -138,7 +138,7 @@ class TestSecurityGroup(testtools.TestCase):
                 'ip_protocol': 'udp',
                 'from_port': '33333',
                 'to_port': '33333',
-                'cidr_ip': '127.0.0.2/32'
+                'cidr_ip': '192.168.122.40'
             }
         ]
         securitygroup.update_rules(rules=rules, ctx=ctx)
@@ -416,7 +416,7 @@ class TestSecurityGroup(testtools.TestCase):
                 test_securitygroup._create_group_rules,
                 group)
         self.assertIn(
-                'You need to pass either src_group_id OR cidr_ip.',
+                'is not a valid rule target cidr_ip or src_group_ip',
                 ex.message)
 
     @mock_ec2
@@ -425,28 +425,32 @@ class TestSecurityGroup(testtools.TestCase):
         error is raised when neither is given.
         """
 
+        test_properties = self.get_mock_properties()
+        ctx = self.security_group_mock(
+            'test_create_group_rules_both_src_group_id_or_cidr',
+            test_properties)
+        current_ctx.set(ctx=ctx)
         ec2_client = connection.EC2ConnectionClient().client()
         group = ec2_client.create_security_group(
                 'test_create_group_rules_both_src_group_id_or_cidr',
                 'this is test')
-        test_properties = self.get_mock_properties()
-        ctx = self.security_group_mock(
-                'test_create_group_rules_both_src_group_id_or_cidr',
-                test_properties)
-        current_ctx.set(ctx=ctx)
         test_securitygroup = self.create_sg_for_checking()
-
         group_object = ec2_client.create_security_group(
                 'dummy',
                 'this is test')
-        ctx.node.properties['rules'][0]['src_group_id'] = group_object
-        ex = self.assertRaises(
-                NonRecoverableError,
-                test_securitygroup._create_group_rules,
-                group)
-        self.assertIn(
-                'You need to pass either src_group_id OR cidr_ip.',
-                ex.message)
+        # setattr(group_object, 'vpc_id', 'vpc-abcd1234')
+        ctx.node.properties['rules'][0]['src_group_id'] = group_object.id
+        with mock.patch(
+                'cloudify_aws.ec2.securitygroup.'
+                'SecurityGroup.get_resource') as gr:
+            gr.return_value = group
+            ex = self.assertRaises(
+                    NonRecoverableError,
+                    test_securitygroup._create_group_rules,
+                    group)
+            self.assertIn(
+                    'You cannot pass both cidr_ip and src_group_id',
+                    ex.message)
 
     @mock_ec2
     def test_create_group_rules_src_group(self):
