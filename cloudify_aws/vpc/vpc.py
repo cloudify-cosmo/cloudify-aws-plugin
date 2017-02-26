@@ -266,21 +266,6 @@ class Vpc(AwsBaseNode):
             'argument': '{0}_ids'.format(constants.VPC['AWS_RESOURCE_TYPE'])
         }
 
-    def use_external_resource_naively(self):
-
-        if not self.is_external_resource:
-            return False
-
-        resource = self.get_resource()
-
-        if not resource:
-            self.raise_forbidden_external_resource(self.resource_id)
-
-        ctx.instance.runtime_properties['default_dhcp_options_id'] = \
-            resource.dhcp_options_id
-
-        return True
-
     def create(self, args):
 
         create_args = dict(
@@ -293,9 +278,9 @@ class Vpc(AwsBaseNode):
         vpc = self.execute(self.client.create_vpc,
                            create_args, raise_on_falsy=True)
         self.resource_id = vpc.id
+        utils.set_external_resource_id(vpc.id, ctx.instance)
         ctx.instance.runtime_properties['default_dhcp_options_id'] = \
             vpc.dhcp_options_id
-
         return True
 
     def start(self, args):

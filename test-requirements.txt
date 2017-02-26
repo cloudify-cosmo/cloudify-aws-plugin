@@ -5,3 +5,4 @@ testfixtures
 moto
 mock
 tox
+ipaddress
