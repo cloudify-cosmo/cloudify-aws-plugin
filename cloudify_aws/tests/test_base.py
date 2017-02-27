@@ -16,6 +16,7 @@
 # Built-in Imports
 import testtools
 from cloudify.state import current_ctx
+from boto.ec2.ec2object import TaggedEC2Object
 
 # Third Party Imports
 import mock
@@ -55,61 +56,68 @@ class TestCloudifyAwsBase(testtools.TestCase):
         ctx = self.get_mock_ctx('test_base_operation_functions')
         current_ctx.set(ctx=ctx)
         resource = AwsBaseNode('root', [], resource_states=[])
-        # testing create
+        # testing operations
         for operation in ('create', 'start', 'stop', 'delete'):
             function = getattr(resource, operation)
             output = function()
             self.assertEquals(False, output)
 
-    @mock.patch('cloudify_aws.base.AwsBaseNode'
-                '.raise_forbidden_external_resource')
-    def test_base_operation_handler_functions(self, *_):
+    def test_base_operation_handler_functions(self):
         ctx = self.get_mock_ctx('test_base_operation_handler_functions')
         current_ctx.set(ctx=ctx)
         resource = AwsBaseNode('root', [], resource_states=[])
-        # testing create
+
         with mock.patch('cloudify_aws.base.AwsBaseNode'
                         '.get_and_filter_resources_by_matcher') \
                 as mock_get_and_filter_resources_by_matcher:
             mock_get_and_filter_resources_by_matcher.return_value = []
 
-            for operation in ('create', 'start', 'delete'):
+            for operation in ('create', 'start', 'stop', 'delete'):
+                ctx.operation._operation_context['name'] = operation
                 with mock.patch('cloudify_aws.base.AwsBaseNode.{0}'
                                 .format(operation)):
                     function = getattr(resource, '{0}_helper'
                                        .format(operation))
                     output = function()
                     if operation in ('create_helper', 'start_helper',
-                                     'stop_helper'):
+                                     'modify_helper', 'stop_helper'):
                         self.assertIsNone(output)
                     elif operation == 'delete_helper':
                         self.assertEqual(output, True)
 
-    @mock.patch('cloudify_aws.base.AwsBaseNode'
-                '.raise_forbidden_external_resource')
-    def test_base_operation_handler_functions_retry(self, *_):
-        ctx = self.get_mock_ctx('test_base_operation_handler_functions_retry')
+    def test_base_operation_handler_functions_false(self):
+        ctx = self.get_mock_ctx('test_base_operation_handler_functions_false')
         current_ctx.set(ctx=ctx)
         resource = AwsBaseNode('root', [], resource_states=[])
-        # testing create
+
         with mock.patch('cloudify_aws.base.AwsBaseNode'
                         '.get_and_filter_resources_by_matcher') \
                 as mock_get_and_filter_resources_by_matcher:
             mock_get_and_filter_resources_by_matcher.return_value = []
 
-            with mock.patch('cloudify_aws.base.AwsBaseNode'
-                            '.cloudify_resource_state_change_handler') \
-                    as mock_cloudify_resource_state_change_handler:
-                mock_cloudify_resource_state_change_handler.return_value = \
-                    False
+            for operation in ('create', 'start', 'stop', 'delete'):
+                ctx.operation._operation_context['name'] = operation
+                with mock.patch('cloudify_aws.base.AwsBaseNode.{0}'
+                                .format(operation), return_value=False):
+                    function = getattr(resource, '{0}_helper'
+                                       .format(operation))
+                    with self.assertRaisesRegexp(
+                            NonRecoverableError,
+                            'Neither external resource, nor Cloudify '
+                            'resource'):
+                        function()
 
-                for operation in ('create', 'start', 'delete'):
-                    with mock.patch('cloudify_aws.base.AwsBaseNode.{0}'
-                                    .format(operation), return_value=False):
-                        function = getattr(resource, '{0}_helper'
-                                           .format(operation))
-                        with self.assertRaisesRegexp(
-                                NonRecoverableError,
-                                'Neither external resource, nor Cloudify '
-                                'resource'):
-                                function()
+            with mock.patch('cloudify_aws.base.AwsBaseNode.modify_attributes',
+                            return_value=True):
+                ctx.operation._operation_context['name'] = 'modify'
+                function = getattr(resource, 'modify_helper')
+                self.assertEqual(True, function({'key': 'value'}))
+
+    @mock.patch('boto.ec2.ec2object.TaggedEC2Object.add_tags')
+    def test_tag_resource(self, *_):
+        ctx = self.get_mock_ctx('test_tag_resource')
+        current_ctx.set(ctx=ctx)
+        resource = AwsBaseNode('root', [], resource_states=[])
+        ctx.node.properties['name'] = 'root'
+        test_resource = TaggedEC2Object()
+        resource.tag_resource(test_resource)
