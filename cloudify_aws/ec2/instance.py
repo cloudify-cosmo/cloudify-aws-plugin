@@ -605,9 +605,13 @@ class Instance(AwsBaseNode):
         return True
 
     def post_stop(self):
-
+        props_to_delete = \
+            [li for li in
+             constants.INSTANCE_INTERNAL_ATTRIBUTES
+             if li not in
+             constants.INSTANCE_INTERNAL_ATTRIBUTES_POST_STOP]
         utils.unassign_runtime_properties_from_resource(
-                property_names=constants.INSTANCE_INTERNAL_ATTRIBUTES,
+                property_names=props_to_delete,
                 ctx_instance=ctx.instance)
 
         ctx.logger.info(

@@ -29,9 +29,12 @@ AVAILABILITY_ZONE = 'availability_zone'
 AWS_CONFIG_PROPERTY = 'aws_config'
 ROUTE_NOT_FOUND_ERROR = 'InvalidRoute.NotFound'
 
+INSTANCE_INTERNAL_ATTRIBUTES_POST_STOP = \
+    ['private_dns_name', 'ip']
+
 INSTANCE_INTERNAL_ATTRIBUTES = \
-    ['private_dns_name', 'public_dns_name',
-     'public_ip_address', 'ip']
+    ['public_dns_name', 'public_ip_address'] + \
+    INSTANCE_INTERNAL_ATTRIBUTES_POST_STOP
 
 ENI_INTERNAL_ATTRIBUTES = \
     ['subnet_id', 'vpc_id',
