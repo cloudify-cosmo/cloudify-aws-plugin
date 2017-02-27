@@ -31,10 +31,15 @@ class AWSEC2UserDataAgentInstallTest(TestCase):
             os.path.join(blueprint_path,
                          'user-data-agent-install-blueprint.yaml')
 
-        self.upload_deploy_and_execute_install(
-            inputs=self.get_inputs(),
-            timeout=DEFAULT_EXECUTE_TIMEOUT
-        )
+        inputs = self.get_inputs()
+
+        try:
+            self.upload_deploy_and_execute_install(
+                inputs=inputs,
+                timeout=DEFAULT_EXECUTE_TIMEOUT
+            )
+        except TypeError:
+            self.upload_deploy_and_execute_install(inputs=inputs)
 
         instance = self.client.node_instances.list(
             node_id='test_user_data_script', deployment_id=self.test_id)[0]

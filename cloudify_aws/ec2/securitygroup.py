@@ -262,7 +262,10 @@ class SecurityGroup(AwsBaseNode):
             try:
                 ipaddress.ip_address(grant)
             except (ipaddress.AddressValueError, ValueError):
-                rule_format.update({'src_group_id': grant})
+                if grant != '0.0.0.0/0':
+                    rule_format.update({'src_group_id': grant})
+                else:
+                    rule_format.update({'cidr_ip': grant})
             else:
                 rule_format.update({'cidr_ip': grant})
         else:

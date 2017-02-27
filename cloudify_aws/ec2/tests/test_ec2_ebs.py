@@ -359,6 +359,10 @@ class TestEBS(testtools.TestCase):
         volume.attach(instance_id, TEST_DEVICE)
         ctx.source.instance.runtime_properties['aws_resource_id'] = \
             volume.id
+        ctx.source.instance.runtime_properties['device'] = \
+            TEST_DEVICE
+        ctx.target.instance.runtime_properties[
+            '{0}-device'.format(volume.id)] = TEST_DEVICE
         ctx.source.instance.runtime_properties['instance_id'] = \
             instance_id
         ctx.target.instance.runtime_properties['aws_resource_id'] = \
@@ -502,6 +506,10 @@ class TestEBS(testtools.TestCase):
         ctx.source.node.properties['resource_id'] = volume.id
         ctx.source.instance.runtime_properties['aws_resource_id'] = \
             volume.id
+        ctx.source.instance.runtime_properties['device'] = \
+            TEST_DEVICE
+        ctx.target.instance.runtime_properties[
+            '{0}-device'.format(volume.id)] = TEST_DEVICE
         ctx.target.instance.runtime_properties['placement'] = \
             TEST_ZONE
         ctx.target.node.properties['use_external_resource'] = True
