@@ -132,32 +132,113 @@ class SecurityGroup(AwsBaseNode):
 
         return list_of_vpcs[0] if list_of_vpcs else None
 
+    def update_rules(self, rules):
+        ctx.logger.debug('New rules for update: {0}'.format(rules))
+
+        security_group = self.get_resource()
+
+        if not security_group:
+            return False
+
+        self._create_group_rules(security_group, rules)
+
+    def _create_group_rules(self, group_object, rules=[]):
+        """For each rule listed in the blueprint,
+        this will add the rule to the group with the given id.
+        :param group_object: The group object that you want to add rules to.
+        :param rules: A list of rules to authorize.
+        :raises NonRecoverableError:
+        Could not locate the security group ID#.
+        """
+
+        rules_to_authorize = rules + ctx.node.properties['rules']
+
+        for rule in self.rules_cleanup(group_object, rules_to_authorize):
+
+            if 'src_group_id' in rule:
+
+                if not group_object.vpc_id:
+                    src_group_object = self.get_resource()
+                else:
+                    src_group_object = \
+                        self._get_vpc_security_group_from_name(
+                            rule['src_group_id'])
+
+                if not src_group_object:
+                    raise NonRecoverableError(
+                            'Could not locate the security group ID#: {0}.'
+                            .format(rule['src_group_id']))
+
+                del rule['src_group_id']
+                rule['src_group'] = src_group_object
+
+            try:
+                group_object.authorize(**rule)
+            except (exception.EC2ResponseError,
+                    exception.BotoServerError) as e:
+                raise NonRecoverableError('{0}'.format(str(e)))
+
+    def _get_vpc_security_group_from_name(self, name):
+        groups = self.get_all_matching()
+        for group in groups:
+            if group.name == name:
+                return group
+        return None
+
+    def _delete_security_group(self, group_id):
+        """Tries to delete a Security group
+        """
+
+        group_to_delete = self.get_resource()
+
+        if not group_to_delete:
+            raise NonRecoverableError(
+                    'Unable to delete security group {0}, because the group '
+                    'does not exist in the account'.format(group_id))
+
+        try:
+            self.execute(self.client.delete_security_group,
+                         dict(group_id=group_id), raise_on_falsy=True)
+        except (exception.EC2ResponseError,
+                exception.BotoServerError) as e:
+            raise NonRecoverableError('{0}'.format(str(e)))
+
     @staticmethod
     def format_rule(protocol,
                     from_port,
                     to_port,
-                    target):
+                    grant):
+        """
+        Format a rule for comparison in rules cleanup.
+
+        :param protocol: string. 'tcp', 'udp', or 'icmp'.
+        :param from_port: int. 0-65535
+        :param to_port: int. 0-65535
+        :param grant: string. either a cidr_ip or a source security group ID.
+        :return: dict containing a formatted rule.
+        """
 
         rule_format = {
             'ip_protocol': protocol,
             'from_port': from_port,
             'to_port': to_port
         }
-        if not target:
+        if not grant:
             raise NonRecoverableError(
                 '{0} is not a valid rule target cidr_ip or src_group_ip'
-                .format(target))
+                .format(grant))
+
         try:
-            ipaddress.ip_network(target)
+            ipaddress.ip_network(grant)
         except (ipaddress.AddressValueError, ValueError):
             try:
-                ipaddress.ip_address(target)
+                ipaddress.ip_address(grant)
             except (ipaddress.AddressValueError, ValueError):
-                rule_format.update({'src_group_id': target})
+                rule_format.update({'src_group_id': grant})
             else:
-                rule_format.update({'cidr_ip': target})
+                rule_format.update({'cidr_ip': grant})
         else:
-            rule_format.update({'cidr_ip': target})
+            rule_format.update({'cidr_ip': grant})
 
         return rule_format
 
@@ -191,78 +272,3 @@ class SecurityGroup(AwsBaseNode):
                 if existing_rule in clean_rules:
                     clean_rules.remove(existing_rule)
         return clean_rules
-
-    def update_rules(self, rules):
-
-        security_group = self.get_resource()
-
-        if not security_group:
-            return False
-
-        self._create_group_rules(security_group, rules)
-
-    def _create_group_rules(self, group_object, rules=[]):
-        """For each rule listed in the blueprint,
-        this will add the rule to the group with the given id.
-        :param group: The group object that you want to add rules to.
-        :raises NonRecoverableError: src_group_id OR ip_protocol,
-        from_port, to_port, and cidr_ip are not provided.
-        """
-
-        for rule in self.rules_cleanup(group_object,
-                                       rules + ctx.node.properties['rules']
-                                       ):
-
-            if 'src_group_id' in rule:
-
-                if not group_object.vpc_id:
-                    src_group_object = self.get_resource()
-                else:
-                    src_group_object = self._get_vpc_security_group_from_name(
-                            rule['src_group_id'])
-
-                if not src_group_object:
-                    raise NonRecoverableError(
-                            'Supplied src_group_id {0} doesn ot exist in '
-                            'the given account.'.format(rule['src_group_id']))
-
-                del rule['src_group_id']
-                rule['src_group'] = src_group_object
-
-            elif 'cidr_ip' not in rule:
-                raise NonRecoverableError(
-                        'You need to pass either src_group_id OR cidr_ip.')
-
-            try:
-                group_object.authorize(**rule)
-            except (exception.EC2ResponseError,
-                    exception.BotoServerError) as e:
-                raise NonRecoverableError('{0}'.format(str(e)))
-            except Exception as e:
-                self._delete_security_group(group_object.id)
-                raise
-
-    def _get_vpc_security_group_from_name(self, name):
-        groups = self.get_all_matching()
-        for group in groups:
-            if group.name == name:
-                return group
-        return None
-
-    def _delete_security_group(self, group_id):
-        """Tries to delete a Security group
-        """
-
-        group_to_delete = self.get_resource()
-
-        if not group_to_delete:
-            raise NonRecoverableError(
-                    'Unable to delete security group {0}, because the group '
-                    'does not exist in the account'.format(group_id))
-
-        try:
-            self.execute(self.client.delete_security_group,
-                         dict(group_id=group_id), raise_on_falsy=True)
-        except (exception.EC2ResponseError,
-                exception.BotoServerError) as e:
-            raise NonRecoverableError('{0}'.format(str(e)))
