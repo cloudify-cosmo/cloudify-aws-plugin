@@ -191,7 +191,7 @@ class Instance(AwsBaseNode):
             if os.path.isfile(key_path):
                 return key_path
 
-        err_message = 'Cannot find private key file'
+        err_message = 'Cannot locate key file'
         if key_path:
             err_message += '; expected file path was {0}'.format(key_path)
         raise NonRecoverableError(err_message)

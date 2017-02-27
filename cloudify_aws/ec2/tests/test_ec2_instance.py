@@ -131,7 +131,7 @@ class TestInstance(testtools.TestCase):
             ex = self.assertRaises(NonRecoverableError,
                                    test_instance._get_private_key,
                                    private_key_path=private_key_path)
-            self.assertIn("Cannot find private key file; expected file path",
+            self.assertIn("Cannot locate key file; expected file path",
                           ex.message)
 
     @mock_ec2
