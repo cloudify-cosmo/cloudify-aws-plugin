@@ -5,9 +5,9 @@
 plugins:
   aws:
     executor: central_deployment_agent
-    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/1.4.4.dev3.zip
+    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/1.4.4.dev4.zip
     package_name: cloudify-aws-plugin
-    package_version: '1.4.4.dev3'
+    package_version: '1.4.4.dev4'
 
 data_types:
 
@@ -132,6 +132,40 @@ data_types:
           The last port in the range.
         type: integer
         required: true
+
+  cloudify.datatypes.aws.SecurityGroupRule:
+    properties:
+      egress:
+        description: >
+          Whether the rule applies to egress traffic.
+        type: boolean
+        default: false
+        required: false
+      ip_protocol:
+        description: >
+          The Assigned Internet Protocol Number for the protocol.
+        type: string
+        required: false
+      from_port:
+        description: >
+          The first port in the range.
+        type: integer
+        required: false
+      to_port:
+        description: >
+          The last port in the range.
+        type: integer
+        required: false
+      cidr_ip:
+        description: >
+          The cidr_block.
+        type: string
+        required: false
+      src_group_id:
+        description: >
+          The security group ID.
+        type: string
+        required: false
 
 node_types:
 
@@ -859,6 +893,21 @@ node_types:
             args:
               default: {}
 
+  cloudify.aws.nodes.SecurityGroupRule:
+    derived_from: cloudify.nodes.Root
+    properties:
+      resource_id:
+        description: >
+          The resource ID.
+        type: string
+        default: ''
+        required: false
+      rule:
+        description: >
+          A list of rules of data type cloudify.datatypes.aws.SecurityGroupRule (see above).
+        default: []
+        required: false
+
 relationships:
   cloudify.aws.relationships.connected_to_elastic_ip:
     derived_from: cloudify.relationships.connected_to
@@ -1024,3 +1073,9 @@ relationships:
 
   cloudify.aws.relationships.instance_connected_to_eni:
     derived_from: cloudify.relationships.connected_to
+
+  cloudify.aws.relationships.security_group_uses_rule:
+    derived_from: cloudify.relationships.depends_on
+
+  cloudify.aws.relationships.rule_depends_on_security_group:
+    derived_from: cloudify.relationships.depends_on
