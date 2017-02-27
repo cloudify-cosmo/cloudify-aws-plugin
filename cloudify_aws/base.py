@@ -119,22 +119,27 @@ class AwsBase(object):
             'Cannot use_external_resource because resource {0} '
             'is not in this account.'.format(resource_id))
 
+    def resolve_resource_id(self, resource_ctx):
+        resource_id_candidate = \
+            resource_ctx.instance.runtime_properties.get(
+                constants.EXTERNAL_RESOURCE_ID, None) \
+            if constants.EXTERNAL_RESOURCE_ID in \
+            resource_ctx.instance.runtime_properties.keys() else \
+            resource_ctx.node.properties['resource_id']
+        formatted_arn = \
+            utils.match_arn_to_arn_format(resource_id_candidate)
+        resource_id = formatted_arn.get('resource')
+        if formatted_arn and resource_id:
+            return resource_id
+        return resource_id_candidate
+
 
 class AwsBaseRelationship(AwsBase):
 
     def __init__(self, client=None):
         super(AwsBaseRelationship, self).__init__(client)
-        self.source_resource_id = \
-            ctx.source.instance.runtime_properties.get(
-                constants.EXTERNAL_RESOURCE_ID, None) if \
-            constants.EXTERNAL_RESOURCE_ID in \
-            ctx.source.instance.runtime_properties.keys() else \
-            ctx.source.node.properties['resource_id']
-        self.target_resource_id = ctx.target.instance.runtime_properties.get(
-            constants.EXTERNAL_RESOURCE_ID, None) if \
-            constants.EXTERNAL_RESOURCE_ID in \
-            ctx.target.instance.runtime_properties.keys() else \
-            ctx.target.node.properties['resource_id']
+        self.source_resource_id = self.resolve_resource_id(ctx.source)
+        self.target_resource_id = self.resolve_resource_id(ctx.target)
         self.source_is_external_resource = \
             ctx.source.node.properties['use_external_resource']
         self.source_get_all_handler = {'function': None, 'argument': ''}
@@ -279,11 +284,7 @@ class AwsBaseNode(AwsBase):
 
         self.aws_resource_type = aws_resource_type
         self.cloudify_node_instance_id = ctx.instance.id
-        self.resource_id = ctx.instance.runtime_properties.get(
-            constants.EXTERNAL_RESOURCE_ID, None) if \
-            constants.EXTERNAL_RESOURCE_ID in \
-            ctx.instance.runtime_properties.keys() else \
-            ctx.node.properties['resource_id']
+        self.resource_id = self.resolve_resource_id(ctx)
         self.is_external_resource = \
             ctx.node.properties['use_external_resource']
         self.required_properties = required_properties

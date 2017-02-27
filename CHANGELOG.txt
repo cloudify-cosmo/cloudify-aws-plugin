@@ -14,3 +14,4 @@
     - Support Security Group rule overrides via args
     - Support resource state verification
     - Clearer log messages
+    - Added Support for passing ARNs to the resource_id property

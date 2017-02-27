@@ -20,9 +20,35 @@ from cloudify.state import current_ctx
 # Third Party Imports
 import mock
 from cloudify_aws import constants
+from cloudify_aws import utils
 from cloudify_aws.base import AwsBaseNode
 from cloudify.mocks import MockCloudifyContext
 from cloudify.exceptions import NonRecoverableError
+
+instance_arn_format = 'arn:aws:ec2:region:account-id:instance/instance-id'
+subnet_arn_format = 'arn:aws:ec2:region:account-id:vpc/vpc-id'
+bucket_arn_format = 'arn:aws:s3:::bucket_name'
+
+
+class TestUtils(testtools.TestCase):
+
+    def test_arn_split(self):
+        self.assertEqual(len(utils.arn_split(instance_arn_format)), 7)
+        self.assertEqual(len(utils.arn_split(subnet_arn_format)), 7)
+        self.assertEqual(len(utils.arn_split(bucket_arn_format)), 6)
+
+    def test_match_arn_to_arn_format(self):
+        out = utils.match_arn_to_arn_format(instance_arn_format)
+        self.assertEqual('instance-id', out.get('resource'))
+        out = utils.match_arn_to_arn_format(subnet_arn_format)
+        self.assertEqual('vpc-id', out.get('resource'))
+        out = utils.match_arn_to_arn_format(bucket_arn_format)
+        self.assertEqual('bucket_name', out.get('resource'))
+        out = \
+            utils.match_arn_to_arn_format(
+                'jack:and:jill:went:up:the:hill:to:fetch:a:pale:of:water'
+            )
+        self.assertEqual({}, out)
 
 
 class TestCloudifyAwsBase(testtools.TestCase):
