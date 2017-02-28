@@ -20,6 +20,7 @@ from boto.ec2.ec2object import TaggedEC2Object
 
 # Third Party Imports
 import mock
+from moto import mock_ec2
 from cloudify_aws import constants
 from cloudify_aws.base import AwsBaseNode
 from cloudify.mocks import MockCloudifyContext
@@ -52,6 +53,7 @@ class TestCloudifyAwsBase(testtools.TestCase):
         ctx.node.type_hierarchy = ['cloudify.nodes.Root']
         return ctx
 
+    @mock_ec2
     def test_base_operation_functions(self):
         ctx = self.get_mock_ctx('test_base_operation_functions')
         current_ctx.set(ctx=ctx)
@@ -62,6 +64,7 @@ class TestCloudifyAwsBase(testtools.TestCase):
             output = function()
             self.assertEquals(False, output)
 
+    @mock_ec2
     def test_base_operation_handler_functions(self):
         ctx = self.get_mock_ctx('test_base_operation_handler_functions')
         current_ctx.set(ctx=ctx)
@@ -85,6 +88,7 @@ class TestCloudifyAwsBase(testtools.TestCase):
                     elif operation == 'delete_helper':
                         self.assertEqual(output, True)
 
+    @mock_ec2
     def test_base_operation_handler_functions_false(self):
         ctx = self.get_mock_ctx('test_base_operation_handler_functions_false')
         current_ctx.set(ctx=ctx)
@@ -113,6 +117,7 @@ class TestCloudifyAwsBase(testtools.TestCase):
                 function = getattr(resource, 'modify_helper')
                 self.assertEqual(True, function({'key': 'value'}))
 
+    @mock_ec2
     @mock.patch('boto.ec2.ec2object.TaggedEC2Object.add_tags')
     def test_tag_resource(self, *_):
         ctx = self.get_mock_ctx('test_tag_resource')
