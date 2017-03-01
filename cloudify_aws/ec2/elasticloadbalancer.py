@@ -37,8 +37,8 @@ def create(args=None, **_):
 
 
 @operation
-def start(**_):
-    return Elb().started()
+def start(args=None, **_):
+    return Elb().start_helper(args)
 
 
 @operation
@@ -300,3 +300,6 @@ class Elb(AwsBaseNode):
 
     def get_resource(self):
         return self.resource_id
+
+    def start(self, args=None):
+        return True
