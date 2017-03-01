@@ -15,6 +15,7 @@
 
 # Built-in Imports
 import os
+import re
 
 # Cloudify Imports
 from . import constants
@@ -207,3 +208,45 @@ def update_args(parameterized_args, args_from_inputs):
     parameterized_args.update(args_from_inputs if args_from_inputs else {})
     ctx.logger.debug('args passed to function: {0}'.format(parameterized_args))
     return parameterized_args
+
+
+def arn_split(arn_formatted_string):
+    """
+    Amazon Resource Names have a few common formats.
+    This uses a regex to split them into a list for manipulation.
+    See: http://docs.aws.amazon.com/general/latest
+    /gr/aws-arns-and-namespaces.html#genref-arns.
+
+    :param arn_formatted_string:
+    :return:
+    """
+    return re.split('\:|/', arn_formatted_string)
+
+
+def match_arn_to_arn_format(arn):
+    """
+    Try to match an ARN to its format.
+    If we can find a ARN Format match then we can be sure
+    that we are manipulating the proper ARN.
+    Otherwise an ARN should not be used and the user should
+    use another resource descriptor.
+
+    :param arn:
+    :return: Dictionary description of resource.
+    """
+    if arn:
+        formatted_arn_dict = {}
+        split_arn = arn_split(arn)
+        for format in constants.COMMON_ARN_FORMATS:
+            for index in range(0, len(split_arn)):
+                try:
+                    split_format = arn_split(format)
+                    formatted_arn_dict.update(
+                            {split_format[index]: split_arn[index]})
+                except IndexError:
+                    formatted_arn_dict = {}
+                    break
+            if len(formatted_arn_dict) == len(split_arn):
+                return formatted_arn_dict
+            continue
+    return {}

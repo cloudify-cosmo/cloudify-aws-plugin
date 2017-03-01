@@ -295,3 +295,7 @@ INSTANCE_SECURITY_GROUP_RELATIONSHIP = 'instance_connected_to_security_group'
 SECURITY_GROUP_VPC_RELATIONSHIP = 'security_group_contained_in_vpc'
 RUNTIME_PROPERTIES = [AWS_TYPE_PROPERTY, EXTERNAL_RESOURCE_ID]
 SECURITY_GROUP_RULE_RELATIONSHIP = 'security_group_uses_rule'
+COMMON_ARN_FORMATS = \
+    ['arn:partition:service:region:account-id:resource',
+     'arn:partition:service:region:account-id:resourcetype/resource',
+     'arn:partition:service:region:account-id:resourcetype:resource']

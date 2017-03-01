@@ -16,3 +16,4 @@
     - Support Security Group rules as a node type
     - Support resource state verification
     - Clearer log messages
+    - Added Support for passing ARNs to the resource_id property
