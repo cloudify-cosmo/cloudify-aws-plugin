@@ -21,6 +21,8 @@ try:
     from cloudify import ctx as base_ctx
 except RuntimeError:
     from cloudify.workflows import ctx as base_ctx
+from cloudify.workflows.workflow_context import CloudifyWorkflowContext
+from cloudify import manager
 from cloudify.exceptions import NonRecoverableError
 from cloudify_aws import constants
 
@@ -48,6 +50,9 @@ def get_resource_id(node=None, node_instance=None,
     node = node or (base_ctx.node if base_ctx else None)
     node_instance = node_instance or (base_ctx.instance if base_ctx else None)
     props = node.properties if node else {}
+    # Get runtime properties (if possible)
+    if isinstance(base_ctx, CloudifyWorkflowContext) and not base_ctx.local:
+        node_instance = manager.NodeInstance(node_instance.id, node.id)
     runtime_props = node_instance.runtime_properties if node_instance else {}
     # Search instance runtime properties first, then the node properties
     resource_id = runtime_props.get(
