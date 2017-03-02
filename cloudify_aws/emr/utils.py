@@ -29,8 +29,7 @@ from cloudify_aws import constants
 
 def get_resource_id(node=None, node_instance=None,
                     raise_on_missing=False,
-                    raise_exception=NonRecoverableError,
-                    logger=None):
+                    raise_exception=NonRecoverableError):
     '''
         Gets the (external) resource ID of a Cloudify context. This
         is a very flexible method that allows for either normal
@@ -52,13 +51,8 @@ def get_resource_id(node=None, node_instance=None,
     node_instance = node_instance or (base_ctx.instance if base_ctx else None)
     props = node.properties if node else {}
     # Get runtime properties (if possible)
-    if logger:
-        logger.info('type(ctx): %s' % type(node_instance))
-        logger.info('1: %s' % isinstance(node_instance, CloudifyWorkflowNodeInstance))
-
     if isinstance(node_instance, CloudifyWorkflowNodeInstance):
-        if not base_ctx.local:
-            node_instance = manager.NodeInstance(node_instance.id, node.id)
+        node_instance = manager.NodeInstance(node_instance.id, node.id)
     runtime_props = node_instance.runtime_properties if node_instance else {}
     # Search instance runtime properties first, then the node properties
     resource_id = runtime_props.get(
