@@ -68,6 +68,26 @@ class SecurityGroup(AwsBaseNode):
             .format(constants.SECURITYGROUP['AWS_RESOURCE_TYPE'])
         }
 
+    def get_resource(self):
+
+        try:
+            resource = self.filter_for_single_resource(
+                self.get_all_handler['function'],
+                {self.get_all_handler['argument']: self.resource_id},
+                not_found_token=self.not_found_error
+            )
+        except Exception as e:
+            if 'InvalidGroupId.Malformed' not in str(e):
+                raise NonRecoverableError(str(e))
+            else:
+                resource = self.filter_for_single_resource(
+                    self.get_all_handler['function'],
+                    {'groupnames': self.resource_id},
+                    not_found_token=self.not_found_error
+                )
+
+        return resource
+
     def create(self, args=None, **_):
 
         """Creates an EC2 security group.

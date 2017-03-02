@@ -22,7 +22,7 @@ import testtools
 import mock
 from moto import mock_ec2
 from boto.vpc import VPCConnection
-from boto.exception import EC2ResponseError
+from boto.exception import EC2ResponseError, BotoServerError
 
 # Cloudify Imports is imported and used in operations
 from cloudify_aws.ec2 import instance
@@ -597,14 +597,13 @@ class TestInstance(testtools.TestCase):
         self.assertIsNone(output)
 
     @mock_ec2
-    @mock.patch('cloudify_aws.utils.log_available_resources')
-    def test_get_all_instances_response_error(self, *_):
+    def test_get_all_instances_error(self):
         """this checks that _get_all_instances raises an error
         when get_all_reservations fails due
-        to response error.
+        to response error and boto server error.
         """
 
-        ctx = self.mock_ctx('test_get_all_instances_response_error')
+        ctx = self.mock_ctx('test_get_all_instances_error')
         current_ctx.set(ctx=ctx)
         test_instance = self.create_instance_for_checking()
 
@@ -621,6 +620,14 @@ class TestInstance(testtools.TestCase):
                 output = test_instance._get_all_instances(
                         list_of_instance_ids='')
                 self.assertIsNone(output)
+
+            mock_get_all_reservations.side_effect = BotoServerError(
+                    mock.Mock(return_value={'status': 404}),
+                    'ServerError')
+            ex = self.assertRaises(
+                    NonRecoverableError, test_instance._get_all_instances,
+                    list_of_instance_ids='')
+            self.assertIn('ServerError', ex.message)
 
     @mock_ec2
     def test_get_instance_attribute_no_instance(self):
@@ -666,7 +673,44 @@ class TestInstance(testtools.TestCase):
                 test_instance._get_instance_attribute('state_code')
 
     @mock_ec2
-    def test_get_instance_parameters(self):
+    def test_get_instances_from_reservation_id(self):
+        """ This tests that _get_instances_from_reservation_id raises an
+        error when get_all_instances errors.
+        """
+
+        ctx = self.mock_ctx('test_get_instance_attribute_multiple_instances')
+        current_ctx.set(ctx=ctx)
+        test_instance = self.create_instance_for_checking()
+        ctx.instance.runtime_properties['aws_resource_id'] = \
+            'i-4339wSD9'
+        ctx.instance.runtime_properties['reservation_id'] = 'r-54ce20b4'
+        with mock.patch('boto.ec2.connection.EC2Connection'
+                        '.get_all_instances') \
+                as mock_get_all_instances:
+
+            mock_get_all_instances.side_effect = EC2ResponseError(
+                    mock.Mock(return_value={'status': 404}),
+                    'error')
+            ex = self.assertRaises(
+                    NonRecoverableError, test_instance
+                    ._get_instances_from_reservation_id)
+            self.assertIn('error', ex.message)
+
+    @mock_ec2
+    def test_get_network_interfaces(self):
+        ctx = self.mock_ctx('test_get_network_interfaces')
+        current_ctx.set(ctx=ctx)
+        test_instance = self.create_instance_for_checking()
+        ctx.instance.runtime_properties['aws_resource_id'] = \
+            'i-4339wSD9'
+        network_interface = test_instance._get_network_interfaces(
+                [{'network_interface_id': 'eni-121212'}])
+        self.assertIn('NetworkInterfaceSpecification', str(network_interface))
+
+    @mock_ec2
+    @mock.patch('cloudify_aws.ec2.instance.Instance._get_network_interfaces',
+                return_true='qwe')
+    def test_get_instance_parameters(self, *_):
         """ This tests that the _get_instance_parameters
         function returns a dict with the correct structure.
         """
@@ -680,10 +724,12 @@ class TestInstance(testtools.TestCase):
         ctx.node.properties['instance_type'] = 'efg'
         ctx.node.properties['parameters']['image_id'] = 'abcd'
         ctx.node.properties['parameters']['key_name'] = 'xyz'
+        ctx.node.properties['parameters']['network_interfaces'] = 'qwe'
         parameters = test_instance._get_instance_parameters()
         self.assertIn('abcd', parameters['image_id'])
         self.assertIn('xyz', parameters['key_name'])
         self.assertIn('efg', parameters['instance_type'])
+        self.assertIn('qwe', parameters['network_interfaces'])
 
     @mock_ec2
     def test_creation_validation_image_id(self):
@@ -753,6 +799,29 @@ class TestInstance(testtools.TestCase):
         self.assertIsNone(instance.modify_attributes(new_attributes))
 
     @mock_ec2
+    def test_modify_attributes_raises_error(self):
+        """This tests that modify attributes function
+        raises an error when execute fails.
+        """
+
+        ctx = self.mock_ctx('test_modify_attributes_raises_error')
+        current_ctx.set(ctx=ctx)
+        instance.create(ctx=ctx)
+        new_attributes = {'blockDeviceMapping': ['/dev/sda1=true']}
+
+        with mock.patch('boto.ec2.connection.EC2Connection.'
+                        'modify_instance_attribute') \
+                as mock_modify_instance_attribute:
+
+            mock_modify_instance_attribute.side_effect = EC2ResponseError(
+                    mock.Mock(return_value={'status': 404}),
+                    'error')
+            ex = self.assertRaises(
+                    NonRecoverableError, instance.modify_attributes,
+                    new_attributes)
+            self.assertIn('error', ex.message)
+
+    @mock_ec2
     @mock.patch('cloudify_aws.ec2.instance.Instance._get_image')
     def test_creation_validation_unavailable_image(self, *_):
         """This tests that creation validation function
@@ -768,6 +837,23 @@ class TestInstance(testtools.TestCase):
         with self.assertRaisesRegexp(
                         NonRecoverableError,
                         'not available to this account'):
+            instance.creation_validation(ctx=ctx)
+
+    @mock_ec2
+    def test_creation_validation_no_image(self):
+        """This tests that creation validation function
+        return NonRecoverableError if the image_id
+        was not provided.
+        """
+
+        ctx = self.mock_ctx('test_creation_validation_no_image')
+        current_ctx.set(ctx=ctx)
+        ctx.node.properties['image_id'] = ''
+        ctx.node.properties['instance_type'] = TEST_INSTANCE_TYPE
+
+        with self.assertRaisesRegexp(
+                NonRecoverableError,
+                'No image_id was provided'):
             instance.creation_validation(ctx=ctx)
 
     @mock_ec2

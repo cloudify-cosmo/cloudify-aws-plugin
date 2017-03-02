@@ -63,14 +63,16 @@ class AwsBase(object):
 
     def filter_for_single_resource(self, filter_function,
                                    filters,
-                                   not_found_token='NotFound'):
+                                   not_found_token='NotFound',
+                                   aws_id_attribute='id'):
 
         resources = self.get_and_filter_resources_by_matcher(
             filter_function, filters, not_found_token)
 
         if resources:
             for resource in resources:
-                if resource.id == filters.values()[0]:
+                resource_id = getattr(resource, aws_id_attribute)
+                if resource_id == filters.values()[0]:
                     return resource
 
         return None
