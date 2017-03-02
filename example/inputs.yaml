@@ -1,0 +1,20 @@
+# AWS access configuration
+aws_access_key_id: YOUR_AWS_ACCESS_KEY_ID
+aws_secret_access_key: YOUR_AWS_SECRET_ACCESS_KEY
+aws_region_name: YOUR_AWS_REGION_NAME
+
+# Cluster configuration
+emr_cluster_name: Cloudify Hadoop Cluster
+emr_cluster_ec2_keyname: YOUR_AWS_EC2_KEYPAIR_NAME
+emr_cluster_applications: [Hive, Pig, Ganglia]
+emr_cluster_core_instances_count: 1
+emr_cluster_core_instances_type: m3.xlarge
+emr_cluster_s3_log_path: s3://YOUR_AWS_S3_BUCKET_NAME/
+
+# Bootstrap actions configuration
+emr_bsa_hive_udf_path: s3://01000101-hadoop-scripts/udfs/UDFStrToDate.java
+emr_bsa_nodejs_path: s3://01000101-hadoop-scripts/node/install-nodejs.sh
+
+# Step configuration
+emr_wordcount_input_path: s3://elasticmapreduce/samples/wordcount/input
+emr_wordcount_output_path: s3://YOUR_AWS_S3_BUCKET_NAME/output
