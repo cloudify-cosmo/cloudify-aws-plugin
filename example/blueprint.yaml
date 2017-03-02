@@ -11,7 +11,7 @@ description: >
   This will spin up a new EMR cluster with a MASTER node and 1 or more
   CORE nodes. It will have a couple of bootstrap actions, 1 to
   install Node.js and 1 to copy a custom UDF (or whatever you specify
-  in emr_custom_hive_udf_path) to the cluster. Then it will
+  in emr_bsa_hive_udf_path) to the cluster. Then it will
   start a new cluster step (process) and run the example
   WordCount step from Amazon.
   
@@ -36,36 +36,53 @@ inputs:
     
   aws_region_name:
     type: string
-    default: us-east-1
   
   emr_cluster_name:
     description: >
       Name of the EMR cluster to create
     type: string
-    default: Cloudify Hadoop Cluster
   
   emr_cluster_ec2_keyname:
     description: >
       Name of AWS EC2 keypair to use for the EMR cluster
     type: string
-    default: hostpool-test
+    
+  emr_cluster_applications:
+    description: >
+      List of EMR cluster applications (names) to be install
+    default: []
     
   emr_cluster_s3_log_path:
     description: >
       S3 path to a folder to hold EMR cluster logs
     type: string
     
-  emr_cluster_core_instances:
+  emr_cluster_core_instances_type:
+    description: >
+      Type (size / flavor) of CORE cluster instances
+    type: string
+    default: m3.xlarge
+    
+  emr_cluster_core_instances_count:
     description: >
       Number of CORE cluster instances to spawn on create
     type: integer
     default: 1
     
-  emr_custom_hive_udf_path:
+  emr_bsa_hive_udf_path:
     description: >
       S3 bucket path of a custom UDF to place on the cluster
     type: string
-    default: s3://01000101-hadoop-scripts/udfs/UDFStrToDate.java
+    
+  emr_bsa_nodejs_path:
+    description: >
+      S3 bucket folder path to a script that will install Node.js
+    type: string
+    
+  emr_wordcount_input_path:
+    description: >
+      S3 bucket path to put the WordCount step input.
+    type: string
     
   emr_wordcount_output_path:
     description: >
@@ -73,7 +90,6 @@ inputs:
       should exist, but the path directory should not. It will be
       created by EMR and will fail if it exists.
     type: string
-    default: s3://cloudify-emr-logs-j8dxz/output
 
 
 dsl_definitions:
@@ -84,20 +100,13 @@ dsl_definitions:
 
 
 node_templates:
-  #emr_cluster:
-  #  type: cloudify.aws.nodes.emr.Cluster
-  #  properties:
-  #    resource_id: j-28MTL6RV3L6FX
-  #    use_external_resource: true
-  #    aws_config: *aws_config
-
   emr_cluster:
     type: cloudify.aws.nodes.emr.Cluster
     properties:
       name: { get_input: emr_cluster_name }
       log_uri: { get_input: emr_cluster_s3_log_path }
       ec2_keyname: { get_input: emr_cluster_ec2_keyname }
-      applications: [Hive, Pig, Ganglia]
+      applications: { get_input: emr_cluster_applications }
       aws_config: *aws_config
     relationships:
     - target: bootstrap_copy_hive_udf
@@ -124,7 +133,8 @@ node_templates:
     properties:
       name: Core node
       role: CORE
-      num_instances: { get_input: emr_cluster_core_instances }
+      type: { get_input: emr_cluster_core_instances_type }
+      num_instances: { get_input: emr_cluster_core_instances_count }
 
   ###
   # Cluster Bootstrap Actions
@@ -138,7 +148,7 @@ node_templates:
       bootstrap_action_args:
       - s3
       - cp
-      - { get_input: emr_custom_hive_udf_path }
+      - { get_input: emr_bsa_hive_udf_path }
       - "/home/hadoop/"
 
   # Run a bootstrap action directly from S3
@@ -146,7 +156,7 @@ node_templates:
     type: cloudify.aws.nodes.emr.BootstrapAction
     properties:
       name: "Install Node.js"
-      path: "s3://01000101-hadoop-scripts/node/install-nodejs.sh"
+      path: { get_input: emr_bsa_nodejs_path }
 
   ###
   # Cluster Steps
@@ -156,7 +166,7 @@ node_templates:
     type: cloudify.aws.nodes.emr.StreamingStep
     properties:
       name: Sample Word Count
-      input: "s3://elasticmapreduce/samples/wordcount/input"
+      input: { get_input: emr_wordcount_input_path }
       mapper: wordSplitter.py
       reducer: aggregate
       output: { get_input: emr_wordcount_output_path }
