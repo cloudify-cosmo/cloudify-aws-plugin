@@ -21,8 +21,7 @@ try:
     from cloudify import ctx as base_ctx
 except RuntimeError:
     from cloudify.workflows import ctx as base_ctx
-from cloudify.workflows.workflow_context import (
-    WorkflowNodesAndInstancesContainer, CloudifyWorkflowContext, CloudifyWorkflowContextInternal)
+from cloudify.workflows.workflow_context import CloudifyWorkflowNodeInstance
 from cloudify import manager
 from cloudify.exceptions import NonRecoverableError
 from cloudify_aws import constants
@@ -54,12 +53,10 @@ def get_resource_id(node=None, node_instance=None,
     props = node.properties if node else {}
     # Get runtime properties (if possible)
     if logger:
-        logger.info('type(ctx): %s' % type(base_ctx))
-        logger.info('1: %s' % isinstance(base_ctx, WorkflowNodesAndInstancesContainer))
-        logger.info('2: %s' % isinstance(base_ctx, CloudifyWorkflowContext))
-        logger.info('3: %s' % isinstance(base_ctx, CloudifyWorkflowContextInternal))
+        logger.info('type(ctx): %s' % type(node_instance))
+        logger.info('1: %s' % isinstance(node_instance, CloudifyWorkflowNodeInstance))
 
-    if isinstance(base_ctx, WorkflowNodesAndInstancesContainer):
+    if isinstance(node_instance, CloudifyWorkflowNodeInstance):
         if not base_ctx.local:
             node_instance = manager.NodeInstance(node_instance.id, node.id)
     runtime_props = node_instance.runtime_properties if node_instance else {}
