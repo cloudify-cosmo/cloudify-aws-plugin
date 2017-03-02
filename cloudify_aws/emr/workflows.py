@@ -74,7 +74,7 @@ def scale_instance_group(ctx, cluster_node, instance_group_id, delta, **_):
         int(instance_group.requestedinstancecount),
         int(instance_group.runninginstancecount)))
     # Scale the instance group
-    new_instance_count = int(instance_group.requestedinstancecount)
+    new_instance_count = int(instance_group.requestedinstancecount) + delta
     if new_instance_count < 0:
         ctx.logger.warn(
             'User requested scaling by %d but that would set the '
