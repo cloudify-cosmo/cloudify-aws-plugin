@@ -52,7 +52,7 @@ def scale_instance_group(ctx, cluster_node, instance_group_id, delta, **_):
     cluster_node_instance = cluster_node_instance[0]
     # Get the EMR cluster ID
     cluster_id = utils.get_resource_id(
-        cluster_node, cluster_node_instance, raise_on_missing=True, logger=ctx.logger)
+        cluster_node, cluster_node_instance, raise_on_missing=True)
     ctx.logger.debug('EMR Cluster: %s ("%s")' % (cluster_node.id, cluster_id))
     client = connection.EMRConnectionClient().client(
         cluster_node.properties[AWS_CONFIG_PROPERTY])
