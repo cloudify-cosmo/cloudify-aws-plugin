@@ -31,27 +31,28 @@ def creation_validation(**_):
 
 @operation
 def create_vpc(args=None, **_):
-    return Vpc().created(args)
+    return Vpc().create_helper(args)
 
 
 @operation
 def start(args=None, **_):
-    return Vpc().started(args)
+    return Vpc().start_helper(args)
 
 
 @operation
 def delete(args=None, **_):
-    return Vpc().deleted(args)
+    return Vpc().delete_helper(args)
 
 
 @operation
 def create_vpc_peering_connection(target_account_id, routes, args=None, **_):
-    return VpcPeeringConnection(target_account_id, routes).associated(args)
+    return VpcPeeringConnection(target_account_id,
+                                routes).associate_helper(args)
 
 
 @operation
 def delete_vpc_peering_connection(args=None, **_):
-    return VpcPeeringConnection().disassociated(args)
+    return VpcPeeringConnection().disassociate_helper(args)
 
 
 @operation
@@ -100,7 +101,7 @@ class VpcPeeringConnection(AwsBaseRelationship, RouteMixin):
             '{0}_ids'.format(constants.ROUTE_TABLE['AWS_RESOURCE_TYPE'])
         }
 
-    def associated(self, args):
+    def associate_helper(self, args):
         if self.use_source_external_resource_naively():
             ctx.logger.info(
                 'executing vpc peering connection association '
@@ -256,28 +257,14 @@ class Vpc(AwsBaseNode):
         super(Vpc, self).__init__(
             constants.VPC['AWS_RESOURCE_TYPE'],
             constants.VPC['REQUIRED_PROPERTIES'],
-            client=connection.VPCConnectionClient().client()
+            client=connection.VPCConnectionClient().client(),
+            resource_states=constants.VPC['STATES']
         )
         self.not_found_error = constants.VPC['NOT_FOUND_ERROR']
         self.get_all_handler = {
             'function': self.client.get_all_vpcs,
             'argument': '{0}_ids'.format(constants.VPC['AWS_RESOURCE_TYPE'])
         }
-
-    def use_external_resource_naively(self):
-
-        if not self.is_external_resource:
-            return False
-
-        resource = self.get_resource()
-
-        if not resource:
-            self.raise_forbidden_external_resource(self.resource_id)
-
-        ctx.instance.runtime_properties['default_dhcp_options_id'] = \
-            resource.dhcp_options_id
-
-        return True
 
     def create(self, args):
 
@@ -291,9 +278,9 @@ class Vpc(AwsBaseNode):
         vpc = self.execute(self.client.create_vpc,
                            create_args, raise_on_falsy=True)
         self.resource_id = vpc.id
+        utils.set_external_resource_id(vpc.id, ctx.instance)
         ctx.instance.runtime_properties['default_dhcp_options_id'] = \
             vpc.dhcp_options_id
-
         return True
 
     def start(self, args):
@@ -301,4 +288,6 @@ class Vpc(AwsBaseNode):
 
     def delete(self, args):
         vpc = self.get_resource()
+        if not vpc:
+            return True
         return self.execute(vpc.delete, raise_on_falsy=True)

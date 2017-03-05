@@ -17,11 +17,14 @@ import os
 
 # Third-party Imports
 from boto import exception
+from boto.ec2 import blockdevicemapping
+from boto.ec2 import networkinterface
 
 # Cloudify imports
 from cloudify import ctx
 from cloudify import compute
 from cloudify_aws.ec2 import passwd
+from .eni import Interface
 from cloudify.decorators import operation
 from cloudify_aws.base import AwsBaseNode
 from cloudify_aws import utils, constants
@@ -35,27 +38,28 @@ def creation_validation(**_):
 
 @operation
 def create(args=None, **_):
-    return Instance().created(args)
+    return Instance().create_helper(args)
 
 
 @operation
 def start(args=None, start_retry_interval=30, private_key_path=None, **_):
-    return Instance().started(args, start_retry_interval, private_key_path)
+    return Instance().start_helper(
+        args, start_retry_interval, private_key_path)
 
 
 @operation
 def delete(args=None, **_):
-    return Instance().deleted(args)
+    return Instance().delete_helper(args)
 
 
 @operation
 def modify_attributes(new_attributes, args=None, **_):
-    return Instance().modified(new_attributes, args)
+    return Instance().modify_helper(new_attributes, args)
 
 
 @operation
 def stop(args=None, **_):
-    return Instance().stopped(args)
+    return Instance().stop_helper(args)
 
 
 class Instance(AwsBaseNode):
@@ -64,7 +68,8 @@ class Instance(AwsBaseNode):
         super(Instance, self).__init__(
                 constants.INSTANCE['AWS_RESOURCE_TYPE'],
                 constants.INSTANCE['REQUIRED_PROPERTIES'],
-                client=client
+                client=client,
+                resource_states=constants.INSTANCE['STATES']
         )
         self.not_found_error = constants.INSTANCE['NOT_FOUND_ERROR']
         self.get_all_handler = {
@@ -89,7 +94,7 @@ class Instance(AwsBaseNode):
 
     def create(self, args=None, **_):
 
-        instance_parameters = self._get_instance_parameters()
+        instance_parameters = self._get_instance_parameters(args)
 
         ctx.logger.info(
                 'Attempting to create EC2 Instance with these API '
@@ -103,27 +108,7 @@ class Instance(AwsBaseNode):
         if instance is None:
             return False
 
-        utils.set_external_resource_id(
-                instance_id, ctx.instance, external=False)
-        self._instance_created_assign_runtime_properties()
-
         return True
-
-    def created(self, args=None):
-
-        ctx.logger.info(
-                'Attempting to create {0} {1}.'
-                .format(self.aws_resource_type,
-                        self.cloudify_node_instance_id))
-
-        if self.use_external_resource_naively() or self.create(args):
-            return self.post_create()
-
-        return ctx.operation.retry(
-                message='Waiting to verify that {0} {1} '
-                        'has been added to your account.'
-                        .format(self.aws_resource_type,
-                                self.cloudify_node_instance_id))
 
     def start(self, args=None, start_retry_interval=30,
               private_key_path=None, **_):
@@ -133,13 +118,7 @@ class Instance(AwsBaseNode):
         self._assign_runtime_properties_to_instance(
                     runtime_properties=constants.INSTANCE_INTERNAL_ATTRIBUTES)
 
-        if self._get_instance_state() == constants.INSTANCE_STATE_STARTED:
-            if ctx.node.properties['use_password']:
-                password_success = self._retrieve_windows_pass(
-                        instance_id=instance_id,
-                        private_key_path=private_key_path)
-                if not password_success:
-                    return False
+        if self._check_if_instance_started(instance_id, private_key_path):
             return True
 
         ctx.logger.debug('Attempting to start instance: {0}.)'
@@ -156,6 +135,10 @@ class Instance(AwsBaseNode):
         ctx.logger.debug('Attempted to start instance {0}.'
                          .format(instance_id))
 
+        return self._check_if_instance_started(instance_id, private_key_path)
+
+    def _check_if_instance_started(self, instance_id, private_key_path):
+
         if self._get_instance_state() == constants.INSTANCE_STATE_STARTED:
             if ctx.node.properties['use_password']:
                 password_success = self._retrieve_windows_pass(
@@ -163,17 +146,18 @@ class Instance(AwsBaseNode):
                         private_key_path=private_key_path)
                 if not password_success:
                     return False
-        else:
-            return False
-        return True
+            return True
+        return False
 
-    def started(self, args=None, start_retry_interval=30,
-                private_key_path=None):
+    def start_helper(self,
+                     args=None,
+                     start_retry_interval=30,
+                     private_key_path=None):
 
         if self.aws_resource_type is 'instance':
             ctx.logger.info(
-                    'Attempting to start instance {0}.'
-                    .format(self.cloudify_node_instance_id))
+                'Attempting to start instance {0}.'
+                .format(self.cloudify_node_instance_id))
 
         if self.use_external_resource_naively() or \
                 self.start(args, start_retry_interval, private_key_path):
@@ -207,7 +191,7 @@ class Instance(AwsBaseNode):
             if os.path.isfile(key_path):
                 return key_path
 
-        err_message = 'Cannot find private key file'
+        err_message = 'Cannot locate key file'
         if key_path:
             err_message += '; expected file path was {0}'.format(key_path)
         raise NonRecoverableError(err_message)
@@ -273,7 +257,7 @@ class Instance(AwsBaseNode):
             return True
         return False
 
-    def deleted(self, args=None):
+    def delete_helper(self, args=None):
 
         ctx.logger.info(
                 'Attempting to delete {0} {1}.'
@@ -421,7 +405,7 @@ class Instance(AwsBaseNode):
 
         return parameters
 
-    def _get_instance_parameters(self):
+    def _get_instance_parameters(self, args=None):
         """The parameters to the run_instance boto call.
 
         :returns parameters dictionary
@@ -444,14 +428,57 @@ class Instance(AwsBaseNode):
             'image_id': ctx.node.properties['image_id'],
             'instance_type': ctx.node.properties['instance_type'],
             'security_group_ids': attached_group_ids,
-            'key_name': self._get_instance_keypair(provider_variables),
-            'subnet_id': self._get_instance_subnet(provider_variables)
+            'key_name': self._get_instance_keypair(provider_variables)
         })
+
+        network_interfaces_collection = \
+            self._get_network_interfaces(
+                parameters.get('network_interfaces', []))
+
+        if network_interfaces_collection:
+            parameters.update({
+                'network_interfaces': network_interfaces_collection
+            })
+        else:
+            parameters.update({
+                'subnet_id': self._get_instance_subnet(provider_variables)
+            })
 
         parameters.update(ctx.node.properties['parameters'])
         parameters = self._handle_userdata(parameters)
+        parameters = utils.update_args(parameters, args)
+        parameters['block_device_map'] = \
+            self._create_block_device_mapping(
+                parameters.get('block_device_map', {})
+            )
 
         return parameters
+
+    def _get_network_interfaces(self, ifs_from_params):
+        interface_specs = []
+        ids_from_rels = \
+            utils.get_target_external_resource_ids(
+                constants.INSTANCE_ENI_RELATIONSHIP,
+                ctx.instance)
+        if ids_from_rels:
+            ifs = ifs_from_params + \
+                  Interface().get_all_matching(list_of_ids=ids_from_rels)
+        else:
+            ifs = ifs_from_params
+
+        for index in range(0, len(ifs)):
+
+            if index < len(ifs_from_params):
+                interface = ifs[index]
+            else:
+                interface = {
+                    'network_interface_id': ifs[index].id,
+                    'device_index': index,
+                }
+
+            interface_specs.append(
+                networkinterface.NetworkInterfaceSpecification(**interface))
+        return networkinterface.NetworkInterfaceCollection(*interface_specs)
 
     def _get_instance_keypair(self, provider_variables):
         """Gets the instance key pair. If more or less than one is provided,
@@ -548,14 +575,7 @@ class Instance(AwsBaseNode):
 
         return instances
 
-    def post_start(self):
-
-        resource = self._get_instance_from_id(self.resource_id)
-        self.tag_resource(resource)
-
-        return True
-
-    def modified(self, new_attributes, args=None):
+    def modify_helper(self, new_attributes, args=None):
 
         ctx.logger.info(
                 'Attempting to modify instance attributes {0} {1}.'
@@ -567,7 +587,7 @@ class Instance(AwsBaseNode):
 
         return ctx.operation.retry('instance_id not yet set. Retrying...')
 
-    def stopped(self, args=None):
+    def stop_helper(self, args=None):
 
         ctx.logger.info(
                 'Attempting to stop EC2 instance {0} {1}.'
@@ -579,10 +599,19 @@ class Instance(AwsBaseNode):
 
         return ctx.operation.retry('Waiting server to stop. Retrying...')
 
-    def post_stop(self):
+    def post_create(self):
+        utils.set_external_resource_id(self.resource_id, ctx.instance)
+        self._instance_created_assign_runtime_properties()
+        return True
 
+    def post_stop(self):
+        props_to_delete = \
+            [li for li in
+             constants.INSTANCE_INTERNAL_ATTRIBUTES
+             if li not in
+             constants.INSTANCE_INTERNAL_ATTRIBUTES_POST_STOP]
         utils.unassign_runtime_properties_from_resource(
-                property_names=constants.INSTANCE_INTERNAL_ATTRIBUTES,
+                property_names=props_to_delete,
                 ctx_instance=ctx.instance)
 
         ctx.logger.info(
@@ -627,3 +656,59 @@ class Instance(AwsBaseNode):
 
     def get_resource(self):
         return self._get_instance_from_id(self.resource_id)
+
+    def _create_block_device_mapping(self, block_device_type_defs):
+        """Take user input as dict of BlockDeviceType(s).
+        See: https://github.com/boto/boto/blob/2.38.0/
+             boto/ec2/blockdevicemapping.py#L25
+
+        ``` Example Usage:
+        example_instance:
+          type: cloudify.aws.nodes.Instance
+          properties:
+            ...
+            parameters:
+              block_device_map:
+                '/dev/sda1':
+                  'size': 100
+                  'delete_on_termination': true
+        ```
+
+        :param block_device_type_definitions: A dict of BlockDeviceType(s).
+        :return: a boto BlockDeviceMapping object
+        """
+
+        ctx.logger.debug(
+            'Block device type defs: {0}'
+            .format(block_device_type_defs)
+        )
+
+        bdm = blockdevicemapping.BlockDeviceMapping()
+
+        for block_device_type_name in \
+                block_device_type_defs.keys():
+
+            current_block_device_type = \
+                blockdevicemapping.EBSBlockDeviceType()
+
+            ctx.logger.debug(
+                'setting attribute: {0}: {1}'
+                .format(block_device_type_name,
+                        block_device_type_defs[block_device_type_name])
+            )
+            for key in \
+                    block_device_type_defs[block_device_type_name].keys():
+                setattr(current_block_device_type,
+                        key,
+                        block_device_type_defs
+                        [block_device_type_name].get(key))
+
+            bdm[block_device_type_name] = \
+                current_block_device_type
+
+        ctx.logger.debug(
+            'BDM: {0}'
+            .format(bdm)
+        )
+
+        return bdm

@@ -34,17 +34,17 @@ def creation_validation(**_):
 
 @operation
 def create(args, **_):
-    return Ebs().created(args)
+    return Ebs().create_helper(args)
+
+
+@operation
+def start(**_):
+    return Ebs().start_helper()
 
 
 @operation
 def delete(args=None, **_):
-    return Ebs().deleted(args)
-
-
-@operation
-def start(args=None, **_):
-    return Ebs().started(args)
+    return Ebs().delete_helper(args)
 
 
 @operation
@@ -54,12 +54,12 @@ def create_snapshot(args, **_):
 
 @operation
 def associate(args=None, **_):
-    return VolumeInstanceConnection().associated(args)
+    return VolumeInstanceConnection().associate_helper(args)
 
 
 @operation
 def disassociate(args, **_):
-    return VolumeInstanceConnection().disassociated(args)
+    return VolumeInstanceConnection().disassociate_helper(args)
 
 
 class VolumeInstanceConnection(AwsBaseRelationship):
@@ -114,10 +114,20 @@ class VolumeInstanceConnection(AwsBaseRelationship):
         )
         associate_args = utils.update_args(associate_args, args)
 
-        return self.execute(self.client.attach_volume, associate_args,
-                            raise_on_falsy=True)
+        out = self.execute(self.client.attach_volume,
+                           associate_args,
+                           raise_on_falsy=True)
 
-    def associated(self, args=None):
+        volume = associate_args.get('volume_id')
+        self.target_resource_id = associate_args.get('instance_id')
+        device = associate_args.get('device')
+
+        ctx.source.instance.runtime_properties['device'] = device
+        ctx.target.instance.runtime_properties[
+            '{0}-device'.format(volume)] = device
+        return out
+
+    def associate_helper(self, args=None):
 
         ctx.logger.info(
                 'Attempting to associate {0} with {1}.'
@@ -155,7 +165,8 @@ class VolumeInstanceConnection(AwsBaseRelationship):
 
         disassociate_args = utils.update_args(disassociate_args, args)
 
-        return self.execute(self.client.detach_volume, disassociate_args,
+        return self.execute(self.client.detach_volume,
+                            disassociate_args,
                             raise_on_falsy=True)
 
     def post_associate(self):
@@ -171,6 +182,10 @@ class VolumeInstanceConnection(AwsBaseRelationship):
         super(VolumeInstanceConnection, self).post_disassociate()
         utils.unassign_runtime_property_from_resource(
             'instance_id', ctx.source.instance)
+        device = \
+            ctx.source.instance.runtime_properties.pop('device', None)
+        ctx.target.instance.runtime_properties.pop(
+            '{0}-device'.format(device), None)
 
         return True
 
@@ -180,13 +195,15 @@ class Ebs(AwsBaseNode):
     def __init__(self):
         super(Ebs, self).__init__(
             constants.EBS['AWS_RESOURCE_TYPE'],
-            constants.EBS['REQUIRED_PROPERTIES']
+            constants.EBS['REQUIRED_PROPERTIES'],
+            resource_states=constants.EBS['STATES']
         )
         self.not_found_error = constants.EBS['NOT_FOUND_ERROR']
         self.get_all_handler = {
             'function': self.client.get_all_volumes,
             'argument': '{0}_ids'.format(constants.EBS['AWS_RESOURCE_TYPE'])
         }
+        self.state_attribute = 'status'
 
     def create(self, args=None, **_):
         """Creates an EBS volume.
@@ -218,7 +235,7 @@ class Ebs(AwsBaseNode):
 
         return True
 
-    def deleted(self, args=None):
+    def delete_helper(self, args=None):
 
         ctx.logger.info(
                 'Attempting to delete {0} {1}.'

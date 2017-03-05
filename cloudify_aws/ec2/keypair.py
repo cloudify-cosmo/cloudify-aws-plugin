@@ -31,12 +31,12 @@ def creation_validation(**_):
 
 @operation
 def create(args=None, **_):
-    return KeyPair().created(args)
+    return KeyPair().create_helper(args)
 
 
 @operation
 def delete(args=None, **_):
-    return KeyPair().deleted(args)
+    return KeyPair().delete_helper(args)
 
 
 class KeyPair(AwsBaseNode):
@@ -44,7 +44,8 @@ class KeyPair(AwsBaseNode):
     def __init__(self):
         super(KeyPair, self).__init__(
                 constants.KEYPAIR['AWS_RESOURCE_TYPE'],
-                constants.KEYPAIR['REQUIRED_PROPERTIES']
+                constants.KEYPAIR['REQUIRED_PROPERTIES'],
+                resource_states=constants.KEYPAIR['STATES']
         )
         self.not_found_error = constants.KEYPAIR['NOT_FOUND_ERROR']
         self.get_all_handler = {
@@ -81,11 +82,7 @@ class KeyPair(AwsBaseNode):
                 raise NonRecoverableError(
                         'Not external resource, '
                         'but the key file exists locally.')
-            try:
-                self.get_all_matching(ctx.node.properties['resource_id'])
-            except NonRecoverableError:
-                pass
-            else:
+            if self.get_all_matching(ctx.node.properties['resource_id']):
                 raise NonRecoverableError(
                         'Not external resource, '
                         'but the key pair exists in the account.')
@@ -237,4 +234,10 @@ class KeyPair(AwsBaseNode):
         return True
 
     def get_resource(self):
-        return self.get_all_matching(self.resource_id)
+        resource = self.filter_for_single_resource(
+            self.get_all_handler['function'],
+            {self.get_all_handler['argument']: self.resource_id},
+            not_found_token=self.not_found_error,
+            aws_id_attribute='name'
+        )
+        return resource

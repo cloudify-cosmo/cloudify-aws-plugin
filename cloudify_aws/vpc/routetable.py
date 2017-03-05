@@ -28,38 +28,38 @@ def creation_validation(**_):
 
 @operation
 def create_route_table(routes, args=None, **_):
-    return RouteTable(routes).created(args)
+    return RouteTable(routes).create_helper(args)
 
 
 @operation
 def start_route_table(args=None, **_):
-    return RouteTable().started(args)
+    return RouteTable().start_helper(args)
 
 
 @operation
 def delete_route_table(args=None, **_):
-    return RouteTable().deleted(args)
+    return RouteTable().delete_helper(args)
 
 
 @operation
 def associate_route_table(**_):
-    return RouteTableSubnetAssociation().associated()
+    return RouteTableSubnetAssociation().associate_helper()
 
 
 @operation
 def disassociate_route_table(**_):
-    return RouteTableSubnetAssociation().disassociated()
+    return RouteTableSubnetAssociation().disassociate_helper()
 
 
 @operation
 def create_route_to_gateway(destination_cidr_block, args=None, **_):
     return RouteTableGatewayAssociation(
-        destination_cidr_block).associated(args)
+        destination_cidr_block).associate_helper(args)
 
 
 @operation
 def delete_route_from_gateway(**_):
-    return RouteTableGatewayAssociation().disassociated()
+    return RouteTableGatewayAssociation().disassociate_helper()
 
 
 class RouteTableGatewayAssociation(AwsBaseRelationship, RouteMixin):
@@ -156,7 +156,8 @@ class RouteTable(AwsBaseNode, RouteMixin):
         super(RouteTable, self).__init__(
             constants.ROUTE_TABLE['AWS_RESOURCE_TYPE'],
             constants.ROUTE_TABLE['REQUIRED_PROPERTIES'],
-            client=connection.VPCConnectionClient().client()
+            client=connection.VPCConnectionClient().client(),
+            resource_states=constants.ROUTE_TABLE['STATES']
         )
         self.not_found_error = constants.ROUTE_TABLE['NOT_FOUND_ERROR']
         self.get_all_handler = {
@@ -201,10 +202,10 @@ class RouteTable(AwsBaseNode, RouteMixin):
         return vpc
 
     def post_create(self):
+        utils.set_external_resource_id(self.resource_id, ctx.instance)
         vpc = self.get_containing_vpc()
         ctx.instance.runtime_properties['vpc_id'] = vpc.id
         ctx.instance.runtime_properties['routes'] = self.routes
-        utils.set_external_resource_id(self.resource_id, ctx.instance)
         ctx.logger.info(
             'Added {0} {1} to Cloudify.'
             .format(self.aws_resource_type, self.resource_id))

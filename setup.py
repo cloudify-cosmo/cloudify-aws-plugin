@@ -25,7 +25,7 @@ setup(
     author='Gigaspaces',
     author_email='cosmo-admin@gigaspaces.com',
 
-    version='1.4.3',
+    version='1.4.4',
     description='Cloudify plugin for AWS infrastructure.',
 
     # This must correspond to the actual packages in the plugin.
@@ -39,6 +39,7 @@ setup(
     install_requires=[
         'cloudify-plugins-common>=3.3.1',
         'boto==2.38.0',
-        'pycrypto==2.6.1'
+        'pycrypto==2.6.1',
+        'ipaddress==1.0.18'
     ]
 )

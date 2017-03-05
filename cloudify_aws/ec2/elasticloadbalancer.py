@@ -33,22 +33,27 @@ def creation_validation(**_):
 
 @operation
 def create(args=None, **_):
-    return Elb().created(args)
+    return Elb().create_helper(args)
+
+
+@operation
+def start(args=None, **_):
+    return Elb().start_helper(args)
 
 
 @operation
 def delete(args=None, **_):
-    return Elb().deleted(args)
+    return Elb().delete_helper(args)
 
 
 @operation
 def associate(args=None, **_):
-    return ElbInstanceConnection().associated(args)
+    return ElbInstanceConnection().associate_helper(args)
 
 
 @operation
 def disassociate(args=None, **_):
-    return ElbInstanceConnection().disassociated(args)
+    return ElbInstanceConnection().disassociate_helper(args)
 
 
 class ElbInstanceConnection(AwsBaseRelationship):
@@ -170,6 +175,7 @@ class Elb(AwsBaseNode):
             constants.ELB['AWS_RESOURCE_TYPE'],
             constants.ELB['REQUIRED_PROPERTIES'],
             self.client,
+            resource_states=constants.ELB['STATES']
         )
         self.not_found_error = constants.ELB['NOT_FOUND_ERROR']
         self.get_all_handler = {
@@ -294,3 +300,6 @@ class Elb(AwsBaseNode):
 
     def get_resource(self):
         return self.resource_id
+
+    def start(self, args=None):
+        return True

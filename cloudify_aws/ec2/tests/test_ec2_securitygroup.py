@@ -16,6 +16,7 @@
 # Built-in Imports
 import uuid
 import testtools
+import mock
 
 # Third Party Imports
 from moto import mock_ec2
@@ -30,12 +31,17 @@ from cloudify.exceptions import NonRecoverableError
 
 class TestSecurityGroup(testtools.TestCase):
 
-    def security_group_mock(self, test_name, test_properties, retry_number=0):
+    def security_group_mock(self,
+                            test_name,
+                            test_properties,
+                            retry_number=0,
+                            operation_name='create'):
         """ Creates a mock context for security group tests
             with given properties
         """
 
         operation = {
+            'name': operation_name,
             'retry_number': retry_number
         }
 
@@ -54,19 +60,21 @@ class TestSecurityGroup(testtools.TestCase):
             constants.AWS_CONFIG_PROPERTY: {},
             'use_external_resource': False,
             'resource_id': 'test_security_group',
+            'tags': {},
+            'name': 'test_security_group',
             'description': 'This is a test.',
             'rules': [
                 {
                     'ip_protocol': 'tcp',
                     'from_port': '22',
                     'to_port': '22',
-                    'cidr_ip': '127.0.0.1/32'
+                    'cidr_ip': '192.168.122.0/24'
                 },
                 {
                     'ip_protocol': 'tcp',
                     'from_port': '80',
                     'to_port': '80',
-                    'cidr_ip': '127.0.0.1/32'
+                    'cidr_ip': '192.168.122.0/24'
                 }
             ]
         }
@@ -77,13 +85,83 @@ class TestSecurityGroup(testtools.TestCase):
         return securitygroup.SecurityGroup()
 
     @mock_ec2
+    def test_create_rules_in_args(self):
+        """This tests that create runs"""
+
+        test_properties = self.get_mock_properties()
+        ctx = self.security_group_mock('test_create', test_properties)
+        current_ctx.set(ctx=ctx)
+        rules = [
+            {
+                'ip_protocol': 'udp',
+                'from_port': '33333',
+                'to_port': '33333',
+                'cidr_ip': '192.168.122.40/32'
+            }
+        ]
+        ec2_client = connection.EC2ConnectionClient().client()
+        with mock.patch(
+                'cloudify_aws.ec2.securitygroup.'
+                'SecurityGroup.get_resource_state'
+                ) as securitygroup_state:
+            securitygroup_state.return_value = 'available'
+            securitygroup.create(rules=rules, ctx=ctx)
+        group_id = \
+            ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
+        group_list = ec2_client.get_all_security_groups(group_ids=group_id)
+        group = group_list[0]
+        all_rules = rules + ctx.node.properties['rules']
+        self.assertEqual(len(all_rules), len(group.rules))
+
+    @mock_ec2
+    def test_update_rules(self):
+        """This tests that create creates the runtime_properties"""
+
+        test_properties = self.get_mock_properties()
+        ctx = self.security_group_mock(
+            'test_create_duplicate', test_properties)
+        current_ctx.set(ctx=ctx)
+        name = ctx.node.properties.get('resource_id')
+        description = ctx.node.properties.get('description')
+        ec2_client = connection.EC2ConnectionClient().client()
+        group = ec2_client.create_security_group(name, description)
+        ctx.node.properties['use_external_resource'] = True
+        ctx.node.properties['resource_id'] = group.id
+        with mock.patch(
+                'cloudify_aws.ec2.securitygroup.'
+                'SecurityGroup.get_resource_state'
+                ) as securitygroup_state:
+            securitygroup_state.return_value = 'available'
+            securitygroup.create(ctx=ctx)
+        rules = [
+            {
+                'ip_protocol': 'udp',
+                'from_port': '33333',
+                'to_port': '33333',
+                'cidr_ip': '192.168.122.40'
+            }
+        ]
+        securitygroup.update_rules(rules=rules, ctx=ctx)
+        group_id = \
+            ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
+        group_list = ec2_client.get_all_security_groups(group_ids=group_id)
+        group = group_list[0]
+        all_rules = rules + ctx.node.properties['rules']
+        self.assertEqual(len(all_rules), len(group.rules))
+
+    @mock_ec2
     def test_create(self):
         """This tests that create runs"""
 
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock('test_create', test_properties)
         current_ctx.set(ctx=ctx)
-        securitygroup.create(ctx=ctx)
+        with mock.patch(
+                'cloudify_aws.ec2.securitygroup.'
+                'SecurityGroup.get_resource_state'
+                ) as securitygroup_state:
+            securitygroup_state.return_value = 'available'
+            securitygroup.create(ctx=ctx)
 
     @mock_ec2
     def test_create_retry(self):
@@ -99,7 +177,12 @@ class TestSecurityGroup(testtools.TestCase):
         group = ec2_client.create_security_group(name, description)
         ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID] = \
             group.id
-        securitygroup.create(ctx=ctx)
+        with mock.patch(
+                'cloudify_aws.ec2.securitygroup.'
+                'SecurityGroup.get_resource_state'
+                ) as securitygroup_state:
+            securitygroup_state.return_value = 'available'
+            securitygroup.create(ctx=ctx)
 
     @mock_ec2
     def test_create_existing(self):
@@ -115,10 +198,15 @@ class TestSecurityGroup(testtools.TestCase):
         group = ec2_client.create_security_group(name, description)
         ctx.node.properties['use_external_resource'] = True
         ctx.node.properties['resource_id'] = group.id
-        securitygroup.create(ctx=ctx)
-        self.assertEqual(
-                ctx.instance.runtime_properties['aws_resource_id'],
-                group.id)
+        with mock.patch(
+                'cloudify_aws.ec2.securitygroup.'
+                'SecurityGroup.get_resource_state'
+                ) as securitygroup_state:
+            securitygroup_state.return_value = 'available'
+            securitygroup.create(ctx=ctx)
+            self.assertEqual(
+                    ctx.instance.runtime_properties['aws_resource_id'],
+                    group.id)
 
     @mock_ec2
     def test_start(self):
@@ -126,7 +214,7 @@ class TestSecurityGroup(testtools.TestCase):
 
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
-                'test_start', test_properties)
+                'test_start', test_properties, operation_name='start')
         current_ctx.set(ctx=ctx)
 
         ec2_client = connection.EC2ConnectionClient().client()
@@ -146,14 +234,19 @@ class TestSecurityGroup(testtools.TestCase):
         """This tests that delete removes the runtime_properties"""
 
         test_properties = self.get_mock_properties()
-        ctx = self.security_group_mock('test_delete', test_properties)
+        ctx = self.security_group_mock('test_delete',
+                                       test_properties,
+                                       operation_name='delete')
         current_ctx.set(ctx=ctx)
         ec2_client = connection.EC2ConnectionClient().client()
         group = ec2_client.create_security_group('test',
                                                  'this is test')
         ctx.instance.runtime_properties['aws_resource_id'] = group.id
-        securitygroup.SecurityGroup().deleted()
-        self.assertNotIn('aws_resource_id', ctx.instance.runtime_properties)
+        with mock.patch('cloudify_aws.base.AwsBaseNode.get_resource',
+                        return_value=[]):
+            securitygroup.SecurityGroup().delete_helper()
+            self.assertNotIn('aws_resource_id',
+                             ctx.instance.runtime_properties)
 
     @mock_ec2
     def test_create_duplicate(self):
@@ -180,18 +273,21 @@ class TestSecurityGroup(testtools.TestCase):
         """
 
         test_properties = self.get_mock_properties()
+        test_properties['use_external_resource'] = True
         ctx = self.security_group_mock(
-                'test_delete_deleted', test_properties)
+                'test_delete_deleted',
+                test_properties,
+                operation_name='delete')
         current_ctx.set(ctx=ctx)
         ec2_client = connection.EC2ConnectionClient().client()
         group = ec2_client.create_security_group('test_delete_deleted',
                                                  'this is test')
         ctx.instance.runtime_properties['aws_resource_id'] = group.id
         ec2_client.delete_security_group(group_id=group.id)
-        ex = self.assertRaises(
-                NonRecoverableError, securitygroup.delete, ctx=ctx)
-        self.assertIn('Cannot use_external_resource because resource',
-                      ex.message)
+        with mock.patch('cloudify_aws.base.AwsBaseNode.get_resource',
+                        return_value=None):
+            out = securitygroup.delete()
+            self.assertEquals(True, out)
 
     @mock_ec2
     def test_delete_existing(self):
@@ -200,7 +296,9 @@ class TestSecurityGroup(testtools.TestCase):
         """
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
-                'test_delete_existing', test_properties)
+                'test_delete_existing',
+                test_properties,
+                operation_name='delete')
         current_ctx.set(ctx=ctx)
         ec2_client = connection.EC2ConnectionClient().client()
         group = ec2_client.create_security_group('test_delete_existing',
@@ -208,10 +306,12 @@ class TestSecurityGroup(testtools.TestCase):
         ctx.node.properties['use_external_resource'] = True
         ctx.node.properties['resource_id'] = group.id
         ctx.instance.runtime_properties['aws_resource_id'] = group.id
-        securitygroup.delete(ctx=ctx)
-        self.assertNotIn(
-                'aws_resource_id',
-                ctx.instance.runtime_properties)
+        with mock.patch('cloudify_aws.base.AwsBaseNode.get_resource',
+                        return_value=[]):
+            securitygroup.delete(ctx=ctx)
+            self.assertNotIn(
+                    'aws_resource_id',
+                    ctx.instance.runtime_properties)
 
     @mock_ec2
     def test_use_external_not_existing(self):
@@ -316,7 +416,7 @@ class TestSecurityGroup(testtools.TestCase):
                 test_securitygroup._create_group_rules,
                 group)
         self.assertIn(
-                'You need to pass either src_group_id OR cidr_ip.',
+                'is not a valid rule target cidr_ip or src_group_ip',
                 ex.message)
 
     @mock_ec2
@@ -325,28 +425,32 @@ class TestSecurityGroup(testtools.TestCase):
         error is raised when neither is given.
         """
 
+        test_properties = self.get_mock_properties()
+        ctx = self.security_group_mock(
+            'test_create_group_rules_both_src_group_id_or_cidr',
+            test_properties)
+        current_ctx.set(ctx=ctx)
         ec2_client = connection.EC2ConnectionClient().client()
         group = ec2_client.create_security_group(
                 'test_create_group_rules_both_src_group_id_or_cidr',
                 'this is test')
-        test_properties = self.get_mock_properties()
-        ctx = self.security_group_mock(
-                'test_create_group_rules_both_src_group_id_or_cidr',
-                test_properties)
-        current_ctx.set(ctx=ctx)
         test_securitygroup = self.create_sg_for_checking()
-
         group_object = ec2_client.create_security_group(
                 'dummy',
                 'this is test')
-        ctx.node.properties['rules'][0]['src_group_id'] = group_object
-        ex = self.assertRaises(
-                NonRecoverableError,
-                test_securitygroup._create_group_rules,
-                group)
-        self.assertIn(
-                'You need to pass either src_group_id OR cidr_ip.',
-                ex.message)
+        # setattr(group_object, 'vpc_id', 'vpc-abcd1234')
+        ctx.node.properties['rules'][0]['src_group_id'] = group_object.id
+        with mock.patch(
+                'cloudify_aws.ec2.securitygroup.'
+                'SecurityGroup.get_resource') as gr:
+            gr.return_value = group
+            ex = self.assertRaises(
+                    NonRecoverableError,
+                    test_securitygroup._create_group_rules,
+                    group)
+            self.assertIn(
+                    'You cannot pass both cidr_ip and src_group_id',
+                    ex.message)
 
     @mock_ec2
     def test_create_group_rules_src_group(self):
@@ -365,7 +469,12 @@ class TestSecurityGroup(testtools.TestCase):
         ctx.node.properties['rules'][0]['src_group_id'] = group_object.id
         del ctx.node.properties['rules'][0]['cidr_ip']
         current_ctx.set(ctx=ctx)
-        securitygroup.create(ctx=ctx)
+        with mock.patch(
+                'cloudify_aws.ec2.securitygroup.'
+                'SecurityGroup.get_resource_state'
+                ) as securitygroup_state:
+            securitygroup_state.return_value = 'available'
+            securitygroup.create(ctx=ctx)
         group = ec2_client.get_all_security_groups(
             group_ids=ctx.instance.runtime_properties[
                 constants.EXTERNAL_RESOURCE_ID]

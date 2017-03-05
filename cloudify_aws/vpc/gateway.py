@@ -32,66 +32,66 @@ def creation_validation(**_):
 
 @operation
 def create_internet_gateway(args=None, **_):
-    return InternetGateway().created(args)
+    return InternetGateway().create_helper(args)
 
 
 def start_internet_gateway(args=None, **_):
-    return InternetGateway().started(args)
+    return InternetGateway().start_helper(args)
 
 
 @operation
 def delete_internet_gateway(args=None, **_):
-    return InternetGateway().deleted(args)
+    return InternetGateway().delete_helper(args)
 
 
 @operation
 def create_vpn_gateway(args=None, **_):
-    return VpnGateway().created(args)
+    return VpnGateway().create_helper(args)
 
 
 @operation
 def start_vpn_gateway(args=None, **_):
-    return VpnGateway().started(args)
+    return VpnGateway().start_helper(args)
 
 
 @operation
 def delete_vpn_gateway(args=None, **_):
-    return VpnGateway().deleted(args)
+    return VpnGateway().delete_helper(args)
 
 
 @operation
 def create_customer_gateway(args=None, **_):
-    return CustomerGateway().created(args)
+    return CustomerGateway().create_helper(args)
 
 
 @operation
 def start_customer_gateway(args=None, **_):
-    return CustomerGateway().started(args)
+    return CustomerGateway().start_helper(args)
 
 
 @operation
 def delete_customer_gateway(args=None, **_):
-    return CustomerGateway().deleted(args)
+    return CustomerGateway().delete_helper(args)
 
 
 @operation
 def create_vpn_connection(routes, args=None, **_):
-    return VpnConnection(routes).associated(args)
+    return VpnConnection(routes).associate_helper(args)
 
 
 @operation
 def delete_vpn_connection(args=None, **_):
-    return VpnConnection().disassociated(args)
+    return VpnConnection().disassociate_helper(args)
 
 
 @operation
 def attach_gateway(args=None, **_):
-    return GatewayVpcAttachment().associated(args)
+    return GatewayVpcAttachment().associate_helper(args)
 
 
 @operation
 def detach_gateway(args=None, **_):
-    return GatewayVpcAttachment().disassociated(args)
+    return GatewayVpcAttachment().disassociate_helper(args)
 
 
 class VpnConnection(AwsBaseRelationship):
@@ -106,10 +106,8 @@ class VpnConnection(AwsBaseRelationship):
             ctx.source.instance.runtime_properties.get('routes', None)
         self.vpn_connection_id = \
             ctx.source.instance.runtime_properties.get(
-                'vpn_connection') if \
-            'vpn_connection' in \
-            ctx.source.instance.runtime_properties.keys() else \
-            None
+                'vpn_connection') if 'vpn_connection' in \
+            ctx.source.instance.runtime_properties.keys() else None
         self.source_get_all_handler = {
             'function': self.client.get_all_customer_gateways,
             'argument':
@@ -204,8 +202,8 @@ class GatewayVpcAttachment(AwsBaseRelationship):
             self.source_get_all_handler = {
                 'function': self.client.get_all_internet_gateways,
                 'argument':
-                '{0}_ids'.format(
-                    constants.INTERNET_GATEWAY['AWS_RESOURCE_TYPE'])
+                    '{0}_ids'.format(
+                        constants.INTERNET_GATEWAY['AWS_RESOURCE_TYPE'])
             }
 
     def associate(self, args):
@@ -242,7 +240,8 @@ class InternetGateway(AwsBaseNode):
         super(InternetGateway, self).__init__(
             constants.INTERNET_GATEWAY['AWS_RESOURCE_TYPE'],
             constants.INTERNET_GATEWAY['REQUIRED_PROPERTIES'],
-            client=connection.VPCConnectionClient().client()
+            client=connection.VPCConnectionClient().client(),
+            resource_states=constants.INTERNET_GATEWAY['STATES']
         )
         self.not_found_error = constants.INTERNET_GATEWAY['NOT_FOUND_ERROR']
         self.get_all_handler = {
@@ -273,13 +272,14 @@ class VpnGateway(AwsBaseNode):
         super(VpnGateway, self).__init__(
             constants.VPN_GATEWAY['AWS_RESOURCE_TYPE'],
             constants.VPN_GATEWAY['REQUIRED_PROPERTIES'],
-            client=connection.VPCConnectionClient().client()
+            client=connection.VPCConnectionClient().client(),
+            resource_states=constants.VPN_GATEWAY['STATES']
         )
         self.not_found_error = constants.VPN_GATEWAY['NOT_FOUND_ERROR']
         self.get_all_handler = {
             'function': self.client.get_all_vpn_gateways,
             'argument':
-            '{0}_ids'.format(constants.VPN_GATEWAY['AWS_RESOURCE_TYPE'])
+                '{0}_ids'.format(constants.VPN_GATEWAY['AWS_RESOURCE_TYPE'])
         }
 
     def create(self, args):
@@ -309,7 +309,8 @@ class CustomerGateway(AwsBaseNode):
         super(CustomerGateway, self).__init__(
             constants.CUSTOMER_GATEWAY['AWS_RESOURCE_TYPE'],
             constants.CUSTOMER_GATEWAY['REQUIRED_PROPERTIES'],
-            client=connection.VPCConnectionClient().client()
+            client=connection.VPCConnectionClient().client(),
+            resource_states=constants.CUSTOMER_GATEWAY['STATES']
         )
         self.not_found_error = constants.CUSTOMER_GATEWAY['NOT_FOUND_ERROR']
         self.get_all_handler = {

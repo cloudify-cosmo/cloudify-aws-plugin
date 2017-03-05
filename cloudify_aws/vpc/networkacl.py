@@ -28,27 +28,27 @@ def creation_validation(args=None, **_):
 
 @operation
 def create_network_acl(args=None, **_):
-    return NetworkAcl().created(args)
+    return NetworkAcl().create_helper(args)
 
 
 @operation
 def start_network_acl(args=None, **_):
-    return NetworkAcl().started(args)
+    return NetworkAcl().start_helper(args)
 
 
 @operation
 def delete_network_acl(args=None, **_):
-    return NetworkAcl().deleted(args)
+    return NetworkAcl().delete_helper(args)
 
 
 @operation
 def associate_network_acl(args=None, **_):
-    return NetworkAclSubnetAssociation().associated(args)
+    return NetworkAclSubnetAssociation().associate_helper(args)
 
 
 @operation
 def disassociate_network_acl(args=None, **_):
-    return NetworkAclSubnetAssociation().disassociated(args)
+    return NetworkAclSubnetAssociation().disassociate_helper(args)
 
 
 class NetworkAclSubnetAssociation(AwsBaseRelationship):
@@ -106,7 +106,8 @@ class NetworkAcl(AwsBaseNode):
         super(NetworkAcl, self).__init__(
             constants.NETWORK_ACL['AWS_RESOURCE_TYPE'],
             constants.NETWORK_ACL['REQUIRED_PROPERTIES'],
-            client=connection.VPCConnectionClient().client()
+            client=connection.VPCConnectionClient().client(),
+            resource_states=constants.NETWORK_ACL['STATES']
         )
         self.not_found_error = constants.NETWORK_ACL['NOT_FOUND_ERROR']
         self.get_all_handler = {
@@ -118,10 +119,14 @@ class NetworkAcl(AwsBaseNode):
     def create(self, args):
         create_args = self.generate_create_args()
         create_args = utils.update_args(create_args, args)
+        ctx.instance.runtime_properties['vpc_id'] = create_args['vpc_id']
         network_acl = self.execute(self.client.create_network_acl,
                                    create_args, raise_on_falsy=True)
         self.resource_id = network_acl.id
-        ctx.instance.runtime_properties['vpc_id'] = create_args['vpc_id']
+        return True
+
+    def post_create(self):
+        utils.set_external_resource_id(self.resource_id, ctx.instance)
         self.add_entries_to_network_acl()
         return True
 

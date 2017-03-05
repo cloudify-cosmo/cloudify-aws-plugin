@@ -29,9 +29,19 @@ AVAILABILITY_ZONE = 'availability_zone'
 AWS_CONFIG_PROPERTY = 'aws_config'
 ROUTE_NOT_FOUND_ERROR = 'InvalidRoute.NotFound'
 
+INSTANCE_INTERNAL_ATTRIBUTES_POST_STOP = \
+    ['private_dns_name', 'ip']
+
 INSTANCE_INTERNAL_ATTRIBUTES = \
-    ['private_dns_name', 'public_dns_name',
-     'public_ip_address', 'ip']
+    ['public_dns_name', 'public_ip_address'] + \
+    INSTANCE_INTERNAL_ATTRIBUTES_POST_STOP
+
+ENI_INTERNAL_ATTRIBUTES = \
+    ['subnet_id', 'vpc_id',
+     'description', 'owner_id', 'requester_managed',
+     'status', 'mac_address', 'private_ip_address',
+     'source_dest_check', 'groups',
+     'private_ip_addresses']
 
 AWS_TYPE_PROPERTY = 'external_type'  # resource's openstack type
 RELATIONSHIP_INSTANCE = 'relationship-instance'
@@ -42,7 +52,23 @@ INSTANCE = dict(
         CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.Instance',
         ID_FORMAT='^i\-[0-9a-z]{8}$',
         NOT_FOUND_ERROR='InvalidInstanceID.NotFound',
-        REQUIRED_PROPERTIES=['image_id', 'instance_type']
+        REQUIRED_PROPERTIES=['image_id', 'instance_type'],
+        STATES=[{'name': 'create',
+                 'success': ['running'],
+                 'waiting': ['pending'],
+                 'failed': []},
+                {'name': 'start',
+                 'success': ['running', 16],
+                 'waiting': ['pending'],
+                 'failed': []},
+                {'name': 'stop',
+                 'success': ['stopped', 80],
+                 'waiting': ['stopping'],
+                 'failed': []},
+                {'name': 'delete',
+                 'success': ['terminated'],
+                 'waiting': ['shutting-down', 48],
+                 'failed': []}]
 )
 
 SECURITYGROUP = dict(
@@ -50,7 +76,8 @@ SECURITYGROUP = dict(
         CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.SecurityGroup',
         ID_FORMAT='^sg\-[0-9a-z]{8}$',
         NOT_FOUND_ERROR='InvalidGroup.NotFound',
-        REQUIRED_PROPERTIES=['description', 'rules']
+        REQUIRED_PROPERTIES=['description', 'rules'],
+        STATES=[{}]
 )
 
 SUBNET = dict(
@@ -58,7 +85,11 @@ SUBNET = dict(
         CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.Subnet',
         ID_FORMAT='^subnet\-[0-9a-z]{8}$',
         NOT_FOUND_ERROR='InvalidSubnetID.NotFound',
-        REQUIRED_PROPERTIES=['cidr_block']
+        REQUIRED_PROPERTIES=['cidr_block'],
+        STATES=[{'name': 'create',
+                 'success': ['available'],
+                 'waiting': ['pending'],
+                 'failed': []}]
 )
 
 VPC = dict(
@@ -66,21 +97,27 @@ VPC = dict(
         CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.VPC',
         ID_FORMAT='^vpc\-[0-9a-z]{8}$',
         NOT_FOUND_ERROR='InvalidVpcID.NotFound',
-        REQUIRED_PROPERTIES=['cidr_block', 'instance_tenancy']
+        REQUIRED_PROPERTIES=['cidr_block', 'instance_tenancy'],
+        STATES=[{'name': 'create',
+                 'success': ['available'],
+                 'waiting': ['pending'],
+                 'failed': []}]
 )
 
 KEYPAIR = dict(
         AWS_RESOURCE_TYPE='keypair',
         CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.KeyPair',
         NOT_FOUND_ERROR='InvalidKeyPair.NotFound',
-        REQUIRED_PROPERTIES=['private_key_path']
+        REQUIRED_PROPERTIES=['private_key_path'],
+        STATES=[{}]
 )
 
 ELB = dict(
         AWS_RESOURCE_TYPE='load_balancer',
         CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.ElasticLoadBalancer',
         NOT_FOUND_ERROR='LoadBalancerNotFound',
-        REQUIRED_PROPERTIES=['elb_name', 'zones', 'listeners']
+        REQUIRED_PROPERTIES=['elb_name', 'zones', 'listeners'],
+        STATES=[{}]
 )
 
 ELASTICIP = dict(
@@ -90,20 +127,45 @@ ELASTICIP = dict(
         REQUIRED_PROPERTIES=[],
         ALLOCATION_ID='allocation_id',
         VPC_DOMAIN='vpc',
-        ELASTIC_IP_DOMAIN_PROPERTY='domain'
+        ELASTIC_IP_DOMAIN_PROPERTY='domain',
+        STATES=[{}]
 )
 
 ZONE = 'zone'
 EBS = dict(
-        AWS_RESOURCE_TYPE='volume',
-        CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.Volume',
-        ID_FORMAT='^vol\-[0-9a-z]{8}$',
-        NOT_FOUND_ERROR='InvalidVolume.NotFound',
-        REQUIRED_PROPERTIES=['size', ZONE, 'device'],
-        VOLUME_SNAPSHOT_ATTRIBUTE='snapshots_ids',
-        VOLUME_AVAILABLE='available',
-        VOLUME_CREATING='creating',
-        VOLUME_IN_USE='in-use'
+    AWS_RESOURCE_TYPE='volume',
+    CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.Volume',
+    ID_FORMAT='^vol\-[0-9a-z]{8}$',
+    NOT_FOUND_ERROR='InvalidVolume.NotFound',
+    REQUIRED_PROPERTIES=['size', ZONE, 'device'],
+    VOLUME_SNAPSHOT_ATTRIBUTE='snapshots_ids',
+    VOLUME_AVAILABLE='available',
+    VOLUME_CREATING='creating',
+    VOLUME_IN_USE='in-use',
+    STATES=[{'name': 'create',
+             'success': ['available', 'in-use'],
+             'waiting': ['creating'],
+             'failed': []},
+            {'name': 'delete',
+             'success': ['deleted'],
+             'waiting': ['deleting'],
+             'failed': []}]
+)
+
+ENI = dict(
+    AWS_RESOURCE_TYPE='network_interface',
+    CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.Interface',
+    ID_FORMAT='^eni\-[0-9a-z]{8}$',
+    REQUIRED_PROPERTIES=[],
+    NOT_FOUND_ERROR='InvalidInterface.NotFound',
+    STATES=[{'name': 'create',
+             'success': ['available', 'in-use'],
+             'waiting': ['creating'],
+             'failed': []},
+            {'name': 'delete',
+             'success': ['deleted'],
+             'waiting': ['deleting'],
+             'failed': []}]
 )
 
 ROUTE_TABLE = dict(
@@ -111,7 +173,8 @@ ROUTE_TABLE = dict(
         CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.RouteTable',
         ID_FORMAT='^rtb\-[0-9a-z]{8}$',
         NOT_FOUND_ERROR='InvalidRouteTableID.NotFound',
-        REQUIRED_PROPERTIES=[]
+        REQUIRED_PROPERTIES=[],
+        STATES=[{}]
 )
 
 NETWORK_ACL = dict(
@@ -119,7 +182,8 @@ NETWORK_ACL = dict(
         CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.ACL',
         ID_FORMAT='^acl\-[0-9a-z]{8}$',
         NOT_FOUND_ERROR='InvalidNetworkAclID.NotFound',
-        REQUIRED_PROPERTIES=[]
+        REQUIRED_PROPERTIES=[],
+        STATES=[{}]
 )
 
 INTERNET_GATEWAY = dict(
@@ -127,7 +191,8 @@ INTERNET_GATEWAY = dict(
         CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.InternetGateway',
         ID_FORMAT='^igw\-[0-9a-z]{8}$',
         NOT_FOUND_ERROR='InvalidInternetGatewayID.NotFound',
-        REQUIRED_PROPERTIES=[]
+        REQUIRED_PROPERTIES=[],
+        STATES=[{}]
 )
 
 VPN_GATEWAY = dict(
@@ -135,7 +200,15 @@ VPN_GATEWAY = dict(
         CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.VPNGateway',
         ID_FORMAT='^vgw\-[0-9a-z]{8}$',
         NOT_FOUND_ERROR='InvalidVpnGatewayID.NotFound',
-        REQUIRED_PROPERTIES=[]
+        REQUIRED_PROPERTIES=[],
+        STATES=[{'name': 'create',
+                 'success': ['available'],
+                 'waiting': ['pending'],
+                 'failed': ['error']},
+                {'name': 'delete',
+                 'success': ['deleted'],
+                 'waiting': ['deleting'],
+                 'failed': ['error']}]
 )
 
 CUSTOMER_GATEWAY = dict(
@@ -143,7 +216,15 @@ CUSTOMER_GATEWAY = dict(
         CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.CustomerGateway',
         ID_FORMAT='^cgw\-[0-9a-z]{8}$',
         NOT_FOUND_ERROR='InvalidCustomerGatewayID.NotFound',
-        REQUIRED_PROPERTIES=[]
+        REQUIRED_PROPERTIES=[],
+        STATES=[{'name': 'create',
+                 'success': ['available'],
+                 'waiting': ['pending'],
+                 'failed': ['error']},
+                {'name': 'delete',
+                 'success': ['deleted'],
+                 'waiting': ['deleting'],
+                 'failed': ['error']}]
 )
 
 DHCP_OPTIONS = dict(
@@ -151,7 +232,8 @@ DHCP_OPTIONS = dict(
         CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.DHCPOptions',
         ID_FORMAT='^dopt\-[0-9a-z]{8}$',
         NOT_FOUND_ERROR='InvalidDhcpOptionID.NotFound',
-        REQUIRED_PROPERTIES=[]
+        REQUIRED_PROPERTIES=[],
+        STATES=[{}]
 )
 
 GATEWAY_VPC_RELATIONSHIP = \
@@ -183,6 +265,7 @@ AGENTS_AWS_INSTANCE_PARAMETERS = 'agents_instance_parameters'
 INSTANCE_KEYPAIR_RELATIONSHIP = 'instance_connected_to_keypair'
 INSTANCE_SUBNET_RELATIONSHIP = 'instance_contained_in_subnet'
 INSTANCE_SUBNET_CONNECTED_TO_RELATIONSHIP = 'instance_connected_to_subnet'
+INSTANCE_ENI_RELATIONSHIP = 'instance_connected_to_eni'
 
 ADMIN_PASSWORD_PROPERTY = 'password'  # the server's password
 
@@ -211,3 +294,4 @@ BOTO_CONFIG_SCHEMA = {
 INSTANCE_SECURITY_GROUP_RELATIONSHIP = 'instance_connected_to_security_group'
 SECURITY_GROUP_VPC_RELATIONSHIP = 'security_group_contained_in_vpc'
 RUNTIME_PROPERTIES = [AWS_TYPE_PROPERTY, EXTERNAL_RESOURCE_ID]
+SECURITY_GROUP_RULE_RELATIONSHIP = 'security_group_uses_rule'

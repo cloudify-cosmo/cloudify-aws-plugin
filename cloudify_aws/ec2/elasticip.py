@@ -31,22 +31,22 @@ def creation_validation(**_):
 
 @operation
 def create(args=None, **_):
-    return ElasticIP().created(args)
+    return ElasticIP().create_helper(args)
 
 
 @operation
 def delete(args=None, **_):
-    return ElasticIP().deleted(args)
+    return ElasticIP().delete_helper(args)
 
 
 @operation
 def associate(args=None, **_):
-    return ElasticIPInstanceConnection().associated(args)
+    return ElasticIPInstanceConnection().associate_helper(args)
 
 
 @operation
 def disassociate(args=None, **_):
-    return ElasticIPInstanceConnection().disassociated(args)
+    return ElasticIPInstanceConnection().disassociate_helper(args)
 
 
 class ElasticIPInstanceConnection(AwsBaseRelationship):
@@ -66,10 +66,14 @@ class ElasticIPInstanceConnection(AwsBaseRelationship):
         that was also created by Cloudify.
         """
 
-        instance_id = self.source_resource_id
+        source_id = self.source_resource_id
         elasticip = self.target_resource_id
 
-        associate_args = dict(instance_id=instance_id, public_ip=elasticip)
+        if 'cloudify.aws.nodes.Instance' in ctx.source.node.type_hierarchy:
+            associate_args = dict(instance_id=source_id, public_ip=elasticip)
+        elif 'cloudify.aws.nodes.Interface' in ctx.source.node.type_hierarchy:
+            associate_args = dict(network_interface_id=source_id,
+                                  public_ip=elasticip)
 
         if constants.ELASTICIP['ALLOCATION_ID'] in \
                 ctx.target.instance.runtime_properties:
@@ -183,7 +187,8 @@ class ElasticIP(AwsBaseNode):
     def __init__(self):
         super(ElasticIP, self).__init__(
                 constants.ELASTICIP['AWS_RESOURCE_TYPE'],
-                constants.ELASTICIP['REQUIRED_PROPERTIES']
+                constants.ELASTICIP['REQUIRED_PROPERTIES'],
+                resource_states=constants.ELASTICIP['STATES']
         )
         self.allocation_id = None
         self.not_found_error = constants.ELASTICIP['NOT_FOUND_ERROR']
@@ -216,13 +221,17 @@ class ElasticIP(AwsBaseNode):
                 exception.BotoServerError) as e:
             raise NonRecoverableError('{0}'.format(str(e)))
 
+        self.resource_id = address_object.public_ip
+
+        return True
+
+    def post_create(self):
+        utils.set_external_resource_id(self.resource_id, ctx.instance)
+        address_object = self.get_resource()
         if constants.ELASTICIP['VPC_DOMAIN'] in address_object.domain:
             ctx.instance.runtime_properties[constants.ELASTICIP[
                 'ALLOCATION_ID']] = address_object.allocation_id
             self.allocation_id = address_object.allocation_id
-
-        self.resource_id = address_object.public_ip
-
         return True
 
     def delete(self, args=None, **_):
@@ -269,7 +278,7 @@ class ElasticIP(AwsBaseNode):
 
         return True
 
-    def deleted(self, args=None):
+    def delete_helper(self, args=None):
 
         ctx.logger.info(
                 'Attempting to delete {0} {1}.'

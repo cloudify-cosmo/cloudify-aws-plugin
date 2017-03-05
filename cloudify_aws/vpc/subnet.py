@@ -16,7 +16,6 @@
 # Cloudify imports
 from cloudify_aws import constants, connection, utils
 from cloudify_aws.base import AwsBaseNode
-from cloudify_aws.utils import set_external_resource_id
 from cloudify import ctx
 from cloudify.decorators import operation
 from cloudify.exceptions import NonRecoverableError
@@ -29,17 +28,17 @@ def creation_validation(**_):
 
 @operation
 def create_subnet(args=None, **_):
-    return Subnet().created(args)
+    return Subnet().create_helper(args)
 
 
 @operation
 def start_subnet(args=None, **_):
-    return Subnet().started(args)
+    return Subnet().start_helper(args)
 
 
 @operation
 def delete_subnet(args=None, **_):
-    return Subnet().deleted(args)
+    return Subnet().delete_helper(args)
 
 
 class Subnet(AwsBaseNode):
@@ -48,7 +47,8 @@ class Subnet(AwsBaseNode):
         super(Subnet, self).__init__(
             constants.SUBNET['AWS_RESOURCE_TYPE'],
             constants.SUBNET['REQUIRED_PROPERTIES'],
-            client=connection.VPCConnectionClient().client()
+            client=connection.VPCConnectionClient().client(),
+            resource_states=constants.SUBNET['STATES']
         )
         self.not_found_error = constants.SUBNET['NOT_FOUND_ERROR']
         self.get_all_handler = {
@@ -58,30 +58,12 @@ class Subnet(AwsBaseNode):
 
     def create(self, args=None):
         '''Override for resource create operation'''
-        if ctx.operation.retry_number == 0:
-            # Create the resource
-            create_args = utils.update_args(
-                self._generate_creation_args(), args)
-            subnet = self.execute(self.client.create_subnet,
-                                  create_args, raise_on_falsy=True)
-            self.resource_id = subnet.id
-        else:
-            # Get the resource object
-            subnet = self.get_resource()
-        # If the operation is still pending, set the ID and retry
-        if hasattr(subnet, 'state'):
-            ctx.logger.debug('AWS resource {0} returned a state of "{1}"'
-                             .format(self.resource_id, subnet.state))
-            if subnet.state == 'pending':
-                set_external_resource_id(self.resource_id, ctx.instance)
-                return ctx.operation.retry(
-                    message='Waiting to verify that AWS resource {0} '
-                    'has been added to your account.'.format(self.resource_id))
-        else:
-            ctx.logger.warn('AWS resource {0} returned an '
-                            'unexpected response (missing state)'
-                            .format(self.resource_id))
-            return False
+
+        create_args = utils.update_args(
+            self._generate_creation_args(), args)
+        subnet = self.execute(self.client.create_subnet,
+                              create_args, raise_on_falsy=True)
+        self.resource_id = subnet.id
         return True
 
     def _generate_creation_args(self):

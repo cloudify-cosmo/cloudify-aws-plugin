@@ -17,6 +17,7 @@
 import testtools
 
 # Third Party Imports
+import mock
 from moto import mock_ec2
 from boto.ec2 import EC2Connection
 
@@ -40,39 +41,62 @@ BAD_INSTANCE_ID = 'i-4339wSD9'
 
 class TestEBS(testtools.TestCase):
 
-    def mock_ctx(self, test_name, zone=TEST_ZONE):
+    def mock_ctx(self,
+                 test_name,
+                 zone=TEST_ZONE,
+                 retry_number=0,
+                 operation_name='create'):
 
         test_node_id = test_name
         test_properties = {
             constants.AWS_CONFIG_PROPERTY: {},
             'use_external_resource': False,
             'resource_id': '',
+            'tags': {},
+            'name': test_name,
             'size': TEST_SIZE,
             constants.ZONE: zone,
             'device': TEST_DEVICE
         }
 
+        operation = {
+            'name': operation_name,
+            'retry_number': retry_number
+        }
+
         ctx = MockCloudifyContext(
             node_id=test_node_id,
+            operation=operation,
             properties=test_properties
         )
 
         return ctx
 
-    def mock_volume_node(self, test_name):
+    def mock_volume_node(self,
+                         test_name,
+                         retry_number=0,
+                         operation_name='create'):
 
         test_node_id = test_name
         test_properties = {
             constants.AWS_CONFIG_PROPERTY: {},
             'use_external_resource': False,
             'resource_id': '',
+            'tags': {},
+            'name': test_name,
             constants.ZONE: '',
             'size': '',
             'device': ''
         }
 
+        operation = {
+            'name': operation_name,
+            'retry_number': retry_number
+        }
+
         ctx = MockCloudifyContext(
             node_id=test_node_id,
+            operation=operation,
             properties=test_properties
         )
 
@@ -176,14 +200,14 @@ class TestEBS(testtools.TestCase):
     def test_start(self):
         """This tests that start adds tags"""
 
-        ctx = self.mock_ctx('test_start')
+        ctx = self.mock_ctx('test_start', operation_name='start')
         current_ctx.set(ctx=ctx)
 
         ec2_client = connection.EC2ConnectionClient().client()
         volume = ec2_client.create_volume(TEST_SIZE, TEST_ZONE)
         volume_id = volume.id
         ctx.instance.runtime_properties['aws_resource_id'] = volume_id
-        ebs.start(ctx=ctx)
+        ebs.start(args=None, ctx=ctx)
         volume_list = ec2_client.get_all_volumes(volume_ids=volume_id)
         volume_object = volume_list[0]
         self.assertEquals(volume_object.tags.get('resource_id'),
@@ -224,7 +248,10 @@ class TestEBS(testtools.TestCase):
         self.assertEqual(False, output)
 
     @mock_ec2
-    def test_external_resource(self):
+    @mock.patch('cloudify_aws.base.AwsBaseNode.execute')
+    @mock.patch('cloudify_aws.base.AwsBaseNode'
+                '.cloudify_operation_exit_handler')
+    def test_external_resource(self, *_):
         """ This tests that create sets the aws_resource_id
         runtime_properties
         """
@@ -250,7 +277,7 @@ class TestEBS(testtools.TestCase):
         test_volume = self.create_volume_for_checking()
 
         output = \
-            test_volume.created()
+            test_volume.create_helper()
 
         self.assertEqual(True, output)
 
@@ -332,6 +359,10 @@ class TestEBS(testtools.TestCase):
         volume.attach(instance_id, TEST_DEVICE)
         ctx.source.instance.runtime_properties['aws_resource_id'] = \
             volume.id
+        ctx.source.instance.runtime_properties['device'] = \
+            TEST_DEVICE
+        ctx.target.instance.runtime_properties[
+            '{0}-device'.format(volume.id)] = TEST_DEVICE
         ctx.source.instance.runtime_properties['instance_id'] = \
             instance_id
         ctx.target.instance.runtime_properties['aws_resource_id'] = \
@@ -394,11 +425,15 @@ class TestEBS(testtools.TestCase):
         ctx.node.properties['use_external_resource'] = True
         ctx.node.properties['resource_id'] = BAD_VOLUME_ID
         args = dict()
-        ex = self.assertRaises(
-            NonRecoverableError, ebs.create, args, ctx=ctx)
-        self.assertIn(
-            'Cannot use_external_resource because resource',
-            ex.message)
+        with mock.patch('cloudify_aws.base.AwsBaseNode.get_resource',
+                        return_value=False):
+            with mock.patch('cloudify_aws.ec2.ebs.Ebs.create',
+                            return_value=False):
+                ex = self.assertRaises(
+                        NonRecoverableError, ebs.create, args, ctx=ctx)
+                self.assertIn(
+                    'Cannot use_external_resource because resource',
+                    ex.message)
 
     @mock_ec2
     def test_delete_existing(self):
@@ -471,6 +506,10 @@ class TestEBS(testtools.TestCase):
         ctx.source.node.properties['resource_id'] = volume.id
         ctx.source.instance.runtime_properties['aws_resource_id'] = \
             volume.id
+        ctx.source.instance.runtime_properties['device'] = \
+            TEST_DEVICE
+        ctx.target.instance.runtime_properties[
+            '{0}-device'.format(volume.id)] = TEST_DEVICE
         ctx.target.instance.runtime_properties['placement'] = \
             TEST_ZONE
         ctx.target.node.properties['use_external_resource'] = True
@@ -480,7 +519,7 @@ class TestEBS(testtools.TestCase):
         ctx.source.instance.runtime_properties['instance_id'] = \
             instance_id
         args = dict(force=True)
-        ebs.VolumeInstanceConnection().disassociated(args)
+        ebs.VolumeInstanceConnection().disassociate_helper(args)
         self.assertNotIn(
             'instance_id', ctx.source.instance.runtime_properties)
 

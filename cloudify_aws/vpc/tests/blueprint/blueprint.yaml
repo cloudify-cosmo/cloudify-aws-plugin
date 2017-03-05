@@ -162,7 +162,6 @@ node_templates:
       aws_config: *AWS_CONFIG
       use_external_resource: true
       resource_id: { get_input: existing_network_acl_id }
-      aws_config: *AWS_CONFIG
       acl_network_entries:
         - rule_number: 1
           protocol: tcp

@@ -68,20 +68,15 @@ def get_external_resource_id_or_raise(operation, ctx_instance):
     return ctx_instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
 
 
-def set_external_resource_id(value, ctx_instance, external=True):
+def set_external_resource_id(value, ctx_instance):
     """Sets the EXTERNAL_RESOURCE_ID runtime_property for a Node-Instance.
 
     :param value: the desired EXTERNAL_RESOURCE_ID runtime_property
     :param ctx_instance:  The Cloudify ctx context.
-    :param external:  Boolean representing if it is external resource or not.
     """
 
-    if not external:
-        resource_type = 'Cloudify'
-    else:
-        resource_type = 'external'
-
-    ctx.logger.info('Using {0} resource: {1}'.format(resource_type, value))
+    ctx.logger.info(
+        'Stored reference ID# {0} in Cloudify.'.format(value))
     ctx_instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID] = value
 
 
@@ -103,27 +98,6 @@ def unassign_runtime_property_from_resource(property_name, ctx_instance):
     ctx.logger.debug(
             'Unassigned {0} runtime property: {1}'.format(property_name,
                                                           value))
-
-
-def use_external_resource(ctx_node_properties):
-    """Checks if use_external_resource node property is true,
-    logs the ID and answer to the debug log,
-    and returns boolean False (if not external) or True.
-
-    :param ctx_node_properties: The ctx node properties for a node.
-    :returns boolean: False if not external.
-    """
-
-    if not ctx_node_properties['use_external_resource']:
-        ctx.logger.debug(
-                'Using Cloudify resource_id: {0}.'
-                .format(ctx_node_properties['resource_id']))
-        return False
-    else:
-        ctx.logger.debug(
-                'Using external resource_id: {0}.'
-                .format(ctx_node_properties['resource_id']))
-        return True
 
 
 def get_target_external_resource_ids(relationship_type, ctx_instance):

@@ -27,27 +27,27 @@ def creation_validation(**_):
 
 @operation
 def create_dhcp_options(args=None, **_):
-    return DhcpOptions().created(args)
+    return DhcpOptions().create_helper(args)
 
 
 @operation
 def start_dhcp_options(args=None, **_):
-    return DhcpOptions().started(args)
+    return DhcpOptions().start_helper(args)
 
 
 @operation
 def delete_dhcp_options(args=None, **_):
-    return DhcpOptions().deleted(args)
+    return DhcpOptions().delete_helper(args)
 
 
 @operation
 def associate_dhcp_options(args=None, **_):
-    return DhcpAssociation().associated(args)
+    return DhcpAssociation().associate_helper(args)
 
 
 @operation
 def restore_dhcp_options(args=None, **_):
-    return DhcpAssociation().disassociated(args)
+    return DhcpAssociation().disassociate_helper(args)
 
 
 class DhcpAssociation(AwsBaseRelationship):
@@ -92,7 +92,8 @@ class DhcpOptions(AwsBaseNode):
         super(DhcpOptions, self).__init__(
             constants.DHCP_OPTIONS['AWS_RESOURCE_TYPE'],
             constants.DHCP_OPTIONS['REQUIRED_PROPERTIES'],
-            client=connection.VPCConnectionClient().client()
+            client=connection.VPCConnectionClient().client(),
+            resource_states=constants.DHCP_OPTIONS['STATES']
         )
         self.not_found_error = constants.DHCP_OPTIONS['NOT_FOUND_ERROR']
         self.get_all_handler = {
