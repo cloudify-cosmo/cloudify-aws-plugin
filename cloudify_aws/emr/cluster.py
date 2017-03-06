@@ -97,6 +97,8 @@ def create_cluster_if_needed(ctx):
     api_params = dict(ReleaseLabel=props['release_label'])
     api_params.update(build_applications_list(
         ctx.node.properties.get('applications', list())))
+    if props.get('ec2_subnet_id'):
+        api_params['Instance.Ec2SubnetId'] = props['ec2_subnet_id']
     # Actually create the resource
     resource_id = EMRCluster(logger=ctx.logger).create(dict(
         name=props['name'],

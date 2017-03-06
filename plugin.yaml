@@ -797,6 +797,8 @@ node_types:
         required: false
       ec2_keyname:
         required: false
+      ec2_subnet_id:
+        required: false
       availability_zone:
         required: false
       # If true, sets auto-terminate to false and vice versa

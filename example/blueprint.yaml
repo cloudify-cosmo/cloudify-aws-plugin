@@ -47,6 +47,12 @@ inputs:
       Name of AWS EC2 keypair to use for the EMR cluster
     type: string
     
+  emr_cluster_ec2_subnet_id:
+    description: >
+      ID of the VPC subnet to use for the EMR cluster
+    type: string
+    required: false
+    
   emr_cluster_applications:
     description: >
       List of EMR cluster applications (names) to be install
@@ -100,12 +106,20 @@ dsl_definitions:
 
 
 node_templates:
+ #emr_cluster:
+ #  type: cloudify.aws.nodes.emr.Cluster
+ #  properties:
+ #    resource_id: j-28MTL6RV3L6FX
+ #    use_external_resource: true
+ #    aws_config: *aws_config
+  
   emr_cluster:
     type: cloudify.aws.nodes.emr.Cluster
     properties:
       name: { get_input: emr_cluster_name }
       log_uri: { get_input: emr_cluster_s3_log_path }
       ec2_keyname: { get_input: emr_cluster_ec2_keyname }
+      ec2_subnet_id: { get_input: emr_cluster_ec2_subnet_id }
       applications: { get_input: emr_cluster_applications }
       aws_config: *aws_config
     relationships:
