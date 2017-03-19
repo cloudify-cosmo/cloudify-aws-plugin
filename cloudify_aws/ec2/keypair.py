@@ -226,8 +226,8 @@ class KeyPair(AwsBaseNode):
                 'Path to key file: {0}.'.format(key_path_in_filesystem))
         if not key_pair_in_account:
             raise NonRecoverableError(
-                    'External resource, but the key pair is '
-                    'not in the account: {0}'.format(self.resource_id))
+                    'Was asked to use an external resource, but the key pair '
+                    'is not in the account: {0}'.format(self.resource_id))
         if not self._search_for_key_file(key_path_in_filesystem):
             raise NonRecoverableError(
                     'Was asked to use an external resource, but the key file '
