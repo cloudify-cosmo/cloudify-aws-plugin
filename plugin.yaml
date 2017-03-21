@@ -29,26 +29,40 @@ data_types:
         type: string
         required: false
       ec2_region_name:
-        description: >
-          The EC2 Region RegionName, such as us-east-1.
-          (Not us-east-1b, which is an availability zone, or US East, which is a Region.)
+        description: |
+          The EC2 Region RegionName, such as ``us-east-1``
+          (Not ``us-east-1b``, which is an availability zone,
+          or US East, which is a Region).
+
+          Required, except with the
+          :cfy:node:`cloudify.aws.nodes.ElasticLoadBalancer` node type.
+          This is the EC2 region name, such as ``us-east-1``.
+          You may also use the word ``region`` to refer to the same thing.
         type: string
         required: false
       ec2_region_endpoint:
         description: >
-          The endpoint for the given region.
+          The endpoint of the EC2 service,
+          such as ec2.us-east-1.amazonaws.com.
         type: string
         required: false
       elb_region_name:
-        description: >
-          The ELB Region RegionName, such as us-east-1.
-          (Not us-east-1b, which is an availability zone, or US East, which is a Region.)
-          Required for aws_config for node type cloudify.aws.nodes.ElasticLoadBalancer.
+        description: |
+          Refers to the ELB region name,
+          and is usually has the same value as your ``ec2_region_name``,
+          e.g. ``us-east-1``, though not interchangeable.
+
+          (Not ``us-east-1b``, which is an availability zone,
+          or US East, which is a Region).
+
+          Required for aws_config for node type
+          :cfy:node:`cloudify.aws.nodes.ElasticLoadBalancer`.
         type: string
         required: false
       elb_region_endpoint:
         description: >
-          The endpoint for the given ELB region.
+          The endpoint of the ELB service,
+          such as ``elasticloadbalancing.eu-central-1.amazonaws.com``.
         type: string
         required: false
 
@@ -175,7 +189,8 @@ node_types:
       use_external_resource:
         description: >
           Indicate whether the resource exists or if Cloudify should create the resource,
-          true if you are bringing an existing resource, false if you want cloudify to create it.
+          ``true`` if you are bringing an existing resource.
+          ``false`` if you want cloudify to create it.
         type: boolean
         default: false
         required: true
@@ -191,27 +206,39 @@ node_types:
         default: {}
       name:
         description: >
-          Optional field if you want to add a specific name to the instance.
+          Allows you to provide a name to your instance.
+          It will be tagged with this name and will show up in your AWS console.
         default: ''
         required: false
       image_id:
         description: >
-          The ID of the AMI image in your Amazon account.
+          The AMI image id for the instance.
+          For more information, refer to
+          http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/finding-an-ami.html
         type: string
         required: true
       instance_type:
         description: >
-          The instance's size.
+          The instance type for the instance.
+          This describes the instance's size.
+          For more information, refer to
+          http://aws.amazon.com/ec2/instance-types/.
         type: string
         required: true
       use_password:
+        description: >
+          Not used by cloudify.aws.nodes.Instance.
         default: false
       parameters:
-        description: >
+        description: |
           The key value pair parameters allowed by Amazon API to the
-          ec2.connection.EC2Connection.run_instances command. It should be mentioned that
-          although this field is listed as optional. A non-trivial use case requires
-          that both the key_name parameter and the security_groups parameter be specified.
+          ec2.connection.EC2Connection.run_instances command,
+          as described at
+          http://boto.readthedocs.org/en/latest/ref/ec2.html#module-boto.ec2.instance
+
+          It should be mentioned that although this field is listed as optional,
+          a non-trivial use case requires that both the
+          key_name parameter and the security_groups parameter be specified.
         default: {}
         required: false
       aws_config:
@@ -249,8 +276,13 @@ node_types:
     derived_from: cloudify.aws.nodes.Instance
     properties:
       use_password:
+        description: >
+          If true, Windows password will be retrieved the from the platform
+          and stored as ``password`` in the instance's runtime_properties.
         default: true
       os_family:
+        description: >
+          **no longer used**
         default: windows
       agent_config:
         type: cloudify.datatypes.AgentConfig
@@ -323,9 +355,18 @@ node_types:
         required: true
       rules:
         default: []
-        description: >
+        description: |
+          key-value security group rule configuration as described at
+          http://boto.readthedocs.org/en/latest/ref/ec2.html#boto.ec2.securitygroup.SecurityGroup.authorize
+
           You need to pass in either src_group_id (security group ID) OR cidr_ip,
-          and then the following three: ip_protocol, from_port and to_port.
+          and then the following three: ip_protocol, from_port and to_port::
+
+            rules:
+              - ip_protocol: tcp
+                from_port: 25
+                to_port: 25
+                cidr_ip: OR src_group_id:
       aws_config:
         description: >
           A dictionary of values to pass to authenticate with the AWS API.
@@ -425,9 +466,11 @@ node_types:
         default: {}
       private_key_path:
         description: >
-          The path where the key should be saved on the machine. If this is a bootstrap
-          process, this refers to the local computer. If this will run on the manager,
-          this will be saved on the manager.
+          The path where the key should be saved on the machine.
+          If this is a bootstrap process, this refers to the local computer.
+          If this will run on the manager, this will be saved on the manager.
+          If ``use_external_resource`` is set to ``true``,
+          the existing private key is expected to be at this path.
         type: string
         required: true
       aws_config:
@@ -566,7 +609,7 @@ node_types:
         required: true
       instance_tenancy:
         description: >
-          Default or dedicated.
+          Set this to "dedicated" if you want your VPC on dedicated hardware - note that Cloudify is not resposible for charges on your account for this.
         type: string
         default: default
         required: false
@@ -610,8 +653,12 @@ node_types:
         type: string
         required: true
       availability_zone:
-        description: >
+        description: |
           The availability zone that you want your subnet in.
+
+          Not required but it is recommended
+          so that you do not rely on AWS to make sure to
+          put all of your resources in the desired availability zone.
         default: ''
         required: false
       aws_config:
@@ -632,8 +679,10 @@ node_types:
     properties:
       use_external_resource:
         description: >
-          Indicate whether the resource exists or if Cloudify should create the resource,
-          true if you are bringing an existing resource, false if you want cloudify to create it.
+          Indicate whether the resource exists
+          or if Cloudify should create the resource.
+          ``true`` if you are bringing an existing resource,
+          ``false`` if you want cloudify to create it.
         type: boolean
         default: false
         required: true
@@ -680,8 +729,10 @@ node_types:
         default: ipsec.1
         required: true
       availability_zone:
-        description: >
+        description: |
           The Availability Zone where you want the VPN gateway.
+
+          not required but it is recommended so that you do not rely on AWS to make sure to put all of your resources in the desired availability zone.
         default: ''
         required: false
     interfaces:
@@ -734,8 +785,9 @@ node_types:
           A dictionary of key/value pairs of tags you want to add.
         default: {}
       acl_network_entries:
-        description: >
-          A list of rules of data type cloudify.datatypes.aws.NetworkAclEntry (see above).
+        description: |
+          A list of rules of data type
+          :cfy:datatype:`cloudify.datatypes.aws.NetworkAclEntry`).
         default: []
         required: false
       aws_config:
@@ -774,7 +826,7 @@ node_types:
         default: {}
       domain_name:
         description: >
-          A domain name.
+          The domain name that you associate with your DCHP.
         required: false
       domain_name_servers:
         description: >
