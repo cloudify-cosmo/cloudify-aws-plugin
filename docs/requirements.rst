@@ -14,9 +14,9 @@ Compatibility
 
     If you need to use an older AWS Plugin, you can work around this issue in two ways:
 
-    + connect to your manager machine and move the file ```/etc/cloudify/aws_plugin/boto``` to ```/root/boto```
+    + connect to your manager machine and move the file ``/etc/cloudify/aws_plugin/boto`` to ``/root/boto``
 
-    + In the AWS manager, change this line ```aws_config_path: /etc/cloudify/aws_plugin/boto``` to ```aws_config_path: /root/boto```
+    + In the AWS manager, change this line ``aws_config_path: /etc/cloudify/aws_plugin/boto`` to ``aws_config_path: /root/boto``
 
 The AWS plugin uses the `Boto 2.38 client <https://github.com/boto/boto>`_.
 
