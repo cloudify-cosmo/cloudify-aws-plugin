@@ -80,6 +80,9 @@ class Instance(AwsBaseNode):
 
     def creation_validation(self, **_):
 
+        if not self.resource_id:
+            self.resource_id = utils.get_resource_id()
+
         super(Instance, self).creation_validation()
 
         image_id = ctx.node.properties['image_id']
