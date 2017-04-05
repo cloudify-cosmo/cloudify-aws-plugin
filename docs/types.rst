@@ -195,22 +195,24 @@ Relationships
    If so, that security group's ID will be the included in the list of security groups in the ``security_group_ids`` parameter in the `run_instances` function.
 
 
-.. cfy:rel:: cloudify.aws.relationships.instance_connected_to_subnet
+.. cfy:rel:: cloudify.aws.relationships.connected_to_subnet
 
    The `run_instances` operation looks for any relationships to
    a Subnet and creates the Instance in that Subnet.
    Otherwise, the instance is in the EC2 Classic VPC.
 
-.. cfy:rel:: cloudify.aws.relationships.connected_to_subnet
 
-   TODO: WAT
+.. admonition:: Deprecated Alternatives
+    :class: warning
+
+    Please use
+    :cfy:rel:`cloudify.aws.relationships.connected_to_subnet`
+    instead
+
+    .. cfy:rel:: cloudify.aws.relationships.instance_connected_to_subnet
 
 
-.. cfy:rel:: cloudify.aws.relationships.instance_contained_in_subnet
-.. warning::
-   Deprecated! Please use
-   :cfy:rel:`cloudify.aws.relationships.instance_connected_to_subnet`
-   instead
+    .. cfy:rel:: cloudify.aws.relationships.instance_contained_in_subnet
 
 
 .. cfy:rel:: cloudify.aws.relationships.instance_connected_to_load_balancer
