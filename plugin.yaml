@@ -227,7 +227,9 @@ node_types:
         required: true
       use_password:
         description: >
-          Not used by cloudify.aws.nodes.Instance.
+          Whether this node can be logged in to with a password.
+          This should only be true for Windows instances
+          (see :cfy:node:`cloudify.aws.nodes.WindowsInstance`)
         default: false
       parameters:
         description: |
