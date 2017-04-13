@@ -709,7 +709,7 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create: aws.cloudify_aws.vpc.gateway.create_customer_gateway
-        create: aws.cloudify_aws.vpc.gateway.start_customer_gateway
+        start: aws.cloudify_aws.vpc.gateway.start_customer_gateway
         delete: aws.cloudify_aws.vpc.gateway.delete_customer_gateway
 
   cloudify.aws.nodes.ACL:
