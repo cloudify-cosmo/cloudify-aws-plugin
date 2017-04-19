@@ -70,7 +70,7 @@ class KeyPair(AwsBaseNode):
                         'does not exist locally.')
             try:
                 if not self.get_all_matching(
-                        ctx.node.properties['resource_id']):
+                        utils.get_resource_id()):
                     raise NonRecoverableError(self.not_found_error)
             except NonRecoverableError as e:
                 raise NonRecoverableError(
@@ -82,7 +82,7 @@ class KeyPair(AwsBaseNode):
                 raise NonRecoverableError(
                         'Not external resource, '
                         'but the key file exists locally.')
-            if self.get_all_matching(ctx.node.properties['resource_id']):
+            if self.get_all_matching(utils.get_resource_id()):
                 raise NonRecoverableError(
                         'Not external resource, '
                         'but the key pair exists in the account.')

@@ -83,7 +83,8 @@ class SecurityGroup(AwsBaseNode):
                 resource = self.filter_for_single_resource(
                     self.get_all_handler['function'],
                     {'groupnames': self.resource_id},
-                    not_found_token=self.not_found_error
+                    not_found_token=self.not_found_error,
+                    aws_id_attribute='name'
                 )
 
         return resource
