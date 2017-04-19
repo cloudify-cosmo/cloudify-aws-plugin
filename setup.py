@@ -35,6 +35,7 @@ setup(
         'cloudify_aws.vpc'
     ],
 
+
     license='LICENSE',
     install_requires=[
         'cloudify-plugins-common>=3.3.1',
