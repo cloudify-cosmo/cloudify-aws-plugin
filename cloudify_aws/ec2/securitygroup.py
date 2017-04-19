@@ -195,7 +195,7 @@ class SecurityGroup(AwsBaseNode):
                     src_group_object = self.get_resource()
                 else:
                     src_group_object = \
-                        self._get_vpc_security_group_from_name(
+                        self._get_vpc_security_group(
                             rule['src_group_id'])
 
                 if not src_group_object:
@@ -225,10 +225,12 @@ class SecurityGroup(AwsBaseNode):
             self.client.authorize_security_group_egress, authorize_egress_args,
             raise_on_falsy=True)
 
-    def _get_vpc_security_group_from_name(self, name):
+    def _get_vpc_security_group(self, key):
         groups = self.get_all_matching()
         for group in groups:
-            if group.name == name:
+            if group.name == key:
+                return group
+            elif group.id == key:
                 return group
         return None
 
