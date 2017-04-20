@@ -16,3 +16,7 @@
     - Support Security Group rules as a node type
     - Support resource state verification
     - Clearer log messages
+1.4.5 
+    - Support Security Group rules creation by ID 
+    - Fix validation errors 
+    - Fix duplicated mapping key
