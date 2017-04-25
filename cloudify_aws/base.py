@@ -192,6 +192,12 @@ class AwsBaseRelationship(AwsBase):
 
     def disassociate_helper(self, args=None):
 
+        if not (self.source_resource_id and self.target_resource_id):
+            ctx.logger.error(
+                    'Source or target resources, '
+                    'does not exists, unable to disassociate.')
+            return False
+
         ctx.logger.info(
             'Attempting to disassociate {0} from {1}.'
             .format(self.source_resource_id, self.target_resource_id))

@@ -20,3 +20,5 @@
     - Support Security Group rules creation by ID 
     - Fix validation errors 
     - Fix duplicated mapping key
+1.4.6 
+    - Fix random EIP disassociated
