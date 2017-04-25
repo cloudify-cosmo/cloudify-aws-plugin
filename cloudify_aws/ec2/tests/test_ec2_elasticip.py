@@ -717,7 +717,7 @@ class TestElasticIP(testtools.TestCase):
                         'error')
                 ex = self.assertRaises(
                         NonRecoverableError,
-                        elasticip.disassociate)
+                        elasticip.ElasticIPInstanceConnection().disassociate)
                 self.assertIn(
                         'error', ex.message)
 
