@@ -3,8 +3,8 @@
 tosca_definitions_version: cloudify_dsl_1_3
 
 imports:
-  - http://www.getcloudify.org/spec/cloudify/3.4/types.yaml
-  - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-aws-plugin/1.4.6/plugin.yaml
+  - http://www.getcloudify.org/spec/cloudify/4.0.1/types.yaml
+  - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-aws-plugin/1.4.7/plugin.yaml
 
 inputs:
 
@@ -82,9 +82,6 @@ inputs:
 
   resource_id_vol:
     type: string
-
-  aws_config:
-    default: {}
 
 node_templates:
 

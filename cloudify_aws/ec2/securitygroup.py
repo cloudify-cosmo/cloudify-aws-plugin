@@ -22,8 +22,8 @@ import ipaddress
 # Cloudify imports
 from cloudify import ctx
 from cloudify.decorators import operation
-from cloudify_aws.base import AwsBaseNode, AwsBaseRelationship
-from cloudify_aws import utils, constants
+from cloudify_aws.base import AwsBaseNode
+from cloudify_aws import utils, constants, connection
 from cloudify.exceptions import NonRecoverableError
 
 
@@ -36,6 +36,11 @@ def creation_validation(**_):
 def create(args=None, rules=[], **_):
     ctx.instance.runtime_properties['rules_from_args'] = rules
     return SecurityGroup().create_helper(args)
+
+
+@operation
+def create_rule(args=None, rule=[], **_):
+    return SecurityGroupRule().create(args)
 
 
 @operation
@@ -53,9 +58,18 @@ def delete(args=None, **_):
     return SecurityGroup().delete_helper(args)
 
 
+@operation
+def delete_rule(args=None, **_):
+    return SecurityGroupRule().delete(args)
+
+
 class SecurityGroup(AwsBaseNode):
 
-    def __init__(self):
+    def __init__(self,
+                 aws_resource_type=None,
+                 required_properties=None,
+                 resource_states=None
+                 ):
         super(SecurityGroup, self).__init__(
                 constants.SECURITYGROUP['AWS_RESOURCE_TYPE'],
                 constants.SECURITYGROUP['REQUIRED_PROPERTIES'],
@@ -343,89 +357,155 @@ class SecurityGroup(AwsBaseNode):
         return clean_rules
 
 
-class SecurityGroupUsesRuleConnection(AwsBaseRelationship):
+class SecurityGroupRule(SecurityGroup):
 
-    def __init__(self, client=None):
-        super(SecurityGroupUsesRuleConnection, self).__init__(client=client)
-        self.source_get_all_handler = {
-            'function': self.client.get_all_security_groups(),
-            'argument':
-                '{0}_ids'.format(constants.SECURITYGROUP['AWS_RESOURCE_TYPE'])
+    def __init__(self):
+        super(SecurityGroupRule, self).__init__(
+                constants.SecurityGroupRule['AWS_RESOURCE_TYPE'],
+                constants.SecurityGroupRule['REQUIRED_PROPERTIES'],
+                resource_states=constants.SecurityGroupRule['STATES']
+        )
+        self.not_found_error = constants.SecurityGroupRule['NOT_FOUND_ERROR']
+        self.get_all_handler = {
+            'function': self.client.get_all_security_groups,
+            'argument': '{0}_ids'
+            .format(constants.SecurityGroupRule['AWS_RESOURCE_TYPE'])
         }
 
-    def associate(self, args=None, **_):
+    def get_resource(self, resource_id=None):
 
-        ctx.logger.info(
-                'adding rule to security group {0}'
-                .format(self.source_resource_id))
+        if resource_id:
+            try:
+                resource = self.filter_for_single_resource(
+                        self.get_all_handler['function'],
+                        {self.get_all_handler['argument']: resource_id or self
+                            .resource_id},
+                        not_found_token=self.not_found_error
+                )
+            except Exception as e:
+                if 'InvalidGroupId.Malformed' not in str(e):
+                    raise NonRecoverableError(str(e))
+                else:
+                    resource = self.filter_for_single_resource(
+                            self.get_all_handler['function'],
+                            {'groupnames': resource_id or self.resource_id},
+                            not_found_token=self.not_found_error,
+                            aws_id_attribute='name'
+                    )
 
-        if 'rules' not in ctx.source.instance.runtime_properties:
-            return self._add_new_rule()
+            return resource
+
         else:
-            if ctx.target.node.properties['rule'] not in \
-                    [ctx.source.instance.runtime_properties['rules']]:
-                return self._add_new_rule()
+            return ctx.node.properties['rule']
 
-        ctx.logger.info('Rule already exists in security group {0}.'
-                        .format(self.source_resource_id))
-        return False
+    def create(self, args=None, **_):
 
-    def _add_new_rule(self):
+        """Creates an EC2 security group.
+        """
 
-        for property in ctx.target.node.properties['rule']:
-            if 'egress' in property:
-                ctx.source.instance.runtime_properties.update(
-                        {'egress':
-                         ctx.target.node.properties['rule']})
+        client = connection.EC2ConnectionClient().client()
+        rule = ctx.node.properties.get('rule')
+
+        depends_on_target_list = utils.get_target_external_resource_ids(
+                constants.RULE_DEPENDS_ON_SG_RELATIONSHIP, ctx.instance)
+        contained_in_target_list = utils.get_target_external_resource_ids(
+                constants.RULE_CONTAINED_IN_SG_RELATIONSHIP, ctx.instance)
+
+        if depends_on_target_list:
+            group_object_list_depends = client.get_all_security_groups(
+                    group_ids=depends_on_target_list[0])
+            group_object_depends = group_object_list_depends[0]
+
+            rule[0]['src_group_id'] = group_object_depends.id
+
+        if contained_in_target_list:
+
+            group_object_list_contained = client.get_all_security_groups(
+                    group_ids=contained_in_target_list[0])
+            group_object_contained = group_object_list_contained[0]
+            self._create_group_rules(group_object_contained, rule)
+
+        return True
+
+    def post_create(self):
+        rule = self.get_resource()
+        if not rule:
+            return False
+        return True
+
+    def start(self, args=None, **_):
+        return True
+
+    def delete(self, args=None, **_):
+
+        rule_id = ctx.node.properties.get('resource_id')
+        rule = ctx.node.properties.get('rule')
+
+        depends_on_target_list = utils.get_target_external_resource_ids(
+                constants.RULE_DEPENDS_ON_SG_RELATIONSHIP, ctx)
+        if depends_on_target_list:
+            return True
+        contained_in_target_list = utils.get_target_external_resource_ids(
+                constants.RULE_CONTAINED_IN_SG_RELATIONSHIP, ctx)
+
+        for group_id in contained_in_target_list:
+            ctx.logger.info(
+                    'removing rule {0} from security group {1}'
+                    .format(rule_id, group_id))
+            self._revoke_rule(group_id, rule)
+
+        return True
+
+    def _revoke_rule(self, group_id, rule):
+
+        client = connection.EC2ConnectionClient().client()
+        revoke_args = {'group_id': group_id}
+        revoke_args.update(**rule)
+        revoke_args.pop('src_group_id')
+
+        if rule.pop('egress', False):
+            try:
+                client.revoke_security_group_egress(**revoke_args)
+            except (exception.EC2ResponseError,
+                    exception.BotoServerError) as e:
+                raise NonRecoverableError('{0}'.format(str(e)))
+        else:
+            try:
+                client.revoke_security_group(**revoke_args)
+            except (exception.EC2ResponseError,
+                    exception.BotoServerError) as e:
+                raise NonRecoverableError('{0}'.format(str(e)))
+
+        return True
+
+    def _create_group_rules(self, group_object, rules=[]):
+        """For each rule listed in the blueprint,
+        this will add the rule to the group with the given id.
+        :param group_object: The group object that you want to add rules to.
+        :param rules: A list of rules to authorize.
+        :raises NonRecoverableError:
+        Could not locate the security group ID#.
+        """
+
+        for rule in self.rules_cleanup(group_object, rules):
+
+            if 'src_group_id' in rule:
+                del rule['src_group_id']
+                rule['src_group'] = group_object
+            if rule.pop('egress', False):
+                self.authorize_egress(group_object.id, rule)
             else:
-                ctx.source.instance.runtime_properties.update(
-                        {'ingress':
-                         ctx.target.node.properties['rule']})
+                self.authorize(group_object, rule)
 
-        return True
+    def authorize(self, group_object, rule):
 
-    def disassociate(self, args=None, **_):
+        try:
+            group_object.authorize(**rule)
+        except (exception.EC2ResponseError,
+                exception.BotoServerError) as e:
+            raise NonRecoverableError('{0}'.format(str(e)))
 
-        ctx.logger.info(
-                'removing rule from security group {0}'
-                .format(self.source_resource_id))
-
-        for property in ctx.target.node.properties['rule']:
-            if 'egress' in property:
-                ctx.source.instance.runtime_properties\
-                    .pop('egress', 'Rule doesnt exists in security group {0}.'
-                         .format(self.source_resource_id))
-            else:
-                ctx.source.instance.runtime_properties\
-                    .pop('ingress', 'Rule doesnt exists in security group {0}.'
-                         .format(self.source_resource_id))
-
-        return True
-
-    def associate_helper(self, args=None):
-
-        ctx.logger.info(
-                'Attempting to associate rule to {0}.'
-                .format(self.source_resource_id))
-        if self.associate(args):
-            return self.post_associate()
-
-    def disassociate_helper(self, args=None):
-
-        ctx.logger.info(
-                'Attempting to disassociate rule from {0}.'
-                .format(self.source_resource_id))
-        if self.disassociate(args):
-            return self.post_disassociate()
-
-    def post_associate(self):
-        ctx.logger.info(
-                'Associated rule with {0}.'
-                .format(self.source_resource_id))
-        return True
-
-    def post_disassociate(self):
-        ctx.logger.info(
-                'Disassociated rule from {0}.'
-                .format(self.source_resource_id))
-        return True
+    def authorize_egress(self, group_id, rule):
+        authorize_egress_args = {'group_id': group_id}
+        authorize_egress_args.update(**rule)
+        self.client.authorize_security_group_egress(**authorize_egress_args)
