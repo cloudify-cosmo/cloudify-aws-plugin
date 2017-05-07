@@ -441,7 +441,10 @@ class SecurityGroupRule(SecurityGroup):
     def delete(self, args=None, **_):
 
         rule_id = ctx.node.properties.get('resource_id')
-        rule = ctx.node.properties.get('rule')
+        rule = ctx.node.properties.get('rule', [None])[0]
+
+        if not rule:
+            return True
 
         depends_on_target_list = utils.get_target_external_resource_ids(
                 constants.RULE_DEPENDS_ON_SG_RELATIONSHIP,
