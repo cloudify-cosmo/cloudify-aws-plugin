@@ -3,30 +3,65 @@
 tosca_definitions_version: cloudify_dsl_1_3
 
 imports:
-  - http://www.getcloudify.org/spec/cloudify/3.4/types.yaml
-  - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-aws-plugin/1.4.6/plugin.yaml
+  - http://www.getcloudify.org/spec/cloudify/4.0.1/types.yaml
+  - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-aws-plugin/1.4.7/plugin.yaml
 
 inputs:
 
   aws_config:
-      default: {}
-
-  external_sg:
-      type: boolean
-
-  resource_id_sg:
-      type: string
+    default: {}
 
 node_templates:
 
-  simple_security_group:
-      type: cloudify.aws.nodes.SecurityGroup
-      properties:
-        resource_id: { get_input: resource_id_sg }
-        use_external_resource: { get_input: external_sg }
-        description: Simple Security Group
-        rules: []
-        aws_config: { get_input: aws_config }
+  security_group_a:
+    type: cloudify.aws.nodes.SecurityGroup
+    properties:
+      aws_config: { get_input: aws_config }
+      description: Simple Security Group A
+      rules: []
+    relationships:
+    - type: cloudify.aws.relationships.security_group_contained_in_vpc
+      target: vpc
+
+  security_group_b:
+    type: cloudify.aws.nodes.SecurityGroup
+    properties:
+      aws_config: { get_input: aws_config }
+      description: Simple Security Group B
+      rules: []
+    relationships:
+    - type: cloudify.aws.relationships.security_group_contained_in_vpc
+      target: vpc
+
+  rule_a:
+    type: cloudify.aws.nodes.SecurityGroupRule.Multi
+    properties:
+      aws_config: { get_input: aws_config }
+      rule:
+        - ip_protocol: tcp
+          from_port: 22
+          to_port: 22
+          src_group_id: security_group_b
+    relationships:
+    - type: cloudify.aws.relationships.rule_depends_on_security_group
+      target: security_group_b
+    - type: cloudify.aws.relationships.rule_contained_in_security_group
+      target: security_group_a
+
+  rule_b:
+    type: cloudify.aws.nodes.SecurityGroupRule.Multi
+    properties:
+      aws_config: { get_input: aws_config }
+      rule:
+        - ip_protocol: tcp
+          from_port: 22
+          to_port: 22
+          src_group_id: security_group_a
+    relationships:
+    - type: cloudify.aws.relationships.rule_depends_on_security_group
+      target: security_group_a
+    - type: cloudify.aws.relationships.rule_contained_in_security_group
+      target: security_group_b
 
 plugins:
     ec2:

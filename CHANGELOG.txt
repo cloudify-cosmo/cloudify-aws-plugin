@@ -22,3 +22,5 @@
     - Fix duplicated mapping key
 1.4.6 
     - Fix random EIP disassociated
+1.4.7
+    - Support circular dependency of security groups
