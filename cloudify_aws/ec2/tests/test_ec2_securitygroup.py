@@ -157,10 +157,10 @@ class TestSecurityGroup(testtools.TestCase):
         with mock.patch('cloudify_aws.utils.get_target_external_resource_ids')\
                 as mock_get_target_external_resource_ids:
             mock_get_target_external_resource_ids.return_value = group.id
-            with mock.patch('boto.ec2.connection.EC2Connection'
-                            '.get_all_security_groups')\
+            with mock.patch('cloudify_aws.ec2.securitygroup.SecurityGroupRule'
+                            '.filter_for_single_resource')\
                     as mock_get_all_security_groups:
-                mock_get_all_security_groups.return_value = [group]
+                mock_get_all_security_groups.return_value = group
                 rule = ctx.node.properties.get('rule')
                 self.assertEqual(
                     True,
@@ -189,10 +189,10 @@ class TestSecurityGroup(testtools.TestCase):
                         '.get_target_external_resource_ids') \
                 as mock_get_target_external_resource_ids:
             mock_get_target_external_resource_ids.return_value = group.id
-            with mock.patch('boto.ec2.connection.EC2Connection'
-                            '.get_all_security_groups') \
+            with mock.patch('cloudify_aws.ec2.securitygroup.SecurityGroup'
+                            '.filter_for_single_resource') \
                     as mock_get_all_security_groups:
-                mock_get_all_security_groups.return_value = [group]
+                mock_get_all_security_groups.return_value = group
 
                 self.assertEqual(True,
                                  securitygroup.create_rule(ctx=current_ctx))
@@ -218,10 +218,10 @@ class TestSecurityGroup(testtools.TestCase):
         with mock.patch('cloudify_aws.utils.get_target_external_resource_ids')\
                 as mock_get_target_external_resource_ids:
             mock_get_target_external_resource_ids.return_value = group.id
-            with mock.patch('boto.ec2.connection.EC2Connection'
-                            '.get_all_security_groups') \
+            with mock.patch('cloudify_aws.ec2.securitygroup.SecurityGroupRule'
+                            '.filter_for_single_resource') \
                     as mock_get_all_security_groups:
-                mock_get_all_security_groups.return_value = [group]
+                mock_get_all_security_groups.return_value = group
                 with mock.patch('boto.ec2.connection.EC2Connection'
                                 '.authorize_security_group_egress') \
                         as mock_authorize_security_group_egress:
