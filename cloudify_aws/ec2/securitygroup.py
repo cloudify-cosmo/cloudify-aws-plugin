@@ -44,7 +44,7 @@ def create_rule(args=dict(), rule=[], **_):
 
 
 @operation
-def start(args=None, **_):
+def start(args=dict(), **_):
     return SecurityGroup().start_helper(args)
 
 
@@ -54,12 +54,12 @@ def update_rules(rules=[], **_):
 
 
 @operation
-def delete(args=None, **_):
+def delete(args=dict(), **_):
     return SecurityGroup().delete_helper(args)
 
 
 @operation
-def delete_rule(args=None, **_):
+def delete_rule(args=dict(), **_):
     return SecurityGroupRule().delete(args)
 
 
@@ -399,7 +399,7 @@ class SecurityGroupRule(SecurityGroup):
         else:
             return ctx.node.properties['rule']
 
-    def create(self, args=None, **_):
+    def create(self, args=dict(), **_):
 
         """Creates an EC2 security group.
         """
@@ -443,7 +443,7 @@ class SecurityGroupRule(SecurityGroup):
     def start(self, args=None, **_):
         return True
 
-    def delete(self, args=[], **_):
+    def delete(self, args=dict(), **_):
 
         rules = args.get('rule') or ctx.node.properties.get('rule', [])
 
