@@ -424,6 +424,7 @@ class SecurityGroupRule(SecurityGroup):
             group_object_list_contained = client.get_all_security_groups(
                     group_ids=contained_in_target_list[0])
             group_object_contained = group_object_list_contained[0]
+
             self._create_group_rules(group_object_contained, rule)
 
         return True
@@ -493,6 +494,7 @@ class SecurityGroupRule(SecurityGroup):
             src_group = rule.pop('src_group_id', None)
 
             if rule.pop('egress', False):
+                rule['src_group_id'] = src_group
                 self.authorize_egress(group_object.id, rule)
             else:
                 if src_group:
