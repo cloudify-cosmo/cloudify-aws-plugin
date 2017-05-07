@@ -162,9 +162,9 @@ class TestSecurityGroup(testtools.TestCase):
                     as mock_get_all_security_groups:
                 mock_get_all_security_groups.return_value = [group]
                 rule = ctx.node.properties.get('rule')
-                self.assertEqual(True, securitygroup.create_rule(current_ctx))
+                self.assertEqual(True, securitygroup.create_rule(ctx=current_ctx))
                 self.assertIn('src_group_id', rule[0])
-                self.assertEqual(True, securitygroup.delete_rule(current_ctx))
+                self.assertEqual(True, securitygroup.delete_rule(ctx=current_ctx))
 
     @mock_ec2
     def test_contained_in_rule_operations(self):
@@ -191,13 +191,13 @@ class TestSecurityGroup(testtools.TestCase):
                 mock_get_all_security_groups.return_value = [group]
 
                 self.assertEqual(True,
-                                 securitygroup.create_rule(current_ctx))
+                                 securitygroup.create_rule(ctx=current_ctx))
                 for ip_permission in group.rules:
                     self.assertIn(rule['ip_protocol'],
                                   ip_permission.ip_protocol)
                     self.assertIn(rule['from_port'], ip_permission.from_port)
                     self.assertIn(rule['to_port'], ip_permission.to_port)
-                securitygroup.delete_rule(current_ctx)
+                securitygroup.delete_rule(ctx=current_ctx)
                 self.assertNotIn(rule,
                                  group.rules)
 
@@ -223,9 +223,9 @@ class TestSecurityGroup(testtools.TestCase):
                         as mock_authorize_security_group_egress:
                     mock_authorize_security_group_egress.return_value = True
                     self.assertEqual(True, securitygroup.create_rule(
-                            current_ctx))
+                            ctx=current_ctx))
                     self.assertEqual(True, securitygroup.delete_rule(
-                            current_ctx))
+                            ctx=current_ctx))
 
     @mock_ec2
     def test_create_rules_in_args(self):
