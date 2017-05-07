@@ -162,9 +162,13 @@ class TestSecurityGroup(testtools.TestCase):
                     as mock_get_all_security_groups:
                 mock_get_all_security_groups.return_value = [group]
                 rule = ctx.node.properties.get('rule')
-                self.assertEqual(True, securitygroup.create_rule(ctx=current_ctx))
+                self.assertEqual(
+                    True,
+                    securitygroup.create_rule(ctx=current_ctx))
                 self.assertIn('src_group_id', rule[0])
-                self.assertEqual(True, securitygroup.delete_rule(ctx=current_ctx))
+                self.assertEqual(
+                    True,
+                    securitygroup.delete_rule(ctx=current_ctx))
 
     @mock_ec2
     def test_contained_in_rule_operations(self):

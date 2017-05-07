@@ -33,13 +33,13 @@ def creation_validation(**_):
 
 
 @operation
-def create(args=None, rules=[], **_):
+def create(args=dict(), rules=[], **_):
     ctx.instance.runtime_properties['rules_from_args'] = rules
     return SecurityGroup().create_helper(args)
 
 
 @operation
-def create_rule(args=None, rule=[], **_):
+def create_rule(args=dict(), rule=[], **_):
     return SecurityGroupRule().create(args)
 
 
@@ -443,7 +443,7 @@ class SecurityGroupRule(SecurityGroup):
     def start(self, args=None, **_):
         return True
 
-    def delete(self, args=None, **_):
+    def delete(self, args=[], **_):
 
         rules = args.get('rule') or ctx.node.properties.get('rule', [])
 
