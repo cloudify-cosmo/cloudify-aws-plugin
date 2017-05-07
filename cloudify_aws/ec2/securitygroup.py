@@ -204,25 +204,26 @@ class SecurityGroup(AwsBaseNode):
 
         for rule in self.rules_cleanup(group_object, rules_to_authorize):
 
-            if 'src_group_id' in rule:
+            src_group = rule.pop('src_group_id', None)
+
+            if src_group:
 
                 if not group_object.vpc_id:
                     src_group_object = self.get_resource()
                 else:
                     src_group_object = \
-                        self._get_vpc_security_group(
-                            rule['src_group_id'])
+                        self._get_vpc_security_group(src_group)
 
                 if not src_group_object:
                     raise NonRecoverableError(
                             'Could not locate the security group ID#: {0}.'
-                            .format(rule['src_group_id']))
+                            .format(src_group))
 
-                del rule['src_group_id']
-                rule['src_group'] = src_group_object
             if rule.pop('egress', False):
                 self.authorize_egress(group_object.id, rule)
             else:
+                if src_group:
+                    rule['src_group'] = group_object
                 self.authorize(group_object, rule)
 
     def authorize(self, group_object, rule):
@@ -489,23 +490,11 @@ class SecurityGroupRule(SecurityGroup):
 
         for rule in self.rules_cleanup(group_object, rules):
 
-            if 'src_group_id' in rule:
-                del rule['src_group_id']
-                rule['src_group'] = group_object
+            src_group = rule.pop('src_group_id', None)
+
             if rule.pop('egress', False):
                 self.authorize_egress(group_object.id, rule)
             else:
+                if src_group:
+                    rule['src_group'] = self.get_resource(src_group)
                 self.authorize(group_object, rule)
-
-    def authorize(self, group_object, rule):
-
-        try:
-            group_object.authorize(**rule)
-        except (exception.EC2ResponseError,
-                exception.BotoServerError) as e:
-            raise NonRecoverableError('{0}'.format(str(e)))
-
-    def authorize_egress(self, group_id, rule):
-        authorize_egress_args = {'group_id': group_id}
-        authorize_egress_args.update(**rule)
-        self.client.authorize_security_group_egress(**authorize_egress_args)

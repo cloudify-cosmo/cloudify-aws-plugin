@@ -581,7 +581,6 @@ class TestSecurityGroup(testtools.TestCase):
         group_object = ec2_client.create_security_group(
                 'dummy',
                 'this is test')
-        # setattr(group_object, 'vpc_id', 'vpc-abcd1234')
         ctx.node.properties['rules'][0]['src_group_id'] = group_object.id
         with mock.patch(
                 'cloudify_aws.ec2.securitygroup.'
@@ -602,25 +601,26 @@ class TestSecurityGroup(testtools.TestCase):
         to what when in.
         """
 
-        ec2_client = connection.EC2ConnectionClient().client()
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
                 'test_create_group_rules_src_group', test_properties)
+        current_ctx.set(ctx=ctx)
+
+        ec2_client = connection.EC2ConnectionClient().client()
         group_object = ec2_client.create_security_group(
                 'dummy',
                 'this is test')
         ctx.node.properties['rules'][0]['src_group_id'] = group_object.id
         del ctx.node.properties['rules'][0]['cidr_ip']
-        current_ctx.set(ctx=ctx)
         with mock.patch(
                 'cloudify_aws.ec2.securitygroup.'
                 'SecurityGroup.get_resource_state'
-                ) as securitygroup_state:
+        ) as securitygroup_state:
             securitygroup_state.return_value = 'available'
             securitygroup.create(ctx=ctx)
         group = ec2_client.get_all_security_groups(
-            group_ids=ctx.instance.runtime_properties[
-                constants.EXTERNAL_RESOURCE_ID]
+                group_ids=ctx.instance.runtime_properties[
+                    constants.EXTERNAL_RESOURCE_ID]
         )
         self.assertIn('test_security_group-111122223333',
                       str(group[0].rules[0].grants[0]))
