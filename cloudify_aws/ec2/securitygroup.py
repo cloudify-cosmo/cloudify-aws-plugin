@@ -444,11 +444,13 @@ class SecurityGroupRule(SecurityGroup):
         rule = ctx.node.properties.get('rule')
 
         depends_on_target_list = utils.get_target_external_resource_ids(
-                constants.RULE_DEPENDS_ON_SG_RELATIONSHIP, ctx)
+                constants.RULE_DEPENDS_ON_SG_RELATIONSHIP,
+                ctx.instance)
         if depends_on_target_list:
             return True
         contained_in_target_list = utils.get_target_external_resource_ids(
-                constants.RULE_CONTAINED_IN_SG_RELATIONSHIP, ctx)
+                constants.RULE_CONTAINED_IN_SG_RELATIONSHIP,
+                ctx.instance)
 
         for group_id in contained_in_target_list:
             ctx.logger.info(
