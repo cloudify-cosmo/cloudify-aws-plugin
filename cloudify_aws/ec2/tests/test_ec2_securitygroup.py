@@ -226,10 +226,14 @@ class TestSecurityGroup(testtools.TestCase):
                                 '.authorize_security_group_egress') \
                         as mock_authorize_security_group_egress:
                     mock_authorize_security_group_egress.return_value = True
-                    self.assertEqual(True, securitygroup.create_rule(
-                            ctx=current_ctx))
-                    self.assertEqual(True, securitygroup.delete_rule(
-                            ctx=current_ctx))
+                    with mock.patch('boto.ec2.connection.EC2Connection'
+                                    '.revoke_security_group_egress') \
+                            as mock_revoke_security_group_egress:
+                        mock_revoke_security_group_egress.return_value = True
+                        self.assertEqual(True, securitygroup.create_rule(
+                                ctx=current_ctx))
+                        self.assertEqual(True, securitygroup.delete_rule(
+                                ctx=current_ctx))
 
     @mock_ec2
     def test_create_rules_in_args(self):
