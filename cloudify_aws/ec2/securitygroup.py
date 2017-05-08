@@ -406,30 +406,8 @@ class SecurityGroupRule(SecurityGroup):
 
         rules = args.get('rule') or ctx.node.properties.get('rule', [])
 
-        depends_on_target_list = \
-            utils.get_target_external_resource_ids(
-                constants.RULE_DEPENDS_ON_SG_RELATIONSHIP,
-                ctx.instance)
-        contained_in_target_list = \
-            utils.get_target_external_resource_ids(
-                constants.RULE_CONTAINED_IN_SG_RELATIONSHIP,
-                ctx.instance)
-
-        if depends_on_target_list:
-            group_object_depends = self.filter_for_single_resource(
-                self.get_all_handler['function'],
-                {self.get_all_handler['argument']: depends_on_target_list[0]},
-                not_found_token=self.not_found_error
-            )
-            rules[0]['src_group_id'] = group_object_depends.id
-
-        if contained_in_target_list:
-            group_object_contained = self.filter_for_single_resource(
-                self.get_all_handler['function'],
-                {self.get_all_handler['argument']:
-                 contained_in_target_list[0]},
-                not_found_token=self.not_found_error
-            )
+        group_object_contained = self._get_target_resource_id(rules)
+        if group_object_contained:
             self._create_group_rules(group_object_contained, rules)
 
         return True
@@ -443,12 +421,7 @@ class SecurityGroupRule(SecurityGroup):
     def start(self, args=None, **_):
         return True
 
-    def delete(self, args=dict(), **_):
-
-        rules = args.get('rule') or ctx.node.properties.get('rule', [])
-
-        if not rules:
-            return True
+    def _get_target_resource_id(self, rules):
 
         depends_on_target_list = \
             utils.get_target_external_resource_ids(
@@ -456,13 +429,42 @@ class SecurityGroupRule(SecurityGroup):
                 ctx.instance)
 
         if depends_on_target_list:
-            return True
+            group_object_depends = self.filter_for_single_resource(
+                self.get_all_handler['function'],
+                {self.get_all_handler['argument']: depends_on_target_list[0]},
+                not_found_token=self.not_found_error
+            )
+            rules[0]['src_group_id'] = group_object_depends.id
 
         contained_in_target_list = utils.get_target_external_resource_ids(
-                constants.RULE_CONTAINED_IN_SG_RELATIONSHIP,
-                ctx.instance)
+            constants.RULE_CONTAINED_IN_SG_RELATIONSHIP,
+            ctx.instance)
 
-        for group_id in contained_in_target_list:
+        if contained_in_target_list:
+            group_object_contained = self.filter_for_single_resource(
+                self.get_all_handler['function'],
+                {self.get_all_handler[
+                     'argument']: contained_in_target_list[0]},
+                not_found_token=self.not_found_error
+            )
+            if group_object_contained:
+                return group_object_contained
+            else:
+                ctx.logger.error('target resource,'
+                                 ' but group object was not found')
+
+        return None
+
+    def delete(self, args=dict(), **_):
+
+        rules = args.get('rule') or ctx.node.properties.get('rule', [])
+
+        if not rules:
+            return True
+
+        group_object_contained = self._get_target_resource_id(rules)
+        if group_object_contained:
+            group_id = group_object_contained.id
             ctx.logger.info(
                 'removing rule {0} from security group {1}'
                 .format(rules, group_id))
@@ -475,7 +477,6 @@ class SecurityGroupRule(SecurityGroup):
         for rule in rules:
             revoke_args = {'group_id': group_id}
             revoke_args.update(**rule)
-            revoke_args.pop('src_group_id', None)
 
             if revoke_args.pop('egress', False):
                 self.execute(
@@ -483,6 +484,10 @@ class SecurityGroupRule(SecurityGroup):
                     revoke_args,
                     raise_on_falsy=True)
                 continue
+
+            src_group_id = revoke_args.pop('src_group_id', None)
+            if src_group_id:
+                revoke_args['src_security_group_group_id'] = src_group_id
 
             self.execute(
                 self.client.revoke_security_group,
