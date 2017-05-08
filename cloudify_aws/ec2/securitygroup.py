@@ -23,7 +23,7 @@ import ipaddress
 from cloudify import ctx
 from cloudify.decorators import operation
 from cloudify_aws.base import AwsBaseNode
-from cloudify_aws import utils, constants, connection
+from cloudify_aws import utils, constants
 from cloudify.exceptions import NonRecoverableError
 
 
@@ -33,18 +33,18 @@ def creation_validation(**_):
 
 
 @operation
-def create(args=None, rules=[], **_):
+def create(args=dict(), rules=[], **_):
     ctx.instance.runtime_properties['rules_from_args'] = rules
     return SecurityGroup().create_helper(args)
 
 
 @operation
-def create_rule(args=None, rule=[], **_):
+def create_rule(args=dict(), rule=[], **_):
     return SecurityGroupRule().create(args)
 
 
 @operation
-def start(args=None, **_):
+def start(args=dict(), **_):
     return SecurityGroup().start_helper(args)
 
 
@@ -54,12 +54,12 @@ def update_rules(rules=[], **_):
 
 
 @operation
-def delete(args=None, **_):
+def delete(args=dict(), **_):
     return SecurityGroup().delete_helper(args)
 
 
 @operation
-def delete_rule(args=None, **_):
+def delete_rule(args=dict(), **_):
     return SecurityGroupRule().delete(args)
 
 
@@ -204,25 +204,26 @@ class SecurityGroup(AwsBaseNode):
 
         for rule in self.rules_cleanup(group_object, rules_to_authorize):
 
-            if 'src_group_id' in rule:
+            src_group = rule.pop('src_group_id', None)
+
+            if src_group:
 
                 if not group_object.vpc_id:
                     src_group_object = self.get_resource()
                 else:
                     src_group_object = \
-                        self._get_vpc_security_group(
-                            rule['src_group_id'])
+                        self._get_vpc_security_group(src_group)
 
                 if not src_group_object:
                     raise NonRecoverableError(
                             'Could not locate the security group ID#: {0}.'
-                            .format(rule['src_group_id']))
+                            .format(src_group))
 
-                del rule['src_group_id']
-                rule['src_group'] = src_group_object
             if rule.pop('egress', False):
                 self.authorize_egress(group_object.id, rule)
             else:
+                if src_group:
+                    rule['src_group'] = group_object
                 self.authorize(group_object, rule)
 
     def authorize(self, group_object, rule):
@@ -398,32 +399,38 @@ class SecurityGroupRule(SecurityGroup):
         else:
             return ctx.node.properties['rule']
 
-    def create(self, args=None, **_):
+    def create(self, args=dict(), **_):
 
         """Creates an EC2 security group.
         """
 
-        client = connection.EC2ConnectionClient().client()
-        rule = ctx.node.properties.get('rule')
+        rules = args.get('rule') or ctx.node.properties.get('rule', [])
 
-        depends_on_target_list = utils.get_target_external_resource_ids(
-                constants.RULE_DEPENDS_ON_SG_RELATIONSHIP, ctx.instance)
-        contained_in_target_list = utils.get_target_external_resource_ids(
-                constants.RULE_CONTAINED_IN_SG_RELATIONSHIP, ctx.instance)
+        depends_on_target_list = \
+            utils.get_target_external_resource_ids(
+                constants.RULE_DEPENDS_ON_SG_RELATIONSHIP,
+                ctx.instance)
+        contained_in_target_list = \
+            utils.get_target_external_resource_ids(
+                constants.RULE_CONTAINED_IN_SG_RELATIONSHIP,
+                ctx.instance)
 
         if depends_on_target_list:
-            group_object_list_depends = client.get_all_security_groups(
-                    group_ids=depends_on_target_list[0])
-            group_object_depends = group_object_list_depends[0]
-
-            rule[0]['src_group_id'] = group_object_depends.id
+            group_object_depends = self.filter_for_single_resource(
+                self.get_all_handler['function'],
+                {self.get_all_handler['argument']: depends_on_target_list[0]},
+                not_found_token=self.not_found_error
+            )
+            rules[0]['src_group_id'] = group_object_depends.id
 
         if contained_in_target_list:
-
-            group_object_list_contained = client.get_all_security_groups(
-                    group_ids=contained_in_target_list[0])
-            group_object_contained = group_object_list_contained[0]
-            self._create_group_rules(group_object_contained, rule)
+            group_object_contained = self.filter_for_single_resource(
+                self.get_all_handler['function'],
+                {self.get_all_handler['argument']:
+                 contained_in_target_list[0]},
+                not_found_token=self.not_found_error
+            )
+            self._create_group_rules(group_object_contained, rules)
 
         return True
 
@@ -436,45 +443,51 @@ class SecurityGroupRule(SecurityGroup):
     def start(self, args=None, **_):
         return True
 
-    def delete(self, args=None, **_):
+    def delete(self, args=dict(), **_):
 
-        rule_id = ctx.node.properties.get('resource_id')
-        rule = ctx.node.properties.get('rule')
+        rules = args.get('rule') or ctx.node.properties.get('rule', [])
 
-        depends_on_target_list = utils.get_target_external_resource_ids(
-                constants.RULE_DEPENDS_ON_SG_RELATIONSHIP, ctx)
+        if not rules:
+            return True
+
+        depends_on_target_list = \
+            utils.get_target_external_resource_ids(
+                constants.RULE_DEPENDS_ON_SG_RELATIONSHIP,
+                ctx.instance)
+
         if depends_on_target_list:
             return True
+
         contained_in_target_list = utils.get_target_external_resource_ids(
-                constants.RULE_CONTAINED_IN_SG_RELATIONSHIP, ctx)
+                constants.RULE_CONTAINED_IN_SG_RELATIONSHIP,
+                ctx.instance)
 
         for group_id in contained_in_target_list:
             ctx.logger.info(
-                    'removing rule {0} from security group {1}'
-                    .format(rule_id, group_id))
-            self._revoke_rule(group_id, rule)
+                'removing rule {0} from security group {1}'
+                .format(rules, group_id))
+            self._revoke_rule(group_id, rules)
 
         return True
 
-    def _revoke_rule(self, group_id, rule):
+    def _revoke_rule(self, group_id, rules=[]):
 
-        client = connection.EC2ConnectionClient().client()
-        revoke_args = {'group_id': group_id}
-        revoke_args.update(**rule)
-        revoke_args.pop('src_group_id')
+        for rule in rules:
+            revoke_args = {'group_id': group_id}
+            revoke_args.update(**rule)
+            revoke_args.pop('src_group_id', None)
 
-        if rule.pop('egress', False):
-            try:
-                client.revoke_security_group_egress(**revoke_args)
-            except (exception.EC2ResponseError,
-                    exception.BotoServerError) as e:
-                raise NonRecoverableError('{0}'.format(str(e)))
-        else:
-            try:
-                client.revoke_security_group(**revoke_args)
-            except (exception.EC2ResponseError,
-                    exception.BotoServerError) as e:
-                raise NonRecoverableError('{0}'.format(str(e)))
+            if revoke_args.pop('egress', False):
+                self.execute(
+                    self.client.revoke_security_group_egress,
+                    revoke_args,
+                    raise_on_falsy=True)
+                continue
+
+            self.execute(
+                self.client.revoke_security_group,
+                revoke_args,
+                raise_on_falsy=True)
 
         return True
 
@@ -489,23 +502,12 @@ class SecurityGroupRule(SecurityGroup):
 
         for rule in self.rules_cleanup(group_object, rules):
 
-            if 'src_group_id' in rule:
-                del rule['src_group_id']
-                rule['src_group'] = group_object
+            src_group = rule.pop('src_group_id', None)
+
             if rule.pop('egress', False):
+                rule['src_group_id'] = src_group
                 self.authorize_egress(group_object.id, rule)
             else:
+                if src_group:
+                    rule['src_group'] = self.get_resource(src_group)
                 self.authorize(group_object, rule)
-
-    def authorize(self, group_object, rule):
-
-        try:
-            group_object.authorize(**rule)
-        except (exception.EC2ResponseError,
-                exception.BotoServerError) as e:
-            raise NonRecoverableError('{0}'.format(str(e)))
-
-    def authorize_egress(self, group_id, rule):
-        authorize_egress_args = {'group_id': group_id}
-        authorize_egress_args.update(**rule)
-        self.client.authorize_security_group_egress(**authorize_egress_args)
