@@ -53,13 +53,13 @@ def create_snapshot(args, **_):
 
 
 @operation
-def associate(args=None, **_):
-    return VolumeInstanceConnection().associate_helper(args)
+def associate(args=None, force=None, **_):
+    return VolumeInstanceConnection().associate_helper(args, force)
 
 
 @operation
-def disassociate(args, **_):
-    return VolumeInstanceConnection().disassociate_helper(args)
+def disassociate(args, force=None, **_):
+    return VolumeInstanceConnection().disassociate_helper(args, force)
 
 
 class VolumeInstanceConnection(AwsBaseRelationship):
@@ -127,20 +127,39 @@ class VolumeInstanceConnection(AwsBaseRelationship):
             '{0}-device'.format(volume)] = device
         return out
 
-    def associate_helper(self, args=None):
+    def associate_helper(self, args=None, force=None):
 
         ctx.logger.info(
-                'Attempting to associate {0} with {1}.'
-                .format(self.source_resource_id,
-                        self.target_resource_id))
+            'Attempting to associate {0} with {1}.'
+            .format(self.source_resource_id,
+                    self.target_resource_id))
 
-        if self.use_source_external_resource_naively() \
-                or self.associate(args):
-            return self.post_associate()
+        if not force and self.use_source_external_resource_naively():
+            ctx.logger.info(
+                'Resource is external, but '
+                'force is set to False. '
+                'Not associating it with {0}.'
+                .format(self.target_resource_id))
 
-        return ctx.operation.retry(
+        elif not self.associate(args):
+            return ctx.operation.retry(
                 message='Failed to associate {0} with {1}. Retrying...'
                 .format(self.source_resource_id, self.target_resource_id))
+
+        return self.post_associate()
+
+    def use_source_external_resource_naively(self):
+
+        if not self.source_is_external_resource:
+            return False
+
+        resource = self.get_source_resource()
+
+        if resource is None:
+            self.raise_forbidden_external_resource(
+                    self.source_resource_id)
+
+        return True
 
     def disassociate(self, args=None, **_):
 
@@ -171,7 +190,10 @@ class VolumeInstanceConnection(AwsBaseRelationship):
 
     def post_associate(self):
 
-        super(VolumeInstanceConnection, self).post_associate()
+        ctx.logger.info(
+            'Volume {0} is assumed to be associated with instance {1}.'
+            .format(self.source_resource_id,
+                    self.target_resource_id))
         ctx.source.instance.runtime_properties['instance_id'] = \
             self.target_resource_id
 
@@ -179,13 +201,50 @@ class VolumeInstanceConnection(AwsBaseRelationship):
 
     def post_disassociate(self):
 
-        super(VolumeInstanceConnection, self).post_disassociate()
+        ctx.logger.info(
+            'Volume {0} is assumed to be disassociated from instance {1}.'
+            .format(self.source_resource_id,
+                    self.target_resource_id))
         utils.unassign_runtime_property_from_resource(
             'instance_id', ctx.source.instance)
         device = \
             ctx.source.instance.runtime_properties.pop('device', None)
         ctx.target.instance.runtime_properties.pop(
             '{0}-device'.format(device), None)
+
+        return True
+
+    def disassociate_helper(self, args=None, force=None):
+
+        if not (self.source_resource_id and self.target_resource_id):
+            ctx.logger.error(
+                'Source or target resources, '
+                'does not exists, unable to disassociate.')
+            return False
+
+        ctx.logger.info(
+            'Attempting to disassociate {0} from {1}.'
+            .format(self.source_resource_id, self.target_resource_id))
+
+        if not force and self.disassociate_external_resource_naively():
+            ctx.logger.info(
+                'Resource is external, but '
+                'force is set to False. '
+                'Not disassociating it with {0}.'
+                .format(self.target_resource_id))
+
+        elif not self.disassociate(args):
+            raise NonRecoverableError(
+                'Source is neither external resource, '
+                'nor Cloudify resource, unable to disassociate {0} from {1}.'
+                .format(self.source_resource_id, self.target_resource_id))
+
+        return self.post_disassociate()
+
+    def disassociate_external_resource_naively(self):
+
+        if not self.source_is_external_resource:
+            return False
 
         return True
 
