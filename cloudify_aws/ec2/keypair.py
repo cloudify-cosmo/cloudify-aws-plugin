@@ -92,6 +92,9 @@ class KeyPair(AwsBaseNode):
     def create(self, args=None, **_):
         """Creates a keypair."""
 
+        ctx.instance.runtime_properties[constants.AWS_TYPE_PROPERTY] = \
+            constants.KEYPAIR['AWS_RESOURCE_TYPE']
+
         create_args = {
             'key_name': utils.get_resource_id()
         }
@@ -101,12 +104,11 @@ class KeyPair(AwsBaseNode):
         kp = self.execute(self.client.create_key_pair,
                           create_args, raise_on_falsy=True)
 
-        self._save_key_pair(kp)
-
-        ctx.instance.runtime_properties[constants.AWS_TYPE_PROPERTY] = \
-            constants.KEYPAIR['AWS_RESOURCE_TYPE']
-
         self.resource_id = kp.name
+
+        utils.set_external_resource_id(self.resource_id, ctx.instance)
+
+        self._save_key_pair(kp)
 
         return True
 
@@ -174,13 +176,26 @@ class KeyPair(AwsBaseNode):
             raise NonRecoverableError(
                     '{0} already exists, it will not be overwritten.'.format(
                             file_path))
-        fp = open(file_path, 'wb')
-        fp.write(key_pair_object.material)
-        fp.close()
+
+        try:
+            os.makedirs(file_path)
+        except OSError as e:
+            raise NonRecoverableError(
+                'Cannot create parent dirs to {0}: {1}'
+                .format(file_path, str(e)))
+
+        try:
+            with open(file_path, 'wb') as infile:
+                infile.write(key_pair_object.material)
+        except IOError as e:
+            raise NonRecoverableError(
+                'Cannot save to {0}: {1}'.format(file_path, str(e)))
 
         self._set_key_file_permissions(file_path)
 
     def _set_key_file_permissions(self, key_file):
+        ctx.logger.debug(
+            'Attempting to set permissions to file {0}.'.format(key_file))
 
         if os.access(key_file, os.W_OK):
             os.chmod(key_file, 0o600)
