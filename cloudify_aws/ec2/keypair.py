@@ -181,7 +181,7 @@ class KeyPair(AwsBaseNode):
             directory = os.path.dirname(file_path)
             os.makedirs(directory)
         except OSError as e:
-            raise NonRecoverableError(
+            ctx.logger.error(
                 'Cannot create parent dirs to {0}: {1}'
                 .format(file_path, str(e)))
 
