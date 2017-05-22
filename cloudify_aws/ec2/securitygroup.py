@@ -468,7 +468,13 @@ class SecurityGroupRule(SecurityGroup):
             ctx.logger.info(
                 'removing rule {0} from security group {1}'
                 .format(rules, group_id))
-            self._revoke_rule(group_id, rules)
+            res = self._revoke_rule(group_id, rules)
+
+            if not res:
+                _message = \
+                    'Failed to revoke rule: {0}. Retrying..' \
+                    .format(rules, self.resource_id)
+                return ctx.operation.retry(message=_message)
 
         return True
 
