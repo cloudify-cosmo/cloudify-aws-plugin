@@ -26,3 +26,6 @@
     - Support circular dependency of security groups
 1.4.8
     - Support attaching existing volume to instance
+1.4.9 
+    - Add revoke rules from security group retry operation
+    - Added handling for missing provider_context and missing homedir issues in 4.0.1

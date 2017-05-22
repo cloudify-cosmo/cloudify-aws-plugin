@@ -145,7 +145,12 @@ def get_resource_id():
 
 def get_provider_variables():
 
-    provider_config = ctx.provider_context.get('resources', {})
+    provider_config = {
+        constants.AGENTS_AWS_INSTANCE_PARAMETERS: {}
+    }
+
+    if getattr(ctx, 'provider_context'):
+        provider_config.update(ctx.provider_context.get('resources', {}))
 
     provider_context = {
         constants.AGENTS_KEYPAIR:

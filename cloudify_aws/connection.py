@@ -84,7 +84,10 @@ class EC2ConnectionClient():
             raise NonRecoverableError('no aws config file at {0}'.format(path))
 
         parser = ConfigParser.ConfigParser()
-        parser.read(path)
+        try:
+            parser.read(path)
+        except Exception as e:
+            raise NonRecoverableError(str(e))
 
         if len(parser.sections()) == 0:
             raise NonRecoverableError("aws config file is empty")
