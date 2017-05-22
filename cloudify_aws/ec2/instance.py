@@ -593,7 +593,7 @@ class Instance(AwsBaseNode):
     def stop_helper(self, args=None):
 
         ctx.logger.info(
-                'Attempting to stop EC2 instance {0} {1}.'
+                'Attempting to stop EC2 {0} {1}.'
                 .format(self.aws_resource_type,
                         self.cloudify_node_instance_id))
 
