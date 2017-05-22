@@ -5,7 +5,7 @@
 plugins:
   aws:
     executor: central_deployment_agent
-    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/fac163cb36895e5fc9a2ee637af58f7622d34c8b.zip
+    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/check-provider-context.zip
     package_name: cloudify-aws-plugin
     package_version: '1.4.8'
 

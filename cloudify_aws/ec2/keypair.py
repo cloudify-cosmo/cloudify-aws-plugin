@@ -178,7 +178,8 @@ class KeyPair(AwsBaseNode):
                             file_path))
 
         try:
-            os.makedirs(file_path)
+            directory = os.path.dirname(file_path)
+            os.makedirs(directory)
         except OSError as e:
             raise NonRecoverableError(
                 'Cannot create parent dirs to {0}: {1}'
