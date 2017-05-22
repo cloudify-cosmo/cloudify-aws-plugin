@@ -2,7 +2,7 @@ testtools
 nose
 nose-cov
 testfixtures
-moto
+moto==0.4.31
 mock
 tox
 ipaddress
