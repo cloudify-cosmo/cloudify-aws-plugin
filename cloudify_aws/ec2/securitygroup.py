@@ -55,7 +55,7 @@ def update_rules(rules=[], **_):
 
 @operation
 def delete(args=dict(), **_):
-    return SecurityGroup().delete_helper(args)
+    return SecurityGroup().delete(args)
 
 
 @operation
@@ -146,8 +146,20 @@ class SecurityGroup(AwsBaseNode):
 
         delete_args = dict(group_id=self.resource_id)
         delete_args = utils.update_args(delete_args, args)
-        return self.execute(self.client.delete_security_group,
-                            delete_args, raise_on_falsy=True)
+
+        try:
+            self.client.delete_security_group(**delete_args)
+        except (exception.EC2ResponseError,
+                exception.BotoServerError) as e:
+            if 'DependencyViolation' in str(e):
+                _message = \
+                    'Failed to delete security group: {0}. Retrying..' \
+                    .format(self.resource_id)
+                return ctx.operation.retry(message=_message)
+            else:
+                raise NonRecoverableError('{0}'.format(str(e)))
+
+        return self.post_delete()
 
     def _get_connected_vpc(self):
 
@@ -473,7 +485,7 @@ class SecurityGroupRule(SecurityGroup):
             if not res:
                 _message = \
                     'Failed to revoke rule: {0}. Retrying..' \
-                    .format(rules, self.resource_id)
+                    .format(rules)
                 return ctx.operation.retry(message=_message)
 
         return True
