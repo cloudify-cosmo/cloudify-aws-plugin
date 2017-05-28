@@ -437,8 +437,10 @@ class TestSecurityGroup(testtools.TestCase):
         ec2_client.delete_security_group(group_id=group.id)
         with mock.patch('cloudify_aws.base.AwsBaseNode.get_resource',
                         return_value=None):
-            out = securitygroup.delete()
-            self.assertEquals(True, out)
+            ex = self.assertRaises(
+                    NonRecoverableError, securitygroup.delete, ctx=ctx)
+            self.assertIn(
+                    'InvalidGroup.NotFound', ex.message)
 
     @mock_ec2
     def test_delete_existing(self):

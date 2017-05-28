@@ -218,7 +218,7 @@ class VpcPeeringConnection(AwsBaseRelationship, RouteMixin):
                 raise NonRecoverableError(
                     'Unable to save route to target VPC route tables.')
 
-        return output
+        return True
 
     def add_route_to_target_vpc(self):
         """ Adds a return route on to the target VPC route tables
