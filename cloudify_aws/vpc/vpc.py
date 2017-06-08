@@ -253,17 +253,21 @@ class VpcPeeringConnection(AwsBaseRelationship, RouteMixin):
                     route_table_id=route_table.id,
                     route=new_route
                 )
-                created_route = new_route
                 created_route.update({'route_table_id': route_table.id})
-                ctx.logger.debug('created target vpc route: {0}'.format(created_route))
-                for vpc_peering_connection in ctx.target.instance.runtime_properties['vpc_peering_connections']:
-                    if vpc_peering_connection['vpc_peering_connection_id'] == self.source_vpc_peering_connection_id:
+                ctx.logger.debug('created target vpc route: {0}'.format(
+                    created_route))
+                for vpc_peering_connection in \
+                        ctx.target.instance.runtime_properties['vpc_peering_connections']:
+                    if vpc_peering_connection['vpc_peering_connection_id'] \
+                            == self.source_vpc_peering_connection_id:
                         vpc_peering_connection['routes'].append(created_route)
-                        target_vpc_peering_connections.append(vpc_peering_connection)
+                        target_vpc_peering_connections.append(
+                            vpc_peering_connection)
                 if not route_created:
                     return False
 
-        ctx.target.instance.runtime_properties['vpc_peering_connections'] = target_vpc_peering_connections
+        ctx.target.instance.runtime_properties['vpc_peering_connections'] = \
+            target_vpc_peering_connections
         ctx.logger.debug('Peering connections after setting routes: {0}'.format(
             ctx.target.instance.runtime_properties['vpc_peering_connections']))
 
@@ -277,7 +281,8 @@ class VpcPeeringConnection(AwsBaseRelationship, RouteMixin):
             ctx.target.instance.runtime_properties \
             .get('vpc_peering_connections')
         for vpc_peering_connection in target_vpc_peering_connections:
-            ctx.logger.debug('VPC peering connection: {0}'.format(vpc_peering_connection))
+            ctx.logger.debug('VPC peering connection: {0}'.format(
+                vpc_peering_connection))
             for route in vpc_peering_connection['routes']:
                 args = dict(
                     route_table_id=route['route_table_id'],
