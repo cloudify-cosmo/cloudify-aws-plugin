@@ -253,11 +253,13 @@ class VpcPeeringConnection(AwsBaseRelationship, RouteMixin):
                     route_table_id=route_table.id,
                     route=new_route
                 )
+                created_route = new_route
                 created_route.update({'route_table_id': route_table.id})
                 ctx.logger.debug('created target vpc route: {0}'.format(
                     created_route))
                 for vpc_peering_connection in \
-                        ctx.target.instance.runtime_properties['vpc_peering_connections']:
+                        ctx.target.instance.runtime_properties[
+                            'vpc_peering_connections']:
                     if vpc_peering_connection['vpc_peering_connection_id'] \
                             == self.source_vpc_peering_connection_id:
                         vpc_peering_connection['routes'].append(created_route)
@@ -268,15 +270,13 @@ class VpcPeeringConnection(AwsBaseRelationship, RouteMixin):
 
         ctx.target.instance.runtime_properties['vpc_peering_connections'] = \
             target_vpc_peering_connections
-        ctx.logger.debug('Peering connections after setting routes: {0}'.format(
-            ctx.target.instance.runtime_properties['vpc_peering_connections']))
 
         return True
 
     def delete_target_routes(self):
         target_aws_config = ctx.target.node.properties['aws_config']
-        client = \
-            connection.VPCConnectionClient().client(aws_config=target_aws_config)
+        client = connection.VPCConnectionClient().client(
+            aws_config=target_aws_config)
         target_vpc_peering_connections = \
             ctx.target.instance.runtime_properties \
             .get('vpc_peering_connections')
