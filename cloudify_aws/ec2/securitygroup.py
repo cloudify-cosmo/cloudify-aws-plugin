@@ -147,6 +147,9 @@ class SecurityGroup(AwsBaseNode):
         delete_args = dict(group_id=self.resource_id)
         delete_args = utils.update_args(delete_args, args)
 
+        if self.delete_external_resource_naively():
+            return self.post_delete()
+
         try:
             self.client.delete_security_group(**delete_args)
         except (exception.EC2ResponseError,
