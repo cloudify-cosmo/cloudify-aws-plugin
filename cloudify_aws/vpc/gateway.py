@@ -32,6 +32,10 @@ def creation_validation(**_):
 
 @operation
 def create_internet_gateway(args=None, **_):
+    props = _.get('runtime_properties')
+    if props and isinstance(props, dict):
+        for key, value in props:
+            ctx.instance.runtime_properties[key] = value
     return InternetGateway().create_helper(args)
 
 
@@ -46,6 +50,10 @@ def delete_internet_gateway(args=None, **_):
 
 @operation
 def create_vpn_gateway(args=None, **_):
+    props = _.get('runtime_properties')
+    if props and isinstance(props, dict):
+        for key, value in props:
+            ctx.instance.runtime_properties[key] = value
     return VpnGateway().create_helper(args)
 
 
@@ -61,6 +69,10 @@ def delete_vpn_gateway(args=None, **_):
 
 @operation
 def create_customer_gateway(args=None, **_):
+    props = _.get('runtime_properties')
+    if props and isinstance(props, dict):
+        for key, value in props:
+            ctx.instance.runtime_properties[key] = value
     return CustomerGateway().create_helper(args)
 
 
@@ -76,6 +88,10 @@ def delete_customer_gateway(args=None, **_):
 
 @operation
 def create_vpn_connection(routes, args=None, **_):
+    props = _.get('runtime_properties')
+    if props and isinstance(props, dict):
+        for key, value in props:
+            ctx.instance.runtime_properties[key] = value
     return VpnConnection(routes).associate_helper(args)
 
 

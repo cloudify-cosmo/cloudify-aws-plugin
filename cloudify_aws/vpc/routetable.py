@@ -28,6 +28,10 @@ def creation_validation(**_):
 
 @operation
 def create_route_table(routes, args=None, **_):
+    props = _.get('runtime_properties')
+    if props and isinstance(props, dict):
+        for key, value in props:
+            ctx.instance.runtime_properties[key] = value
     return RouteTable(routes).create_helper(args)
 
 
@@ -98,12 +102,16 @@ class RouteTableGatewayAssociation(AwsBaseRelationship, RouteMixin):
             gateway_id=ctx.target.instance.runtime_properties[
                 constants.EXTERNAL_RESOURCE_ID]
         )
-        return self.delete_route(
-            ctx.source.instance.runtime_properties.get(
-                constants.EXTERNAL_RESOURCE_ID),
-            route,
-            route_table_ctx_instance=ctx.source.instance
-        )
+        try:
+            return self.delete_route(
+                ctx.source.instance.runtime_properties.get(
+                    constants.EXTERNAL_RESOURCE_ID),
+                route,
+                route_table_ctx_instance=ctx.source.instance
+            )
+        except Exception as e:
+            if 'InvalidParameterValue' in str(e):
+                return True
 
 
 class RouteTableSubnetAssociation(AwsBaseRelationship):

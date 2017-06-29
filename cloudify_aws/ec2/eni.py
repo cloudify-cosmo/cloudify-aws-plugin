@@ -28,6 +28,10 @@ from cloudify.exceptions import NonRecoverableError, RecoverableError
 @operation
 def create(args=None, **_):
     """ Create the Network Interface """
+    props = _.get('runtime_properties')
+    if props and isinstance(props, dict):
+        for key, value in props:
+            ctx.instance.runtime_properties[key] = value
     return Interface().create_helper(args)
 
 

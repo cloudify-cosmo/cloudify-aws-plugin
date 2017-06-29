@@ -28,6 +28,10 @@ def creation_validation(**_):
 
 @operation
 def create_subnet(args=None, **_):
+    props = _.get('runtime_properties')
+    if props and isinstance(props, dict):
+        for key, value in props:
+            ctx.instance.runtime_properties[key] = value
     return Subnet().create_helper(args)
 
 
