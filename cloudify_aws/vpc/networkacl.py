@@ -28,10 +28,7 @@ def creation_validation(args=None, **_):
 
 @operation
 def create_network_acl(args=None, **_):
-    props = _.get('runtime_properties')
-    if props and isinstance(props, dict):
-        for key, value in props:
-            ctx.instance.runtime_properties[key] = value
+    utils.add_create_args(**_)
     return NetworkAcl().create_helper(args)
 
 

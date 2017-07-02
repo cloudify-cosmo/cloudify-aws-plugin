@@ -27,10 +27,7 @@ def creation_validation(**_):
 
 @operation
 def create_dhcp_options(args=None, **_):
-    props = _.get('runtime_properties')
-    if props and isinstance(props, dict):
-        for key, value in props:
-            ctx.instance.runtime_properties[key] = value
+    utils.add_create_args(**_)
     return DhcpOptions().create_helper(args)
 
 
