@@ -33,3 +33,6 @@
     - Add delete security group retry operation
 1.4.11
     - Fixed bug that attempt to delete external security group
+1.4.12
+    - Fixed error message when unlinking route table from gateway
+    - Support passing runtime properties to create operation

@@ -475,7 +475,8 @@ class TestInstance(testtools.TestCase):
         self.assertIn('InvalidInstanceID.NotFound', ex.message)
 
     @mock_ec2
-    def test_run_instances_bad_subnet_id(self):
+    @mock.patch('cloudify_aws.utils.get_target_external_resource_ids')
+    def test_run_instances_bad_subnet_id(self, *_):
         """ This tests that the NonRecoverableError is triggered
             when an non existing subnet_id is included in the create
             statement
@@ -487,7 +488,7 @@ class TestInstance(testtools.TestCase):
 
         ex = self.assertRaises(
                 NonRecoverableError, instance.create, ctx=ctx)
-        self.assertIn('InvalidSubnetID.NotFound', ex.message)
+        self.assertIn('EC2ResponseError', ex.message)
 
     @mock_ec2
     def test_run_instances_external_resource(self):
@@ -709,7 +710,7 @@ class TestInstance(testtools.TestCase):
 
     @mock_ec2
     @mock.patch('cloudify_aws.ec2.instance.Instance._get_network_interfaces',
-                return_true='qwe')
+                return_value='qwe')
     def test_get_instance_parameters(self, *_):
         """ This tests that the _get_instance_parameters
         function returns a dict with the correct structure.

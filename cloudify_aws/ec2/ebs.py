@@ -34,6 +34,7 @@ def creation_validation(**_):
 
 @operation
 def create(args, **_):
+    utils.add_create_args(**_)
     return Ebs().create_helper(args)
 
 

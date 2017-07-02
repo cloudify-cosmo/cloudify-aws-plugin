@@ -31,6 +31,7 @@ def creation_validation(**_):
 
 @operation
 def create_vpc(args=None, **_):
+    utils.add_create_args(**_)
     return Vpc().create_helper(args)
 
 

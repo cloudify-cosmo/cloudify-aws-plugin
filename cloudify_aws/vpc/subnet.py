@@ -28,6 +28,7 @@ def creation_validation(**_):
 
 @operation
 def create_subnet(args=None, **_):
+    utils.add_create_args(**_)
     return Subnet().create_helper(args)
 
 

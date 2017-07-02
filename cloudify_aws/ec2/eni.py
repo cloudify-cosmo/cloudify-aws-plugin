@@ -28,6 +28,7 @@ from cloudify.exceptions import NonRecoverableError, RecoverableError
 @operation
 def create(args=None, **_):
     """ Create the Network Interface """
+    utils.add_create_args(**_)
     return Interface().create_helper(args)
 
 

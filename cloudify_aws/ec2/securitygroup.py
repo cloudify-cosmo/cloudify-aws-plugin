@@ -35,6 +35,7 @@ def creation_validation(**_):
 @operation
 def create(args=dict(), rules=[], **_):
     ctx.instance.runtime_properties['rules_from_args'] = rules
+    utils.add_create_args(**_)
     return SecurityGroup().create_helper(args)
 
 

@@ -38,6 +38,7 @@ def creation_validation(**_):
 
 @operation
 def create(args=None, **_):
+    utils.add_create_args(**_)
     return Instance().create_helper(args)
 
 
@@ -434,9 +435,17 @@ class Instance(AwsBaseNode):
             'key_name': self._get_instance_keypair(provider_variables)
         })
 
+        parameters.update(ctx.node.properties['parameters'])
+        parameters = self._handle_userdata(parameters)
+        parameters = utils.update_args(parameters, args)
+        parameters['block_device_map'] = \
+            self._create_block_device_mapping(
+                parameters.get('block_device_map', {})
+            )
+
         network_interfaces_collection = \
             self._get_network_interfaces(
-                parameters.get('network_interfaces', []))
+                    parameters.get('network_interfaces', []))
 
         if network_interfaces_collection:
             parameters.update({
@@ -446,14 +455,6 @@ class Instance(AwsBaseNode):
             parameters.update({
                 'subnet_id': self._get_instance_subnet(provider_variables)
             })
-
-        parameters.update(ctx.node.properties['parameters'])
-        parameters = self._handle_userdata(parameters)
-        parameters = utils.update_args(parameters, args)
-        parameters['block_device_map'] = \
-            self._create_block_device_mapping(
-                parameters.get('block_device_map', {})
-            )
 
         return parameters
 
