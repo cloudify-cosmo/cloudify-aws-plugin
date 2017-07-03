@@ -531,7 +531,8 @@ class Instance(AwsBaseNode):
 
         instance = self._get_all_instances(list_of_instance_ids=instance_id)
 
-        return instance[0] if instance else instance
+        return instance[0] if instance and instance[0].id == instance_id \
+            else None
 
     def _get_instances_from_reservation_id(self):
 
