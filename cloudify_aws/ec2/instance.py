@@ -529,10 +529,13 @@ class Instance(AwsBaseNode):
         :returns an ID of a an EC2 Instance or None.
         """
 
+        if not instance_id:
+            return None
+
         instance = self._get_all_instances(list_of_instance_ids=instance_id)
 
-        return instance[0] if instance and instance[0].id == instance_id \
-            else None
+        return None if not instance else instance[0] \
+            if instance[0].id == instance_id else None
 
     def _get_instances_from_reservation_id(self):
 
