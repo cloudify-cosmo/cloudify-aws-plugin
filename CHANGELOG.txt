@@ -36,3 +36,5 @@
 1.4.12
     - Fixed error message when unlinking route table from gateway
     - Support passing runtime properties to create operation
+1.4.13
+    - Fixed bug that instance get resource returns something when no id was provided

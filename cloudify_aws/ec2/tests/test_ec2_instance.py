@@ -576,8 +576,9 @@ class TestInstance(testtools.TestCase):
         ec2_client = connection.EC2ConnectionClient().client()
         reservation = ec2_client.run_instances(
                 TEST_AMI_IMAGE_ID, instance_type=TEST_INSTANCE_TYPE)
+        test_instance.resource_id = reservation.instances[0].id
         ctx.instance.runtime_properties['aws_resource_id'] = \
-            reservation.instances[0].id
+            test_instance.resource_id
         property_name = 'private_dns_name'
         dns_name = test_instance._get_instance_attribute(
                 property_name)
