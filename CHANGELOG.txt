@@ -38,3 +38,7 @@
     - Support passing runtime properties to create operation
 1.4.13
     - Fixed bug that instance get resource returns something when no id was provided
+1.5
+    - Associate ElasticIP to resources base on ip property instead of base on resource type
+    - Fix the need for an operations name to be in the format <something>.<create/start/stop/delete>
+    - Add connect Security Groups to Instance via InstanceConnectedToSecurityGroup relationship

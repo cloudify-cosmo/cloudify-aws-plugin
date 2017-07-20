@@ -411,7 +411,7 @@ class AwsBaseNode(AwsBase):
 
         return True
 
-    def cloudify_resource_state_change_handler(self, args=None):
+    def cloudify_resource_state_change_handler(self, state, args=None):
         """
         Take steps to create a desired resource state.
         If the operation is a retry do not try to call the state change again.
@@ -419,15 +419,7 @@ class AwsBaseNode(AwsBase):
         :return:
         """
 
-        full_operation_name = ctx.operation.name
-        short_operation_name = full_operation_name.split('.').pop()
-        internal_resource_function = getattr(self,
-                                             short_operation_name)
-        post_operation_funtion = getattr(self,
-                                         'post_{0}'.format(
-                                             short_operation_name))
-
-        if 'delete' in short_operation_name:
+        if 'delete' in state['short_operation_name']:
             external_resource_function = self.delete_external_resource_naively
         else:
             external_resource_function = self.use_external_resource_naively
@@ -435,23 +427,23 @@ class AwsBaseNode(AwsBase):
         if ctx.operation.retry_number == 0:
             ctx.logger.info(
                 'Initializing AWS {0}-{1} sequence.'
-                .format(self.aws_resource_type, short_operation_name))
+                .format(self.aws_resource_type, state['short_operation_name']))
 
             ret = \
                 external_resource_function() \
-                or internal_resource_function(args)
+                or state['internal_resource_function'](args)
 
             if ret is False:
                 raise NonRecoverableError(
                     'Neither external resource, nor Cloudify resource, '
                     'unable to {0} this resource.'
-                    .format(short_operation_name))
-            post_operation_funtion()
+                    .format(state['short_operation_name']))
+            state['post_operation_funtion']()
             ctx.logger.info(
                 'AWS {0}-{1}: primary stage complete.'
-                .format(self.aws_resource_type, short_operation_name))
+                .format(self.aws_resource_type, state['short_operation_name']))
         resource = self.get_resource()
-        if not resource and 'delete' in short_operation_name:
+        if not resource and 'delete' in state['short_operation_name']:
             ctx.logger.info('AWS {0} ID# {1} no longer extant.'
                             .format(self.aws_resource_type,
                                     self.resource_id))
@@ -462,21 +454,40 @@ class AwsBaseNode(AwsBase):
             ctx.logger.info(
                 'Unable to verify AWS {0} ID# {1} state.'
                 .format(self.aws_resource_type, self.resource_id))
-        return self.cloudify_operation_exit_handler(resource_state,
-                                                    short_operation_name)
+        return \
+            self.cloudify_operation_exit_handler(resource_state,
+                                                 state['short_operation_name'])
+
+    def resource_state_helper(self, operation):
+
+        internal_resource_function = getattr(self,
+                                             operation)
+        post_operation_funtion = getattr(self,
+                                         'post_{0}'.format(
+                                                 operation))
+        state = dict(
+            short_operation_name=operation,
+            internal_resource_function=internal_resource_function,
+            post_operation_funtion=post_operation_funtion
+        )
+        return state
 
     # Cloudify workflow operation helpers
     def create_helper(self, args=None):
-        return self.cloudify_resource_state_change_handler(args)
+        state = self.resource_state_helper('create')
+        return self.cloudify_resource_state_change_handler(state, args)
 
     def start_helper(self, args=None):
-        return self.cloudify_resource_state_change_handler(args)
+        state = self.resource_state_helper('start')
+        return self.cloudify_resource_state_change_handler(state, args)
 
     def stop_helper(self, args=None):
-        return self.cloudify_resource_state_change_handler(args)
+        state = self.resource_state_helper('stop')
+        return self.cloudify_resource_state_change_handler(state, args)
 
     def delete_helper(self, args=None):
-        return self.cloudify_resource_state_change_handler(args)
+        state = self.resource_state_helper('delete')
+        return self.cloudify_resource_state_change_handler(state, args)
 
     def modify_helper(self, new_attributes):
         ctx.logger.info(
