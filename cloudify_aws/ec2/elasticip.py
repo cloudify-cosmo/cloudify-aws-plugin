@@ -115,7 +115,7 @@ class ElasticIPInstanceConnection(AwsBaseRelationship):
 
         elasticip = self.target_resource_id
 
-        elasticip_object = self.get_target_resource()
+        elasticip_object = self.get_target_resource(elasticip)
 
         if not elasticip_object:
             raise NonRecoverableError(
@@ -166,11 +166,15 @@ class ElasticIPInstanceConnection(AwsBaseRelationship):
 
         return instances[0] if instances else instances
 
-    def get_target_resource(self):
+    def get_target_resource(self, target_resource_id=None):
+
+        if target_resource_id is None:
+            raise NonRecoverableError('Unable to disassociate elasticip.'
+                                      ' Missing target resource.')
 
         try:
             addresses = self.execute(self.client.get_all_addresses,
-                                     dict(addresses=self.target_resource_id),
+                                     dict(addresses=target_resource_id),
                                      raise_on_falsy=True)
         except exception.EC2ResponseError as e:
             if constants.ELASTICIP['NOT_FOUND_ERROR'] in e:
@@ -180,7 +184,12 @@ class ElasticIPInstanceConnection(AwsBaseRelationship):
         except exception.BotoServerError as e:
             raise NonRecoverableError('{0}'.format(str(e)))
 
-        return addresses[0] if addresses else addresses
+        for address in addresses:
+            if address.public_ip == target_resource_id:
+                return address
+
+        raise NonRecoverableError('Unable to disassociate elasticip.'
+                                  ' Missing target resource IP.')
 
 
 class ElasticIP(AwsBaseNode):
