@@ -145,7 +145,7 @@ class VpcPeeringConnection(AwsBaseRelationship, RouteMixin):
     def disassociate(self, args):
         self.delete_routes()
         disassociate_args = dict(
-            vpc_peering_connection_id=self.source_vpc_peering_connection_id
+            vpc_peering_connection_id=self.target_vpc_peering_connection_id
         )
         disassociate_args = utils.update_args(
             disassociate_args,
@@ -236,7 +236,7 @@ class VpcPeeringConnection(AwsBaseRelationship, RouteMixin):
 
         new_route = dict(
             destination_cidr_block=source_vpc_cidr_block,
-            vpc_peering_connection_id=self.source_vpc_peering_connection_id
+            vpc_peering_connection_id=self.target_vpc_peering_connection_id
         )
 
         route_tables = self.execute(self.client.get_all_route_tables)
