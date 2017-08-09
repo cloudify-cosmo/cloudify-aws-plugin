@@ -112,7 +112,7 @@ class VpcPeeringConnection(AwsBaseRelationship, RouteMixin):
 
         ctx.logger.info(
             'Attempting to disassociate {0} from {1}.'
-                .format(self.source_resource_id, self.target_resource_id))
+            .format(self.source_resource_id, self.target_resource_id))
 
         if self.use_source_external_resource_naively():
             ctx.logger.info(
@@ -126,7 +126,7 @@ class VpcPeeringConnection(AwsBaseRelationship, RouteMixin):
         raise NonRecoverableError(
             'Source is neither external resource, '
             'nor Cloudify resource, unable to disassociate {0} from {1}.'
-                .format(self.source_resource_id, self.target_resource_id))
+            .format(self.source_resource_id, self.target_resource_id))
 
     def associate_helper(self, args):
         if self.use_source_external_resource_naively():
