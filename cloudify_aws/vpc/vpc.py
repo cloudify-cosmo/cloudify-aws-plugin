@@ -102,6 +102,32 @@ class VpcPeeringConnection(AwsBaseRelationship, RouteMixin):
             '{0}_ids'.format(constants.ROUTE_TABLE['AWS_RESOURCE_TYPE'])
         }
 
+    def disassociate_helper(self, args=None):
+
+        if not (self.source_resource_id and self.target_resource_id):
+            ctx.logger.error(
+                'Source or target resources, '
+                'does not exists, unable to disassociate.')
+            return False
+
+        ctx.logger.info(
+            'Attempting to disassociate {0} from {1}.'
+                .format(self.source_resource_id, self.target_resource_id))
+
+        if self.use_source_external_resource_naively():
+            ctx.logger.info(
+                'executing vpc peering connection disassociation '
+                'despite the fact that this is an external relationship'
+            )
+
+        if self.disassociate(args):
+            return self.post_disassociate()
+
+        raise NonRecoverableError(
+            'Source is neither external resource, '
+            'nor Cloudify resource, unable to disassociate {0} from {1}.'
+                .format(self.source_resource_id, self.target_resource_id))
+
     def associate_helper(self, args):
         if self.use_source_external_resource_naively():
             ctx.logger.info(
