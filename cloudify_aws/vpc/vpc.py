@@ -94,7 +94,7 @@ class VpcPeeringConnection(AwsBaseRelationship, RouteMixin):
         self.target_vpc_peering_connection_id = \
             self.get_vpc_peering_connection_id(
                 ctx.target.instance,
-                self.target_vpc_id,
+                self.source_vpc_id,
                 'vpc_peer_id')
         self.source_get_all_handler = {
             'function': self.client.get_all_route_tables,
@@ -144,6 +144,7 @@ class VpcPeeringConnection(AwsBaseRelationship, RouteMixin):
 
     def disassociate(self, args):
         self.delete_routes()
+        self.delete_target_routes()
         disassociate_args = dict(
             vpc_peering_connection_id=self.source_vpc_peering_connection_id
         )
@@ -161,6 +162,12 @@ class VpcPeeringConnection(AwsBaseRelationship, RouteMixin):
             vpc_peer_id=self.target_vpc_id,
             routes=self.routes
         )
+        target_peering_connection = dict(
+            vpc_peering_connection_id=self.resource_id,
+            vpc_id=self.target_vpc_id,
+            vpc_peer_id=self.source_vpc_id,
+            routes=[]
+        )
         if 'vpc_peering_connections' \
                 not in ctx.source.instance.runtime_properties:
             ctx.source.instance.runtime_properties[
@@ -172,7 +179,7 @@ class VpcPeeringConnection(AwsBaseRelationship, RouteMixin):
             ctx.target.instance.runtime_properties[
                 'vpc_peering_connections'] = []
         ctx.target.instance.runtime_properties[
-            'vpc_peering_connections'].append(cx)
+            'vpc_peering_connections'].append(target_peering_connection)
         return True
 
     def delete_routes(self):
@@ -228,6 +235,7 @@ class VpcPeeringConnection(AwsBaseRelationship, RouteMixin):
         """
 
         source_vpc_cidr_block = ''
+        target_vpc_peering_connections = []
 
         vpcs = self.execute(self.client.get_all_vpcs)
         for vpc in vpcs:
@@ -246,10 +254,57 @@ class VpcPeeringConnection(AwsBaseRelationship, RouteMixin):
                     route_table_id=route_table.id,
                     route=new_route
                 )
+                created_route = new_route
+                created_route.update({'route_table_id': route_table.id})
+                ctx.logger.debug('created target vpc route: {0}'.format(
+                    created_route))
+                for vpc_peering_connection in \
+                        ctx.target.instance.runtime_properties[
+                            'vpc_peering_connections']:
+                    if vpc_peering_connection['vpc_peering_connection_id'] \
+                            == self.source_vpc_peering_connection_id:
+                        vpc_peering_connection['routes'].append(created_route)
+                        target_vpc_peering_connections.append(
+                            vpc_peering_connection)
                 if not route_created:
                     return False
 
+        ctx.target.instance.runtime_properties['vpc_peering_connections'] = \
+            target_vpc_peering_connections
+
         return True
+
+    def delete_target_routes(self):
+        target_aws_config = ctx.target.node.properties['aws_config']
+        client = connection.VPCConnectionClient().client(
+            aws_config=target_aws_config)
+        target_vpc_peering_connections = \
+            ctx.target.instance.runtime_properties \
+            .get('vpc_peering_connections')
+        for vpc_peering_connection in target_vpc_peering_connections:
+            ctx.logger.debug('VPC peering connection: {0}'.format(
+                vpc_peering_connection))
+            for route in vpc_peering_connection['routes']:
+                args = dict(
+                    route_table_id=route['route_table_id'],
+                    destination_cidr_block=route['destination_cidr_block']
+                )
+                try:
+                    output = client.delete_route(**args)
+                except exception.EC2ResponseError as e:
+                    if constants.ROUTE_NOT_FOUND_ERROR in str(e):
+                        ctx.logger.info(
+                            'Could not delete route: {0} route not '
+                            'found on route_table.'
+                            .format(route, route['route_table_id']))
+                        return True
+                    raise NonRecoverableError('{0}'.format(str(e)))
+
+                if output:
+                    if route in vpc_peering_connection['routes']:
+                        vpc_peering_connection['routes'].remove(route)
+                    return True
+                return False
 
 
 class Vpc(AwsBaseNode):
