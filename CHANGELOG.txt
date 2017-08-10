@@ -42,4 +42,5 @@
     - Associate ElasticIP to resources base on ip property instead of base on resource type
     - Fix the need for an operations name to be in the format <something>.<create/start/stop/delete> (Aria Tosca)
     - Add connect Security Groups to Instance via InstanceConnectedToSecurityGroup relationship
-    - Support adding VPC Peering Connection + Use external routes.
+    - Support adding VPC Peering Connection + Use external routes
+    - Fix bug that disassociate the wrong elastic ip from its instance
