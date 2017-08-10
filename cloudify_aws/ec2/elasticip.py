@@ -62,6 +62,12 @@ class ElasticIPInstanceConnection(AwsBaseRelationship):
                 '{0}_ids'.format(constants.INSTANCE['AWS_RESOURCE_TYPE'])
         }
 
+    def _is_ip_prop(self):
+        for prop in ctx.source.instance.runtime_properties.iteritems():
+            if 'ip' in prop[0].split('_'):
+                return True
+        return False
+
     def associate(self, args=None, **_):
         """ Associates an Elastic IP created by Cloudify with an EC2 Instance
         that was also created by Cloudify.
@@ -70,11 +76,14 @@ class ElasticIPInstanceConnection(AwsBaseRelationship):
         source_id = self.source_resource_id
         elasticip = self.target_resource_id
 
-        if 'cloudify.aws.nodes.Instance' in ctx.source.node.type_hierarchy:
-            associate_args = dict(instance_id=source_id, public_ip=elasticip)
-        elif 'cloudify.aws.nodes.Interface' in ctx.source.node.type_hierarchy:
-            associate_args = dict(network_interface_id=source_id,
-                                  public_ip=elasticip)
+        if self._is_ip_prop():
+            for type in ctx.source.node.type_hierarchy:
+                if 'Instance' in type.split('.'):
+                    associate_args = dict(instance_id=source_id,
+                                          public_ip=elasticip)
+                elif 'Interface' in type.split('.'):
+                    associate_args = dict(network_interface_id=source_id,
+                                          public_ip=elasticip)
 
         if constants.ELASTICIP['ALLOCATION_ID'] in \
                 ctx.target.instance.runtime_properties:

@@ -180,7 +180,8 @@ class KeyPair(AwsBaseNode):
 
         try:
             directory = os.path.dirname(file_path)
-            os.makedirs(directory)
+            if not os.path.isdir(directory):
+                os.makedirs(directory)
         except OSError as e:
             ctx.logger.error(
                 'Cannot create parent dirs to {0}: {1}'

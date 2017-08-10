@@ -420,7 +420,16 @@ class Instance(AwsBaseNode):
         attached_group_ids = \
             utils.get_target_external_resource_ids(
                     constants.INSTANCE_SECURITY_GROUP_RELATIONSHIP,
+                    ctx.instance) or utils.get_target_external_resource_ids(
+                    'InstanceConnectedToSecurityGroup',
                     ctx.instance)
+
+        groups = ctx.node.properties['parameters'].get('security_group_ids',
+                                                       None)
+        if groups:
+            ctx.node.properties['parameters'].pop('security_group_ids')
+            for group in groups:
+                attached_group_ids.append(group)
 
         if provider_variables.get(constants.AGENTS_SECURITY_GROUP):
             attached_group_ids.append(
