@@ -445,8 +445,8 @@ class Instance(AwsBaseNode):
         })
 
         parameters.update(ctx.node.properties['parameters'])
-        parameters = self._handle_userdata(parameters)
         parameters = utils.update_args(parameters, args)
+        parameters = self._handle_userdata(parameters)
         parameters['block_device_map'] = \
             self._create_block_device_mapping(
                 parameters.get('block_device_map', {})
