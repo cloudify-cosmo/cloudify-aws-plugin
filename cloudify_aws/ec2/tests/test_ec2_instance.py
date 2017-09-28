@@ -60,6 +60,7 @@ class TestInstance(testtools.TestCase):
             'tags': {},
             'image_id': TEST_AMI_IMAGE_ID,
             'instance_type': TEST_INSTANCE_TYPE,
+            'os_family': 'linux',
             'cloudify_agent': {},
             'agent_config': {},
             'use_password': False,

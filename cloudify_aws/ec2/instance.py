@@ -393,6 +393,7 @@ class Instance(AwsBaseNode):
 
         existing_userdata = parameters.get('user_data')
         install_agent_userdata = ctx.agent.init_script()
+        os_family = ctx.node.properties['os_family']
 
         if not (existing_userdata or install_agent_userdata):
             return parameters
@@ -404,6 +405,13 @@ class Instance(AwsBaseNode):
         else:
             final_userdata = compute.create_multi_mimetype_userdata(
                     [existing_userdata, install_agent_userdata])
+
+        if install_agent_userdata and os_family == 'windows':
+            if not final_userdata.startswith('<powershell>') and not \
+                    final_userdata.endswith('</powershell>'):
+                final_userdata = \
+                    '<powershell>\n{0}\n</powershell>'.format(
+                        final_userdata)
 
         parameters['user_data'] = final_userdata
 
@@ -445,8 +453,8 @@ class Instance(AwsBaseNode):
         })
 
         parameters.update(ctx.node.properties['parameters'])
-        parameters = self._handle_userdata(parameters)
         parameters = utils.update_args(parameters, args)
+        parameters = self._handle_userdata(parameters)
         parameters['block_device_map'] = \
             self._create_block_device_mapping(
                 parameters.get('block_device_map', {})
