@@ -395,6 +395,13 @@ class Instance(AwsBaseNode):
         install_agent_userdata = ctx.agent.init_script()
         os_family = ctx.node.properties['os_family']
 
+        # On Windows, our common PowerShell script for agent installation
+        # (if specified) must be surrounded with <powershell>...</powershell>
+        if install_agent_userdata and os_family == 'windows':
+            install_agent_userdata = \
+                '<powershell>\n{0}\n</powershell>'.format(
+                    install_agent_userdata)
+
         if not (existing_userdata or install_agent_userdata):
             return parameters
 
@@ -404,14 +411,7 @@ class Instance(AwsBaseNode):
             final_userdata = existing_userdata
         else:
             final_userdata = compute.create_multi_mimetype_userdata(
-                    [existing_userdata, install_agent_userdata])
-
-        if install_agent_userdata and os_family == 'windows':
-            if not final_userdata.startswith('<powershell>') and not \
-                    final_userdata.endswith('</powershell>'):
-                final_userdata = \
-                    '<powershell>\n{0}\n</powershell>'.format(
-                        final_userdata)
+                [existing_userdata, install_agent_userdata])
 
         parameters['user_data'] = final_userdata
 
