@@ -428,15 +428,16 @@ class Instance(AwsBaseNode):
                     _ps_close_in_script = True
                 install_agent_userdata += line + '\n'
                 index += 1
+
             if existing_userdata and \
                     existing_userdata.startswith('#ps1_sysnative') or \
-                    existing_userdata.startswith('ps1_x86'):
+                    existing_userdata.startswith('#ps1_x86'):
                 _agent_install_split = \
                     install_agent_userdata.split('\n')
                 for line in _agent_install_split:
                     if PS_CLOSE in line:
                         line = '{0}\n{1}'.format(
-                            existing_userdata,
+                            '\n'.join(existing_userdata.split('\n')[1:]),
                             install_agent_userdata)
                         existing_userdata = None
 
