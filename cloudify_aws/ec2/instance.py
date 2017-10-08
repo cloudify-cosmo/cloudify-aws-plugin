@@ -30,6 +30,9 @@ from cloudify_aws.base import AwsBaseNode
 from cloudify_aws import utils, constants
 from cloudify.exceptions import NonRecoverableError
 
+PS_OPEN = '<powershell>'
+PS_CLOSE = '</powershell>'
+
 
 @operation
 def creation_validation(**_):
@@ -395,15 +398,35 @@ class Instance(AwsBaseNode):
         install_agent_userdata = ctx.agent.init_script()
         os_family = ctx.node.properties['os_family']
 
-        # On Windows, our common PowerShell script for agent installation
-        # (if specified) must be surrounded with <powershell>...</powershell>
-        if install_agent_userdata and os_family == 'windows':
-            install_agent_userdata = \
-                '<powershell>\n{0}\n</powershell>'.format(
-                    install_agent_userdata)
-
         if not (existing_userdata or install_agent_userdata):
             return parameters
+
+        # On Windows, our common PowerShell script for agent installation
+        # (if specified) must be surrounded with <powershell>...</powershell>
+        if install_agent_userdata and \
+                os_family == 'windows':
+            _ps_open_in_script = \
+                PS_OPEN in install_agent_userdata
+            _ps_close_in_script = \
+                PS_CLOSE in install_agent_userdata
+            _agent_install_split = \
+                install_agent_userdata.split('\n')
+            install_agent_userdata = ''
+            index = 0
+            for line in _agent_install_split:
+                if index == 0 and \
+                        line.startswith('#ps1_sysnative') and \
+                        _ps_open_in_script is False:
+                    line = '{0}\n{1}'.format(line, PS_OPEN)
+                    # Necessary because we only want to add
+                    # PS_OPEN if we will add PS_CLOSE.
+                    _ps_open_in_script = True
+                if index == len(_agent_install_split) - 1 and \
+                        _ps_close_in_script is False and \
+                        _ps_open_in_script is True:
+                    line = '{0}\n{1}'.format(line, PS_CLOSE)
+                install_agent_userdata += line + '\n'
+                index += 1
 
         if not existing_userdata:
             final_userdata = install_agent_userdata
