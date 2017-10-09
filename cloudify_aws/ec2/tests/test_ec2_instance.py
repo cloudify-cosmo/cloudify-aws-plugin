@@ -291,7 +291,8 @@ class TestInstance(testtools.TestCase):
         ctx.agent.init_script = lambda: '#ps1_sysnative\nSCRIPT'
         ctx.node.properties['os_family'] = 'windows'
         ctx.node.properties['agent_config']['install_method'] = 'init_script'
-        ctx.node.properties['parameters']['user_data'] = '#! EXISTING'
+        ctx.node.properties['parameters']['user_data'] = \
+            '<powershell>\nExisting\n</powershell>\nrem cmd\n'
         current_ctx.set(ctx=ctx)
         test_instance = self.create_instance_for_checking()
         handle_userdata_output = \

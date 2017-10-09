@@ -392,9 +392,44 @@ class Instance(AwsBaseNode):
         attribute = getattr(instance_object, attribute)
         return attribute
 
+    def extract_powershell_content(self, string_with_powershell):
+        """We want to filter user data for powershell scripts.
+        However, AWS EC2 allows only one segment that is Powershell.
+        So we have to concat separate Powershell scripts into one.
+        First we separate all Powershell scripts without their tags.
+        Later we will add the tags back.
+        """
+
+        if not isinstance(string_with_powershell, basestring):
+            return ''
+
+        split_string = string_with_powershell.splitlines()
+
+        if len(split_string) < 1:
+            return string_with_powershell
+
+        if split_string[0] == '#ps1_sysnative' or \
+                split_string[0] == '#ps1_x86':
+            split_string.pop(0)
+
+        if PS_OPEN not in split_string:
+            script_start = -1  # Because we join at +1.
+        else:
+            script_start = split_string.index(PS_OPEN)
+
+        if PS_CLOSE not in split_string:
+            script_end = len(split_string) - 1
+        else:
+            script_end = split_string.index(PS_CLOSE)
+
+        powershell_content = \
+            '\n'.join(split_string[script_start+1:script_end])
+
+        return powershell_content
+
     def _handle_userdata(self, parameters):
 
-        existing_userdata = parameters.get('user_data')
+        existing_userdata = parameters.get('user_data', '')
         install_agent_userdata = ctx.agent.init_script()
         os_family = ctx.node.properties['os_family']
 
@@ -405,49 +440,38 @@ class Instance(AwsBaseNode):
         # (if specified) must be surrounded with <powershell>...</powershell>
         if install_agent_userdata and \
                 os_family == 'windows':
-            _ps_open_in_script = \
-                PS_OPEN in install_agent_userdata
-            _ps_close_in_script = \
-                PS_CLOSE in install_agent_userdata
-            _agent_install_split = \
-                install_agent_userdata.split('\n')
-            install_agent_userdata = ''
-            index = 0
-            for line in _agent_install_split:
-                if index == 0 and \
-                        line.startswith('#ps1_sysnative') and \
-                        _ps_open_in_script is False:
-                    line = '{0}\n{1}'.format(line, PS_OPEN)
-                    # Necessary because we only want to add
-                    # PS_OPEN if we will add PS_CLOSE.
-                    _ps_open_in_script = True
-                if index == len(_agent_install_split) - 1 and \
-                        _ps_close_in_script is False and \
-                        _ps_open_in_script is True:
-                    line = '{0}\n{1}'.format(line, PS_CLOSE)
-                    _ps_close_in_script = True
-                install_agent_userdata += line + '\n'
-                index += 1
 
-            if existing_userdata and \
-                    existing_userdata.startswith('#ps1_sysnative') or \
-                    existing_userdata.startswith('#ps1_x86'):
-                _agent_install_split = \
-                    install_agent_userdata.split('\n')
-                for line in _agent_install_split:
-                    if PS_CLOSE in line:
-                        line = '{0}\n{1}'.format(
-                            '\n'.join(existing_userdata.split('\n')[1:]),
-                            install_agent_userdata)
-                        existing_userdata = None
+            # Remove header and tags from agent script
+            install_agent_userdata = \
+                self.extract_powershell_content(install_agent_userdata)
+            # Extract Powershell from existing userdata.
+            existing_userdata_powershell = \
+                self.extract_powershell_content(existing_userdata)
+            # Remove powershell from existing user data
+            existing_userdata = \
+                existing_userdata.replace(
+                    existing_userdata_powershell,
+                    '').replace(
+                        PS_OPEN,
+                        '').replace(
+                            PS_CLOSE,
+                            '').rstrip().lstrip()
 
-        if not existing_userdata:
+            install_agent_userdata = \
+                '#ps1_sysnative\n{0}\n{1}\n{2}\n{3}\n'.format(
+                    PS_OPEN,
+                    install_agent_userdata,
+                    existing_userdata_powershell,
+                    PS_CLOSE)
+
+        if not existing_userdata or existing_userdata.isspace():
             final_userdata = install_agent_userdata
         elif not install_agent_userdata:
             final_userdata = existing_userdata
         else:
             final_userdata = compute.create_multi_mimetype_userdata(
                 [existing_userdata, install_agent_userdata])
+        print final_userdata
 
         parameters['user_data'] = final_userdata
 
