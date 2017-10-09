@@ -14,6 +14,7 @@
 #    * limitations under the License.
 
 import os
+import json
 
 # Third-party Imports
 from boto import exception
@@ -392,43 +393,86 @@ class Instance(AwsBaseNode):
         attribute = getattr(instance_object, attribute)
         return attribute
 
+    def extract_powershell_content(self, string_with_powershell):
+        """We want to filter user data for powershell scripts.
+        However, AWS EC2 allows only one segment that is Powershell.
+        So we have to concat separate Powershell scripts into one.
+        First we separate all Powershell scripts without their tags.
+        Later we will add the tags back.
+        """
+
+        split_string = string_with_powershell.splitlines()
+
+        if split_string[0] == '#ps1_sysnative' or \
+                split_string[0] == '#ps1_x86':
+            split_string.pop(0)
+
+        if PS_OPEN not in split_string:
+            script_start = -1  # Because we join at +1.
+        else:
+            script_start = split_string.index(PS_OPEN)
+
+        if PS_CLOSE not in split_string:
+            script_end = len(split_string)
+        else:
+            script_end = split_string.index(PS_CLOSE)
+
+        # Return everything between Powershell back as a string.
+        return '\n'.join(split_string[script_start+1:script_end])
+
     def _handle_userdata(self, parameters):
 
         existing_userdata = parameters.get('user_data')
+
+        if existing_userdata is None:
+            existing_userdata = ''
+        elif isinstance(existing_userdata, dict) or \
+                isinstance(existing_userdata, list):
+            existing_userdata = json.dumps(existing_userdata)
+        elif not isinstance(existing_userdata, basestring):
+            existing_userdata = str(existing_userdata)
+
         install_agent_userdata = ctx.agent.init_script()
         os_family = ctx.node.properties['os_family']
 
         if not (existing_userdata or install_agent_userdata):
             return parameters
 
-        # On Windows, our common PowerShell script for agent installation
-        # (if specified) must be surrounded with <powershell>...</powershell>
-        if install_agent_userdata and \
-                os_family == 'windows':
-            _ps_open_in_script = \
-                PS_OPEN in install_agent_userdata
-            _ps_close_in_script = \
-                PS_CLOSE in install_agent_userdata
-            _agent_install_split = \
-                install_agent_userdata.split('\n')
-            install_agent_userdata = ''
-            index = 0
-            for line in _agent_install_split:
-                if index == 0 and \
-                        line.startswith('#ps1_sysnative') and \
-                        _ps_open_in_script is False:
-                    line = '{0}\n{1}'.format(line, PS_OPEN)
-                    # Necessary because we only want to add
-                    # PS_OPEN if we will add PS_CLOSE.
-                    _ps_open_in_script = True
-                if index == len(_agent_install_split) - 1 and \
-                        _ps_close_in_script is False and \
-                        _ps_open_in_script is True:
-                    line = '{0}\n{1}'.format(line, PS_CLOSE)
-                install_agent_userdata += line + '\n'
-                index += 1
+        # AWS EC2 Windows instances require no more than one
+        # Powershell script, which must be surrounded by
+        # Powershell tags.
+        if install_agent_userdata and os_family == 'windows':
 
-        if not existing_userdata:
+            # Get the powershell content from install_agent_userdata
+            install_agent_userdata = \
+                self.extract_powershell_content(install_agent_userdata)
+
+            # Get the powershell content from existing_userdata
+            # (If it exists.)
+            existing_userdata_powershell = \
+                self.extract_powershell_content(existing_userdata)
+
+            # Combine the powershell content from two sources.
+            install_agent_userdata = \
+                '#ps1_sysnative\n{0}\n{1}\n{2}\n{3}\n'.format(
+                    PS_OPEN,
+                    install_agent_userdata,
+                    existing_userdata_powershell,
+                    PS_CLOSE)
+
+            # Additional work on the existing_userdata.
+            # Remove duplicate Powershell content.
+            # Get rid of unnecessary newlines.
+            existing_userdata = \
+                existing_userdata.replace(
+                    existing_userdata_powershell,
+                    '').replace(
+                        PS_OPEN,
+                        '').replace(
+                            PS_CLOSE,
+                            '').strip()
+
+        if not existing_userdata or existing_userdata.isspace():
             final_userdata = install_agent_userdata
         elif not install_agent_userdata:
             final_userdata = existing_userdata

@@ -291,16 +291,22 @@ class TestInstance(testtools.TestCase):
         ctx.agent.init_script = lambda: '#ps1_sysnative\nSCRIPT'
         ctx.node.properties['os_family'] = 'windows'
         ctx.node.properties['agent_config']['install_method'] = 'init_script'
-        ctx.node.properties['parameters']['user_data'] = '#! EXISTING'
+        ctx.node.properties['parameters']['user_data'] = \
+            '<powershell>\nfunction Existing{}\n'\
+            '</powershell>\nrem cmd\n'
         current_ctx.set(ctx=ctx)
         test_instance = self.create_instance_for_checking()
         handle_userdata_output = \
             test_instance._handle_userdata(ctx.node.properties['parameters'])
         self.assertTrue(handle_userdata_output['user_data'].startswith(
                 'Content-Type: multi'))
-        from cloudify_aws.ec2.instance import PS_OPEN, PS_CLOSE
-        self.assertIn(PS_OPEN, handle_userdata_output['user_data'])
-        self.assertIn(PS_CLOSE, handle_userdata_output['user_data'])
+        self.assertIn(
+            '#ps1_sysnative\n<powershell>\nSCRIPT\n'
+            'function Existing{}\n</powershell>',
+            handle_userdata_output['user_data'])
+        self.assertIn(
+            'rem cmd',
+            handle_userdata_output['user_data'])
 
     @mock_ec2
     def test_without_userdata_clean(self):
