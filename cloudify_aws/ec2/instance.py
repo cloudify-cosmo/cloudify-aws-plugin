@@ -14,6 +14,7 @@
 #    * limitations under the License.
 
 import os
+import json
 
 # Third-party Imports
 from boto import exception
@@ -400,13 +401,7 @@ class Instance(AwsBaseNode):
         Later we will add the tags back.
         """
 
-        if not isinstance(string_with_powershell, basestring):
-            return ''
-
         split_string = string_with_powershell.splitlines()
-
-        if len(split_string) < 1:
-            return string_with_powershell
 
         if split_string[0] == '#ps1_sysnative' or \
                 split_string[0] == '#ps1_x86':
@@ -418,36 +413,56 @@ class Instance(AwsBaseNode):
             script_start = split_string.index(PS_OPEN)
 
         if PS_CLOSE not in split_string:
-            script_end = len(split_string) - 1
+            script_end = len(split_string)
         else:
             script_end = split_string.index(PS_CLOSE)
 
-        powershell_content = \
-            '\n'.join(split_string[script_start+1:script_end])
-
-        return powershell_content
+        # Return everything between Powershell back as a string.
+        return '\n'.join(split_string[script_start+1:script_end])
 
     def _handle_userdata(self, parameters):
 
-        existing_userdata = parameters.get('user_data', '')
+        existing_userdata = parameters.get('user_data')
+
+        if existing_userdata is None:
+            existing_userdata = ''
+        elif isinstance(existing_userdata, dict) or \
+                isinstance(existing_userdata, list):
+            existing_userdata = json.dumps(existing_userdata)
+        elif not isinstance(existing_userdata, basestring):
+            existing_userdata = str(existing_userdata)
+
         install_agent_userdata = ctx.agent.init_script()
         os_family = ctx.node.properties['os_family']
 
         if not (existing_userdata or install_agent_userdata):
             return parameters
 
-        # On Windows, our common PowerShell script for agent installation
-        # (if specified) must be surrounded with <powershell>...</powershell>
-        if install_agent_userdata and \
-                os_family == 'windows':
+        # AWS EC2 Windows instances require no more than one
+        # Powershell script, which must be surrounded by
+        # Powershell tags.
+        if install_agent_userdata and os_family == 'windows':
 
-            # Remove header and tags from agent script
+            # Get the powershell content from install_agent_userdata
             install_agent_userdata = \
                 self.extract_powershell_content(install_agent_userdata)
-            # Extract Powershell from existing userdata.
+
+            # Get the powershell content from existing_userdata
+            # (If it exists.)
             existing_userdata_powershell = \
                 self.extract_powershell_content(existing_userdata)
-            # Remove powershell from existing user data
+
+            # Combine the powershell content from two sources.
+            install_agent_userdata = \
+                '#ps1_sysnative\n{0}\n{1}\n{2}\n{3}\n'.format(
+                    PS_OPEN,
+                    install_agent_userdata,
+                    existing_userdata_powershell,
+                    PS_CLOSE)
+
+            # Additional work on the existing_userdata.
+            # Remove duplicate Powershell content.
+            # Get rid of unnecessary newlines.
             existing_userdata = \
                 existing_userdata.replace(
                     existing_userdata_powershell,
@@ -457,13 +472,6 @@ class Instance(AwsBaseNode):
                             PS_CLOSE,
                             '').rstrip().lstrip()
 
-            install_agent_userdata = \
-                '#ps1_sysnative\n{0}\n{1}\n{2}\n{3}\n'.format(
-                    PS_OPEN,
-                    install_agent_userdata,
-                    existing_userdata_powershell,
-                    PS_CLOSE)
-
         if not existing_userdata or existing_userdata.isspace():
             final_userdata = install_agent_userdata
         elif not install_agent_userdata:
@@ -471,7 +479,6 @@ class Instance(AwsBaseNode):
         else:
             final_userdata = compute.create_multi_mimetype_userdata(
                 [existing_userdata, install_agent_userdata])
-        print final_userdata
 
         parameters['user_data'] = final_userdata
 
