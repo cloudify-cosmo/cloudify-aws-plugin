@@ -403,6 +403,9 @@ class Instance(AwsBaseNode):
 
         split_string = string_with_powershell.splitlines()
 
+        if not split_string:
+            return ''
+
         if split_string[0] == '#ps1_sysnative' or \
                 split_string[0] == '#ps1_x86':
             split_string.pop(0)
