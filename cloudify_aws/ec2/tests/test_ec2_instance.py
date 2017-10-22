@@ -60,6 +60,7 @@ class TestInstance(testtools.TestCase):
             'tags': {},
             'image_id': TEST_AMI_IMAGE_ID,
             'instance_type': TEST_INSTANCE_TYPE,
+            'os_family': 'linux',
             'cloudify_agent': {},
             'agent_config': {},
             'use_password': False,
@@ -259,7 +260,6 @@ class TestInstance(testtools.TestCase):
         ctx.agent.init_script = lambda: 'EXISTING'
         current_ctx.set(ctx=ctx)
         test_instance = self.create_instance_for_checking()
-
         handle_userdata_output = \
             test_instance._handle_userdata(ctx.node.properties['parameters'])
         expected_userdata = 'EXISTING'
@@ -281,6 +281,32 @@ class TestInstance(testtools.TestCase):
             test_instance._handle_userdata(ctx.node.properties['parameters'])
         self.assertTrue(handle_userdata_output['user_data'].startswith(
                 'Content-Type: multi'))
+
+    @mock_ec2
+    def test_with_both_userdata_clean_windows(self):
+        """ this tests that handle user data returns the expected output when merging
+        """
+
+        ctx = self.mock_ctx('test_with_both_userdata_clean_windows')
+        ctx.agent.init_script = lambda: '#ps1_sysnative\nSCRIPT'
+        ctx.node.properties['os_family'] = 'windows'
+        ctx.node.properties['agent_config']['install_method'] = 'init_script'
+        ctx.node.properties['parameters']['user_data'] = \
+            '<powershell>\nfunction Existing{}\n'\
+            '</powershell>\nrem cmd\n'
+        current_ctx.set(ctx=ctx)
+        test_instance = self.create_instance_for_checking()
+        handle_userdata_output = \
+            test_instance._handle_userdata(ctx.node.properties['parameters'])
+        self.assertTrue(handle_userdata_output['user_data'].startswith(
+                'Content-Type: multi'))
+        self.assertIn(
+            '#ps1_sysnative\n<powershell>\nSCRIPT\n'
+            'function Existing{}\n</powershell>',
+            handle_userdata_output['user_data'])
+        self.assertIn(
+            'rem cmd',
+            handle_userdata_output['user_data'])
 
     @mock_ec2
     def test_without_userdata_clean(self):
