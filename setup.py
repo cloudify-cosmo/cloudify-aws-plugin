@@ -37,7 +37,7 @@ setup(
 
     license='LICENSE',
     install_requires=[
-        'cloudify-plugins-common==4.1',
+        'cloudify-plugins-common>=3.4.2',
         'boto==2.48.0',
         'pycrypto==2.6.1',
         'ipaddress==1.0.18'
