@@ -44,3 +44,9 @@
     - Add connect Security Groups to Instance via InstanceConnectedToSecurityGroup relationship
     - Support adding VPC Peering Connection + Use external routes
     - Fix bug that disassociate the wrong elastic ip from its instance
+1.5.1
+    - Support Windows instances with init_script agent installation method.
+1.5.1.1
+    - Fix bug when init_script is empty string.
+1.5.1.2
+    - Execute user-provided user data before agent install user data.
