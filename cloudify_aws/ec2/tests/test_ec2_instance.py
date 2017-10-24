@@ -301,8 +301,8 @@ class TestInstance(testtools.TestCase):
         self.assertTrue(handle_userdata_output['user_data'].startswith(
                 'Content-Type: multi'))
         self.assertIn(
-            '#ps1_sysnative\n<powershell>\nSCRIPT\n'
-            'function Existing{}\n</powershell>',
+            '#ps1_sysnative\n<powershell>\nfunction Existing{}\n'
+            'SCRIPT\n</powershell>',
             handle_userdata_output['user_data'])
         self.assertIn(
             'rem cmd',

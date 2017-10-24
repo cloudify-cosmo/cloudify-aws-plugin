@@ -25,7 +25,7 @@ setup(
     author='Gigaspaces',
     author_email='cosmo-admin@gigaspaces.com',
 
-    version='1.5.1.1',
+    version='1.5.1.2',
     description='Cloudify plugin for AWS infrastructure.',
 
     # This must correspond to the actual packages in the plugin.

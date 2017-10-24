@@ -459,8 +459,8 @@ class Instance(AwsBaseNode):
             install_agent_userdata = \
                 '#ps1_sysnative\n{0}\n{1}\n{2}\n{3}\n'.format(
                     PS_OPEN,
-                    install_agent_userdata,
                     existing_userdata_powershell,
+                    install_agent_userdata,
                     PS_CLOSE)
 
             # Additional work on the existing_userdata.
