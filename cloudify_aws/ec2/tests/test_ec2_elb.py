@@ -61,10 +61,10 @@ class TestLoadBalancer(testtools.TestCase):
     def _get_elb_instances(self):
         instance_list = boto.connect_elb().get_all_load_balancers(
                 load_balancer_names=['myelb'])[0].instances
-        l = []
+        my_list = []
         for i in instance_list:
-            l.append(i.id)
-        return l
+            my_list.append(i.id)
+        return my_list
 
     def _create_external_instance(self):
         return boto.connect_ec2().run_instances(

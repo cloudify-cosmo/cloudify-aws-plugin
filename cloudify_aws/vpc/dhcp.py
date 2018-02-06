@@ -27,6 +27,7 @@ def creation_validation(**_):
 
 @operation
 def create_dhcp_options(args=None, **_):
+    utils.add_create_args(**_)
     return DhcpOptions().create_helper(args)
 
 

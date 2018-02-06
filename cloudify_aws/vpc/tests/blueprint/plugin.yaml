@@ -5,9 +5,9 @@
 plugins:
   aws:
     executor: central_deployment_agent
-    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/1.4.4.zip
+    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/1.5.1.1.zip
     package_name: cloudify-aws-plugin
-    package_version: '1.4.4'
+    package_version: '1.5.1.1'
 
 data_types:
 
@@ -709,7 +709,7 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create: aws.cloudify_aws.vpc.gateway.create_customer_gateway
-        create: aws.cloudify_aws.vpc.gateway.start_customer_gateway
+        start: aws.cloudify_aws.vpc.gateway.start_customer_gateway
         delete: aws.cloudify_aws.vpc.gateway.delete_customer_gateway
 
   cloudify.aws.nodes.ACL:
@@ -896,6 +896,9 @@ node_types:
   cloudify.aws.nodes.SecurityGroupRule:
     derived_from: cloudify.nodes.Root
     properties:
+      use_external_resource:
+        type: boolean
+        default: False
       resource_id:
         description: >
           The resource ID.
@@ -907,6 +910,25 @@ node_types:
           A list of rules of data type cloudify.datatypes.aws.SecurityGroupRule (see above).
         default: []
         required: false
+      aws_config:
+        description: >
+          A dictionary of values to pass to authenticate with the AWS API.
+        type: cloudify.datatypes.aws.Config
+
+  cloudify.aws.nodes.SecurityGroupRule.Multi:
+    derived_from: cloudify.aws.nodes.SecurityGroupRule
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.cloudify_aws.ec2.securitygroup.create_rule
+          inputs:
+            args:
+              default: {}
+        delete:
+          implementation: aws.cloudify_aws.ec2.securitygroup.delete_rule
+          inputs:
+            args:
+              default: {}
 
 relationships:
   cloudify.aws.relationships.connected_to_elastic_ip:
@@ -944,11 +966,15 @@ relationships:
           inputs:
             args:
               default: {}
+            force:
+              default: False
         unlink:
           implementation: aws.cloudify_aws.ec2.ebs.disassociate
           inputs:
             args:
               default: {}
+            force:
+              default: False
 
   cloudify.aws.relationships.subnet_contained_in_vpc:
     derived_from: cloudify.relationships.contained_in
@@ -1079,3 +1105,6 @@ relationships:
 
   cloudify.aws.relationships.rule_depends_on_security_group:
     derived_from: cloudify.relationships.depends_on
+
+  cloudify.aws.relationships.rule_contained_in_security_group:
+    derived_from: cloudify.relationships.contained_in

@@ -31,6 +31,7 @@ def creation_validation(**_):
 
 @operation
 def create(args=None, **_):
+    utils.add_create_args(**_)
     return KeyPair().create_helper(args)
 
 
@@ -70,7 +71,7 @@ class KeyPair(AwsBaseNode):
                         'does not exist locally.')
             try:
                 if not self.get_all_matching(
-                        ctx.node.properties['resource_id']):
+                        utils.get_resource_id()):
                     raise NonRecoverableError(self.not_found_error)
             except NonRecoverableError as e:
                 raise NonRecoverableError(
@@ -82,7 +83,7 @@ class KeyPair(AwsBaseNode):
                 raise NonRecoverableError(
                         'Not external resource, '
                         'but the key file exists locally.')
-            if self.get_all_matching(ctx.node.properties['resource_id']):
+            if self.get_all_matching(utils.get_resource_id()):
                 raise NonRecoverableError(
                         'Not external resource, '
                         'but the key pair exists in the account.')
@@ -91,6 +92,9 @@ class KeyPair(AwsBaseNode):
 
     def create(self, args=None, **_):
         """Creates a keypair."""
+
+        ctx.instance.runtime_properties[constants.AWS_TYPE_PROPERTY] = \
+            constants.KEYPAIR['AWS_RESOURCE_TYPE']
 
         create_args = {
             'key_name': utils.get_resource_id()
@@ -101,12 +105,11 @@ class KeyPair(AwsBaseNode):
         kp = self.execute(self.client.create_key_pair,
                           create_args, raise_on_falsy=True)
 
-        self._save_key_pair(kp)
-
-        ctx.instance.runtime_properties[constants.AWS_TYPE_PROPERTY] = \
-            constants.KEYPAIR['AWS_RESOURCE_TYPE']
-
         self.resource_id = kp.name
+
+        utils.set_external_resource_id(self.resource_id, ctx.instance)
+
+        self._save_key_pair(kp)
 
         return True
 
@@ -174,13 +177,28 @@ class KeyPair(AwsBaseNode):
             raise NonRecoverableError(
                     '{0} already exists, it will not be overwritten.'.format(
                             file_path))
-        fp = open(file_path, 'wb')
-        fp.write(key_pair_object.material)
-        fp.close()
+
+        try:
+            directory = os.path.dirname(file_path)
+            if not os.path.isdir(directory):
+                os.makedirs(directory)
+        except OSError as e:
+            ctx.logger.error(
+                'Cannot create parent dirs to {0}: {1}'
+                .format(file_path, str(e)))
+
+        try:
+            with open(file_path, 'wb') as infile:
+                infile.write(key_pair_object.material)
+        except IOError as e:
+            raise NonRecoverableError(
+                'Cannot save to {0}: {1}'.format(file_path, str(e)))
 
         self._set_key_file_permissions(file_path)
 
     def _set_key_file_permissions(self, key_file):
+        ctx.logger.debug(
+            'Attempting to set permissions to file {0}.'.format(key_file))
 
         if os.access(key_file, os.W_OK):
             os.chmod(key_file, 0o600)
@@ -226,11 +244,12 @@ class KeyPair(AwsBaseNode):
                 'Path to key file: {0}.'.format(key_path_in_filesystem))
         if not key_pair_in_account:
             raise NonRecoverableError(
-                    'External resource, but the key pair is '
-                    'not in the account.')
+                    'Was asked to use an external resource, but the key pair '
+                    'is not in the account: {0}'.format(self.resource_id))
         if not self._search_for_key_file(key_path_in_filesystem):
             raise NonRecoverableError(
-                    'External resource, but the key file does not exist.')
+                    'Was asked to use an external resource, but the key file '
+                    'does not exist: {0}'.format(key_path_in_filesystem))
         return True
 
     def get_resource(self):

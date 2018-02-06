@@ -28,6 +28,10 @@ from cloudify_aws import constants, connection
 from cloudify.mocks import MockCloudifyContext
 from cloudify.exceptions import NonRecoverableError
 
+DEPENDS_ON_REL = 'cloudify.aws.relationships.rule_depends_on_security_group'
+CONTAINED_IN_REL = 'cloudify.aws.relationships' \
+                   '.rule_contained_in_security_group'
+
 
 class TestSecurityGroup(testtools.TestCase):
 
@@ -81,8 +85,155 @@ class TestSecurityGroup(testtools.TestCase):
 
         return test_properties
 
+    def rule_mock(self,
+                  test_name,
+                  type,
+                  test_properties):
+        """ Creates a mock context for security group tests
+            with given properties
+        """
+
+        ctx = MockCloudifyContext(
+                node_id=test_name,
+                properties=test_properties,
+                deployment_id=str(uuid.uuid4())
+        )
+
+        return ctx
+
+    def get_rule_mock_properties(self):
+
+        test_properties = {
+            constants.AWS_CONFIG_PROPERTY: {},
+            'use_external_resource': False,
+            'resource_id': 'test_rule',
+            'rule':
+                [
+                    {
+                        'ip_protocol': 'tcp',
+                        'from_port': '22',
+                        'to_port': '22',
+                        'src_group_id': 'test_security_group'
+                    }
+                ]
+        }
+
+        return test_properties
+
+    def get_rule_egress_mock_properties(self):
+
+        test_properties = {
+            constants.AWS_CONFIG_PROPERTY: {},
+            'use_external_resource': False,
+            'resource_id': 'test_rule',
+            'rule':
+                [
+                    {
+                        'ip_protocol': 'tcp',
+                        'from_port': '80',
+                        'to_port': '80',
+                        'egress': True
+                    }
+                ]
+        }
+
+        return test_properties
+
     def create_sg_for_checking(self):
         return securitygroup.SecurityGroup()
+
+    @mock_ec2
+    def test_depends_on_rule_operations(self):
+        """This tests that add_rule runs"""
+
+        test_rule_properties = self.get_rule_mock_properties()
+        ctx = self.rule_mock('test_depends_on_rule_operations',
+                             DEPENDS_ON_REL, test_rule_properties)
+        current_ctx.set(ctx=ctx)
+
+        ec2_client = connection.EC2ConnectionClient().client()
+        group = ec2_client.create_security_group('test_security_group',
+                                                 'this is a test')
+        with mock.patch('cloudify_aws.utils.get_target_external_resource_ids')\
+                as mock_get_target_external_resource_ids:
+            mock_get_target_external_resource_ids.return_value = group.id
+            with mock.patch('cloudify_aws.ec2.securitygroup.SecurityGroupRule'
+                            '.filter_for_single_resource')\
+                    as mock_get_all_security_groups:
+                mock_get_all_security_groups.return_value = group
+                rule = ctx.node.properties.get('rule')
+                self.assertEqual(
+                    True,
+                    securitygroup.create_rule(ctx=current_ctx))
+                self.assertIn('src_group_id', rule[0])
+                self.assertEqual(
+                    True,
+                    securitygroup.delete_rule(ctx=current_ctx))
+
+    @mock_ec2
+    def test_contained_in_rule_operations(self):
+        """This tests that revoke_rule runs"""
+
+        test_rule_properties = self.get_rule_mock_properties()
+        ctx = self.rule_mock('test_contained_in_rule_operations',
+                             CONTAINED_IN_REL,
+                             test_rule_properties)
+        current_ctx.set(ctx=ctx)
+
+        ec2_client = connection.EC2ConnectionClient().client()
+        group = ec2_client.create_security_group('test_security_group',
+                                                 'this is a test')
+        rules = ctx.node.properties.get('rule')
+        rule = rules[0]
+        with mock.patch('cloudify_aws.utils'
+                        '.get_target_external_resource_ids') \
+                as mock_get_target_external_resource_ids:
+            mock_get_target_external_resource_ids.return_value = group.id
+            with mock.patch('cloudify_aws.ec2.securitygroup.SecurityGroup'
+                            '.filter_for_single_resource') \
+                    as mock_get_all_security_groups:
+                mock_get_all_security_groups.return_value = group
+
+                self.assertEqual(True,
+                                 securitygroup.create_rule(ctx=current_ctx))
+                for ip_permission in group.rules:
+                    self.assertIn(rule['ip_protocol'],
+                                  ip_permission.ip_protocol)
+                    self.assertIn(rule['from_port'], ip_permission.from_port)
+                    self.assertIn(rule['to_port'], ip_permission.to_port)
+                securitygroup.delete_rule(ctx=current_ctx)
+                self.assertNotIn(rule,
+                                 group.rules)
+
+    @mock_ec2
+    def test_egress_rule(self):
+        test_rule_properties = self.get_rule_egress_mock_properties()
+        ctx = self.rule_mock('test_depends_on_rule_operations',
+                             DEPENDS_ON_REL, test_rule_properties)
+        current_ctx.set(ctx=ctx)
+
+        ec2_client = connection.EC2ConnectionClient().client()
+        group = ec2_client.create_security_group('test_security_group',
+                                                 'this is a test')
+        with mock.patch('cloudify_aws.utils.get_target_external_resource_ids')\
+                as mock_get_target_external_resource_ids:
+            mock_get_target_external_resource_ids.return_value = group.id
+            with mock.patch('cloudify_aws.ec2.securitygroup.SecurityGroupRule'
+                            '.filter_for_single_resource') \
+                    as mock_get_all_security_groups:
+                mock_get_all_security_groups.return_value = group
+                with mock.patch('boto.ec2.connection.EC2Connection'
+                                '.authorize_security_group_egress') \
+                        as mock_authorize_security_group_egress:
+                    mock_authorize_security_group_egress.return_value = True
+                    with mock.patch('boto.ec2.connection.EC2Connection'
+                                    '.revoke_security_group_egress') \
+                            as mock_revoke_security_group_egress:
+                        mock_revoke_security_group_egress.return_value = True
+                        self.assertEqual(True, securitygroup.create_rule(
+                                ctx=current_ctx))
+                        self.assertEqual(True, securitygroup.delete_rule(
+                                ctx=current_ctx))
 
     @mock_ec2
     def test_create_rules_in_args(self):
@@ -438,7 +589,6 @@ class TestSecurityGroup(testtools.TestCase):
         group_object = ec2_client.create_security_group(
                 'dummy',
                 'this is test')
-        # setattr(group_object, 'vpc_id', 'vpc-abcd1234')
         ctx.node.properties['rules'][0]['src_group_id'] = group_object.id
         with mock.patch(
                 'cloudify_aws.ec2.securitygroup.'
@@ -459,25 +609,26 @@ class TestSecurityGroup(testtools.TestCase):
         to what when in.
         """
 
-        ec2_client = connection.EC2ConnectionClient().client()
         test_properties = self.get_mock_properties()
         ctx = self.security_group_mock(
                 'test_create_group_rules_src_group', test_properties)
+        current_ctx.set(ctx=ctx)
+
+        ec2_client = connection.EC2ConnectionClient().client()
         group_object = ec2_client.create_security_group(
                 'dummy',
                 'this is test')
         ctx.node.properties['rules'][0]['src_group_id'] = group_object.id
         del ctx.node.properties['rules'][0]['cidr_ip']
-        current_ctx.set(ctx=ctx)
         with mock.patch(
                 'cloudify_aws.ec2.securitygroup.'
                 'SecurityGroup.get_resource_state'
-                ) as securitygroup_state:
+        ) as securitygroup_state:
             securitygroup_state.return_value = 'available'
             securitygroup.create(ctx=ctx)
         group = ec2_client.get_all_security_groups(
-            group_ids=ctx.instance.runtime_properties[
-                constants.EXTERNAL_RESOURCE_ID]
+                group_ids=ctx.instance.runtime_properties[
+                    constants.EXTERNAL_RESOURCE_ID]
         )
         self.assertIn('test_security_group-111122223333',
                       str(group[0].rules[0].grants[0]))

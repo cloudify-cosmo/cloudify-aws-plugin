@@ -71,6 +71,15 @@ INSTANCE = dict(
                  'failed': []}]
 )
 
+SecurityGroupRule = dict(
+    AWS_RESOURCE_TYPE='group',
+    CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.SecurityGroupRule',
+    ID_FORMAT='^sg\-[0-9a-z]{8}$',
+    REQUIRED_PROPERTIES=['rule'],
+    NOT_FOUND_ERROR='InvalidGroup.NotFound',
+    STATES=[{}]
+)
+
 SECURITYGROUP = dict(
         AWS_RESOURCE_TYPE='group',
         CLOUDIFY_NODE_TYPE='cloudify.aws.nodes.SecurityGroup',
@@ -295,3 +304,5 @@ INSTANCE_SECURITY_GROUP_RELATIONSHIP = 'instance_connected_to_security_group'
 SECURITY_GROUP_VPC_RELATIONSHIP = 'security_group_contained_in_vpc'
 RUNTIME_PROPERTIES = [AWS_TYPE_PROPERTY, EXTERNAL_RESOURCE_ID]
 SECURITY_GROUP_RULE_RELATIONSHIP = 'security_group_uses_rule'
+RULE_DEPENDS_ON_SG_RELATIONSHIP = 'rule_depends_on_security_group'
+RULE_CONTAINED_IN_SG_RELATIONSHIP = 'rule_contained_in_security_group'

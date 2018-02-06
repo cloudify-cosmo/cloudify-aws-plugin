@@ -14,6 +14,7 @@
 #    * limitations under the License.
 
 import os
+import json
 
 # Third-party Imports
 from boto import exception
@@ -30,6 +31,9 @@ from cloudify_aws.base import AwsBaseNode
 from cloudify_aws import utils, constants
 from cloudify.exceptions import NonRecoverableError
 
+PS_OPEN = '<powershell>'
+PS_CLOSE = '</powershell>'
+
 
 @operation
 def creation_validation(**_):
@@ -38,6 +42,7 @@ def creation_validation(**_):
 
 @operation
 def create(args=None, **_):
+    utils.add_create_args(**_)
     return Instance().create_helper(args)
 
 
@@ -79,6 +84,9 @@ class Instance(AwsBaseNode):
         }
 
     def creation_validation(self, **_):
+
+        if not self.resource_id:
+            self.resource_id = utils.get_resource_id()
 
         super(Instance, self).creation_validation()
 
@@ -385,21 +393,95 @@ class Instance(AwsBaseNode):
         attribute = getattr(instance_object, attribute)
         return attribute
 
+    def extract_powershell_content(self, string_with_powershell):
+        """We want to filter user data for powershell scripts.
+        However, AWS EC2 allows only one segment that is Powershell.
+        So we have to concat separate Powershell scripts into one.
+        First we separate all Powershell scripts without their tags.
+        Later we will add the tags back.
+        """
+
+        split_string = string_with_powershell.splitlines()
+
+        if not split_string:
+            return ''
+
+        if split_string[0] == '#ps1_sysnative' or \
+                split_string[0] == '#ps1_x86':
+            split_string.pop(0)
+
+        if PS_OPEN not in split_string:
+            script_start = -1  # Because we join at +1.
+        else:
+            script_start = split_string.index(PS_OPEN)
+
+        if PS_CLOSE not in split_string:
+            script_end = len(split_string)
+        else:
+            script_end = split_string.index(PS_CLOSE)
+
+        # Return everything between Powershell back as a string.
+        return '\n'.join(split_string[script_start+1:script_end])
+
     def _handle_userdata(self, parameters):
 
         existing_userdata = parameters.get('user_data')
+
+        if existing_userdata is None:
+            existing_userdata = ''
+        elif isinstance(existing_userdata, dict) or \
+                isinstance(existing_userdata, list):
+            existing_userdata = json.dumps(existing_userdata)
+        elif not isinstance(existing_userdata, basestring):
+            existing_userdata = str(existing_userdata)
+
         install_agent_userdata = ctx.agent.init_script()
+        os_family = ctx.node.properties['os_family']
 
         if not (existing_userdata or install_agent_userdata):
             return parameters
 
-        if not existing_userdata:
+        # AWS EC2 Windows instances require no more than one
+        # Powershell script, which must be surrounded by
+        # Powershell tags.
+        if install_agent_userdata and os_family == 'windows':
+
+            # Get the powershell content from install_agent_userdata
+            install_agent_userdata = \
+                self.extract_powershell_content(install_agent_userdata)
+
+            # Get the powershell content from existing_userdata
+            # (If it exists.)
+            existing_userdata_powershell = \
+                self.extract_powershell_content(existing_userdata)
+
+            # Combine the powershell content from two sources.
+            install_agent_userdata = \
+                '#ps1_sysnative\n{0}\n{1}\n{2}\n{3}\n'.format(
+                    PS_OPEN,
+                    existing_userdata_powershell,
+                    install_agent_userdata,
+                    PS_CLOSE)
+
+            # Additional work on the existing_userdata.
+            # Remove duplicate Powershell content.
+            # Get rid of unnecessary newlines.
+            existing_userdata = \
+                existing_userdata.replace(
+                    existing_userdata_powershell,
+                    '').replace(
+                        PS_OPEN,
+                        '').replace(
+                            PS_CLOSE,
+                            '').strip()
+
+        if not existing_userdata or existing_userdata.isspace():
             final_userdata = install_agent_userdata
         elif not install_agent_userdata:
             final_userdata = existing_userdata
         else:
             final_userdata = compute.create_multi_mimetype_userdata(
-                    [existing_userdata, install_agent_userdata])
+                [existing_userdata, install_agent_userdata])
 
         parameters['user_data'] = final_userdata
 
@@ -416,7 +498,16 @@ class Instance(AwsBaseNode):
         attached_group_ids = \
             utils.get_target_external_resource_ids(
                     constants.INSTANCE_SECURITY_GROUP_RELATIONSHIP,
+                    ctx.instance) or utils.get_target_external_resource_ids(
+                    'InstanceConnectedToSecurityGroup',
                     ctx.instance)
+
+        groups = ctx.node.properties['parameters'].get('security_group_ids',
+                                                       None)
+        if groups:
+            ctx.node.properties['parameters'].pop('security_group_ids')
+            for group in groups:
+                attached_group_ids.append(group)
 
         if provider_variables.get(constants.AGENTS_SECURITY_GROUP):
             attached_group_ids.append(
@@ -431,9 +522,17 @@ class Instance(AwsBaseNode):
             'key_name': self._get_instance_keypair(provider_variables)
         })
 
+        parameters.update(ctx.node.properties['parameters'])
+        parameters = utils.update_args(parameters, args)
+        parameters = self._handle_userdata(parameters)
+        parameters['block_device_map'] = \
+            self._create_block_device_mapping(
+                parameters.get('block_device_map', {})
+            )
+
         network_interfaces_collection = \
             self._get_network_interfaces(
-                parameters.get('network_interfaces', []))
+                    parameters.get('network_interfaces', []))
 
         if network_interfaces_collection:
             parameters.update({
@@ -443,14 +542,6 @@ class Instance(AwsBaseNode):
             parameters.update({
                 'subnet_id': self._get_instance_subnet(provider_variables)
             })
-
-        parameters.update(ctx.node.properties['parameters'])
-        parameters = self._handle_userdata(parameters)
-        parameters = utils.update_args(parameters, args)
-        parameters['block_device_map'] = \
-            self._create_block_device_mapping(
-                parameters.get('block_device_map', {})
-            )
 
         return parameters
 
@@ -525,9 +616,13 @@ class Instance(AwsBaseNode):
         :returns an ID of a an EC2 Instance or None.
         """
 
+        if not instance_id:
+            return None
+
         instance = self._get_all_instances(list_of_instance_ids=instance_id)
 
-        return instance[0] if instance else instance
+        return None if not instance else instance[0] \
+            if instance[0].id == instance_id else None
 
     def _get_instances_from_reservation_id(self):
 
@@ -590,7 +685,7 @@ class Instance(AwsBaseNode):
     def stop_helper(self, args=None):
 
         ctx.logger.info(
-                'Attempting to stop EC2 instance {0} {1}.'
+                'Attempting to stop EC2 {0} {1}.'
                 .format(self.aws_resource_type,
                         self.cloudify_node_instance_id))
 

@@ -28,6 +28,7 @@ def creation_validation(args=None, **_):
 
 @operation
 def create_network_acl(args=None, **_):
+    utils.add_create_args(**_)
     return NetworkAcl().create_helper(args)
 
 

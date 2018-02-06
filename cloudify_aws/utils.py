@@ -145,7 +145,12 @@ def get_resource_id():
 
 def get_provider_variables():
 
-    provider_config = ctx.provider_context.get('resources', {})
+    provider_config = {
+        constants.AGENTS_AWS_INSTANCE_PARAMETERS: {}
+    }
+
+    if getattr(ctx, 'provider_context'):
+        provider_config.update(ctx.provider_context.get('resources', {}))
 
     provider_context = {
         constants.AGENTS_KEYPAIR:
@@ -207,3 +212,10 @@ def update_args(parameterized_args, args_from_inputs):
     parameterized_args.update(args_from_inputs if args_from_inputs else {})
     ctx.logger.debug('args passed to function: {0}'.format(parameterized_args))
     return parameterized_args
+
+
+def add_create_args(**_):
+    props = _.get('runtime_properties')
+    if props and isinstance(props, dict):
+        for key, value in props:
+            ctx.instance.runtime_properties[key] = value
