@@ -126,6 +126,7 @@ Four additional ``runtime_properties`` are available on node instances of this t
 
 .. cfy:node:: cloudify.aws.nodes.RouteTable
 .. cfy:node:: cloudify.aws.nodes.SecurityGroupRule
+.. cfy:node:: cloudify.aws.nodes.SecurityGroupRule.Multi
 .. cfy:node:: cloudify.aws.nodes.ElasticLoadBalancer
 .. cfy:node:: cloudify.aws.nodes.Volume
 .. cfy:node:: cloudify.aws.nodes.Gateway
@@ -303,7 +304,7 @@ Relationships
 .. cfy:rel:: cloudify.aws.relationships.security_group_uses_rule
 .. cfy:rel:: cloudify.aws.relationships.instance_connected_to_eni
 .. cfy:rel:: cloudify.aws.relationships.rule_depends_on_security_group
-
+.. cfy:rel:: cloudify.aws.relationships.rule_contained_in_security_group
 
 
 Data Types
