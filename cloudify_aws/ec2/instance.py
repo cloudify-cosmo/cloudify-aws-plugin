@@ -15,6 +15,7 @@
 
 import os
 import json
+from socket import gaierror
 
 # Third-party Imports
 from boto import exception
@@ -286,7 +287,7 @@ class Instance(AwsBaseNode):
                 reservation = self.execute(self.client.run_instances,
                                            create_args, raise_on_falsy=True)
             except (exception.EC2ResponseError,
-                    exception.BotoServerError) as e:
+                    exception.BotoServerError, gaierror) as e:
                 raise NonRecoverableError('{0}'.format(str(e)))
 
             self.resource_id = reservation.instances[0].id
