@@ -1,0 +1,208 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/4.5/types.yaml
+  - plugin:cloudify-aws-plugin
+
+inputs:
+  aws_access_key_id:
+    type: string
+
+  aws_secret_access_key:
+    type: string
+
+  aws_region_name:
+    type: string
+    default: us-east-1
+
+  aws_vpc_id:
+    description: |
+      AWS VPC ID
+    type: string
+
+  aws_security_group_id:
+    description: |
+      AWS VPC Security Group ID
+    type: string
+
+  aws_vpc_subnet_1_id:
+    description: |
+      AWS VPC Subnet ID (Zone 1)
+    type: string
+
+  aws_vpc_subnet_2_id:
+    description: |
+      AWS VPC Subnet ID (Zone 2)
+    type: string
+
+
+dsl_definitions:
+  client_config: &client_config
+    aws_access_key_id: { get_input: aws_access_key_id }
+    aws_secret_access_key: { get_input: aws_secret_access_key }
+    region_name: { get_input: aws_region_name }
+
+node_templates:
+  rds_mysql_read_replica:
+    type: cloudify.nodes.aws.rds.InstanceReadReplica
+    properties:
+      resource_id: devdbinstance-replica
+      resource_config:
+        kwargs:
+          SourceDBInstanceIdentifier: { get_property: [rds_mysql_instance, resource_id] }
+          DBInstanceClass: db.t2.small
+          AvailabilityZone: us-west-1c
+      client_config: *client_config
+    relationships:
+    - type: cloudify.relationships.aws.rds.instance_read_replica.connected_to
+      target: rds_mysql_instance
+    - type: cloudify.relationships.aws.rds.instance_read_replica.connected_to
+      target: rds_option_group
+    - type: cloudify.relationships.aws.rds.instance_read_replica.connected_to
+      target: rds_parameter_group
+
+  rds_mysql_instance:
+    type: cloudify.nodes.aws.rds.Instance
+    properties:
+      resource_id: devdbinstance
+      client_config: *client_config
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          inputs:
+            resource_config:
+              DBInstanceClass: db.t2.small
+              Engine: mysql
+              EngineVersion: 5.7.16
+              AvailabilityZone: us-west-1a
+              StorageType: gp2
+              AllocatedStorage: 10
+              DBName: devdb
+              MasterUsername: root
+              MasterUserPassword: Password1234
+              # MonitoringRoleArn: { get_attribute: [my_monitoring_iam_role, aws_resource_arn] }
+              # DomainIAMRoleName: { get_attribute: [my_domain_iam_role, aws_resource_arn] }
+    relationships:
+    - type: cloudify.relationships.aws.rds.instance.connected_to
+      target: rds_subnet_group
+    - type: cloudify.relationships.aws.rds.instance.connected_to
+      target: rds_option_group
+    - type: cloudify.relationships.aws.rds.instance.connected_to
+      target: rds_parameter_group
+    - type: cloudify.relationships.aws.rds.instance.connected_to
+      target: rds_security_group
+#    #- type: cloudify.relationships.aws.rds.instance.connected_to
+    #  target: my_monitoring_iam_role
+    #  source_interfaces:
+    #    cloudify.interfaces.relationship_lifecycle:
+    #      preconfigure:
+    #        inputs:
+    #          iam_role_type_key: MonitoringRoleArn
+    #- type: cloudify.relationships.aws.rds.instance.connected_to
+    #  target: my_domain_iam_role
+    #  source_interfaces:
+    #    cloudify.interfaces.relationship_lifecycle:
+    #      preconfigure:
+    #        inputs:
+    #          iam_role_type_key: DomainIAMRoleName
+  
+  rds_parameter_group:
+    type: cloudify.nodes.aws.rds.ParameterGroup
+    properties:
+      resource_id: dev-rds-param-group
+      resource_config:
+        kwargs:
+          DBParameterGroupFamily: mysql5.7
+          Description: MySQL5.7 Parameter Group for Dev
+      client_config: *client_config
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        # This lifecycle runs a post-create modify operation and
+        # any resource_config inputs are passed as-is. This is
+        # useful for doing bulk parameter updates (up to 20).
+        configure:
+          inputs:
+            resource_config:
+              Parameters:
+              - ParameterName: time_zone
+                ParameterValue: US/Eastern
+                ApplyMethod: immediate
+              - ParameterName: lc_time_names
+                ParameterValue: en_US
+                ApplyMethod: immediate
+
+  rds_option_group:
+    type: cloudify.nodes.aws.rds.OptionGroup
+    properties:
+      resource_id: dev-rds-option-group
+      resource_config:
+        kwargs:
+          EngineName: mysql
+          MajorEngineVersion: '5.7'
+          OptionGroupDescription: MySQL5.7 Option Group for Dev
+      client_config: *client_config
+    relationships:
+    - type: cloudify.relationships.aws.rds.option_group.connected_to
+      target: rds_option_1
+
+  rds_option_1:
+    type: cloudify.nodes.aws.rds.Option
+    properties:
+      resource_id: MEMCACHED
+      resource_config:
+        kwargs:
+          Port: 21212
+    relationships:
+    - type: cloudify.relationships.aws.rds.option.connected_to
+      target: rds_security_group
+              
+  rds_subnet_group:
+    type: cloudify.nodes.aws.rds.SubnetGroup
+    properties:
+      resource_id: dev-rds-subnet-group
+      resource_config:
+        kwargs:
+          DBSubnetGroupDescription: MySQL5.7 Subnet Group for Dev
+      client_config: *client_config
+    relationships:
+    - type: cloudify.relationships.aws.rds.subnet_group.connected_to
+      target: rds_subnet_1
+    - type: cloudify.relationships.aws.rds.subnet_group.connected_to
+      target: rds_subnet_2
+  
+  rds_subnet_1:
+    type: cloudify.nodes.aws.ec2.Subnet
+    properties:
+      use_external_resource: true
+      resource_id: { get_input: aws_vpc_subnet_1_id }
+      client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: rds_vpc
+
+  rds_subnet_2:
+    type: cloudify.nodes.aws.ec2.Subnet
+    properties:
+      use_external_resource: true
+      resource_id: { get_input: aws_vpc_subnet_2_id }
+      client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: rds_vpc
+  
+  rds_security_group:
+    type: cloudify.nodes.aws.ec2.SecurityGroup
+    properties:
+      use_external_resource: true
+      resource_id: { get_input: aws_security_group_id }
+      client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: rds_vpc
+  
+  rds_vpc:
+    type: cloudify.nodes.aws.ec2.Vpc
+    properties:
+      use_external_resource: true
+      resource_id: { get_input: aws_vpc_id }
+      client_config: *client_config

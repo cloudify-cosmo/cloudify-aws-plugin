@@ -50,3 +50,8 @@
     - Fix bug when init_script is empty string.
 1.5.1.2
     - Execute user-provided user data before agent install user data.
+2.0.0:
+    - Update aws plugin node types
+    - Update python aws boto to boto3
+    - Add blueprint examples that covers all node types for the plugin
+    - Update integration tests
