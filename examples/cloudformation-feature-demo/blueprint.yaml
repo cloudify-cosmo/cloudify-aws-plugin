@@ -1,0 +1,90 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/4.3.2/types.yaml
+  - plugin:cloudify-aws-plugin
+
+inputs:
+
+  aws_access_key_id:
+    type: string
+    default: { get_secret: aws_access_key_id }
+
+  aws_secret_access_key:
+    type: string
+    default: { get_secret: aws_secret_access_key }
+
+  aws_region_name:
+    type: string
+    default: { get_secret: ec2_region_name }
+
+  key_name:
+    type: string
+    default: Cloudify-Ecosystem-Tests
+
+  subnet_id:
+    type: string
+    default: { get_secret: public_subnet_id }
+
+  vpc_id:
+    type: string
+    default: { get_secret: vpc_id }
+
+dsl_definitions:
+
+  client_config: &client_config
+    aws_access_key_id: { get_input: aws_access_key_id }
+    aws_secret_access_key: { get_input: aws_secret_access_key }
+    region_name: { get_input: aws_region_name }
+
+node_templates:
+
+  ec2_instance_stack:
+    type: cloudify.nodes.aws.CloudFormation.Stack
+    properties:
+      resource_config:
+        kwargs:
+          StackName: EC2Instance
+          Parameters:
+          - ParameterKey: KeyName
+            ParameterValue: { get_input: key_name }
+          - ParameterKey: PrimaryIPAddress
+            ParameterValue: '10.10.4.240'
+          - ParameterKey: SecondaryIPAddress
+            ParameterValue: '10.10.4.250'
+          - ParameterKey: SubnetId
+            ParameterValue: { get_input: subnet_id }
+          - ParameterKey: VpcId
+            ParameterValue: { get_input: vpc_id }
+          TemplateURL: https://s3-ap-northeast-1.amazonaws.com/ecosystem-tests-no-delete/VPC_EC2_Instance_With_Multiple_Static_IPAddresses.yaml.txt
+      client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: key_pair_node
+
+  hello_bucket_stack:
+    type: cloudify.nodes.aws.CloudFormation.Stack
+    properties:
+      resource_config:
+        kwargs:
+          StackName: HelloBucket
+          TemplateBody:
+            AWSTemplateFormatVersion: "2010-09-09"
+            Description: S3 HelloBucket
+            Resources:
+              HelloBucket:
+                Type: AWS::S3::Bucket
+                Properties:
+                  AccessControl: PublicRead
+                  WebsiteConfiguration:
+                    IndexDocument: index.html
+                    ErrorDocument: error.html
+      client_config: *client_config
+
+  key_pair_node:
+    type: cloudify.nodes.aws.ec2.Keypair
+    properties:
+      resource_config:
+        KeyName: { get_input: key_name }
+      store_in_runtime_properties: true
+      client_config: *client_config

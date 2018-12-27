@@ -1,0 +1,112 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/4.5/types.yaml
+  - plugin:cloudify-aws-plugin
+
+inputs:
+
+  aws_access_key_id:
+    type: string
+    default: { get_secret: aws_access_key_id }
+
+  aws_secret_access_key:
+    type: string
+    default: { get_secret: aws_secret_access_key }
+
+  aws_region_name:
+    type: string
+    default: { get_secret: ec2_region_name }
+
+dsl_definitions:
+
+  client_config: &client_config
+    aws_access_key_id: { get_input: aws_access_key_id }
+    aws_secret_access_key: { get_input: aws_secret_access_key }
+    region_name: { get_input: aws_region_name }
+
+node_templates:
+
+  cloudwatch_target1:
+    type: cloudify.nodes.aws.cloudwatch.Target
+    properties:
+      resource_config:
+        kwargs:
+          Targets:
+            - Id : topic1
+              Arn: { get_attribute: [ topic1, aws_resource_arn ] }
+      client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: cloudwatch_rule1
+      - type: cloudify.relationships.depends_on
+        target: topic1
+
+  topic1:
+    type: cloudify.nodes.aws.SNS.Topic
+    properties:
+      resource_config:
+        kwargs: {}
+#        kwargs:
+#          Name: TestCloudifyTopic
+      client_config: *client_config
+
+  cloudwatch_event1:
+    type: cloudify.nodes.aws.cloudwatch.Event
+    properties:
+      resource_config:
+        kwargs:
+          Entries:
+            - Source: autoscaling.amazonaws.com
+              Resources:
+               - { concat: [ 'arn:aws:automate:', { get_input: aws_region_name }, ':ec2:terminate'] }
+              DetailType: Cloudwatch Event Demo
+              Detail: |
+                {
+                  "instance-id": "i-12345678",
+                  "state": "terminated"
+                }
+      client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: cloudwatch_target1
+
+  cloudwatch_rule1:
+    type: cloudify.nodes.aws.cloudwatch.Rule
+    properties:
+      resource_config:
+        kwargs:
+          Name: test-cloudwatch1
+          ScheduleExpression: "rate(5 minutes)"
+          EventPattern: |
+            {
+              "detail-type": [
+                "AWS API Call via CloudTrail"
+              ],
+              "detail": {
+                "eventSource": [
+                  "autoscaling.amazonaws.com"
+                ]
+              }
+            }
+          State: 'ENABLED'
+      client_config: *client_config
+
+  cwa:
+    type: cloudify.nodes.aws.cloudwatch.Alarm
+    properties:
+      resource_id: { concat: [ {get_input: aws_region_name }, 'cwa' ] }
+      resource_config:
+        kwargs:
+          AlarmName: cwa
+          ActionsEnabled: true
+          AlarmActions:
+            - { concat: [ 'arn:aws:automate:', { get_input: aws_region_name }, ':ec2:terminate'] }
+          ComparisonOperator: 'LessThanThreshold'
+          Statistic: Minimum
+          MetricName: CPUUtilization
+          Namespace: AWS/EC2
+          Period: 60
+          EvaluationPeriods: 5
+          Threshold: 60
+      client_config: *client_config

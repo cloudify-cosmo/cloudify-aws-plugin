@@ -1,0 +1,129 @@
+version: 2
+
+checkout:
+  post:
+    - >
+      if [ -n "$CI_PULL_REQUEST" ]; then
+        PR_ID=${CI_PULL_REQUEST##*/}
+        git fetch origin +refs/pull/$PR_ID/merge:
+        git checkout -qf FETCH_HEAD
+      fi
+
+jobs:
+
+  unittests:
+    docker:
+      - image: circleci/python:2.7.15-stretch
+    steps:
+      - checkout
+      - run:
+          name: Download pip
+          command: curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
+      - run:
+          name: Install pip
+          command: sudo python get-pip.py
+      - run:
+          name: Install virtualenv
+          command: pip install --user virtualenv
+      - run:
+          name: Init virtualenv
+          command: virtualenv env && source env/bin/activate
+      - run:
+          name: install tox
+          command: pip install --user tox
+      - run: /home/circleci/.local/bin/tox -e pep8
+      - run: /home/circleci/.local/bin/tox -e py27
+
+  wagon:
+    docker:
+      - image: amd64/centos:centos7.3.1611
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: yum -y install python-devel gcc openssl git libxslt-devel libxml2-devel openldap-devel libffi-devel openssl-devel libvirt-devel
+      - run:
+          name: Download pip
+          command: curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
+      - run:
+          name: Install pip
+          command: python get-pip.py
+      - run:
+          name: Upgrade pip
+          command: pip install --upgrade pip==9.0.1
+      - run:
+          name: Install virtualenv
+          command: pip install virtualenv
+      - run:
+          name: Init virtualenv
+          command: virtualenv env
+      - run:
+          name: Install wagon
+          command: pip install wagon==0.3.2
+      - run:
+          name: many_linux
+          command: echo "manylinux1_compatible = False" > "env/bin/_manylinux.py"
+      - run:
+          name: make workspace
+          command: mkdir -p workspace/build
+      - run:
+          name: Create wagon
+          command: source env/bin/activate && wagon create -s . -v -o workspace/build -f -a '--no-cache-dir -c constraints.txt'
+      - persist_to_workspace:
+          root: workspace
+          paths:
+            - build/*
+
+  cloudify-manager:
+    docker:
+      - image: amd64/centos:centos7.3.1611
+    steps:
+      - checkout
+      - attach_workspace:
+          at: workspace
+      - run:
+          name: Install dependencies
+          command: yum -y install python-devel gcc openssl git libxslt-devel libxml2-devel openldap-devel libffi-devel openssl-devel libvirt-devel
+      - run:
+          name: Download pip
+          command: curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
+      - run:
+          name: Install pip
+          command: python get-pip.py
+      - run:
+          name: Upgrade pip
+          command: pip install --upgrade pip==9.0.1
+      - run:
+          name: Install virtualenv
+          command: pip install virtualenv
+      - run:
+          name: Init virtualenv
+          command: virtualenv env
+      - run:
+          name: install cloudify
+          command: pip install cloudify==4.3.2
+      - run:
+          name: install openstack plugin from branch
+          command: pip install -e .
+      - run:
+          name: install test requirements
+          command: pip install awscli nose testtools https://github.com/cloudify-cosmo/cloudify-fabric-plugin/archive/1.5.1.zip https://github.com/cloudify-incubator/cloudify-utilities-plugin/archive/1.7.1.zip https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/2.1.2.zip
+      - run:
+          name: execute test
+          command: nosetests -s integration_tesing/test_aws.py
+
+workflows:
+  version: 2
+  tests:
+    jobs:
+      - unittests
+      - wagon:
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+      - cloudify-manager:
+          requires:
+            - wagon
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
