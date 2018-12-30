@@ -7,6 +7,6 @@ tox
 pylint
 pytest
 # for integration and platform tests
-cloudify>=3.4.1
+cloudify>=4.5
 awscli
 https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/2.1.2.zip

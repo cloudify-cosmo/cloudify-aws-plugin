@@ -2,7 +2,8 @@ tosca_definitions_version: cloudify_dsl_1_3
 
 imports:
   - http://www.getcloudify.org/spec/cloudify/4.5/types.yaml
-  - plugin:cloudify-aws-plugin
+  - plugin.yaml
+#   - plugin:cloudify-aws-plugin
 
 inputs:
 
@@ -41,28 +42,6 @@ node_templates:
             - '099720109477'
       client_config: *client_config
 
-  instance3:
-    type: cloudify.nodes.aws.ec2.Instances
-    properties:
-      agent_config:
-        install_method: none
-      resource_config:
-        MaxCount: 1
-        MinCount: 1
-        ImageId: { get_attribute: [ ubuntu_trusty_ami, aws_resource_id ] }
-        InstanceType: m3.large
-      client_config: *client_config
-      Tags:
-        - Key: Name
-          Value: Instance3
-    relationships:
-      - type: cloudify.relationships.depends_on
-        target: ubuntu_trusty_ami
-      - type: cloudify.relationships.depends_on
-        target: subnet3
-      - type: cloudify.relationships.aws.elb.instance.connected_to
-        target: classic_elb
-
   instance2:
     type: cloudify.nodes.aws.ec2.Instances
     properties:
@@ -84,6 +63,16 @@ node_templates:
         target: subnet2
       - type: cloudify.relationships.aws.elb.instance.connected_to
         target: classic_elb
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        configure:
+          implementation: aws.cloudify_aws.ec2.resources.instances.create
+          inputs:
+            resource_config:
+              MaxCount: 1
+              MinCount: 1
+              ImageId: { get_attribute: [ ubuntu_trusty_ami, aws_resource_id ] }
+              InstanceType: m3.large
 
   instance1:
     type: cloudify.nodes.aws.ec2.Instances
@@ -106,14 +95,23 @@ node_templates:
         target: subnet1
       - type: cloudify.relationships.aws.elb.instance.connected_to
         target: classic_elb
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        configure:
+          implementation: aws.cloudify_aws.ec2.resources.instances.create
+          inputs:
+            resource_config:
+              MaxCount: 1
+              MinCount: 1
+              ImageId: { get_attribute: [ ubuntu_trusty_ami, aws_resource_id ] }
+              InstanceType: m3.large
 
   classic_stickiness_policy:
     type: cloudify.nodes.aws.elb.Classic.Policy.Stickiness
     properties:
       resource_config:
-        kwargs:
-          PolicyName: myclassicstickinesspolicy
-          CookieExpirationPeriod: 3600
+        PolicyName: myclassicstickinesspolicy
+        CookieExpirationPeriod: 3600
       client_config: *client_config
     relationships:
       - type: cloudify.relationships.depends_on
@@ -125,9 +123,9 @@ node_templates:
     type: cloudify.nodes.aws.elb.Classic.Policy
     properties:
       resource_config:
+        PolicyName: myclassicpolicy
+        PolicyTypeName: ProxyProtocolPolicyType
         kwargs:
-          PolicyName: myclassicpolicy
-          PolicyTypeName: ProxyProtocolPolicyType
           PolicyAttributes:
             - AttributeName: ProxyProtocol
               AttributeValue: 'true'
@@ -140,13 +138,12 @@ node_templates:
     type: cloudify.nodes.aws.elb.Classic.HealthCheck
     properties:
       resource_config:
-        kwargs:
-          HealthCheck:
-            Target: HTTP:80/
-            Interval: 15
-            Timeout: 5
-            UnhealthyThreshold: 2
-            HealthyThreshold: 5
+        HealthCheck:
+          Target: HTTP:80/
+          Interval: 15
+          Timeout: 5
+          UnhealthyThreshold: 2
+          HealthyThreshold: 5
       client_config: *client_config
     relationships:
       - type: cloudify.relationships.depends_on
@@ -156,35 +153,14 @@ node_templates:
     type: cloudify.nodes.aws.elb.Classic.Listener
     properties:
       resource_config:
-        kwargs:
-          Listeners:
-          - Protocol: HTTP
-            LoadBalancerPort: 80
-            InstancePort: 8080
+        Listeners:
+        - Protocol: HTTP
+          LoadBalancerPort: 80
+          InstancePort: 8080
       client_config: *client_config
     relationships:
       - type: cloudify.relationships.depends_on
         target: classic_elb
-
-  classic_elb:
-    type: cloudify.nodes.aws.elb.Classic.LoadBalancer
-    properties:
-      resource_config:
-        kwargs:
-          LoadBalancerName: myclassicelb
-          Listeners: { get_property: [ classic_elb_listener, resource_config, kwargs, Listeners ] }
-      client_config: *client_config
-    relationships:
-      - type: cloudify.relationships.depends_on
-        target: subnet1
-      - type: cloudify.relationships.depends_on
-        target: subnet2
-      - type: cloudify.relationships.depends_on
-        target: subnet3
-      - type: cloudify.relationships.depends_on
-        target: security_group
-      - type: cloudify.relationships.depends_on
-        target: igw
     interfaces:
       cloudify.interfaces.lifecycle:
         start:
@@ -197,13 +173,29 @@ node_templates:
                 ConnectionSettings:
                   IdleTimeout: 120
 
+  classic_elb:
+    type: cloudify.nodes.aws.elb.Classic.LoadBalancer
+    properties:
+      resource_config:
+        LoadBalancerName: myclassicelb
+        Listeners: { get_property: [ classic_elb_listener, resource_config, Listeners ] }
+      client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: subnet1
+      - type: cloudify.relationships.depends_on
+        target: subnet2
+      - type: cloudify.relationships.depends_on
+        target: security_group
+      - type: cloudify.relationships.depends_on
+        target: igw
+
   security_group:
     type: cloudify.nodes.aws.ec2.SecurityGroup
     properties:
       resource_config:
-        kwargs:
-          GroupName: SecurityGroup1
-          Description: Example Security Group 1
+        GroupName: SecurityGroup1
+        Description: Example Security Group 1
       client_config: *client_config
       Tags:
         - Key: Name
@@ -216,9 +208,8 @@ node_templates:
     type: cloudify.nodes.aws.ec2.Subnet
     properties:
       resource_config:
-        kwargs:
-          CidrBlock: '10.0.1.0/24'
-          AvailabilityZone: { concat: [ { get_input: aws_region_name }, 'b' ] }
+        CidrBlock: '10.0.1.0/24'
+        AvailabilityZone: { concat: [ { get_input: aws_region_name }, 'a' ] }
       client_config: *client_config
       Tags:
       - Key: Name
@@ -230,29 +221,13 @@ node_templates:
   subnet2:
     type: cloudify.nodes.aws.ec2.Subnet
     properties:
-      resource_config:
-        kwargs:
-          CidrBlock: '10.0.2.0/24'
-          AvailabilityZone: { concat: [ { get_input: aws_region_name }, 'c' ] }
       client_config: *client_config
+      resource_config:
+        CidrBlock: '10.0.2.0/24'
+        AvailabilityZone: { concat: [ { get_input: aws_region_name }, 'c' ] }
       Tags:
         - Key: Name
           Value: MySubnet2
-    relationships:
-      - type: cloudify.relationships.depends_on
-        target: vpc
-
-  subnet3:
-    type: cloudify.nodes.aws.ec2.Subnet
-    properties:
-      resource_config:
-        kwargs:
-          CidrBlock: '10.0.3.0/24'
-          AvailabilityZone: { concat: [ { get_input: aws_region_name }, 'd' ] }
-      client_config: *client_config
-      Tags:
-        - Key: Name
-          Value: MySubnet3
     relationships:
       - type: cloudify.relationships.depends_on
         target: vpc
@@ -273,10 +248,9 @@ node_templates:
   vpc:
     type: cloudify.nodes.aws.ec2.Vpc
     properties:
-      resource_config:
-        kwargs:
-          CidrBlock: '10.0.0.0/16'
       client_config: *client_config
+      resource_config:
+        CidrBlock: '10.0.0.0/16'
       Tags:
         - Key: Name
           Value: MyVPC

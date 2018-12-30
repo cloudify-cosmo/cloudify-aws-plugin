@@ -102,8 +102,8 @@ def prepare(ctx, resource_config, **_):
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS ELB listener'''
     # Build API params
-    params = \
-        ctx.instance.runtime_properties['resource_config'] or resource_config
+    params = utils.clean_params(
+        dict() if not resource_config else resource_config.copy())
 
     if LB_ARN not in params:
         targs = \

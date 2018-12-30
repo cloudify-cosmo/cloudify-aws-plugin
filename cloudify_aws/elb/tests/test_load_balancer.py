@@ -48,14 +48,14 @@ class TestELBLoadBalancer(TestBase):
             'describe_load_balancers',
             side_effect=effect)
         res = self.load_balancer.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
         value = []
         self.load_balancer.client = self.make_client_function(
             'describe_load_balancers',
             return_value=value)
         res = self.load_balancer.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
         value = {'LoadBalancers': ['test']}
         self.load_balancer.client = self.make_client_function(
@@ -132,7 +132,7 @@ class TestELBLoadBalancer(TestBase):
         with patch(PATCH_PREFIX + 'utils') as utils:
             utils.find_rels_by_node_type = self.mock_return([ctx_target])
             load_balancer.modify(ctx, iface, config)
-            self.assertNotIn(
+            self.assertIn(
                 LB_ATTR,
                 ctx.instance.runtime_properties['resource_config'])
 
@@ -140,7 +140,7 @@ class TestELBLoadBalancer(TestBase):
         with patch(PATCH_PREFIX + 'utils') as utils:
             utils.find_rels_by_node_type = self.mock_return([ctx_target])
             load_balancer.modify(ctx, iface, config)
-            self.assertNotIn(
+            self.assertIn(
                 LB_ATTR,
                 ctx.instance.runtime_properties['resource_config'])
 

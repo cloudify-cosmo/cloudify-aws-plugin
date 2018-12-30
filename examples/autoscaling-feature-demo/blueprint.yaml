@@ -16,13 +16,13 @@ inputs:
 
   aws_region_name:
     type: string
-    default: { get_secret: ec2_region_name }
+    default: us-west-1
 
-  launch_configuration_ami:
+  ami:
     type: string
-    default: ami-e1496384
+    default: ami-65e0e305
 
-  launch_configuration_instance_type:
+  instance_type:
     type: string
     default: t2.micro
 
@@ -39,9 +39,8 @@ node_templates:
     type: cloudify.nodes.aws.autoscaling.LifecycleHook
     properties:
       resource_config:
-        kwargs:
-          LifecycleHookName: pmcfy_lh
-          LifecycleTransition: autoscaling:EC2_INSTANCE_LAUNCHING
+        LifecycleHookName: pmcfy_lh
+        LifecycleTransition: autoscaling:EC2_INSTANCE_LAUNCHING
       client_config: *client_config
     relationships:
       - type: cloudify.relationships.depends_on
@@ -51,11 +50,10 @@ node_templates:
     type: cloudify.nodes.aws.autoscaling.Policy
     properties:
       resource_config:
-        kwargs:
-          PolicyName: pmcfy_asp
-          PolicyType: SimpleScaling
-          AdjustmentType: ChangeInCapacity
-          ScalingAdjustment: 1
+        PolicyName: pmcfy_asp
+        PolicyType: SimpleScaling
+        AdjustmentType: ChangeInCapacity
+        ScalingAdjustment: 1
       client_config: *client_config
     relationships:
       - type: cloudify.relationships.depends_on
@@ -64,16 +62,15 @@ node_templates:
   pmcfy_as:
     type: cloudify.nodes.aws.autoscaling.Group
     properties:
-      resource_id: pmcfy_as
       resource_config:
+        AutoScalingGroupName: pmcfy_as
+        MinSize: 2
+        MaxSize: 4
         kwargs:
-          AutoScalingGroupName: pmcfy_as
-          MinSize: 2
-          MaxSize: 4
           DesiredCapacity: 2
           DefaultCooldown: 20
           AvailabilityZones:
-            - { concat: [ { get_input: aws_region_name }, 'a' ] }
+          - { concat: [ { get_input: aws_region_name }, 'a' ] }
       client_config: *client_config
     relationships:
       - type: cloudify.relationships.depends_on
@@ -90,8 +87,7 @@ node_templates:
     type: cloudify.nodes.aws.autoscaling.LaunchConfiguration
     properties:
       resource_config:
-        kwargs:
-          ImageId: { get_input: launch_configuration_ami }
-          InstanceType: { get_input: launch_configuration_instance_type }
-          LaunchConfigurationName: pmcfy_lc
+        LaunchConfigurationName: pmcfy_lc
+        ImageId: { get_input: ami }
+        InstanceType: { get_input: instance_type }
       client_config: *client_config

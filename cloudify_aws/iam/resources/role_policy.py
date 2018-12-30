@@ -20,7 +20,7 @@
 from json import dumps as json_dumps
 
 # Cloudify
-from cloudify_aws.common import decorators, utils
+from cloudify_aws.common import decorators, utils, constants as CTS
 from cloudify_aws.iam import IAMBase
 
 RESOURCE_TYPE = 'IAM Role Policy'
@@ -67,8 +67,8 @@ class IAMRolePolicy(IAMBase):
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS IAM Role Policy'''
     # Build API params
-    params = \
-        dict() if not resource_config else resource_config.copy()
+    params = utils.clean_params(
+        dict() if not resource_config else resource_config.copy())
     resource_id = \
         utils.get_resource_id(
             ctx.node,
@@ -113,6 +113,7 @@ def delete(ctx, iface, resource_config, **_):
     if not policy_name:
         params[RESOURCE_NAME] = \
             ctx.node.properties.get('resource_id') or \
+            ctx.instance.runtime_properties[CTS.EXTERNAL_RESOURCE_ID] or \
             ctx.instance.id
 
     iface.delete(params)

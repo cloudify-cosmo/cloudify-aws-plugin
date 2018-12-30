@@ -21,6 +21,7 @@ from integration_tests.tests import utils as test_utils
 PLUGIN_NAME = 'cloudify-aws-plugin'
 
 S3_BLUEPRINT_ID = 's3_blueprint'
+DYNAMODB_BLUEPRINT_ID = 'dynamodb_blueprint'
 SNS_BLUEPRINT_ID = 'sns_blueprint'
 CFN_BLUEPRINT_ID = 'rds_cloudformation_blueprint'
 AUTO_SCALING_BLUEPRINT_ID = 'autoscaling_blueprint'
@@ -90,6 +91,22 @@ class AWSPluginTestCase(PluginsTest):
         # Trigger build for s3 example
         self._deploy_aws_example(blueprint_id, blueprint_path)
 
+    def check_dynamodb(self):
+
+        # Before trigger DynamoDB deployment, it is required to push the a clean the
+        # deployment which should be called after tearDown on
+        # test failure or success.
+        self.addCleanup(self.cleanup_deployment, DYNAMODB_BLUEPRINT_ID)
+
+        # Blueprint Id
+        blueprint_id = DYNAMODB_BLUEPRINT_ID
+
+        # Blueprint path
+        blueprint_path = 'examples/dynamodb-feature-demo/blueprint.yaml'
+
+        # Trigger build for dynamo example
+        self._deploy_aws_example(blueprint_id, blueprint_path)
+
     def check_sns(self):
 
         # Before trigger sns deployment we need to handle cleanup  method
@@ -157,3 +174,6 @@ class AWSPluginTestCase(PluginsTest):
 
         # Deploy AutoScaling example
         self.check_autoscaling()
+
+        # Deploy DynamoDB example.
+        self.check_dynamodb()

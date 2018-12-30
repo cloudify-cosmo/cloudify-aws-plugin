@@ -132,8 +132,8 @@ def create(ctx, iface, resource_config, **_):
     """Creates an AWS ELB classic load balancer"""
 
     # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
+    params = utils.clean_params(
+        dict() if not resource_config else resource_config.copy())
     resource_id = \
         iface.resource_id or \
         utils.get_resource_id(
@@ -169,9 +169,13 @@ def create(ctx, iface, resource_config, **_):
             SECGROUP_TYPE_DEPRECATED,
             secgroups_list)
 
+    create_response = iface.create(params)
+
     # Actually create the resource
     ctx.instance.runtime_properties['DNSName'] = \
-        iface.create(params)['DNSName']
+        create_response['DNSName']
+    ctx.instance.runtime_properties['create_response'] = \
+        create_response
 
 
 @decorators.aws_resource(ELBClassicLoadBalancer,
@@ -183,6 +187,9 @@ def start(ctx, iface, resource_config, **_):
     # Create a copy of the resource config for clean manipulation.
     params = \
         dict() if not resource_config else resource_config.copy()
+
+    if not params:
+        return
 
     lb = params.get(RESOURCE_NAME)
     if not lb:

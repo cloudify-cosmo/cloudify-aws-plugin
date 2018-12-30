@@ -79,7 +79,8 @@ def create(ctx, iface, resource_config, **_):
     '''Creates an AWS IAM Policy'''
     # Build API params
     params = \
-        dict() if not resource_config else resource_config.copy()
+        utils.clean_params(
+            dict() if not resource_config else resource_config.copy())
     resource_id = \
         utils.get_resource_id(
             ctx.node,

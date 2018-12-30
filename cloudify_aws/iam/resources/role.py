@@ -98,8 +98,8 @@ class IAMRole(IAMBase):
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS IAM Role'''
     # Build API params
-    params = \
-        dict() if not resource_config else resource_config.copy()
+    params = utils.clean_params(
+        dict() if not resource_config else resource_config.copy())
     resource_id = \
         utils.get_resource_id(
             ctx.node,
@@ -114,6 +114,7 @@ def create(ctx, iface, resource_config, **_):
             isinstance(params['AssumeRolePolicyDocument'], dict):
         params['AssumeRolePolicyDocument'] = \
             json_dumps(params['AssumeRolePolicyDocument'])
+
     # Actually create the resource
     create_response = iface.create(params)
     resource_id = create_response['Role']['RoleName']
