@@ -31,9 +31,6 @@ node_templates:
   elasticip_vpc_requster:
     type: cloudify.nodes.aws.ec2.ElasticIP
     properties:
-      resource_config:
-        kwargs:
-          Domain: 'vpc'
       client_config: *client_config
     relationships:
       - type: cloudify.relationships.connected_to
@@ -301,9 +298,8 @@ node_templates:
     type: cloudify.nodes.aws.ec2.SecurityGroup
     properties:
       resource_config:
-        kwargs:
-          GroupName: SecurityGroup2
-          Description: Example Security Group 2
+        GroupName: SecurityGroup2
+        Description: Example Security Group 2
       client_config: *client_config
     relationships:
     - type: cloudify.relationships.depends_on
@@ -313,9 +309,8 @@ node_templates:
     type: cloudify.nodes.aws.ec2.SecurityGroup
     properties:
       resource_config:
-        kwargs:
-          GroupName: SecurityGroup1
-          Description: Example Security Group 1
+        GroupName: SecurityGroup1
+        Description: Example Security Group 1
       client_config: *client_config
     relationships:
     - type: cloudify.relationships.depends_on
@@ -325,8 +320,7 @@ node_templates:
     type: cloudify.nodes.aws.ec2.Subnet
     properties:
       resource_config:
-        kwargs:
-          CidrBlock: '10.0.0.0/24'
+        CidrBlock: '10.0.0.0/24'
       client_config: *client_config
     relationships:
       - type: cloudify.relationships.depends_on
@@ -370,21 +364,14 @@ node_templates:
   vpc_requester:
     type: cloudify.nodes.aws.ec2.Vpc
     properties:
+      resource_config:
+        CidrBlock: '10.0.0.0/16'
       client_config: *client_config
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        create:
-          inputs:
-            resource_config:
-              CidrBlock: '10.0.0.0/16'
 
   # Accepter VPC Config
   elasticip_vpc_accepter:
     type: cloudify.nodes.aws.ec2.ElasticIP
     properties:
-      resource_config:
-        kwargs:
-          Domain: 'vpc'
       client_config: *client_config
     relationships:
       - type: cloudify.relationships.connected_to
@@ -652,9 +639,8 @@ node_templates:
     type: cloudify.nodes.aws.ec2.SecurityGroup
     properties:
       resource_config:
-        kwargs:
-          GroupName: SecurityGroup2
-          Description: Example Security Group 2
+        GroupName: SecurityGroup2
+        Description: Example Security Group 2
       client_config: *client_config
     relationships:
     - type: cloudify.relationships.depends_on
@@ -664,9 +650,8 @@ node_templates:
     type: cloudify.nodes.aws.ec2.SecurityGroup
     properties:
       resource_config:
-        kwargs:
-          GroupName: SecurityGroup1
-          Description: Example Security Group 1
+        GroupName: SecurityGroup1
+        Description: Example Security Group 1
       client_config: *client_config
     relationships:
     - type: cloudify.relationships.depends_on
@@ -676,8 +661,7 @@ node_templates:
     type: cloudify.nodes.aws.ec2.Subnet
     properties:
       resource_config:
-        kwargs:
-          CidrBlock: '172.32.0.0/16'
+        CidrBlock: '172.32.0.0/16'
       client_config: *client_config
     relationships:
       - type: cloudify.relationships.depends_on
@@ -721,13 +705,9 @@ node_templates:
   vpc_accepter:
     type: cloudify.nodes.aws.ec2.Vpc
     properties:
+      resource_config:
+        CidrBlock: '172.32.0.0/16'
       client_config: *client_config
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        create:
-          inputs:
-            resource_config:
-              CidrBlock: '172.32.0.0/16'
 
   # Peering Between Two VPC (Requester And Accepter)
   vpc_peering:

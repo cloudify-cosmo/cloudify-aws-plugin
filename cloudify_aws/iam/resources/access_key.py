@@ -28,7 +28,8 @@ RESOURCE_TYPE = 'IAM User Access Key'
 def configure(ctx, resource_config, **_):
     '''Configures an AWS IAM Access Key'''
     # Save the parameters
-    ctx.instance.runtime_properties['resource_config'] = resource_config
+    ctx.instance.runtime_properties['resource_config'] = \
+        utils.clean_params(resource_config)
 
 
 @decorators.aws_relationship(resource_type=RESOURCE_TYPE)

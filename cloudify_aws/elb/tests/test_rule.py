@@ -114,8 +114,7 @@ class TestELBRule(TestBase):
             self.assertTrue(iface.create.called)
             self.assertEqual(
                 config,
-                {'ListenerArn': 'ext_id', 'Actions':
-                 [{'TargetGroupArn': 'ext_id'}]})
+                {'Actions': [{'TargetGroupArn': 'elb'}]})
 
     def test_delete(self):
         iface = MagicMock()

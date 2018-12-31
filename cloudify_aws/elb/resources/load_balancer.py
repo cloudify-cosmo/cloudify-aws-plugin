@@ -63,10 +63,11 @@ class ELBLoadBalancer(ELBBase):
             resources = self.client.describe_load_balancers(
                 Names=[self.resource_id])
         except (ClientError, ParamValidationError) as e:
-            self.logger.warn('Igoring error: {0}'.format(str(e)))
+            self.logger.warn('Ignoring error: {0}'.format(str(e)))
         else:
-            return None \
-                if not resources else resources['LoadBalancers'][0]
+            if resources:
+                return resources['LoadBalancers'][0]
+        return {}
 
     @property
     def status(self):
@@ -90,8 +91,6 @@ class ELBLoadBalancer(ELBBase):
         .. note:
             See http://bit.ly/2pwRpY9 for config details.
         '''
-        if LB_ARN not in params.keys():
-            params.update({LB_ARN: self.properties.get(LB_ARN)})
         self.logger.debug('Deleting %s with parameters: %s'
                           % (self.type_name, params))
         self.client.delete_load_balancer(**params)
@@ -123,14 +122,14 @@ def prepare(ctx, resource_config, **_):
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS ELB load balancer'''
     # Build API params
-    params = \
-        dict() if not resource_config else resource_config.copy()
+    params = utils.clean_params(
+        dict() if not resource_config else resource_config.copy())
     resource_id = \
+        params.get('Name') or \
         iface.resource_id or \
         utils.get_resource_id(
             ctx.node,
             ctx.instance,
-            params.get('Name'),
             use_instance_id=True)
     params['Name'] = resource_id
     utils.update_resource_id(ctx.instance, resource_id)
@@ -185,9 +184,8 @@ def create(ctx, iface, resource_config, **_):
                          RESOURCE_TYPE)
 def modify(ctx, iface, resource_config, **_):
     '''modify an AWS ELB load balancer attributes'''
-    params = \
-        ctx.instance.runtime_properties['resource_config'] \
-        or resource_config
+    params = utils.clean_params(
+        dict() if not resource_config else resource_config.copy())
     if LB_ARN not in params.keys():
         params.update(
             {LB_ARN: ctx.instance.runtime_properties.get(
@@ -206,7 +204,11 @@ def modify(ctx, iface, resource_config, **_):
 
 @decorators.aws_resource(ELBLoadBalancer, RESOURCE_TYPE,
                          ignore_properties=True)
-@decorators.wait_for_delete(status_pending=[])
+@decorators.wait_for_delete(status_pending=['active'])
 def delete(ctx, iface, resource_config, **_):
     '''Deletes an AWS ELB load balancer'''
-    iface.delete(resource_config)
+    params = utils.clean_params(
+        dict() if not resource_config else resource_config.copy())
+    if LB_ARN not in params.keys():
+        params.update({LB_ARN: iface.properties.get(LB_ARN)})
+    iface.delete(params)

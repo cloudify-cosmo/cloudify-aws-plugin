@@ -173,9 +173,8 @@ class TestLambdaFunction(TestBase):
             utils.find_rel_by_node_type = MagicMock(return_value=subnettarget)
             utils.get_resource_id = MagicMock(return_value='Role')
             function.create(ctx, fun, resource_config)
-            self.assertEqual('test', resource_config['Code']['ZipFile'])
-            self.assertEqual({'SubnetIds': ['Role'],
-                              'SecurityGroupIds': ['Role']},
+            self.assertEqual(True, resource_config['Code']['ZipFile'])
+            self.assertEqual({'SubnetIds': []},
                              resource_config['VpcConfig'])
 
     def test_create_with_download(self):
@@ -208,9 +207,8 @@ class TestLambdaFunction(TestBase):
             utils.find_rel_by_node_type = MagicMock(return_value=subnettarget)
             utils.get_resource_id = MagicMock(return_value='Role')
             function.create(ctx, fun, resource_config)
-            self.assertEqual('test', resource_config['Code']['ZipFile'])
-            self.assertEqual({'SubnetIds': ['Role'],
-                              'SecurityGroupIds': ['Role']},
+            self.assertEqual(True, resource_config['Code']['ZipFile'])
+            self.assertEqual({'SubnetIds': []},
                              resource_config['VpcConfig'])
 
     def test_delete(self):

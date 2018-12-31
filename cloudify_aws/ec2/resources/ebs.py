@@ -162,8 +162,8 @@ def create(ctx, iface, resource_config, **_):
     :param _:
     :return:
     """
-    params = \
-        dict() if not resource_config else resource_config.copy()
+    params = utils.clean_params(
+        dict() if not resource_config else resource_config.copy())
 
     # Create ebs resource
     create_response = iface.create(params)

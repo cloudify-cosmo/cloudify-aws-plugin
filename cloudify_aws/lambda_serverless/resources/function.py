@@ -25,6 +25,7 @@ from cloudify_aws.lambda_serverless import LambdaBase
 # Boto
 from botocore.exceptions import ClientError
 
+RESOURCE_ID = 'FunctionName'
 RESOURCE_TYPE = 'Lambda Function'
 SUBNET_TYPE = 'cloudify.nodes.aws.ec2.Subnet'
 SUBNET_TYPE_DEPRECATED = 'cloudify.aws.nodes.Subnet'
@@ -94,8 +95,10 @@ class LambdaFunction(LambdaBase):
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS Lambda Function'''
     # Build API params
-    params = resource_config
-    params.update(dict(FunctionName=iface.resource_id))
+    params = utils.clean_params(
+        dict() if not resource_config else resource_config.copy())
+    if RESOURCE_ID not in params:
+        params[RESOURCE_ID] = iface.resource_id
     vpc_config = params.get('VpcConfig', dict())
     # Attach a Subnet Group if it exists
     subnet_ids = vpc_config.get('SubnetIds', list())

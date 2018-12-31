@@ -125,8 +125,8 @@ class IAMGroup(IAMBase):
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS IAM Group'''
     # Build API params
-    params = \
-        dict() if not resource_config else resource_config.copy()
+    params = utils.clean_params(
+        dict() if not resource_config else resource_config.copy())
     resource_id = \
         iface.resource_id or \
         utils.get_resource_id(

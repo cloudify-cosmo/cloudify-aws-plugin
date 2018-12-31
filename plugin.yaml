@@ -2,9 +2,9 @@ plugins:
 
   aws:
     executor: central_deployment_agent
-    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/2.0.0-build.zip
+    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/2.0.0.dev0.zip
     package_name: cloudify-aws-plugin
-    package_version: '2.0.0'
+    package_version: '2.0.0.dev0'
 
 data_types:
 
@@ -65,12 +65,49 @@ data_types:
 
   cloudify.datatypes.aws.dynamodb.Table.config:
     properties:
+      TableName:
+        description: The name of the table to create.
+        type: string
+        required: true
+      AttributeDefinitions:
+        description: An array of attributes that describe the key schema (dict) for the table and indexes. Keys are AttributeName, AttributeType.
+        default: []
+      KeySchema:
+        description: Specifies the attributes that make up the primary key for a table or an index. The attributes in KeySchema must also be defined in the AttributeDefinitions array. For more information, see Data Model in the Amazon DynamoDB Developer Guide .
+        default: []
+      LocalSecondaryIndexes:
+        description: One or more local secondary indexes (the maximum is five) to be created on the table. Each index is scoped to a given partition key value. There is a 10 GB size limit per partition key value; otherwise, the size of a local secondary index is unconstrained.
+        default: []
+      GlobalSecondaryIndexes:
+        description: One or more global secondary indexes (the maximum is five) to be created on the table..
+        default: []
+      BillingMode:
+        description: Controls how you are charged for read and write throughput and how you manage capacity. This setting can be changed later. Either 'PROVISIONED' or 'PAY_PER_REQUEST'.
+        type: string
+        required: false
+      ProvisionedThroughput:
+        description: Represents the provisioned throughput settings for a specified table or index. The settings can be modified using the UpdateTable operation.
+        default: {}
+      StreamSpecification:
+        description: The settings for DynamoDB Streams on the table.
+        default: {}
+      SSESpecification:
+        description: Represents the settings used to enable server-side encryption.
+        default: {}
       kwargs:
         description: http://boto3.readthedocs.io/en/latest/reference/services/dynamodb.html#DynamoDB.Client.create_table
         default: {}
 
   cloudify.datatypes.aws.iam.Group.config:
     properties:
+      Path:
+        description: The path to the group. For more information about paths, see IAM Identifiers in the IAM User Guide.
+        type: string
+        required: false
+      GroupName:
+        description: The name of the group to create. Do not include the path in this value.
+        type: string
+        required: true
       kwargs:
         description: http://boto3.readthedocs.io/en/latest/reference/services/iam.html#IAM.Client.create_group
         default: {}
@@ -83,42 +120,132 @@ data_types:
 
   cloudify.datatypes.aws.iam.LoginProfile.config:
     properties:
+      UserName:
+        type: string
+        description: The name of the IAM user that the new key will belong to.
+        required: false
+      Password:
+        type: string
+        description: The new password for the user.
+        required: false
+      PasswordResetRequired:
+        type: boolean
+        description: Specifies whether the user is required to set a new password on next sign-in.
+        required: false
       kwargs:
         description: http://boto3.readthedocs.io/en/latest/reference/services/iam.html#IAM.Client.create_login_profile
         default: {}
 
   cloudify.datatypes.aws.iam.User.config:
     properties:
+      UserName:
+        type: string
+        description: The name of the IAM user that the new key will belong to.
+        required: false
+      Path:
+        description: The path to the user. For more information about paths, see IAM Identifiers in the IAM User Guide.
+        type: string
+        required: false
+      PermissionsBoundary:
+        description: The ARN of the policy that is used to set the permissions boundary for the user.
+        type: string
+        required: false
+      Tags:
+        description: A list of tags that you want to attach to the newly created user. Each tag consists of a key name and an associated value. For more information about tagging, see Tagging IAM Identities in the IAM User Guide.
+        default: []
       kwargs:
         description: http://boto3.readthedocs.io/en/latest/reference/services/iam.html#IAM.Client.create_user
         default: {}
 
   cloudify.datatypes.aws.iam.Role.config:
     properties:
+      AssumeRolePolicyDocument:
+        description: The trust relationship policy document that grants an entity permission to assume the role.
+        type: string
+        required: true
+      RoleName:
+        description: The name of the role to create.
+        type: string
+        required: true
+      Path:
+        description: The path to the role.
+        type: string
+        required: false
       kwargs:
         description: http://boto3.readthedocs.io/en/latest/reference/services/iam.html#IAM.Client.create_role
         default: {}
 
   cloudify.datatypes.aws.iam.RolePolicy.config:
     properties:
+      RoleName:
+        type: string
+        description: The name of the role to associate the policy with. Required if no relationship to a Role was provided.
+        required: false
+      PolicyName:
+        type: string
+        description: The name of the policy document.
+        required: false
+      PolicyDocument:
+        type: string
+        description: The policy document.
+        required: false
       kwargs:
         description: http://boto3.readthedocs.io/en/latest/reference/services/iam.html#IAM.Client.put_role_policy
         default: {}
 
   cloudify.datatypes.aws.iam.InstanceProfile.config:
     properties:
+      InstanceProfileName:
+        type: string
+        description: The name of the instance profile to create.
+        required: true
+      Path:
+        type: string
+        description: The path to the instance profile.
+        required: true
       kwargs:
         description: http://boto3.readthedocs.io/en/latest/reference/services/iam.html#IAM.Client.create_instance_profile
         default: {}
 
   cloudify.datatypes.aws.iam.Policy.config:
     properties:
+      PolicyName:
+        type: string
+        description: The friendly name of the policy.
+        required: true
+      Path:
+        type: string
+        description: The path to the policy.
+        required: true
+      PolicyDocument:
+        type: string
+        description: The policy document.
+        required: true
+      Description:
+        type: string
+        description: A friendly description of the policy.
+        required: false
       kwargs:
         description: http://boto3.readthedocs.io/en/latest/reference/services/iam.html#IAM.Client.create_policy
         default: {}
 
   cloudify.datatypes.aws.lambda.Function.config:
     properties:
+      FunctionName:
+        type: string
+        description: The name of the Lambda function.
+        required: true
+      Runtime:
+        type: string
+        description: The runtime version for the function.
+        required: true
+      Handler:
+        type: string
+        description: The name of the method within your code that Lambda calls to execute your function.
+        required: true
+      Code:
+        description: The code for the function.
+        required: true
       kwargs:
         description: http://boto3.readthedocs.io/en/latest/reference/services/lambda.html#Lambda.Client.create_function
         default: {}
@@ -131,6 +258,22 @@ data_types:
 
   cloudify.datatypes.aws.lambda.Permission.config:
     properties:
+      FunctionName:
+        type: string
+        description: The name of the Lambda function. Required. May also be provided from a relationship to a cloudify.nodes.aws.lambda.Function.
+        required: false
+      StatementId:
+        type: string
+        description: A unique statement identifier.
+        required: true
+      Action:
+        type: string
+        description: The AWS Lambda action you want to allow in this statement.
+        required: true
+      Principal:
+        type: string
+        description: The principal who is getting this permission.
+        required: true
       kwargs:
         description: http://boto3.readthedocs.io/en/latest/reference/services/lambda.html#Lambda.Client.add_permission
         default: {}
@@ -191,50 +334,170 @@ data_types:
 
   cloudify.datatypes.aws.elb.LoadBalancer.config:
     properties:
+      Name:
+        type: string
+        description: The name of the load balancer.
+        required: true
       kwargs:
         description: http://boto3.readthedocs.io/en/latest/reference/services/elbv2.html#ElasticLoadBalancingv2.Client.create_load_balancer
         default: {}
 
-  cloudify.datatypes.aws.elb.Classic.LoadBalancer.config:
+  cloudify.datatypes.aws.elb.TargetGroup.config:
     properties:
+      Name:
+        type: string
+        description: The name of the target group.
+        required: true
+      Protocol:
+        type: string
+        description: The protocol to use for routing traffic to the targets.
+        required: false
+      Port:
+        type: string
+        description: The port on which the targets receive traffic.
+        required: false
+      HealthCheckProtocol:
+        type: string
+        description: The protocol the load balancer uses when performing health checks on targets.
+        required: false
+      HealthCheckPort:
+        type: string
+        description: The port the load balancer uses when performing health checks on targets..
+        required: false
       kwargs:
-        description: http://boto3.readthedocs.io/en/latest/reference/services/elb.html#ElasticLoadBalancing.Client.create_load_balancer
-        default: {}
-
-  cloudify.datatypes.aws.elb.Classic.HealthCheck.config:
-    properties:
-      kwargs:
-        description: http://boto3.readthedocs.io/en/latest/reference/services/elb.html#ElasticLoadBalancing.Client.configure_health_check
-        default: {}
-
-  cloudify.datatypes.aws.elb.Classic.Listener.config:
-    properties:
-      kwargs:
-        description: http://boto3.readthedocs.io/en/latest/reference/services/elb.html#ElasticLoadBalancing.Client.create_load_balancer_listeners
-        default: {}
-
-  cloudify.datatypes.aws.elb.Classic.Policy.config:
-    properties:
-      kwargs:
-        description: http://boto3.readthedocs.io/en/latest/reference/services/elb.html#ElasticLoadBalancing.Client.create_load_balancer_policy
+        description: http://boto3.readthedocs.io/en/latest/reference/services/elbv2.html#ElasticLoadBalancingv2.Client.create_target_group
         default: {}
 
   cloudify.datatypes.aws.elb.Listener.config:
     properties:
+      Protocol:
+        type: string
+        description: The protocol for connections from clients to the load balancer. For Application Load Balancers, the supported protocols are HTTP and HTTPS. For Network Load Balancers, the supported protocol is TCP.
+        required: true
+      Port:
+        type: integer
+        description: The port on which the load balancer is listening.
+        required: true
+      DefaultActions:
+        description: The actions for the default rule.
+        default: []
       kwargs:
         description: http://boto3.readthedocs.io/en/latest/reference/services/elbv2.html#ElasticLoadBalancingv2.Client.create_listener
         default: {}
 
   cloudify.datatypes.aws.elb.Rule.config:
     properties:
+      Conditions:
+        description: The conditions. Each condition specifies a field name and a single value.
+        default: []
+      Priority:
+        type: integer
+        description: The rule priority. A listener can't have multiple rules with the same priority.
+        required: true
+      Actions:
+        description: The actions. Each rule must include exactly one of the following types of actions - forward, fixed-response, or redirect.
+        default: []
       kwargs:
         description: http://boto3.readthedocs.io/en/latest/reference/services/elbv2.html#ElasticLoadBalancingv2.Client.create_rule
         default: {}
 
-  cloudify.datatypes.aws.elb.TargetGroup.config:
+  cloudify.datatypes.aws.elb.Classic.LoadBalancer.config:
     properties:
+      LoadBalancerName:
+        type: string
+        description: The name of the load balancer.
+        required: true
+      Listeners:
+        description: The listeners.
+        default: {}
       kwargs:
-        description: http://boto3.readthedocs.io/en/latest/reference/services/elbv2.html#ElasticLoadBalancingv2.Client.create_target_group
+        description: http://boto3.readthedocs.io/en/latest/reference/services/elb.html#ElasticLoadBalancing.Client.create_load_balancer
+        default: {}
+
+  cloudify.datatypes.aws.elb.Classic.Listener.config:
+    properties:
+      LoadBalancerName:
+        type: string
+        description: The name of the load balancer.
+        required: false
+      Listeners:
+        description: The listeners.
+        default: {}
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/elb.html#ElasticLoadBalancing.Client.create_load_balancer_listeners
+        default: {}
+
+  cloudify.datatypes.aws.elb.Classic.healthCheck.healthCheck:
+    properties:
+      Target:
+        type: string
+        required: true
+        description: The instance being checked. The protocol is either TCP, HTTP, HTTPS, or SSL. The range of valid ports is one (1) through 65535.
+      Interval:
+        type: integer
+        required: true
+        description: The approximate interval, in seconds, between health checks of an individual instance.
+      Timeout:
+        type: integer
+        required: true
+        description: The amount of time, in seconds, during which no response means a failed health check.
+      UnhealthyThreshold:
+        type: integer
+        required: true
+        description: The number of consecutive health check failures required before moving the instance to the Unhealthy state.
+      HealthyThreshold:
+        type: integer
+        required: true
+        description: The number of consecutive health checks successes required before moving the instance to the Healthy state.
+
+  cloudify.datatypes.aws.elb.Classic.HealthCheck.config:
+    properties:
+      LoadBalancerName:
+        type: string
+        description: The name of the load balancer.
+        required: false
+      HealthCheck:
+        type: cloudify.datatypes.aws.elb.Classic.healthCheck.healthCheck
+        required: true
+        description: The configuration information.
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/elb.html#ElasticLoadBalancing.Client.configure_health_check
+        default: {}
+
+  cloudify.datatypes.aws.elb.Classic.Policy.config:
+    properties:
+      LoadBalancerName:
+        type: string
+        description: The name of the load balancer.
+        required: false
+      PolicyName:
+        type: string
+        required: true
+        description: The name of the load balancer policy to be created. This name must be unique within the set of policies for this load balancer.
+      PolicyTypeName:
+        type: string
+        required: true
+        description: The name of the base policy type. To get the list of policy types, use DescribeLoadBalancerPolicyTypes.
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/elb.html#ElasticLoadBalancing.Client.create_load_balancer_policy
+        default: {}
+
+  cloudify.datatypes.aws.elb.Classic.StickinessPolicy.config:
+    properties:
+      LoadBalancerName:
+        type: string
+        description: The name of the load balancer.
+        required: false
+      PolicyName:
+        type: string
+        required: true
+        description: The name of the load balancer policy to be created. This name must be unique within the set of policies for this load balancer.
+      CookieExpirationPeriod:
+        type: integer
+        required: false
+        description: The time period, in seconds, after which the cookie should be considered stale.
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/elb.html#ElasticLoadBalancing.Client.create_lb_cookie_stickiness_policy
         default: {}
 
   cloudify.datatypes.aws.SQS.Queue.config:
@@ -287,6 +550,10 @@ data_types:
 
   cloudify.datatypes.aws.ec2.Vpc.config:
     properties:
+      CidrBlock:
+        type: string
+        description: The IPv4 network range for the VPC, in CIDR notation.
+        required: true
       kwargs:
         description: http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.create_vpc
         default: {}
@@ -307,18 +574,45 @@ data_types:
 
   cloudify.datatypes.aws.ec2.Subnet.config:
     properties:
+      AvailabilityZone:
+        type: string
+        description: The Availability Zone for the subnet.
+        required: false
+      CidrBlock:
+        type: string
+        description: The IPv4 network range for the subnet, in CIDR notation.
+        required: true
+      VpcId:
+        type: string
+        description: The ID of the VPC. May be provided via relationship to a VPC type.
+        required: false
       kwargs:
         description: http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.create_subnet
         default: {}
 
   cloudify.datatypes.aws.ec2.SecurityGroup.config:
     properties:
+      Description:
+        type: string
+        description: The description for the security group.
+        required: true
+      GroupName:
+        type: string
+        description:  The name of the security group.
+        required: true
+      VpcId:
+        type: string
+        description:  The ID of the VPC. Required for EC2-VPC.
+        required: false
       kwargs:
         description: http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.create_security_group
         default: {}
 
   cloudify.datatypes.aws.ec2.SecurityGroupRules.config:
     properties:
+      IpPermissions:
+        description: One or more sets of IP permissions.
+        default: []
       kwargs:
         description: >
           http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.authorize_security_group_ingress
@@ -395,6 +689,10 @@ data_types:
 
   cloudify.datatypes.aws.ec2.ElasticIP.config:
     properties:
+      Domain:
+        type: string
+        description: Set to vpc to allocate the address for use with instances in a VPC, valid values are 'vpc' or 'standard'.
+        default: vpc
       kwargs:
         description: http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.allocate_address
         default: {}
@@ -467,6 +765,14 @@ data_types:
 
   cloudify.datatypes.aws.ec2.EBSVolume.config:
     properties:
+      AvailabilityZone:
+        type: string
+        description: The Availability Zone in which to create the volume.
+        required: true
+      Size:
+        type: integer
+        description: The size of the volume, in GiBs.
+        required: false
       kwargs:
         description: http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.create_volume
         default: {}
@@ -477,26 +783,117 @@ data_types:
         description: http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.attach_volume
         default: {}
 
+  cloudify.datatypes.aws.autoscaling.LaunchTemplate:
+    properties:
+      LaunchTemplateId:
+        type: string
+        required: false
+        description: The ID of the launch template. You must specify either a template ID or a template name.
+      LaunchTemplateName:
+        type: string
+        required: false
+        description: The name of the launch template. You must specify either a template name or a template ID.
+      Version:
+        type: string
+        required: false
+        description: The version number, $Latest , or $Default . If the value is $Latest , Amazon EC2 Auto Scaling selects the latest version of the launch template when launching instances. If the value is $Default , Amazon EC2 Auto Scaling selects the default version of the launch template when launching instances. The default value is $Default.
+
   cloudify.datatypes.aws.autoscaling.Group.config:
     properties:
+      AutoScalingGroupName:
+        type: string
+        required: true
+        description: The name of the Auto Scaling group. This name must be unique within the scope of your AWS account.
+      LaunchConfigurationName:
+        type: string
+        required: false
+        description: The name of the launch configuration. This parameter, a launch template, a mixed instances policy, or an EC2 instance must be specified.
+      LaunchTemplate:
+        type: cloudify.datatypes.aws.autoscaling.LaunchTemplate
+        required: false
+        description: The launch template to use to launch instances. This parameter, a launch configuration, a mixed instances policy, or an EC2 instance must be specified.
+      InstanceId:
+        type: string
+        required: false
+        description: The ID of the instance used to create a launch configuration for the group. This parameter, a launch configuration, a launch template, or a mixed instances policy must be specified.
+      MinSize:
+        type: integer
+        required: true
+        description: The minimum size of the group.
+      MaxSize:
+        type: integer
+        required: true
+        description: The maximum size of the group.
       kwargs:
         description: http://boto3.readthedocs.io/en/latest/reference/services/autoscaling.html#AutoScaling.Client.create_auto_scaling_group
         default: {}
 
   cloudify.datatypes.aws.autoscaling.LaunchConfiguration.config:
     properties:
+      LaunchConfigurationName:
+        type: string
+        required: true
+        description: The name of the launch configuration. This name must be unique within the scope of your AWS account.
+      ImageId:
+        type: string
+        required: false
+        description: The ID of the Amazon Machine Image (AMI) to use to launch your EC2 instances.
+      InstanceType:
+        type: string
+        required: false
+        description: The instance type of the EC2 instance. If you do not specify InstanceId, you must specify InstanceType.
+      InstanceId:
+        type: string
+        required: false
+        description: The ID of the instance to use to create the launch configuration. The new launch configuration derives attributes from the instance, except for the block device mapping. If you do not specify InstanceId , you must specify both ImageId and InstanceType.
+      KeyName:
+        type: string
+        required: false
+        description: The name of the key pair.
       kwargs:
         description: http://boto3.readthedocs.io/en/latest/reference/services/autoscaling.html#AutoScaling.Client.create_launch_configuration
         default: {}
 
   cloudify.datatypes.aws.autoscaling.Policy.config:
     properties:
+      AutoScalingGroupName:
+        type: string
+        required: false
+        description: The name of the Auto Scaling group.
+      PolicyName:
+        type: string
+        required: true
+        description: The name of the policy.
+      PolicyType:
+        type: string
+        required: false
+        description: The policy type. The valid values are SimpleScaling, StepScaling, and TargetTrackingScaling. If the policy type is null, the value is treated as SimpleScaling.
+      AdjustmentType:
+        type: string
+        required: false
+        description: The adjustment type. The valid values are ChangeInCapacity, ExactCapacity, and PercentChangeInCapacity. This parameter is supported if the policy type is SimpleScaling or StepScaling.
+      ScalingAdjustment:
+        type: integer
+        required: false
+        description: The amount by which to scale, based on the specified adjustment type. A positive value adds to the current capacity while a negative number removes from the current capacity.
       kwargs:
         description: http://boto3.readthedocs.io/en/latest/reference/services/autoscaling.html#AutoScaling.Client.put_scaling_policy
         default: {}
 
   cloudify.datatypes.aws.autoscaling.LifecycleHook.config:
     properties:
+      LifecycleHookName:
+        type: string
+        required: true
+        description: The name of the lifecycle hook.
+      AutoScalingGroupName:
+        type: string
+        required: false
+        description: The name of the Auto Scaling group.
+      LifecycleTransition:
+        type: string
+        required: false
+        description: The instance state to which you want to attach the lifecycle hook.
       kwargs:
         description: http://boto3.readthedocs.io/en/latest/reference/services/autoscaling.html#AutoScaling.Client.put_lifecycle_hook
         default: {}
@@ -1450,7 +1847,7 @@ node_types:
           Configuration key-value data to be passed as-is to the corresponding
           Boto3 method. Key names must match the case that Boto3 requires.
         type: cloudify.datatypes.aws.elb.Classic.Policy.config
-        required: false
+        required: true
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
@@ -1465,6 +1862,13 @@ node_types:
 
   cloudify.nodes.aws.elb.Classic.Policy.Stickiness:
     derived_from: cloudify.nodes.aws.elb.Classic.Policy
+    properties:
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.elb.Classic.StickinessPolicy.config
+        required: true
     interfaces:
       cloudify.interfaces.lifecycle:
         configure:

@@ -102,8 +102,8 @@ def prepare(ctx, iface, resource_config, **_):
 @decorators.tag_resources
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS EC2 Vpc'''
-    params = \
-        dict() if not resource_config else resource_config.copy()
+    params = utils.clean_params(
+        dict() if not resource_config else resource_config.copy())
 
     # Actually create the resource
     create_response = iface.create(params)[VPC]

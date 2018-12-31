@@ -56,11 +56,10 @@ node_templates:
     type: cloudify.nodes.aws.lambda.Permission
     properties:
       resource_config:
-        kwargs:
-          FunctionName: { get_attribute: [ lambda_function, aws_resource_arn ] }
-          StatementId: apigateway-id-2
-          Action: !!str lambda:*
-          Principal: !!str apigateway.amazonaws.com
+        FunctionName: { get_attribute: [ lambda_function, aws_resource_arn ] }
+        StatementId: apigateway-id-2
+        Action: !!str lambda:*
+        Principal: !!str apigateway.amazonaws.com
       client_config: *client_config
     relationships:
       - type: cloudify.relationships.aws.lambda.permission.connected_to
@@ -69,14 +68,14 @@ node_templates:
   lambda_function:
     type: cloudify.nodes.aws.lambda.Function
     properties:
-      resource_id: myLambdaFunction
       resource_config:
+        FunctionName: myLambdaFunction
+        Runtime: python2.7
+        Handler: main.lambda_handler
+        Code:
+          ZipFile: function/main.zip
         kwargs:
-          Runtime: python2.7
-          Handler: main.lambda_handler
           MemorySize: 128
-          Code:
-            ZipFile: function/main.zip
       client_config: *client_config
     relationships:
       - type: cloudify.relationships.connected_to
@@ -91,18 +90,17 @@ node_templates:
   iam_role_lambda_function:
     type: cloudify.nodes.aws.iam.Role
     properties:
-      resource_id: test_cfy_lambda_role
       client_config: *client_config
       resource_config:
-        kwargs:
-          Path: /service-lambda-role/
-          AssumeRolePolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-            - Effect: Allow
-              Principal:
-                Service: lambda.amazonaws.com
-              Action: 'sts:AssumeRole'
+        RoleName: test_cfy_lambda_role
+        Path: /service-lambda-role/
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: 'sts:AssumeRole'
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
@@ -116,9 +114,8 @@ node_templates:
     type: cloudify.nodes.aws.ec2.Subnet
     properties:
       resource_config:
-        kwargs:
-          CidrBlock: '10.0.0.0/24'
-          AvailabilityZone: { concat: [ { get_input: aws_region_name }, 'c' ] }
+        CidrBlock: '10.0.0.0/24'
+        AvailabilityZone: { concat: [ { get_input: aws_region_name }, 'c' ] }
       client_config: *client_config
       Tags:
         - Key: Name
@@ -131,9 +128,8 @@ node_templates:
     type: cloudify.nodes.aws.ec2.Subnet
     properties:
       resource_config:
-        kwargs:
-          CidrBlock: '10.0.1.0/24'
-          AvailabilityZone: { concat: [ { get_input: aws_region_name }, 'c' ] }
+        CidrBlock: '10.0.1.0/24'
+        AvailabilityZone: { concat: [ { get_input: aws_region_name }, 'c' ] }
       client_config: *client_config
       Tags:
         - Key: Name
@@ -146,9 +142,8 @@ node_templates:
     type: cloudify.nodes.aws.ec2.SecurityGroup
     properties:
       resource_config:
-        kwargs:
-          GroupName: Lambda Security Group
-          Description: Lambda Feature Demo Test Group
+        GroupName: Lambda Security Group
+        Description: Lambda Feature Demo Test Group
       client_config: *client_config
       Tags:
         - Key: Name
@@ -162,24 +157,46 @@ node_templates:
     properties:
       client_config: *client_config
       resource_config:
-        kwargs:
-          IpPermissions:
-           - IpProtocol: "-1"
-             FromPort: -1
-             ToPort: -1
-             IpRanges:
-              - CidrIp: 0.0.0.0/0
-             UserIdGroupPairs: [  { GroupId: { get_attribute: [ security_group, aws_resource_id ] } } ]
+        IpPermissions:
+         - IpProtocol: "-1"
+           FromPort: -1
+           ToPort: -1
+           IpRanges:
+            - CidrIp: 0.0.0.0/0
+           UserIdGroupPairs: [  { GroupId: { get_attribute: [ security_group, aws_resource_id ] } } ]
     relationships:
       - type: cloudify.relationships.contained_in
         target: security_group
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        start:
+          implementation: aws.cloudify_aws.ec2.resources.securitygroup.authorize_ingress_rules
+          inputs:
+            resource_config:
+              IpPermissions:
+               - IpProtocol: "-1"
+                 FromPort: -1
+                 ToPort: -1
+                 IpRanges:
+                  - CidrIp: 0.0.0.0/0
+                 UserIdGroupPairs: [  { GroupId: { get_attribute: [ security_group, aws_resource_id ] } } ]
+        stop:
+          implementation: aws.cloudify_aws.ec2.resources.securitygroup.revoke_ingress_rules
+          inputs:
+            resource_config:
+              IpPermissions:
+               - IpProtocol: "-1"
+                 FromPort: -1
+                 ToPort: -1
+                 IpRanges:
+                  - CidrIp: 0.0.0.0/0
+                 UserIdGroupPairs: [  { GroupId: { get_attribute: [ security_group, aws_resource_id ] } } ]
 
   vpc:
     type: cloudify.nodes.aws.ec2.Vpc
     properties:
       resource_config:
-        kwargs:
-          CidrBlock: '10.0.0.0/16'
+        CidrBlock: '10.0.0.0/16'
       client_config: *client_config
       Tags:
         - Key: Name

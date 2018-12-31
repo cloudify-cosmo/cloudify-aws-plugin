@@ -110,9 +110,8 @@ def prepare(ctx, resource_config, **_):
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS ELB target group'''
     # Build API params
-    cfg = \
-        ctx.instance.runtime_properties['resource_config'] or resource_config
-    params = cfg.copy()
+    params = utils.clean_params(
+        dict() if not resource_config else resource_config.copy())
     # TG attributes are only applied in modify operation.
     params.pop(GRP_ATTR, {})
     if VPC_ID not in params.keys():

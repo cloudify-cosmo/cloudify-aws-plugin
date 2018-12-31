@@ -455,3 +455,13 @@ def get_tags_list(node_prop, runtime_prop, input_prop):
     if isinstance(input_prop, list):
         tags_list = list(set(tags_list + input_prop))
     return tags_list
+
+
+def clean_params(p):
+    if not isinstance(p, dict) or not p:
+        return {}
+    for _k, _v in p.items():
+        if not _v:
+            del p[_k]
+        del _k, _v
+    return p

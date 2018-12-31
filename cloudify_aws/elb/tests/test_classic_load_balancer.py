@@ -141,7 +141,7 @@ class TestELBClassicLoadBalancer(TestBase):
     def test_start(self):
         ctx = self.get_mock_ctx("ELB", {}, {'resource_config': {}})
         iface = MagicMock()
-        config = {}
+        config = {'Attributes': []}
         load_balancer.start(ctx, iface, config)
         self.assertTrue(iface.modify_attributes.called)
 
