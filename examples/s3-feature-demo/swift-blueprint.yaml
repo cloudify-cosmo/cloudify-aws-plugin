@@ -1,0 +1,88 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/4.3.2/types.yaml
+  - plugin:cloudify-aws-plugin
+
+inputs:
+
+  swift_username:
+    type: string
+    default: { get_input: swift_username }
+
+  swift_password:
+    type: string
+    default: { get_input: swift_password }
+
+  swift_auth_url:
+    type: string
+    default: { get_input: swift_auth_url }
+
+  swift_region_name:
+    type: string
+    default: { get_input: swift_region_name }
+
+dsl_definitions:
+  swift_config: &swift_config
+    swift_username: { get_input: swift_username }
+    swift_password: { get_input: swift_password }
+    swift_auth_url: { get_input: swift_auth_url }
+    swift_region_name: { get_input: swift_region_name }
+
+node_templates:
+
+  bucket:
+    type: cloudify.nodes.swift.s3.Bucket
+    properties:
+      resource_config:
+        kwargs:
+          ACL: 'public-read-write'
+          Bucket: 'swift-test-bucket-2'
+          CreateBucketConfiguration:
+            LocationConstraint: { get_input: swift_region_name }
+      swift_config: *swift_config
+
+  bucket_object_bytes:
+    type: cloudify.nodes.swift.s3.BucketObject
+    properties:
+      source_type: 'bytes'
+      resource_config:
+        kwargs:
+          ACL: 'public-read'
+          Body: 'Test Content'
+          Bucket: { get_property: [ bucket, resource_config, kwargs, Bucket ] }
+          Key: 'test-byte-data.txt'
+      swift_config: *swift_config
+    relationships:
+    - type: cloudify.relationships.depends_on
+      target: bucket
+
+  bucket_object_local:
+    type: cloudify.nodes.swift.s3.BucketObject
+    properties:
+      source_type: 'local'
+      path: './local-s3-object.txt'
+      resource_config:
+        kwargs:
+          ACL: 'public-read'
+          Bucket: { get_property: [ bucket, resource_config, kwargs, Bucket ] }
+          Key: 'local-s3-object.txt'
+      swift_config: *swift_config
+    relationships:
+    - type: cloudify.relationships.depends_on
+      target: bucket
+
+  bucket_object_remote:
+    type: cloudify.nodes.swift.s3.BucketObject
+    properties:
+      source_type: 'remote'
+      path: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'
+      resource_config:
+        kwargs:
+          ACL: 'public-read'
+          Bucket: { get_property: [ bucket, resource_config, kwargs, Bucket ] }
+          Key: 'dummy.pdf'
+      swift_config: *swift_config
+    relationships:
+    - type: cloudify.relationships.depends_on
+      target: bucket

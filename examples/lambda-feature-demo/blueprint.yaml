@@ -1,0 +1,203 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+description: >
+  Example blueprint showing AWS Lambda functionality.
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/4.5/types.yaml
+  - plugin:cloudify-aws-plugin
+
+inputs:
+
+  aws_access_key_id:
+    type: string
+    default: { get_secret: aws_access_key_id }
+
+  aws_secret_access_key:
+    type: string
+    default: { get_secret: aws_secret_access_key }
+
+  aws_region_name:
+    type: string
+    default: { get_secret: ec2_region_name }
+
+  aws_cloudwatch_log_arn:
+    type: string
+    default: arn:aws:logs:us-east-1:263721492972:*
+
+  aws_lambda_vpc_access_role_arn:
+    type: string
+    default: arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+
+  aws_lambda_basic_execution_role_arn:
+    type: string
+    default: arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+
+dsl_definitions:
+
+  client_config: &client_config
+    aws_access_key_id: { get_input: aws_access_key_id }
+    aws_secret_access_key: { get_input: aws_secret_access_key }
+    region_name: { get_input: aws_region_name }
+
+
+node_templates:
+  
+  lambda_function_invocation:
+    type: cloudify.nodes.aws.lambda.Invoke
+    relationships:
+      - type: cloudify.relationships.aws.lambda.invoke.connected_to
+        target: lambda_function
+      - type: cloudify.relationships.depends_on
+        target: lambda_function_permission
+
+  lambda_function_permission:
+    type: cloudify.nodes.aws.lambda.Permission
+    properties:
+      resource_config:
+        FunctionName: { get_attribute: [ lambda_function, aws_resource_arn ] }
+        StatementId: apigateway-id-2
+        Action: !!str lambda:*
+        Principal: !!str apigateway.amazonaws.com
+      client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.aws.lambda.permission.connected_to
+        target: lambda_function
+
+  lambda_function:
+    type: cloudify.nodes.aws.lambda.Function
+    properties:
+      resource_config:
+        FunctionName: myLambdaFunction
+        Runtime: python2.7
+        Handler: main.lambda_handler
+        Code:
+          ZipFile: function/main.zip
+        kwargs:
+          MemorySize: 128
+      client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.connected_to
+        target: subnet_1
+      - type: cloudify.relationships.connected_to
+        target: subnet_2
+      - type: cloudify.relationships.connected_to
+        target: security_group
+      - type: cloudify.relationships.connected_to
+        target: iam_role_lambda_function
+
+  iam_role_lambda_function:
+    type: cloudify.nodes.aws.iam.Role
+    properties:
+      client_config: *client_config
+      resource_config:
+        RoleName: test_cfy_lambda_role
+        Path: /service-lambda-role/
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: 'sts:AssumeRole'
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.cloudify_aws.iam.resources.role.create
+          inputs:
+            modify_role_attribute_args:
+              - PolicyArn: { get_input: aws_lambda_vpc_access_role_arn }
+              - PolicyArn: { get_input: aws_lambda_basic_execution_role_arn }
+
+  subnet_1:
+    type: cloudify.nodes.aws.ec2.Subnet
+    properties:
+      resource_config:
+        CidrBlock: '10.0.0.0/24'
+        AvailabilityZone: { concat: [ { get_input: aws_region_name }, 'c' ] }
+      client_config: *client_config
+      Tags:
+        - Key: Name
+          Value: Subnet1
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: vpc
+
+  subnet_2:
+    type: cloudify.nodes.aws.ec2.Subnet
+    properties:
+      resource_config:
+        CidrBlock: '10.0.1.0/24'
+        AvailabilityZone: { concat: [ { get_input: aws_region_name }, 'c' ] }
+      client_config: *client_config
+      Tags:
+        - Key: Name
+          Value: Subnet2
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: vpc
+
+  security_group:
+    type: cloudify.nodes.aws.ec2.SecurityGroup
+    properties:
+      resource_config:
+        GroupName: Lambda Security Group
+        Description: Lambda Feature Demo Test Group
+      client_config: *client_config
+      Tags:
+        - Key: Name
+          Value: MyGroup
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: vpc
+
+  security_group_rules:
+    type: cloudify.nodes.aws.ec2.SecurityGroupRuleIngress
+    properties:
+      client_config: *client_config
+      resource_config:
+        IpPermissions:
+         - IpProtocol: "-1"
+           FromPort: -1
+           ToPort: -1
+           IpRanges:
+            - CidrIp: 0.0.0.0/0
+           UserIdGroupPairs: [  { GroupId: { get_attribute: [ security_group, aws_resource_id ] } } ]
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: security_group
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        start:
+          implementation: aws.cloudify_aws.ec2.resources.securitygroup.authorize_ingress_rules
+          inputs:
+            resource_config:
+              IpPermissions:
+               - IpProtocol: "-1"
+                 FromPort: -1
+                 ToPort: -1
+                 IpRanges:
+                  - CidrIp: 0.0.0.0/0
+                 UserIdGroupPairs: [  { GroupId: { get_attribute: [ security_group, aws_resource_id ] } } ]
+        stop:
+          implementation: aws.cloudify_aws.ec2.resources.securitygroup.revoke_ingress_rules
+          inputs:
+            resource_config:
+              IpPermissions:
+               - IpProtocol: "-1"
+                 FromPort: -1
+                 ToPort: -1
+                 IpRanges:
+                  - CidrIp: 0.0.0.0/0
+                 UserIdGroupPairs: [  { GroupId: { get_attribute: [ security_group, aws_resource_id ] } } ]
+
+  vpc:
+    type: cloudify.nodes.aws.ec2.Vpc
+    properties:
+      resource_config:
+        CidrBlock: '10.0.0.0/16'
+      client_config: *client_config
+      Tags:
+        - Key: Name
+          Value: VPC

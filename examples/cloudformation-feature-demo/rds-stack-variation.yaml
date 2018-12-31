@@ -1,0 +1,193 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/4.5/types.yaml
+  - plugin:cloudify-aws-plugin
+
+inputs:
+
+  aws_access_key_id:
+    type: string
+    default: { get_secret: aws_access_key_id }
+
+  aws_secret_access_key:
+    type: string
+    default: { get_secret: aws_secret_access_key }
+
+  aws_region_name:
+    type: string
+    default: { get_secret: ec2_region_name }
+
+  availability_zone:
+    default: { get_secret: availability_zone }
+
+  rds_db_instance_class:
+    default: db.t2.large
+
+
+dsl_definitions:
+
+  client_config: &client_config
+    aws_access_key_id: { get_input: aws_access_key_id }
+    aws_secret_access_key: { get_input: aws_secret_access_key }
+    region_name: { get_input: aws_region_name }
+
+node_templates:
+
+  mydb:
+    type: cloudify.nodes.aws.CloudFormation.Stack
+    properties:
+      resource_id: { concat: [ { get_input: aws_region_name }, cfntest ] }
+      client_config: *client_config
+      resource_config:
+        kwargs: {}
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        configure:
+          implementation: aws.cloudify_aws.cloudformation.resources.stack.create
+          inputs:
+            resource_config:
+              StackName: cfntest0
+              TemplateBody:
+                AWSTemplateFormatVersion: "2010-09-09"
+                Description: A sample template
+                Outputs:
+                  MyDBEndpointAddress:
+                    Description: The RDS Instance address.
+                    Value:
+                      Fn::GetAtt: [MyDB, Endpoint.Address]
+                  MyDBEndpointPort:
+                    Description: The RDS Instance port.
+                    Value:
+                      Fn::GetAtt: [MyDB, Endpoint.Port]
+                Resources:
+                  MyDB:
+                    Type: "AWS::RDS::DBInstance"
+                    Properties:
+                      AllocatedStorage: "100"
+                      DBInstanceClass: { get_input: rds_db_instance_class }
+                      Engine: "MySQL"
+                      EngineVersion: "5.5"
+                      Iops: "1000"
+                      MasterUsername: MyUser
+                      MasterUserPassword: MyPassword
+                      VPCSecurityGroups:
+                       - { get_attribute: [ rds_security_group, aws_resource_id ] }
+                      DBParameterGroupName: { get_property: [ rds_parameter_group, resource_id ] }
+                      DBSubnetGroupName: { get_property: [ rds_subnet_group, resource_id ] }
+                    DeletionPolicy: "Snapshot"
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: rds_security_group
+      - type: cloudify.relationships.depends_on
+        target: rds_parameter_group
+      - type: cloudify.relationships.depends_on
+        target: rds_subnet_group
+
+  rds_parameter_group:
+    type: cloudify.nodes.aws.rds.ParameterGroup
+    properties:
+      resource_id: dev-rds-param-group
+      resource_config:
+        kwargs:
+          DBParameterGroupFamily: mysql5.5
+          Description: MySQL5.5 Parameter Group for Dev
+      client_config: *client_config
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        configure:
+          inputs:
+            resource_config:
+              Parameters:
+                - ParameterName: time_zone
+                  ParameterValue: US/Eastern
+                  ApplyMethod: immediate
+                - ParameterName: lc_time_names
+                  ParameterValue: en_US
+                  ApplyMethod: immediate
+
+
+  rds_subnet_group:
+    type: cloudify.nodes.aws.rds.SubnetGroup
+    properties:
+      resource_id: dev-db-subnet-group
+      resource_config:
+        kwargs:
+          DBSubnetGroupDescription: MySQL5.5 Subnet Group for Dev
+      client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.aws.rds.subnet_group.connected_to
+        target: rds_subnet_1
+      - type: cloudify.relationships.aws.rds.subnet_group.connected_to
+        target: rds_subnet_2
+
+  rds_subnet_1:
+    type: cloudify.nodes.aws.ec2.Subnet
+    properties:
+      resource_config:
+        kwargs:
+          CidrBlock: 10.10.3.0/24
+          AvailabilityZone: { concat: [ { get_input: aws_region_name }, 'c'] }
+      client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: rds_vpc
+
+  rds_subnet_2:
+    type: cloudify.nodes.aws.ec2.Subnet
+    properties:
+      resource_config:
+        kwargs:
+          CidrBlock: 10.10.2.0/24
+          AvailabilityZone: { get_input: availability_zone }
+      client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: rds_vpc
+
+  rds_security_group:
+    type: cloudify.nodes.aws.ec2.SecurityGroup
+    properties:
+      resource_config:
+        kwargs:
+          GroupName: security_group1
+          Description: Example.
+          VpcId:  { get_attribute: [ rds_vpc, aws_resource_id ] }
+      client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: rds_vpc
+
+  security_group_rules:
+    type: cloudify.nodes.aws.ec2.SecurityGroupRuleIngress
+    properties:
+      client_config: *client_config
+      resource_config:
+        kwargs:
+          IpPermissions:
+           - IpProtocol: "-1"
+             FromPort: -1
+             ToPort: -1
+             IpRanges:
+              - CidrIp: 0.0.0.0/0
+             UserIdGroupPairs: [  { GroupId: { get_attribute: [ rds_security_group, aws_resource_id ] } } ]
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: rds_security_group
+
+  rds_vpc:
+    type: cloudify.nodes.aws.ec2.Vpc
+    properties:
+      resource_config:
+        kwargs:
+          CidrBlock: 10.10.0.0/16
+      client_config: *client_config
+
+outputs:
+
+  Endpoint:
+    value:
+      concat:
+      - { get_attribute: [ mydb, Outputs, 0, OutputValue ] }
+      - ':'
+      - { get_attribute: [ mydb, Outputs, 1, OutputValue ] }

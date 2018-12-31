@@ -1,5 +1,5 @@
-########
-# Copyright (c) 2015 GigaSpaces Technologies Ltd. All rights reserved
+# #######
+# Copyright (c) 2018 Cloudify Platform Ltd. All rights reserved
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,34 +12,21 @@
 #    * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
-
+"""Cloudify plugin package config"""
 
 from setuptools import setup
+from setuptools import find_packages
 
-# Replace the place holders with values for your project
 
 setup(
-
-    # Do not use underscores in the plugin name.
     name='cloudify-aws-plugin',
-    author='Gigaspaces',
-    author_email='cosmo-admin@gigaspaces.com',
-
-    version='1.5.1.2',
-    description='Cloudify plugin for AWS infrastructure.',
-
-    # This must correspond to the actual packages in the plugin.
-    packages=[
-        'cloudify_aws',
-        'cloudify_aws.ec2',
-        'cloudify_aws.vpc'
-    ],
-
+    version='2.0.0',
     license='LICENSE',
+    packages=find_packages(exclude=['tests*']),
+    description='A Cloudify plugin for AWS',
     install_requires=[
-        'cloudify-plugins-common>=3.4.2',
-        'boto==2.48.0',
-        'pycrypto==2.6.1',
-        'ipaddress==1.0.18'
+        'cloudify-common>=4.5',
+        'boto3==1.9.57',
+        'botocore==1.12.57'
     ]
 )

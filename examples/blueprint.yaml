@@ -1,0 +1,652 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/4.5/types.yaml
+  - plugin:cloudify-aws-plugin
+
+inputs:
+
+  aws_access_key_id:
+    type: string
+    default: { get_secret: aws_access_key_id }
+
+  aws_secret_access_key:
+    type: string
+    default: { get_secret: aws_secret_access_key }
+
+  aws_region_name:
+    type: string
+    default: { get_secret: ec2_region_name }
+
+  aws_account_id:
+    type: string
+    default: { get_secret: aws_account_id }
+
+  aws_region_zone1:
+    type: string
+    default:
+      concat:
+      - { get_input: aws_region_name }
+      - 'a'
+
+  aws_region_zone2:
+    type: string
+    default:
+      concat:
+      - { get_input: aws_region_name }
+      - 'b'
+
+  aws_cloudwatch_log_arn:
+    type: string
+    default:
+      concat:
+      - 'arn:aws:logs:'
+      - { get_input: aws_region_name }
+      - ":"
+      - { get_input: aws_account_id }
+
+  launch_configuration_ami:
+    type: string
+    default: ami-e1496384
+
+  launch_configuration_instance_type:
+    type: string
+    default: t2.micro
+
+  aws_vpc_cidr:
+    description: |
+      AWS VPC CIDR
+    type: string
+    default: '10.0.0.0/16'
+
+  aws_vpc_subnet_1_cidr:
+    description: |
+      AWS VPC Subnet CIDR
+    type: string
+    default: '10.0.0.0/24'
+
+  aws_vpc_subnet_2_cidr:
+    description: |
+      AWS VPC Subnet CIDR
+    type: string
+    default: '10.0.1.0/24'
+
+
+dsl_definitions:
+
+  client_config: &client_config
+    aws_access_key_id: { get_input: aws_access_key_id }
+    aws_secret_access_key: { get_input: aws_secret_access_key }
+    region_name: { get_input: aws_region_name }
+
+
+node_templates:
+
+  autoscaling_group:
+    type: cloudify.nodes.aws.autoscaling.Group
+    properties:
+      resource_config:
+        kwargs:
+          AutoScalingGroupName: pmcfy_asg
+          MinSize: 1
+          MaxSize: 1
+          DefaultCooldown: 20
+          AvailabilityZones:
+            - { get_input: aws_region_zone1 }
+            - { get_input: aws_region_zone2 }
+      client_config: *client_config
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        configure:
+          implementation: aws.cloudify_aws.autoscaling.resources.autoscaling_group.create
+          inputs:
+            resource_config:
+              # LaunchConfigurationName: { get_property: [ launch_configuration, resource_config, kwargs, LaunchConfigurationName ] }
+              LaunchConfigurationName: { get_attribute: [ launch_configuration, Outputs, 0, OutputValue ] }
+              AutoScalingGroupName: pmcfy_asg
+              MinSize: 1
+              MaxSize: 1
+              DefaultCooldown: 20
+              AvailabilityZones:
+                - { get_input: aws_region_zone1 }
+                - { get_input: aws_region_zone2 }
+              LoadBalancerNames:
+                - { get_attribute: [ elb, aws_resource_id ] }
+        delete:
+          implementation: aws.cloudify_aws.autoscaling.resources.autoscaling_group.delete
+          inputs:
+            resource_config:
+              ForceDelete: true
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: launch_configuration
+      - type: cloudify.relationships.depends_on
+        target: elb
+      - type: cloudify.relationships.depends_on
+        target: subnet1
+      - type: cloudify.relationships.depends_on
+        target: subnet2
+      - type: cloudify.relationships.depends_on
+        target: internet_gateway_vpc
+
+#  launch_configuration:
+#    type: cloudify.nodes.aws.autoscaling.LaunchConfiguration
+#    properties:
+#      resource_config:
+#        kwargs:
+#          LaunchConfigurationName: pmcfy_ex_lc
+#      client_config: *client_config
+#    interfaces:
+#      cloudify.interfaces.lifecycle:
+#        configure:
+#          implementation: aws.cloudify_aws.autoscaling.resources.launch_configuration.create
+#          inputs:
+#            resource_config:
+#              LaunchConfigurationName: pmcfy_ex_lc
+#              ImageId: ami-c58c1dd3
+#              InstanceType: t2.micro
+#              SecurityGroups:
+#              - { get_attribute: [ securitygroup, aws_resource_id ] }
+#              UserData: |
+#                #cloud-config
+#                users:
+#                - name: ubuntu
+#                  groups: ubuntu
+#                  shell: /bin/bash
+#                  sudo: ['ALL=(ALL) NOPASSWD:ALL']
+#              IamInstanceProfile: { get_attribute: [ pmcfy_iam_user_instance_profile, aws_resource_arn ] } # Succeeds on retry.
+#    relationships:
+#      - type: cloudify.relationships.depends_on
+#        target: securitygroup
+#      - type: cloudify.relationships.depends_on
+#        target: pmcfy_iam_user_instance_profile
+
+  launch_configuration:
+    type: cloudify.nodes.aws.CloudFormation.Stack
+    properties:
+      client_config: *client_config
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        configure:
+          inputs:
+            resource_config:
+              StackName: PMCfyExLCStack
+              TemplateBody:
+                AWSTemplateFormatVersion: "2010-09-09"
+                Description: A sample template
+                Outputs:
+                  PMCfyExLCLaunchConfigurationName:
+                    Description: PMCfyExLC Launch Configuration Name
+                    Value:
+                      Ref: PMCfyExLC
+                Resources:
+                  PMCfyExLC:
+                    Type: "AWS::AutoScaling::LaunchConfiguration"
+                    Properties:
+                      ImageId: { get_input: launch_configuration_ami }
+                      InstanceType: { get_input: launch_configuration_instance_type }
+                      SecurityGroups:
+                        - { get_attribute: [ securitygroup, aws_resource_id ] }
+                      IamInstanceProfile: { get_attribute: [ pmcfy_iam_user_instance_profile, aws_resource_arn ] } # Succeeds on retry.
+                    Metadata:
+                      AWS::CloudFormation::Init:
+                        configSets:
+                          config:
+                            - config_something
+                        config_something:
+                          commands:
+                            some_command:
+                              command: "echo hello"
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: securitygroup
+      - type: cloudify.relationships.depends_on
+        target: pmcfy_iam_user_instance_profile
+
+  pmcfy_iam_user_instance_profile:
+    type: cloudify.nodes.aws.iam.InstanceProfile
+    properties:
+      client_config: *client_config
+      resource_id: pmcfyinstancepro000
+      resource_config:
+        kwargs:
+          InstanceProfileName: pmcfyinstancepro000
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: pmcfy_iam_role
+
+  pmcfy_iam_role:
+    type: cloudify.nodes.aws.iam.Role
+    properties:
+      resource_id: pmcfy_lambdarole
+      client_config: *client_config
+      resource_config:
+        kwargs:
+          Path: !!str /service-role/
+          AssumeRolePolicyDocument:
+            Version: !!str 2012-10-17
+            Statement:
+              - Effect: Allow
+                Principal:
+                  Service: !!str lambda.amazonaws.com
+                Action: !!str sts:AssumeRole
+    relationships:
+      - type: cloudify.relationships.aws.iam.role.connected_to
+        target: pmcfy_iam_policy_vpc_access
+      - type: cloudify.relationships.aws.iam.role.connected_to
+        target: pmcfy_iam_policy_cloudwatch_access
+
+  pmcfy_iam_policy_vpc_access:
+    type: cloudify.nodes.aws.iam.Policy
+    properties:
+      resource_id: CustomAWSLambdaVPCAccessExecutionRole
+      client_config: *client_config
+      resource_config:
+        kwargs:
+          Description: >-
+            Grants access to EC2 network components
+          Path: /service-vpc-access/
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'ec2:CreateNetworkInterface'
+                  - 'ec2:DescribeNetworkInterfaces'
+                  - 'ec2:DeleteNetworkInterface'
+                Resource: '*'
+
+  pmcfy_iam_policy_cloudwatch_access:
+    type: cloudify.nodes.aws.iam.Policy
+    properties:
+      resource_id: CustomAWSLambdaBasicExecutionRole
+      client_config: *client_config
+      resource_config:
+        kwargs:
+          Description: >-
+            Grants access to CloudWatch logs
+          Path: /service-cloudwatch-access/
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: 'logs:CreateLogGroup'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                Resource:
+                  - { get_input: aws_cloudwatch_log_arn }
+
+  policy_elb:
+    type: cloudify.nodes.aws.elb.Classic.Policy
+    properties:
+      resource_config:
+        kwargs:
+          PolicyName: pmcfyelbpolicy
+          PolicyTypeName: ProxyProtocolPolicyType
+          PolicyAttributes:
+            - AttributeName: ProxyProtocol
+              AttributeValue: 'true'
+      client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: elb
+
+  healthcheck_elb:
+    type: cloudify.nodes.aws.elb.Classic.HealthCheck
+    properties:
+      resource_config:
+        kwargs:
+          HealthCheck:
+            Target: 'TCP:1080'
+            Interval: 30
+            Timeout: 5
+            UnhealthyThreshold: 2
+            HealthyThreshold: 3
+      client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: elb
+
+  listener_elb:
+    type: cloudify.nodes.aws.elb.Classic.Listener
+    properties:
+      resource_config:
+        kwargs:
+          Listeners:
+          - Protocol: HTTP
+            LoadBalancerPort: 80
+            InstancePort: 1081
+            InstanceProtocol: HTTP
+      client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: elb
+
+  elb:
+    type: cloudify.nodes.aws.elb.Classic.LoadBalancer
+    properties:
+      resource_config:
+        kwargs:
+          Tags:
+          - Key: name
+            Value: boto3-plugin-elb
+          LoadBalancerName: pmcfyelb
+          Listeners: { get_property: [ listener_elb, resource_config, kwargs, Listeners ] }
+          Scheme: internet-facing
+      client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: bucket
+      - type: cloudify.relationships.depends_on
+        target: subnet1
+      - type: cloudify.relationships.depends_on
+        target: subnet2
+      - type: cloudify.relationships.depends_on
+        target: securitygroup
+      - type: cloudify.relationships.depends_on
+        target: internet_gateway_vpc
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        start:
+          implementation: aws.cloudify_aws.elb.resources.classic.load_balancer.start
+          inputs:
+            resource_config:
+              LoadBalancerAttributes:
+                AccessLog:
+                  Enabled: true
+                  S3BucketName: { get_property: [ bucket, resource_config, kwargs, Bucket ] }
+                  EmitInterval: 5
+
+  securitygroup:
+    type: cloudify.nodes.aws.ec2.SecurityGroup
+    properties:
+      resource_config:
+        kwargs:
+          GroupName: securitygroup
+          Description: A non-security group that allows all traffic.
+          VpcId:  { get_attribute: [ vpc, aws_resource_id ] }
+      client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: vpc
+
+  security_group_rules:
+    type: cloudify.nodes.aws.ec2.SecurityGroupRuleIngress
+    properties:
+      client_config: *client_config
+      resource_config:
+        kwargs:
+          IpPermissions:
+           - IpProtocol: "-1"
+             FromPort: -1
+             ToPort: -1
+             IpRanges:
+              - CidrIp: 0.0.0.0/0
+             UserIdGroupPairs: [  { GroupId: { get_attribute: [ securitygroup, aws_resource_id ] } } ]
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: securitygroup
+
+  routetable_subnet2:
+    type: cloudify.nodes.aws.ec2.RouteTable
+    properties:
+      client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: vpc
+      - type: cloudify.relationships.connected_to
+        target: subnet2
+
+  route_subnet_2_internet_gateway:
+    type: cloudify.nodes.aws.ec2.Route
+    properties:
+      resource_config:
+        kwargs:
+          DestinationCidrBlock: '0.0.0.0/0'
+      client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: routetable_subnet2
+      - type: cloudify.relationships.connected_to
+        target: internet_gateway_vpc
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        stop: {}
+
+  routetable_subnet1:
+    type: cloudify.nodes.aws.ec2.RouteTable
+    properties:
+      client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: vpc
+      - type: cloudify.relationships.connected_to
+        target: subnet1
+
+  route_subnet_1_internet_gateway:
+    type: cloudify.nodes.aws.ec2.Route
+    properties:
+      resource_config:
+        kwargs:
+          DestinationCidrBlock: '0.0.0.0/0'
+      client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: routetable_subnet1
+      - type: cloudify.relationships.connected_to
+        target: internet_gateway_vpc
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        stop: {}
+
+  natgateway2:
+    type: cloudify.nodes.aws.ec2.NATGateway
+    properties:
+      client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: internet_gateway_vpc
+      - type: cloudify.relationships.depends_on
+        target: subnet2
+      - type: cloudify.relationships.depends_on
+        target: elasticip_natgateway2
+
+  natgateway1:
+    type: cloudify.nodes.aws.ec2.NATGateway
+    properties:
+      client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: internet_gateway_vpc
+      - type: cloudify.relationships.depends_on
+        target: subnet1
+      - type: cloudify.relationships.depends_on
+        target: elasticip_natgateway1
+
+  elasticip_natgateway2:
+    type: cloudify.nodes.aws.ec2.ElasticIP
+    properties:
+      resource_config:
+        kwargs:
+          Domain: 'vpc'
+      client_config: *client_config
+    relationships:
+    - type: cloudify.relationships.depends_on
+      target: internet_gateway_vpc
+    - type: cloudify.relationships.depends_on
+      target: subnet2
+
+  elasticip_natgateway1:
+    type: cloudify.nodes.aws.ec2.ElasticIP
+    properties:
+      resource_config:
+        kwargs:
+          Domain: 'vpc'
+      client_config: *client_config
+    relationships:
+    - type: cloudify.relationships.depends_on
+      target: internet_gateway_vpc
+    - type: cloudify.relationships.depends_on
+      target: subnet1
+
+  internet_gateway_vpc:
+    type: cloudify.nodes.aws.ec2.InternetGateway
+    properties:
+      client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.connected_to
+        target: vpc
+
+  subnet2:
+    type: cloudify.nodes.aws.ec2.Subnet
+    properties:
+      resource_config:
+        kwargs:
+          CidrBlock: { get_input: aws_vpc_subnet_2_cidr }
+          AvailabilityZone: { get_input: aws_region_zone2 }
+      client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: vpc
+      - type: cloudify.relationships.depends_on
+        target: internet_gateway_vpc
+
+  subnet1:
+    type: cloudify.nodes.aws.ec2.Subnet
+    properties:
+      resource_config:
+        kwargs:
+          CidrBlock: { get_input: aws_vpc_subnet_1_cidr }
+          AvailabilityZone: { get_input: aws_region_zone1 }
+      client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: vpc
+      - type: cloudify.relationships.depends_on
+        target: internet_gateway_vpc
+
+  vpc:
+    type: cloudify.nodes.aws.ec2.Vpc
+    properties:
+      resource_config:
+        kwargs:
+          CidrBlock: { get_input: aws_vpc_cidr }
+      client_config: *client_config
+
+  subscription:
+    type: cloudify.nodes.aws.SNS.Subscription
+    properties:
+      client_config: *client_config
+      resource_config:
+        kwargs:
+          Protocol: sqs
+          Endpoint: { get_attribute: [ queue, aws_resource_arn ] }
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: topic
+      - type: cloudify.relationships.depends_on
+        target: queue
+
+  topic:
+    type: cloudify.nodes.aws.SNS.Topic
+    properties:
+      resource_config:
+        kwargs:
+          Name: TestCloudifyTopic
+      client_config: *client_config
+
+  queue:
+    type: cloudify.nodes.aws.SQS.Queue
+    properties:
+      resource_config:
+        kwargs:
+          QueueName: test-queue
+          Attributes:
+            Policy: |
+              {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Sid": "Sid1",
+                    "Effect": "Allow",
+                    "Principal": "*",
+                    "Action": [
+                      "SQS:SendMessage",
+                      "SQS:ReceiveMessage"
+                    ],
+                    "Resource": "test-queue"
+                  }
+                ]
+              }
+            MessageRetentionPeriod: '86400'
+            VisibilityTimeout: '180'
+      client_config: *client_config
+
+  bucketpolicy_bucket:
+    type: cloudify.nodes.aws.s3.BucketPolicy
+    properties:
+      resource_config:
+        kwargs:
+          Policy:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Principal: '*'
+                Action:
+                  - 's3:PutObject'
+                Resource:
+                  concat:
+                    - 'arn:aws:s3:::'
+                    - { get_property: [ bucket, resource_config, kwargs, Bucket ] }
+                    - '/AWSLogs/'
+                    - { get_input: aws_account_id }
+                    - '/*'
+              - Effect: Deny
+                Principal: '*'
+                Action:
+                  - 's3:DeleteObject'
+                Resource:
+                  concat:
+                    - 'arn:aws:s3:::'
+                    - { get_property: [ bucket, resource_config, kwargs, Bucket ] }
+                    - '/AWSLogs/'
+                    - { get_input: aws_account_id }
+                    - '/*'
+      client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: bucket
+
+  lifecyleconfiguration_bucket:
+    type: cloudify.nodes.aws.s3.BucketLifecycleConfiguration
+    properties:
+      resource_config:
+        kwargs:
+          LifecycleConfiguration:
+            Rules:
+              - ID: Transition to Glacier and Expiration
+                Prefix: bucket
+                Status: Enabled
+                Transition:
+                  Days: 5
+                  StorageClass: GLACIER
+                Expiration:
+                  Days: 95
+      client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: bucket
+
+  bucket:
+    type: cloudify.nodes.aws.s3.Bucket
+    properties:
+      resource_config:
+        kwargs:
+          ACL: public-read-write
+          Bucket: aws-updated-bucket
+          CreateBucketConfiguration:
+            LocationConstraint: { get_input: aws_region_name }
+      client_config: *client_config

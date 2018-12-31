@@ -1,0 +1,204 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+description: >
+  Example blueprint showing AWS IAM functionality.
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/4.5/types.yaml
+  - plugin:cloudify-aws-plugin
+
+inputs:
+
+  aws_access_key_id:
+    type: string
+    default: { get_secret: aws_access_key_id }
+
+  aws_secret_access_key:
+    type: string
+    default: { get_secret: aws_secret_access_key }
+
+  aws_region_name:
+    type: string
+    default: { get_secret: ec2_region_name }
+
+  aws_cloudwatch_log_arn:
+    type: string
+    default: !!str arn:aws:logs:us-east-1:263721492972:*
+
+dsl_definitions:
+  client_config: &client_config
+    aws_access_key_id: { get_input: aws_access_key_id }
+    aws_secret_access_key: { get_input: aws_secret_access_key }
+    region_name: { get_input: aws_region_name }
+
+node_templates:
+
+#  ubuntu_trusty_ami:
+#    type: cloudify.nodes.aws.ec2.Image
+#    properties:
+#      resource_config:
+#        kwargs:
+#          Filters:
+#          - Name: name
+#            Values:
+#            - 'ubuntu/images/hvm-ssd/ubuntu-trusty-14.04-amd64-server-20170727'
+#          - Name: owner-id
+#            Values:
+#            - '099720109477'
+#      client_config: *client_config
+#
+#  pmcfy_launch_configuration:
+#    type: cloudify.nodes.aws.autoscaling.LaunchConfiguration
+#    properties:
+#      resource_config:
+#        kwargs:
+#          LaunchConfigurationName: pmcfy_launch_configuration
+#          ImageId: { get_attribute: [ ubuntu_trusty_ami, aws_resource_id ] }
+#          InstanceType: t2.nano
+#      client_config: *client_config
+#    interfaces:
+#      cloudify.interfaces.lifecycle:
+#        configure:
+#          inputs:
+#            resource_config:
+#              LaunchConfigurationName: pmcfy_launch_configuration
+#              ImageId: { get_attribute: [ ubuntu_trusty_ami, aws_resource_id ] }
+#              InstanceType: t2.nano
+#              IamInstanceProfile: { get_attribute: [ pmcfy_iam_user_instance_profile, aws_resource_arn ] } # Succeeds on retry.
+#    relationships:
+#      - type: cloudify.relationships.depends_on
+#        target: pmcfy_iam_user_instance_profile
+#      - type: cloudify.relationships.depends_on
+#        target: ubuntu_trusty_ami
+
+  pmcfy_iam_user_api_access:
+    type: cloudify.nodes.aws.iam.AccessKey
+    relationships:
+      - type: cloudify.relationships.aws.iam.access_key.connected_to
+        target: pmcfy_iam_user
+
+  pmcfy_iam_user_login_profile:
+    type: cloudify.nodes.aws.iam.LoginProfile
+    properties:
+      resource_config:
+        UserName: !!str PMCfy=,.@-User
+        Password: !!str Cl0ud1fy2017
+    relationships:
+      - type: cloudify.relationships.aws.iam.login_profile.connected_to
+        target: pmcfy_iam_user
+
+  pmcfy_iam_user:
+    type: cloudify.nodes.aws.iam.User
+    properties:
+      client_config: *client_config
+      resource_config:
+        UserName: !!str CloudifyUser=,.@-Test
+        Path: !!str /!"#$%&'()*+,-.0123456789:;<=>?@abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ{|}~/
+    relationships:
+      - type: cloudify.relationships.aws.iam.user.connected_to
+        target: pmcfy_iam_group
+      - type: cloudify.relationships.aws.iam.user.connected_to
+        target: pmcfy_iam_policy_vpc_access
+
+  pmcfy_iam_group:
+    type: cloudify.nodes.aws.iam.Group
+    properties:
+      client_config: *client_config
+      resource_config:
+        GroupName: !!str pmcfy_CloudifyGroup
+        Path: !!str /!"#$%&'()*+,-.0123456789:;<=>?@abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ{|}~/
+    relationships:
+      - type: cloudify.relationships.aws.iam.group.connected_to
+        target: pmcfy_iam_policy_vpc_access
+
+  pmcfy_iam_user_instance_profile:
+    type: cloudify.nodes.aws.iam.InstanceProfile
+    properties:
+      client_config: *client_config
+      resource_config:
+        InstanceProfileName: pmcfy_iam_user_instance_profile
+        Path: '/pmcfy_iam_user_instance_profile/'
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: pmcfy_iam_role
+
+  pmcfy_iam_role_policy:
+    type: cloudify.nodes.aws.iam.RolePolicy
+    properties:
+      client_config: *client_config
+      resource_config:
+        PolicyName: pmcfy_iam_role_policy
+        PolicyDocument:
+          {
+            "Version": "2012-10-17",
+            "Statement": {
+              "Effect": "Allow",
+              "Resource": "*",
+              "Action": "sts:AssumeRole"
+            }
+          }
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: pmcfy_iam_role
+
+  pmcfy_iam_role:
+    type: cloudify.nodes.aws.iam.Role
+    properties:
+      client_config: *client_config
+      resource_config:
+        RoleName: pmcfy_lambdarole
+        Path: !!str /service-role/
+        AssumeRolePolicyDocument:
+          Version: !!str 2012-10-17
+          Statement:
+          - Effect: Allow
+            Principal:
+              Service: !!str lambda.amazonaws.com
+            Action: !!str sts:AssumeRole
+    relationships:
+      - type: cloudify.relationships.aws.iam.role.connected_to
+        target: pmcfy_iam_policy_vpc_access
+      - type: cloudify.relationships.aws.iam.role.connected_to
+        target: pmcfy_iam_policy_cloudwatch_access
+     
+  pmcfy_iam_policy_vpc_access:
+    type: cloudify.nodes.aws.iam.Policy
+    properties:
+      client_config: *client_config
+      resource_config:
+        PolicyName: pmcfy_vpcpolicy
+        Description: >-
+          Grants access to EC2 network components
+        Path: !!str /service-role/
+        PolicyDocument:
+          Version: !!str 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - !!str ec2:CreateNetworkInterface
+                - !!str ec2:DeleteNetworkInterface
+                - !!str ec2:DescribeNetworkInterfaces
+              Resource: '*'
+
+
+  pmcfy_iam_policy_cloudwatch_access:
+    type: cloudify.nodes.aws.iam.Policy
+    properties:
+      client_config: *client_config
+      resource_config:
+        PolicyName: pmcfy_iampolicy
+        Description: >-
+          Grants access to CloudWatch logs
+        Path: !!str /service-role/
+        PolicyDocument:
+          Version: !!str 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action: !!str logs:CreateLogGroup
+              Resource: '*'
+            - Effect: Allow
+              Action:
+                - !!str logs:CreateLogStream
+                - !!str logs:PutLogEvents
+              Resource:
+                - { get_input: aws_cloudwatch_log_arn }

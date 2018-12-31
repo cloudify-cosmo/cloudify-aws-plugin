@@ -1,0 +1,93 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/4.5/types.yaml
+  - plugin:cloudify-aws-plugin
+
+inputs:
+
+  aws_access_key_id:
+    type: string
+    default: { get_secret: aws_access_key_id }
+
+  aws_secret_access_key:
+    type: string
+    default: { get_secret: aws_secret_access_key }
+
+  aws_region_name:
+    type: string
+    default: us-west-1
+
+  ami:
+    type: string
+    default: ami-65e0e305
+
+  instance_type:
+    type: string
+    default: t2.micro
+
+dsl_definitions:
+
+  client_config: &client_config
+    aws_access_key_id: { get_input: aws_access_key_id }
+    aws_secret_access_key: { get_input: aws_secret_access_key }
+    region_name: { get_input: aws_region_name }
+
+node_templates:
+
+  pmcfy_lh:
+    type: cloudify.nodes.aws.autoscaling.LifecycleHook
+    properties:
+      resource_config:
+        LifecycleHookName: pmcfy_lh
+        LifecycleTransition: autoscaling:EC2_INSTANCE_LAUNCHING
+      client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: pmcfy_as
+
+  pmcfy_asp:
+    type: cloudify.nodes.aws.autoscaling.Policy
+    properties:
+      resource_config:
+        PolicyName: pmcfy_asp
+        PolicyType: SimpleScaling
+        AdjustmentType: ChangeInCapacity
+        ScalingAdjustment: 1
+      client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: pmcfy_as
+
+  pmcfy_as:
+    type: cloudify.nodes.aws.autoscaling.Group
+    properties:
+      resource_config:
+        AutoScalingGroupName: pmcfy_as
+        MinSize: 2
+        MaxSize: 4
+        kwargs:
+          DesiredCapacity: 2
+          DefaultCooldown: 20
+          AvailabilityZones:
+          - { concat: [ { get_input: aws_region_name }, 'a' ] }
+      client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: pmcfy_lc
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        delete:
+          implementation: aws.cloudify_aws.autoscaling.resources.autoscaling_group.delete
+          inputs:
+            resource_config:
+              ForceDelete: true
+
+  pmcfy_lc:
+    type: cloudify.nodes.aws.autoscaling.LaunchConfiguration
+    properties:
+      resource_config:
+        LaunchConfigurationName: pmcfy_lc
+        ImageId: { get_input: ami }
+        InstanceType: { get_input: instance_type }
+      client_config: *client_config

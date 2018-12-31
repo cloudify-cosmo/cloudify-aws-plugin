@@ -1,0 +1,2 @@
+cloudify-plugins-common===4.0
+cloudify-rest-client===4.0
