@@ -99,4 +99,4 @@ local-storage/
 
 plugin_docs
 workspace
-.wgn
+*.wgn
