@@ -20,7 +20,7 @@ from setuptools import find_packages
 
 setup(
     name='cloudify-aws-plugin',
-    version='2.0.0.dev0',
+    version='2.0.0',
     license='LICENSE',
     packages=find_packages(exclude=['tests*']),
     description='A Cloudify plugin for AWS',
