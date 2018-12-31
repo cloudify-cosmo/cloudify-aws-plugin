@@ -41,9 +41,8 @@ node_templates:
     type: cloudify.nodes.aws.autoscaling.LifecycleHook
     properties:
       resource_config:
-        kwargs:
-          LifecycleHookName: test-autoscaling
-          LifecycleTransition: autoscaling:EC2_INSTANCE_LAUNCHING
+        LifecycleHookName: test-autoscaling
+        LifecycleTransition: autoscaling:EC2_INSTANCE_LAUNCHING
       client_config: *client_config
     relationships:
     - type: cloudify.relationships.depends_on
@@ -53,10 +52,10 @@ node_templates:
     type: cloudify.nodes.aws.autoscaling.Group
     properties:
       resource_config:
+        AutoScalingGroupName: test-autoscaling
+        MinSize: 1
+        MaxSize: 2
         kwargs:
-          AutoScalingGroupName: test-autoscaling
-          MinSize: 1
-          MaxSize: 2
           DefaultCooldown: 300
       client_config: *client_config
     relationships:
@@ -69,8 +68,7 @@ node_templates:
     type: cloudify.nodes.aws.autoscaling.LaunchConfiguration
     properties:
       resource_config:
-        kwargs:
-          LaunchConfigurationName: test-lauchconfig3
+        LaunchConfigurationName: test-lauchconfig3
       client_config: *client_config
     relationships:
     - type: cloudify.relationships.depends_on
@@ -111,9 +109,8 @@ node_templates:
     type: cloudify.nodes.aws.ec2.Subnet
     properties:
       resource_config:
-        kwargs:
-          CidrBlock: { get_input: public_subnet_cidr }
-          AvailabilityZone: { get_input: availability_zone }
+        CidrBlock: { get_input: public_subnet_cidr }
+        AvailabilityZone: { get_input: availability_zone }
       client_config: *client_config
     relationships:
     - type: cloudify.relationships.depends_on
@@ -123,6 +120,5 @@ node_templates:
     type: cloudify.nodes.aws.ec2.Vpc
     properties:
       resource_config:
-        kwargs:
-          CidrBlock: { get_input: vpc_cidr }
+        CidrBlock: { get_input: vpc_cidr }
       client_config: *client_config
