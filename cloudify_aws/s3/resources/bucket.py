@@ -101,16 +101,17 @@ def create(ctx, iface, resource_config, **_):
     """Creates an AWS S3 Bucket"""
 
     # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-    resource_id = \
-        utils.get_resource_id(
-            ctx.node,
-            ctx.instance,
-            params.get(RESOURCE_NAME),
-            use_instance_id=True
-        )
-    params[RESOURCE_NAME] = resource_id
+    params = utils.clean_params(
+        dict() if not resource_config else resource_config.copy())
+    resource_id = params.get(RESOURCE_NAME)
+    if not resource_id:
+        resource_id = \
+            iface.resource_id or \
+            utils.get_resource_id(
+                ctx.node,
+                ctx.instance,
+                use_instance_id=True)
+        params[RESOURCE_NAME] = resource_id
     utils.update_resource_id(ctx.instance, resource_id)
 
     # Actually create the resource

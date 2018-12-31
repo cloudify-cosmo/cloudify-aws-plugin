@@ -149,13 +149,14 @@ class TestS3BucketPolicy(TestBase):
         config = {POLICY: 'policy'}
         ctx_target = self.get_mock_relationship_ctx(
             "bucket",
-            test_target=self.get_mock_ctx("Backet",
+            test_target=self.get_mock_ctx("Bucket",
                                           {},
                                           {EXTERNAL_RESOURCE_ID: 'ext_id'}))
         iface = MagicMock()
         iface.create = self.mock_return('location')
         with patch(PATCH_PREFIX + 'utils') as utils:
             utils.find_rel_by_node_type = self.mock_return(ctx_target)
+            utils.clean_params = self.mock_return({POLICY: 'policy'})
             bucket_policy.create(ctx, iface, config)
             self.assertEqual(ctx.instance.runtime_properties[BUCKET],
                              'ext_id')

@@ -174,8 +174,8 @@ def create(ctx, iface, resource_config, **_):
     """Creates an AWS S3 Bucket Object"""
 
     # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
+    params = utils.clean_params(
+        dict() if not resource_config else resource_config.copy())
 
     # Get the bucket object key from params
     object_key = params.get(OBJECT_KEY)

@@ -35,28 +35,26 @@ node_templates:
     type: cloudify.nodes.aws.s3.Bucket
     properties:
       resource_config:
-        kwargs:
-          ACL: public-read-write
-          Bucket: aws-test-bucket
-          CreateBucketConfiguration:
-            LocationConstraint: { get_input: aws_region_name }
+        Bucket: test-bucket
+        ACL: public-read-write
+        CreateBucketConfiguration:
+          LocationConstraint: { get_input: aws_region_name }
       client_config: *client_config
 
   bucket_lifecycle_configuration:
     type: cloudify.nodes.aws.s3.BucketLifecycleConfiguration
     properties:
       resource_config:
-        kwargs:
-          LifecycleConfiguration:
-            Rules:
-            - ID: Standard Rule LFC
-              Prefix: boto3
-              Status: Disabled
-              Transition:
-                Days: 31
-                StorageClass: STANDARD_IA
-              Expiration:
-                Days: 95
+        LifecycleConfiguration:
+          Rules:
+          - ID: Standard Rule LFC
+            Prefix: boto3
+            Status: Disabled
+            Transition:
+              Days: 31
+              StorageClass: STANDARD_IA
+            Expiration:
+              Days: 95
       client_config: *client_config
     relationships:
     - type: cloudify.relationships.depends_on
@@ -66,16 +64,15 @@ node_templates:
     type: cloudify.nodes.aws.s3.BucketPolicy
     properties:
       resource_config:
-        kwargs:
-          Policy:
-            Version: '2012-10-17'
-            Statement:
-            - Sid: EveryoneGetPlugin
-              Effect: Allow
-              Principal: "*"
-              Action:
-              - "s3:GetObject"
-              Resource: { concat: [ 'arn:aws:s3:::', { get_property: [ bucket, resource_config, kwargs, Bucket ] } , '/*' ] }
+        Policy:
+          Version: '2012-10-17'
+          Statement:
+          - Sid: EveryoneGetPlugin
+            Effect: Allow
+            Principal: "*"
+            Action:
+            - "s3:GetObject"
+            Resource: { concat: [ 'arn:aws:s3:::', { get_property: [ bucket, resource_config, Bucket ] } , '/*' ] }
       client_config: *client_config
     relationships:
     - type: cloudify.relationships.depends_on
@@ -85,11 +82,10 @@ node_templates:
     type: cloudify.nodes.aws.s3.BucketTagging
     properties:
       resource_config:
-        kwargs:
-          Tagging:
-            TagSet:
-            - Key: Name
-              Value: aws-test-bucket-tagging
+        Tagging:
+          TagSet:
+          - Key: Name
+            Value: aws-test-bucket-tagging
       client_config: *client_config
     relationships:
     - type: cloudify.relationships.depends_on
@@ -100,15 +96,16 @@ node_templates:
     properties:
       source_type: 'bytes'
       resource_config:
-        kwargs:
-          ACL: 'public-read'
-          Body: 'Test Bytes Mode'
-          Bucket: { get_property: [ bucket, resource_config, kwargs, Bucket ] }
-          Key: 'test-byte-data.txt'
+        ACL: 'public-read'
+        Body: 'Test Bytes Mode'
+        Bucket: { get_property: [ bucket, resource_config, Bucket ] }
+        Key: 'test-byte-data.txt'
       client_config: *client_config
     relationships:
     - type: cloudify.relationships.depends_on
       target: bucket
+    - type: cloudify.relationships.depends_on
+      target: bucket_object_local
 
   bucket_object_local:
     type: cloudify.nodes.aws.s3.BucketObject
@@ -116,14 +113,15 @@ node_templates:
       source_type: 'local'
       path: './local-s3-object.txt'
       resource_config:
-        kwargs:
-          ACL: 'public-read'
-          Bucket: { get_property: [ bucket, resource_config, kwargs, Bucket ] }
-          Key: 'local-s3-object.txt'
+        ACL: 'public-read'
+        Bucket: { get_property: [ bucket, resource_config, Bucket ] }
+        Key: 'local-s3-object.txt'
       client_config: *client_config
     relationships:
     - type: cloudify.relationships.depends_on
       target: bucket
+    - type: cloudify.relationships.depends_on
+      target: bucket_object_remote
 
   bucket_object_remote:
     type: cloudify.nodes.aws.s3.BucketObject
@@ -131,10 +129,9 @@ node_templates:
       source_type: 'remote'
       path: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'
       resource_config:
-        kwargs:
-          ACL: 'public-read'
-          Bucket: { get_property: [ bucket, resource_config, kwargs, Bucket ] }
-          Key: 'dummy.pdf'
+        ACL: 'public-read'
+        Bucket: { get_property: [ bucket, resource_config, Bucket ] }
+        Key: 'dummy.pdf'
       client_config: *client_config
     relationships:
     - type: cloudify.relationships.depends_on

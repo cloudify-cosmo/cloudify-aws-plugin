@@ -518,32 +518,105 @@ data_types:
         description: http://boto3.readthedocs.io/en/latest/reference/services/sns.html#SNS.Client.get_subscription_attributes
         default: {}
 
+  cloudify.datatypes.aws.s3.BucketTagging.Tagging:
+    properties:
+      TagSet:
+        required: true
+        description: A list of dictionaries with a keys Key and Value.
+        default: []
+
   cloudify.datatypes.aws.s3.BucketTagging.config:
     properties:
+      Bucket:
+        type: string
+        required: false
+        description: The bucket to tag.
+      Tagging:
+        type: cloudify.datatypes.aws.s3.BucketTagging.Tagging
+        required: true
+        description: The tagging set.
       kwargs:
         description: http://boto3.readthedocs.io/en/latest/reference/services/s3.html#S3.Client.put_bucket_tagging
         default: {}
 
+  cloudify.datatypes.aws.s3.BucketLifecycleConfiguration.Lifecycle:
+    properties:
+      Rules:
+        default: []
+        required: true
+        description: A list of rules in dict format with keys Prefix, Status, etc.
+
   cloudify.datatypes.aws.s3.BucketLifecycleConfiguration.config:
     properties:
+      Bucket:
+        type: string
+        required: false
+        description: The bucket to tag.
+      LifecycleConfiguration:
+        type: cloudify.datatypes.aws.s3.BucketLifecycleConfiguration.Lifecycle
+        required: false
+        description: The lifecycle configuration.
       kwargs:
         description: http://boto3.readthedocs.io/en/latest/reference/services/s3.html#S3.Client.put_bucket_lifecycle
         default: {}
 
   cloudify.datatypes.aws.s3.BucketPolicy.config:
     properties:
+      Bucket:
+        type: string
+        required: false
+        description: The bucket to tag.
+      ConfirmRemoveSelfBucketAccess:
+        type: boolean
+        required: false
+        description: Set this parameter to true to confirm that you want to remove your permissions to change this bucket policy in the future.
+      Policy:
+        required: true
+        description: The bucket policy as a JSON document.
+        default: {}
       kwargs:
         description: http://boto3.readthedocs.io/en/latest/reference/services/s3.html#S3.Client.put_bucket_policy
         default: {}
 
+  cloudify.datatypes.aws.s3.CreateBucketConfiguration:
+    properties:
+      LocationConstraint:
+        type: string
+        required: true
+        description: Specifies the region where the bucket will be created. If you don't specify a region, the bucket will be created in US Standard.
+
   cloudify.datatypes.aws.s3.Bucket.config:
     properties:
+      Bucket:
+        type: string
+        required: true
+        description: The bucket name.
+      ACL:
+        type: string
+        required: false
+        description: The canned ACL to apply to the bucket.
+      CreateBucketConfiguration:
+        type: cloudify.datatypes.aws.s3.CreateBucketConfiguration
+        required: false
+        description: Specifies the region where the bucket will be created.
       kwargs:
         description: http://boto3.readthedocs.io/en/latest/reference/services/s3.html#S3.Client.create_bucket
         default: {}
 
   cloudify.datatypes.aws.s3.BucketObject.config:
     properties:
+      Bucket:
+        type: string
+        required: false
+        description: The bucket name.
+      Key:
+        type: string
+        required: false
+        description: Object key for which the PUT operation was initiated.
+      ACL:
+        type: string
+        required: false
+        description: Object key for which the PUT operation was initiated.
       kwargs:
         description: https://boto3.readthedocs.io/en/latest/reference/services/s3.html#S3.Client.put_object
         default: {}
