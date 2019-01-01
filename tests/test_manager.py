@@ -133,14 +133,14 @@ class AWSPluginTestCase(PluginsTest):
 
         # Populate inputs with valid "availability zone"
         inputs['availability_zone'] = \
-            '{0}b'.format(self.client_config['aws_region_name'])
+            '{0}c'.format(self.client_config['aws_region_name'])
 
         # Blueprint Id
         blueprint_id = CFN_BLUEPRINT_ID
 
         # Blueprint path
         blueprint_path =\
-            'examples/cloudformation-feature-demo/rds-stack-variation.yaml'
+            'examples/cloudformation-feature-demo/blueprint.yaml'
 
         # Trigger build for cloudformation example
         self._deploy_aws_example(blueprint_id, blueprint_path, inputs)

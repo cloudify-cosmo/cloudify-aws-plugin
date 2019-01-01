@@ -35,7 +35,7 @@ node_templates:
     type: cloudify.nodes.aws.s3.Bucket
     properties:
       resource_config:
-        Bucket: test-bucket
+        Bucket: test-cloudify-bucket
         ACL: public-read-write
         CreateBucketConfiguration:
           LocationConstraint: { get_input: aws_region_name }
@@ -97,9 +97,10 @@ node_templates:
       source_type: 'bytes'
       resource_config:
         ACL: 'public-read'
-        Body: 'Test Bytes Mode'
         Bucket: { get_property: [ bucket, resource_config, Bucket ] }
         Key: 'test-byte-data.txt'
+        kwargs:
+          Body: 'Test Bytes Mode'
       client_config: *client_config
     relationships:
     - type: cloudify.relationships.depends_on
