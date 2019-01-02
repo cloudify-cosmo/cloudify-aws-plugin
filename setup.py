@@ -27,6 +27,6 @@ setup(
     install_requires=[
         'cloudify-common>=4.5',
         'boto3==1.9.57',
-        'botocore==1.12.57'
+        'botocore==1.12.71'
     ]
 )
