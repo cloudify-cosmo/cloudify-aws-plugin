@@ -63,9 +63,11 @@ class S3BucketObject(S3Base):
             self.resource_config.get(BUCKET) else None
 
     def get_resource_config(self, node):
-        return node.properties['resource_config']['kwargs'] if \
-            node.properties.get('resource_config') \
-            and node.properties['resource_config'].get('kwargs') else None
+        resource_config = node.properties.get('resource_config')
+        if 'kwargs' in resource_config:
+            _kwargs = resource_config.pop('kwargs')
+            resource_config.update(_kwargs)
+        return resource_config
 
     @property
     def bucket_name(self):
@@ -174,13 +176,13 @@ def create(ctx, iface, resource_config, **_):
     """Creates an AWS S3 Bucket Object"""
 
     # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
+    params = utils.clean_params(
+        dict() if not resource_config else resource_config.copy())
 
     # Get the bucket object key from params
     object_key = params.get(OBJECT_KEY)
     if not object_key:
-        raise NonRecoverableError('{} param is required'.format(OBJECT_KEY))
+        raise NonRecoverableError('{0} param is required'.format(OBJECT_KEY))
 
     utils.update_resource_id(ctx.instance, object_key)
     source_type = ctx.node.properties.get(OBJECT_SOURCE_TYPE)

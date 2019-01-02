@@ -106,6 +106,7 @@ class TestS3BucketLifecycleConfiguration(TestBase):
         iface.create = self.mock_return('location')
         with patch(PATCH_PREFIX + 'utils') as utils:
             utils.find_rel_by_node_type = self.mock_return(ctx_target)
+            utils.clean_params = self.mock_return({})
             lifecycle_configuration.create(ctx, iface, config)
             self.assertEqual(ctx.instance.runtime_properties[BUCKET],
                              'ext_id')

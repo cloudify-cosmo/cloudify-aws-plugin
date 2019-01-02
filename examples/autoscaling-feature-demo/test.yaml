@@ -20,7 +20,7 @@ inputs:
 
   availability_zone:
     type: string
-    default: { concat: [ { get_input: aws_region_name}, 'b' ] }
+    default: { concat: [ { get_input: aws_region_name}, 'c' ] }
 
   public_subnet_cidr:
     default: '10.0.0.0/24'
