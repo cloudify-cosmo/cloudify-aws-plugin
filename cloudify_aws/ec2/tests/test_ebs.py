@@ -8,9 +8,9 @@
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
-#    * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    * See the License for the specific language governing permissions and
-#    * limitations under the License.
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 # Standard Imports
 import unittest
@@ -92,7 +92,7 @@ class TestEC2Volume(TestBase):
     def test_class_create(self):
         params =\
             {
-                'AvailabilityZone': 'test-zone-c1',
+                'AvailabilityZone': 'aq-testzone-1a',
                 'Size': 6,
                 'TagSpecifications':
                     [
@@ -115,7 +115,7 @@ class TestEC2Volume(TestBase):
 
         output = \
             {
-                'AvailabilityZone': 'test-zone-c1',
+                'AvailabilityZone': 'aq-testzone-1a',
                 'Size': 6,
                 'Tags':
                     [
@@ -163,7 +163,7 @@ class TestEC2Volume(TestBase):
         ctx = self.get_mock_ctx("EBSVolume")
         config = \
             {
-                'AvailabilityZone': 'test-zone-c1',
+                'AvailabilityZone': 'aq-testzone-1a',
                 'Size': 6,
                 'Tags':
                     [

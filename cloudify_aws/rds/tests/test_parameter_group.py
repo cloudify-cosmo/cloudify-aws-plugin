@@ -21,7 +21,7 @@ import unittest
 
 from cloudify.state import current_ctx
 
-from cloudify_aws.common.tests.test_base import TestBase
+from cloudify_aws.common.tests.test_base import TestBase, CLIENT_CONFIG
 
 # Constants
 PARAMETER_GROUP_TH = ['cloudify.nodes.Root',
@@ -35,7 +35,8 @@ NODE_PROPERTIES = {
             'DBParameterGroupFamily': 'mysql5.7',
             'Description': 'MySQL5.7 Parameter Group for Dev'
         }
-    }
+    },
+    'client_config': CLIENT_CONFIG
 }
 
 RUNTIME_PROPERTIES_AFTER_CREATE = {
@@ -65,7 +66,8 @@ class TestRDSParameterGroup(TestBase):
     def test_create_raises_UnknownServiceError(self):
         _test_name = 'test_create_UnknownServiceError'
         _test_node_properties = {
-            'use_external_resource': False
+            'use_external_resource': False,
+            'client_config': CLIENT_CONFIG
         }
         _test_runtime_properties = {
             'resource_config': {}
@@ -88,7 +90,9 @@ class TestRDSParameterGroup(TestBase):
             "Unknown service: 'rds'. Valid service names are: ['rds']"
         )
 
-        self.fake_boto.assert_called_with('rds', region_name=None)
+        self.fake_boto.assert_called_with('rds', aws_access_key_id='xxx',
+                                          aws_secret_access_key='yyy',
+                                          region_name='aq-testzone-1')
 
     def test_configure_empty(self):
         _test_name = 'test_configure'
@@ -256,7 +260,9 @@ class TestRDSParameterGroup(TestBase):
     def _create_parameter_relationships(self, node_id):
         _source_ctx = self.get_mock_ctx(
             'test_attach_source',
-            test_properties={},
+            test_properties={
+                'client_config': CLIENT_CONFIG
+            },
             test_runtime_properties={
                 'resource_id': 'prepare_attach_source',
                 'aws_resource_id': 'aws_resource_mock_id',

@@ -63,7 +63,8 @@ class TestRDSSubnetGroup(TestBase):
 
     def test_create_raises_UnknownServiceError(self):
         _test_node_properties = {
-            'use_external_resource': False
+            'use_external_resource': False,
+            'client_config': CLIENT_CONFIG
         }
         _test_runtime_properties = {
             'resource_config': {}
@@ -86,7 +87,9 @@ class TestRDSSubnetGroup(TestBase):
             "Unknown service: 'rds'. Valid service names are: ['rds']"
         )
 
-        self.fake_boto.assert_called_with('rds', region_name=None)
+        self.fake_boto.assert_called_with('rds', aws_access_key_id='xxx',
+                                          aws_secret_access_key='yyy',
+                                          region_name='aq-testzone-1')
 
     def test_create(self):
         _ctx = self.get_mock_ctx(
