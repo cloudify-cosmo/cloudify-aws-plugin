@@ -92,7 +92,7 @@ class TestEC2Volume(TestBase):
     def test_class_create(self):
         params =\
             {
-                'AvailabilityZone': 'test-zone-c1',
+                'AvailabilityZone': 'aq-testzone-1a',
                 'Size': 6,
                 'TagSpecifications':
                     [
@@ -115,7 +115,7 @@ class TestEC2Volume(TestBase):
 
         output = \
             {
-                'AvailabilityZone': 'test-zone-c1',
+                'AvailabilityZone': 'aq-testzone-1a',
                 'Size': 6,
                 'Tags':
                     [
@@ -163,7 +163,7 @@ class TestEC2Volume(TestBase):
         ctx = self.get_mock_ctx("EBSVolume")
         config = \
             {
-                'AvailabilityZone': 'test-zone-c1',
+                'AvailabilityZone': 'aq-testzone-1a',
                 'Size': 6,
                 'Tags':
                     [

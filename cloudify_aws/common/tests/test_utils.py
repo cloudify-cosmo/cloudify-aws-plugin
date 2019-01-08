@@ -266,6 +266,57 @@ class TestUtils(TestBase):
     def test_get_uuid(self):
         self.assertTrue(utils.get_uuid())
 
+    def test_region(self):
+        # based on: https://docs.aws.amazon.com/
+        # /AmazonRDS/latest/UserGuide/Concepts.RegionsAndAvailabilityZones.html
+        check_cases = {
+            "us-east-2": True,
+            "us-east-1": True,
+            "us-west-1": True,
+            "us-west-2": True,
+            "ap-south-1": True,
+            "ap-northeast-3": True,
+            "ap-northeast-2": True,
+            "ap-southeast-1": True,
+            "ap-southeast-2": True,
+            "ap-northeast-1": True,
+            "ca-central-1": True,
+            "cn-north-1": True,
+            "cn-northwest-1": True,
+            "eu-central-1": True,
+            "eu-west-1": True,
+            "eu-west-2": True,
+            "eu-west-3": True,
+            "eu-north-1": True,
+            "sa-east-1": True,
+            "us-gov-east-1": True,
+            "us-gov-west-1": True,
+            "uk-kindom-one": False,
+            "1-1-1": False,
+            "a-b-c": False
+        }
+        for region in check_cases:
+            if check_cases[region]:
+                utils.check_region_name(region)
+            else:
+                with self.assertRaises(NonRecoverableError):
+                    utils.check_region_name(region)
+
+    def test_zone(self):
+        check_cases = {
+            "us-east-1e": True,
+            "us-east-2a": True,
+            "us-east-55": False,
+            "us-1-1e": False,
+            "1-west-1e": False,
+        }
+        for zone in check_cases:
+            if check_cases[zone]:
+                utils.check_availability_zone(zone)
+            else:
+                with self.assertRaises(NonRecoverableError):
+                    utils.check_availability_zone(zone)
+
 
 if __name__ == '__main__':
     unittest.main()

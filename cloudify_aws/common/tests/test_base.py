@@ -28,7 +28,7 @@ from cloudify_aws.common import AWSResourceBase
 CLIENT_CONFIG = {
     'aws_access_key_id': 'xxx',
     'aws_secret_access_key': 'yyy',
-    'region_name': 'zzz'
+    'region_name': 'aq-testzone-1'
 }
 
 DELETE_RESPONSE = {
@@ -436,7 +436,9 @@ class TestBase(unittest.TestCase):
                                      target_type_hierarchy):
         _source_ctx = self.get_mock_ctx(
             'test_attach_source',
-            test_properties={},
+            test_properties={
+                'client_config': CLIENT_CONFIG
+            },
             test_runtime_properties={
                 'resource_id': 'prepare_attach_source',
                 'aws_resource_id': 'aws_resource_mock_id',

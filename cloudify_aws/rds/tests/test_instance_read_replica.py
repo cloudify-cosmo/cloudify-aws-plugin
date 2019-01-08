@@ -35,7 +35,7 @@ NODE_PROPERTIES = {
     'resource_config': {
         'kwargs': {
             'DBInstanceClass': 'db.t2.small',
-            'AvailabilityZone': 'us-east-1d'
+            'AvailabilityZone': 'aq-testzone-1a'
         }
     },
     'client_config': CLIENT_CONFIG
@@ -44,7 +44,7 @@ NODE_PROPERTIES = {
 RUNTIME_PROPERTIES = {
     'resource_config': {
         'DBInstanceClass': 'db.t2.small',
-        'AvailabilityZone': 'us-east-1d'
+        'AvailabilityZone': 'aq-testzone-1a'
     }
 }
 
@@ -53,7 +53,7 @@ RUNTIME_PROPERTIES_AFTER_CREATE = {
     'aws_resource_id': 'devdbinstance',
     'resource_config': {
         'DBInstanceClass': 'db.t2.small',
-        'AvailabilityZone': 'us-east-1d',
+        'AvailabilityZone': 'aq-testzone-1a',
     }
 }
 
@@ -133,7 +133,7 @@ class TestRDSInstanceReadReplica(TestBase):
             'rds', **CLIENT_CONFIG
         )
         self.fake_client.create_db_instance_read_replica.assert_called_with(
-            AvailabilityZone='us-east-1d',
+            AvailabilityZone='aq-testzone-1a',
             DBInstanceClass='db.t2.small',
             DBInstanceIdentifier='devdbinstance-replica'
         )

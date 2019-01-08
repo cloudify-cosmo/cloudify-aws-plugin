@@ -456,6 +456,22 @@ def get_tags_list(node_prop, runtime_prop, input_prop):
     return tags_list
 
 
+def check_region_name(region):
+    region_matcher = re.compile(constants.REGION_REGEX)
+    if not region_matcher.match(region):
+        raise NonRecoverableError(
+            'Looks as wrong region name:{}'
+            .format(repr(region)))
+
+
+def check_availability_zone(zone):
+    zone_matcher = re.compile(constants.AVAILABILITY_ZONE_REGEX)
+    if not zone_matcher.match(zone):
+        raise NonRecoverableError(
+            'Looks as wrong availability zone: {}'
+            .format(repr(zone)))
+
+
 def clean_params(p):
     if not isinstance(p, dict) or not p:
         return {}
@@ -463,4 +479,6 @@ def clean_params(p):
         if not _v:
             del p[_k]
         del _k, _v
+    if 'AvailabilityZone' in p:
+        check_availability_zone(p['AvailabilityZone'])
     return p

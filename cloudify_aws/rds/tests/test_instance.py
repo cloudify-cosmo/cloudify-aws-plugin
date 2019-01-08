@@ -41,7 +41,7 @@ RUNTIME_PROPERTIES = {
         'DBInstanceClass': 'db.t2.small',
         'Engine': 'mysql',
         'EngineVersion': '5.7.16',
-        'AvailabilityZone': 'us-east-1a',
+        'AvailabilityZone': 'aq-testzone-1a',
         'StorageType': 'gp2',
         'AllocatedStorage': '10',
         'DBName': 'devdb',
@@ -55,7 +55,7 @@ RUNTIME_PROPERTIES_AFTER_CREATE = {
     'aws_resource_id': 'devdbinstance',
     'resource_config': {
         'Engine': 'mysql',
-        'AvailabilityZone': 'us-east-1a',
+        'AvailabilityZone': 'aq-testzone-1a',
         'MasterUsername': 'root',
         'MasterUserPassword': 'Password1234',
         'StorageType': 'gp2',
@@ -87,7 +87,8 @@ class TestRDSInstance(TestBase):
     def test_create_raises_UnknownServiceError(self):
         _test_name = 'test_create_UnknownServiceError'
         _test_node_properties = {
-            'use_external_resource': False
+            'use_external_resource': False,
+            'client_config': CLIENT_CONFIG
         }
         _test_runtime_properties = {
             'resource_config': {}
@@ -108,7 +109,9 @@ class TestRDSInstance(TestBase):
             "Unknown service: 'rds'. Valid service names are: ['rds']"
         )
 
-        self.fake_boto.assert_called_with('rds', region_name=None)
+        self.fake_boto.assert_called_with('rds', aws_access_key_id='xxx',
+                                          aws_secret_access_key='yyy',
+                                          region_name='aq-testzone-1')
 
     def test_create(self):
         _test_name = 'test_create'
@@ -141,7 +144,7 @@ class TestRDSInstance(TestBase):
             'rds', **CLIENT_CONFIG
         )
         self.fake_client.create_db_instance.assert_called_with(
-            AllocatedStorage='10', AvailabilityZone='us-east-1a',
+            AllocatedStorage='10', AvailabilityZone='aq-testzone-1a',
             DBInstanceClass='db.t2.small',
             DBInstanceIdentifier='devdbinstance', DBName='devdb',
             Engine='mysql', EngineVersion='5.7.16',
@@ -211,7 +214,9 @@ class TestRDSInstance(TestBase):
     def _create_instance_relationships(self, node_id, type_hierarchy):
         _source_ctx = self.get_mock_ctx(
             'test_attach_source',
-            test_properties={},
+            test_properties={
+                'client_config': CLIENT_CONFIG
+            },
             test_runtime_properties={
                 'resource_id': 'prepare_attach_source',
                 'aws_resource_id': 'aws_resource_mock_id',
@@ -233,7 +238,7 @@ class TestRDSInstance(TestBase):
 
         _ctx = self.get_mock_relationship_ctx(
             node_id,
-            test_properties={},
+            test_properties={'client_config': CLIENT_CONFIG},
             test_runtime_properties={},
             test_source=_source_ctx,
             test_target=_target_ctx,

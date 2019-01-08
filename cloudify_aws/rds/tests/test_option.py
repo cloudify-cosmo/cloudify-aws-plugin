@@ -19,7 +19,7 @@ import unittest
 
 from cloudify.state import current_ctx
 
-from cloudify_aws.common.tests.test_base import TestBase
+from cloudify_aws.common.tests.test_base import TestBase, CLIENT_CONFIG
 
 # Constants
 PARAMETER_OPTION_TH = ['cloudify.nodes.Root',
@@ -52,7 +52,8 @@ class TestRDSOption(TestBase):
                 "kwargs": {
                     "Port": 21212
                 }
-            }
+            },
+            'client_config': CLIENT_CONFIG
         }
 
         _ctx = self.get_mock_ctx(
@@ -84,7 +85,8 @@ class TestRDSOption(TestBase):
                 "kwargs": {
                     "Port": 21212
                 }
-            }
+            },
+            'client_config': CLIENT_CONFIG
         }
 
         _ctx = self.get_mock_ctx(
@@ -122,7 +124,9 @@ class TestRDSOption(TestBase):
 
         _target_ctx = self.get_mock_ctx(
             'test_attach_target',
-            test_properties={},
+            test_properties={
+                'client_config': CLIENT_CONFIG
+            },
             test_runtime_properties={
                 'resource_id': 'prepare_attach_target',
                 'aws_resource_id': 'aws_target_mock_id',
