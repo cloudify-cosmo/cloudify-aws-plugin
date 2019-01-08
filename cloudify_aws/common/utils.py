@@ -460,16 +460,18 @@ def check_region_name(region):
     region_matcher = re.compile(constants.REGION_REGEX)
     if not region_matcher.match(region):
         raise NonRecoverableError(
-            'Looks as wrong region name:{}'
-            .format(repr(region)))
+            'The region_name {region} provided in client_config does not '
+            'match the expected region regular expression.'
+            .format(region=repr(region)))
 
 
 def check_availability_zone(zone):
     zone_matcher = re.compile(constants.AVAILABILITY_ZONE_REGEX)
     if not zone_matcher.match(zone):
         raise NonRecoverableError(
-            'Looks as wrong availability zone: {}'
-            .format(repr(zone)))
+            'The AvailabilityZone {zone} provided in resource_config does '
+            'not match the expected availability zone regular expression.'
+            .format(zone=repr(zone)))
 
 
 def clean_params(p):
@@ -478,7 +480,7 @@ def clean_params(p):
     for _k, _v in p.items():
         if not _v:
             del p[_k]
+        elif _k == 'AvailabilityZone':
+            check_availability_zone(_v)
         del _k, _v
-    if 'AvailabilityZone' in p:
-        check_availability_zone(p['AvailabilityZone'])
     return p
