@@ -1,0 +1,99 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/4.5/types.yaml
+  - plugin:cloudify-aws-plugin
+
+inputs:
+
+  aws_access_key_id:
+    type: string
+    description: YOUR AWS ACCESS KEY ID
+    default: { get_secret: aws_access_key_id }
+
+  aws_secret_access_key:
+    type: string
+    description: YOUR AWS SECRET ACCESS KEY
+    default: { get_secret: aws_secret_access_key }
+
+  aws_region_name:
+    type: string
+    description: YOUR AWS Region
+    default: { get_secret: aws_region_name }
+
+  ec2_region_endpoint:
+    type: string
+    description: YOUR AWS Region endpoint
+    default: { get_secret: ec2_region_endpoint }
+
+  aws_availability_zone:
+    type: string
+    description: Your AWS Region availability_zone.
+    default: { get_secret: aws_availability_zone }
+
+  use_external_ip:
+    type: boolean
+    default: False
+
+  existing_ip:
+    type: string
+    default: ''
+
+  subnet_id:
+    type: string
+
+dsl_definitions:
+
+  client_config: &client_config
+    aws_access_key_id: { get_input: aws_access_key_id }
+    aws_secret_access_key: { get_input: aws_secret_access_key }
+    region_name: { get_input: aws_region_name }
+
+  operation_inputs: &operation_inputs
+    aws_resource_id:
+      description: >
+        This overrides the resource_id property (useful for setting the
+        resource ID of a node instance at runtime).
+      type: string
+      required: false
+      default: ~
+    runtime_properties:
+      description: >
+        This overrides any runtime property at runtime. This is a key-value
+        pair / dictionary that will be passed, as-is, to the runtime properties
+        of the running instance.
+      required: false
+      default: ~
+    force_operation:
+      description: >
+        Forces the current operation to be executed regardless
+        if the "use_external_resource" property is set or not.
+      required: false
+      default: false
+    resource_config:
+      description: >
+        Configuration key-value data to be passed as-is to the corresponding
+        Boto3 method. Key names must match the case that Boto3 requires.
+      required: false
+      default: {}
+
+node_templates:
+
+  nic:
+    type: cloudify.nodes.aws.ec2.Interface
+    properties:
+      client_config: *client_config
+      resource_config:
+        kwargs:
+          Description: Test EIP/NICs.
+          SubnetId: { get_input: subnet_id }
+
+  eip:
+    type: cloudify.nodes.aws.ec2.ElasticIP
+    properties:
+      client_config: *client_config
+      use_external_resource: { get_input: use_external_ip }
+      resource_id: { get_input: existing_ip }
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: nic
