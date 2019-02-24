@@ -1,6 +1,3 @@
-[submodule "examples/simple-kubernetes-blueprint"]
-	path = examples/simple-kubernetes-blueprint
-	url = https://github.com/cloudify-examples/simple-kubernetes-blueprint.git
-[submodule "examples/aws-example-network"]
-	path = examples/aws-example-network
-	url = https://github.com/cloudify-examples/aws-example-network.git
+[submodule "examples/blueprint-examples"]
+	path = examples/blueprint-examples
+	url = https://github.com/cloudify-community/blueprint-examples.git
