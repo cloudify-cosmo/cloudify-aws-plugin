@@ -115,7 +115,7 @@ jobs:
 workflows:
   version: 2
   tests:
-    jobs:
+    jobs: &all_jobs
       - unittests
       - wagon:
           filters:
@@ -127,3 +127,12 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
+  nightly:
+    triggers:
+    - schedule:
+        cron: "0 1 * * *"
+        filters:
+          branches:
+            only:
+              - master
+    jobs: *all_jobs
