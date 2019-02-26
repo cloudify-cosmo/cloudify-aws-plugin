@@ -14,8 +14,12 @@
 
 import os
 
+from Crypto.PublicKey import RSA
+from cloudify_cli.utils import get_local_path
+
 from integration_tests.tests.test_cases import PluginsTest
 from integration_tests.tests import utils as test_utils
+from integration_tests.framework import utils
 
 PLUGIN_NAME = 'cloudify-aws-plugin'
 
@@ -58,6 +62,15 @@ class AWSPluginTestCase(PluginsTest):
         install_plugin_ex = [ex for ex in self.client.executions.list(
             include_system_workflows=True) if ex.workflow_id == wf_name][0]
         self.wait_for_execution_to_end(install_plugin_ex, timeout_seconds=1200)
+
+    def _create_deployment_secrets(self, secrets):
+
+        for secret in secrets:
+            secret_name, secret_value = secret.items()[0]
+            self.client.secrets.create(
+                secret_name,
+                secret_value,
+                update_if_exists=True)
 
     def _deploy_aws_example(self, blueprint_id, blueprint_path, inputs=None):
         if not inputs:
