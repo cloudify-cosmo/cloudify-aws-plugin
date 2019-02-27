@@ -75,39 +75,49 @@ jobs:
             - build/*
 
   cloudify-manager:
-    docker:
-      - image: amd64/centos:centos7.3.1611
+    machine:
+      enabled: true
+      python:
+        version: pypy-2.2.1
+    environment:
+      CLOUDIFY_SSL_TRUST_ALL: true
     steps:
       - checkout
       - attach_workspace:
           at: workspace
       - run:
-          name: Install dependencies
-          command: yum -y install python-devel gcc openssl git libxslt-devel libxml2-devel openldap-devel libffi-devel openssl-devel libvirt-devel
-      - run:
-          name: Download pip
-          command: curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
-      - run:
-          name: Install pip
-          command: python get-pip.py
-      - run:
-          name: Upgrade pip
-          command: pip install --upgrade pip==9.0.1
-      - run:
-          name: Install virtualenv
-          command: pip install virtualenv
-      - run:
-          name: Init virtualenv
-          command: virtualenv env
+          name: "Pull Submodules"
+          command: |
+            git submodule init
+            git submodule update --remote
       - run:
           name: install cloudify
-          command: pip install cloudify==4.3.2
-      - run:
-          name: install openstack plugin from branch
-          command: pip install -e .
+          command: pip install -U cloudify==4.5
       - run:
           name: install test requirements
-          command: pip install awscli nose testtools https://github.com/cloudify-cosmo/cloudify-fabric-plugin/archive/1.5.1.zip https://github.com/cloudify-incubator/cloudify-utilities-plugin/archive/1.7.1.zip https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/2.1.2.zip
+          command: pip install nose testtools https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/9e78969f30dcaa9efce9b8fd7b078357f3d8adc8.zip
+      - run:
+          name: download manager docker image
+          command: wget http://repository.cloudifysource.org/cloudify/4.5.0/ga-release/cloudify-docker-manager-4.5ga.tar
+      - run:
+          name: load docker image
+          command: docker load -i cloudify-docker-manager-4.5ga.tar
+      - run:
+          name: retain space by dumping the tar
+          command: rm cloudify-docker-manager-4.5ga.tar
+      - run:
+          name: start docker container
+          command: docker run --name cfy_manager -d --restart unless-stopped -v /sys/fs/cgroup:/sys/fs/cgroup:ro --tmpfs /run --tmpfs /run/lock --security-opt seccomp:unconfined --cap-add SYS_ADMIN --network host docker-cfy-manager:latest
+      - run:
+          name: init CLI profile
+          command: |
+            counter=0
+            until [ $counter -ge 10 ]
+            do
+                cfy profiles use localhost -u admin -p admin -t default_tenant && break
+                counter=$[$counter+1]
+                sleep 2
+            done
       - run:
           name: execute test
           command: nosetests -s tests/test_aws.py
