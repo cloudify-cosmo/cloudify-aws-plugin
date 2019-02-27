@@ -95,7 +95,7 @@ jobs:
           command: pip install -U cloudify==4.5
       - run:
           name: install test requirements
-          command: pip install nose testtools https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/15457e3979e82e30f31601c3721d5de5746766d3.zip
+          command: pip install nose testtools https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/9e78969f30dcaa9efce9b8fd7b078357f3d8adc8.zip
       - run:
           name: download manager docker image
           command: wget http://repository.cloudifysource.org/cloudify/4.5.0/ga-release/cloudify-docker-manager-4.5ga.tar

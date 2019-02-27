@@ -15,44 +15,36 @@ from ecosystem_tests.utils import (
     get_deployment_resources_by_node_type_substring
 )
 
+password = 'admin'
+sensitive_data = [os.environ['AWS_SECRET_ACCESS_KEY'],
+                  os.environ['AWS_ACCESS_KEY_ID'],
+                  password]
+sys.stdout = PasswordFilter(sensitive_data, sys.stdout)
+sys.stderr = PasswordFilter(sensitive_data, sys.stderr)
+utils.upload_plugins_utility()
+secrets = {
+    'ec2_region_endpoint': 'ec2.ap-northeast-1.amazonaws.com',
+    'ec2_region_name': 'ap-northeast-1',
+    'aws_region_name': 'ap-northeast-1',
+    'availability_zone': 'ap-northeast-1b',
+    'aws_availability_zone': 'ap-northeast-1b',
+    'aws_secret_access_key': os.environ['AWS_SECRET_ACCESS_KEY'],
+    'aws_access_key_id': os.environ['AWS_ACCESS_KEY_ID'],
+}
+for name, value in secrets.items():
+    utils.execute_command(
+        'cfy secrets create -u {0} -s {1}'.format(
+            name, value
+        )
+    )
+
 
 class TestAWS(EcosystemTestBase):
 
-    @classmethod
-    def setUpClass(cls):
-        pass
-
-    @classmethod
-    def tearDownClass(cls):
-        pass
-
-    password = 'admin'
-    sensitive_data = [os.environ['AWS_SECRET_ACCESS_KEY'],
-                      os.environ['AWS_ACCESS_KEY_ID'],
-                      password]
-    sys.stdout = PasswordFilter(sensitive_data, sys.stdout)
-    sys.stderr = PasswordFilter(sensitive_data, sys.stderr)
-
     def setUp(self):
         os.environ['ECOSYSTEM_SESSION_MANAGER_IP'] = 'localhost'
-        self.upload_plugins()
         os.environ['ECOSYSTEM_SESSION_PASSWORD'] = self.password
         os.environ['AWS_DEFAULT_REGION'] = self.inputs.get('ec2_region_name')
-        secrets = {
-            'ec2_region_endpoint': 'ec2.ap-northeast-1.amazonaws.com',
-            'ec2_region_name': 'ap-northeast-1',
-            'aws_region_name': 'ap-northeast-1',
-            'availability_zone': 'ap-northeast-1b',
-            'aws_availability_zone': 'ap-northeast-1b',
-            'aws_secret_access_key': os.environ['AWS_SECRET_ACCESS_KEY'],
-            'aws_access_key_id': os.environ['AWS_ACCESS_KEY_ID'],
-        }
-        for name, value in secrets.items():
-            utils.execute_command(
-                'cfy secrets create -u {0} -s {1}'.format(
-                    name, value
-                )
-            )
 
     def remove_deployment(self, deployment_id, nodes_to_check):
 
@@ -328,8 +320,6 @@ class TestAWS(EcosystemTestBase):
             self.check_resources_in_deployment_deleted
         )
 
-    # TODO: Investigate this.
-    @skip('Something is off with the timing here.')
     def test_sqs_sns(self):
         blueprint_path = 'examples/sns-feature-demo/blueprint.yaml'
         blueprint_id = 'sqs-{0}'.format(
