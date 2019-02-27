@@ -11,7 +11,7 @@ from ecosystem_tests import (
     IP_ADDRESS_REGEX,
     PasswordFilter)
 
-os.environ['ECOSYSTEM_SESSION_PASSWORD'] = utils.create_password()
+os.environ['ECOSYSTEM_SESSION_PASSWORD'] = 'admin'
 sensitive_data = [os.environ['AWS_SECRET_ACCESS_KEY'],
                   os.environ['AWS_ACCESS_KEY_ID'],
                   os.environ['ECOSYSTEM_SESSION_PASSWORD']]
