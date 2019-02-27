@@ -3,7 +3,6 @@ import os
 import re
 from time import sleep
 import sys
-from unittest import skip
 
 # Cloudify Imports
 from ecosystem_tests import (
@@ -11,14 +10,12 @@ from ecosystem_tests import (
     utils,
     IP_ADDRESS_REGEX,
     PasswordFilter)
-from ecosystem_tests.utils import (
-    get_deployment_resources_by_node_type_substring
-)
 
-password = 'admin'
+os.environ['ECOSYSTEM_SESSION_PASSWORD'] = utils.create_password()
 sensitive_data = [os.environ['AWS_SECRET_ACCESS_KEY'],
                   os.environ['AWS_ACCESS_KEY_ID'],
-                  password]
+                  os.environ['ECOSYSTEM_SESSION_PASSWORD']]
+
 sys.stdout = PasswordFilter(sensitive_data, sys.stdout)
 sys.stderr = PasswordFilter(sensitive_data, sys.stderr)
 utils.upload_plugins_utility(
@@ -45,9 +42,16 @@ for name, value in secrets.items():
 
 class TestAWS(EcosystemTestBase):
 
+    @classmethod
+    def setUpClass(cls):
+        pass
+
+    @classmethod
+    def tearDownClass(cls):
+        pass
+
     def setUp(self):
         os.environ['ECOSYSTEM_SESSION_MANAGER_IP'] = 'localhost'
-        os.environ['ECOSYSTEM_SESSION_PASSWORD'] = self.password
         os.environ['AWS_DEFAULT_REGION'] = self.inputs.get('ec2_region_name')
 
     def remove_deployment(self, deployment_id, nodes_to_check):
@@ -59,7 +63,7 @@ class TestAWS(EcosystemTestBase):
                 deployment_id))
 
         deployment_nodes = \
-            get_deployment_resources_by_node_type_substring(
+            utils.get_deployment_resources_by_node_type_substring(
                 deployment_id, self.node_type_prefix)
 
         self.check_resources_in_deployment_deleted(
