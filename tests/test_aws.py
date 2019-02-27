@@ -21,7 +21,11 @@ sensitive_data = [os.environ['AWS_SECRET_ACCESS_KEY'],
                   password]
 sys.stdout = PasswordFilter(sensitive_data, sys.stdout)
 sys.stderr = PasswordFilter(sensitive_data, sys.stderr)
-utils.upload_plugins_utility()
+utils.upload_plugins_utility(
+    os.environ['CIRCLE_BUILD_NUM'],
+    'aws',
+    []
+)
 secrets = {
     'ec2_region_endpoint': 'ec2.ap-northeast-1.amazonaws.com',
     'ec2_region_name': 'ap-northeast-1',
