@@ -21,7 +21,7 @@ from cloudify_aws.common import decorators, utils
 from cloudify_aws.s3 import S3Base
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
 # Boto
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 RESOURCE_TYPE = 'S3 Bucket Tagging'
 BUCKET = 'Bucket'
@@ -61,7 +61,10 @@ class S3BucketTagging(S3Base):
         """
             Create a new AWS Bucket Tagging.
         """
-        return self.make_client_call('put_bucket_tagging', params)
+        return self.make_client_call(
+            'put_bucket_tagging',
+            params,
+            fatal_handled_exceptions=[ParamValidationError])
 
     def delete(self, params=None):
         """
