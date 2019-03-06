@@ -177,36 +177,44 @@ def attach(ctx, iface, resource_config, **_):
 
     params.update({NETWORKACL_ID: network_acl_id})
 
+    # Really the user should not provide subnet_id param and will
+    # only use a relationship. But this code used to be here so
+    # we are stuck with it.
     subnet_id = params.get(SUBNET_ID)
-    if not subnet_id:
-        targ = \
-            utils.find_rel_by_node_type(ctx.instance, SUBNET_TYPE) or \
-            utils.find_rel_by_node_type(ctx.instance, SUBNET_TYPE_DEPRECATED)
+    new_network_acl_association_ids = []
+    subnet_ids = utils.find_ids_of_rels_by_node_type(
+        ctx.instance, SUBNET_TYPE)
+    if subnet_id:
+        subnet_ids.append(subnet_id)
+    for subnet in subnet_ids:
+        network_acl_associations = \
+            iface.get_properties_by_filter(
+                ASSOCIATION_SUBNET_ID, subnet)
+        network_acl_association_id = \
+            network_acl_associations.get(
+                'Associations')[0].get(
+                'NetworkAclAssociationId')
+        params.update({ASSOCIATION_ID: network_acl_association_id})
+        default_acl_id = \
+            network_acl_associations.get(
+                'Associations')[0].get('NetworkAclId')
+        ctx.instance.runtime_properties['default_acl_id'] = \
+            default_acl_id
 
-        # Attempt to use the SUBNET ID from parameters.
-        # Fallback to connected SUBNET.
-        params[SUBNET_ID] = \
-            subnet_id or \
-            targ.target.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
+        # # Actually attach the resources
+        new_network_acl_association_list = iface.attach(params)
+        new_network_acl_association_id = \
+            new_network_acl_association_list.get(
+                'NewAssociationId')
+        new_network_acl_association_ids.append(
+            new_network_acl_association_id)
 
-    network_acl_associations = iface \
-        .get_properties_by_filter(ASSOCIATION_SUBNET_ID, params[SUBNET_ID])
-    params.pop(SUBNET_ID)
-    network_acl_association_id = \
-        network_acl_associations.get('Associations')[0]\
-        .get('NetworkAclAssociationId')
-    params.update({ASSOCIATION_ID: network_acl_association_id})
-    default_acl_id = network_acl_associations.get('Associations')[0]\
-        .get('NetworkAclId')
-    ctx.instance.runtime_properties['default_acl_id'] = \
-        default_acl_id
-
-    # # Actually attach the resources
-    new_network_acl_association_list = iface.attach(params)
-    new_network_acl_association_id = new_network_acl_association_list \
-        .get('NewAssociationId')
-    ctx.instance.runtime_properties['association_id'] = \
-        new_network_acl_association_id
+    if new_network_acl_association_ids and \
+            isinstance(new_network_acl_association_ids, list):
+        ctx.instance.runtime_properties['association_ids'] = \
+            new_network_acl_association_ids
+        ctx.instance.runtime_properties['association_id'] = \
+            new_network_acl_association_ids[0]
 
 
 @decorators.aws_resource(EC2NetworkAcl, RESOURCE_TYPE,

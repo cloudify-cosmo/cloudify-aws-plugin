@@ -265,6 +265,21 @@ def find_rel_by_node_type(node_instance, node_type):
     return rels[0] if len(rels) > 0 else None
 
 
+def find_ids_of_rels_by_node_type(node_instance, node_type):
+    '''
+        Finds the IDs of all specified relationships of the Cloudify
+        instance where the related node type is of a specified type.
+    :param `cloudify.context.NodeInstanceContext` node_instance:
+        Cloudify node instance.
+    :param str node_type: Cloudify node type to search
+        node_instance.relationships for.
+    :returns: List of IDs of resources from Cloudify relationships
+    '''
+    rels = find_rels_by_node_type(node_instance, node_type)
+    return [rel.target.instance.runtime_properties.get(
+        constants.EXTERNAL_RESOURCE_ID) for rel in rels]
+
+
 def find_rels_by_node_name(node_instance, node_name):
     '''
         Finds all specified relationships of the Cloudify
