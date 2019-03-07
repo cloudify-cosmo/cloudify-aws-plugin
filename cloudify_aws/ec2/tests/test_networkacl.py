@@ -160,8 +160,10 @@ class TestEC2NetworkAcl(TestBase):
                          'network acl')
 
     def test_attach_with_relationships(self):
-        ctx = self.get_mock_ctx("NetworkAcl", type_hierarchy=[SUBNET_TYPE])
-        config = {}
+        ctx = self.get_mock_ctx(
+            "NetworkAcl",
+            type_hierarchy=[SUBNET_TYPE])
+        config = {'NewAssociationId': 'foo'}
         self.networkacl.resource_id = 'network acl'
         iface = MagicMock()
         iface.attach = self.mock_return(config)

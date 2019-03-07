@@ -57,3 +57,5 @@
     - Update integration tests
 2.0.1:
     - Support attach external address to nic.
+2.0.2:
+    - Support multiple subnet attachments to network acl.
