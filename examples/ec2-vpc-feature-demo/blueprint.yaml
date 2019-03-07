@@ -346,20 +346,20 @@ node_templates:
       - type: cloudify.relationships.depends_on
         target: customer_gateway_vpc_requester
 
-  vpn_connection_route_vpc_requester:
-    type: cloudify.nodes.aws.ec2.VPNConnectionRoute
-    properties:
-      client_config: *client_config
-    interfaces:
-      cloudify.interfaces.lifecycle:
-         create:
-           inputs:
-             resource_config:
-               VpnConnectionId: { get_attribute: [vpn_connection_vpc_requster,aws_resource_id] }
-               DestinationCidrBlock: '10.0.0.0/24'
-    relationships:
-      - type: cloudify.relationships.depends_on
-        target: vpn_connection_vpc_requster
+#  vpn_connection_route_vpc_requester:
+#    type: cloudify.nodes.aws.ec2.VPNConnectionRoute
+#    properties:
+#      client_config: *client_config
+#    interfaces:
+#      cloudify.interfaces.lifecycle:
+#         create:
+#           inputs:
+#             resource_config:
+#               VpnConnectionId: { get_attribute: [vpn_connection_vpc_requster,aws_resource_id] }
+#               DestinationCidrBlock: '10.0.0.0/24'
+#    relationships:
+#      - type: cloudify.relationships.depends_on
+#        target: vpn_connection_vpc_requster
 
   vpc_requester:
     type: cloudify.nodes.aws.ec2.Vpc

@@ -104,14 +104,14 @@ class TestEC2NetworkAcl(TestBase):
         self.networkacl.client = \
             self.make_client_function('replace_network_acl_association',
                                       return_value=value)
-        res = self.networkacl.attach(value)
+        res = self.networkacl.replace(value)
         self.assertEqual(res[ASSOCIATION_ID], value[ASSOCIATION_ID])
 
     def test_class_detach(self):
         params = {}
         self.networkacl.client = \
             self.make_client_function('replace_network_acl_association')
-        self.networkacl.detach(params)
+        self.networkacl.replace(params)
         self.assertTrue(self.networkacl.client.replace_network_acl_association
                         .called)
         ctx = self.get_mock_ctx("NetworkAcl")
