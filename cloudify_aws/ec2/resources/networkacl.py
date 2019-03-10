@@ -52,24 +52,22 @@ class EC2NetworkAcl(EC2Base):
     @property
     def properties(self):
         """Gets the properties of an external resource"""
-        params = {NETWORKACL_IDS: [self.resource_id]}
-        try:
-            resources = \
-                self.client.describe_network_acls(**params)
-        except ClientError:
-            pass
-        else:
-            return resources.get(NETWORKACLS)[0] if resources else None
+        return self.get_properties_by_filter(
+            NETWORKACL_IDS, [self.resource_id])
 
     def get_properties_by_filter(self, filter_key, filter_value):
         params = {FILTERS: [{FILTERS_NAME: filter_key,
                              FILTER_VALUE: [filter_value]}]}
+        resources = self.get_network_acls(params)
+        return None if not resources else resources.get(NETWORKACLS)[0]
+
+    def get_network_acls(self, params=None):
+        if not params:
+            params = {NETWORKACL_IDS: [], FILTERS: []}
         try:
-            resources = self.client.describe_network_acls(**params)
+            return self.client.describe_network_acls(**params)
         except ClientError:
-            pass
-        else:
-            return resources.get(NETWORKACLS)[0] if resources else None
+            return []
 
     def create(self, params):
         """
@@ -87,24 +85,12 @@ class EC2NetworkAcl(EC2Base):
         self.logger.debug('Response: %s' % res)
         return res
 
-    def attach(self, params):
+    def replace(self, params):
         '''
-            Attach an AWS EC2 NetworkAcl to a Subnet.
+            Replace Network ACL association ID.
         '''
-        self.logger.debug('Attaching %s with: %s'
-                          % (self.type_name, params.get(SUBNET_ID, None)))
-        res = self.client.replace_network_acl_association(**params)
-        self.logger.debug('Response: %s' % res)
-        return res
-
-    def detach(self, params):
-        '''
-            Detach an AWS EC2 NetworkAcl from a Subnet.
-        '''
-        self.logger.debug('Detaching %s from: %s'
-                          % (self.type_name, params.get(SUBNET_ID, None)))
-        self.logger.debug('Attaching default %s'
-                          % (self.type_name))
+        self.logger.debug('Replacing association %s with: %s'
+                          % (self.type_name, params))
         res = self.client.replace_network_acl_association(**params)
         self.logger.debug('Response: %s' % res)
         return res
@@ -172,6 +158,7 @@ def attach(ctx, iface, resource_config, **_):
     params = dict() if not resource_config else resource_config.copy()
 
     network_acl_id = params.get(NETWORKACL_ID)
+
     if not network_acl_id:
         network_acl_id = iface.resource_id
 
@@ -181,40 +168,41 @@ def attach(ctx, iface, resource_config, **_):
     # only use a relationship. But this code used to be here so
     # we are stuck with it.
     subnet_id = params.get(SUBNET_ID)
-    new_network_acl_association_ids = []
+    network_acl_assoc_prop = {}
     subnet_ids = utils.find_ids_of_rels_by_node_type(
         ctx.instance, SUBNET_TYPE)
     if subnet_id:
         subnet_ids.append(subnet_id)
-    for subnet in subnet_ids:
-        network_acl_associations = \
-            iface.get_properties_by_filter(
-                ASSOCIATION_SUBNET_ID, subnet)
-        network_acl_association_id = \
-            network_acl_associations.get(
-                'Associations')[0].get(
-                'NetworkAclAssociationId')
-        params.update({ASSOCIATION_ID: network_acl_association_id})
-        default_acl_id = \
-            network_acl_associations.get(
-                'Associations')[0].get('NetworkAclId')
-        ctx.instance.runtime_properties['default_acl_id'] = \
-            default_acl_id
-
-        # # Actually attach the resources
-        new_network_acl_association_list = iface.attach(params)
-        new_network_acl_association_id = \
-            new_network_acl_association_list.get(
-                'NewAssociationId')
-        new_network_acl_association_ids.append(
-            new_network_acl_association_id)
-
-    if new_network_acl_association_ids and \
-            isinstance(new_network_acl_association_ids, list):
-        ctx.instance.runtime_properties['association_ids'] = \
-            new_network_acl_association_ids
-        ctx.instance.runtime_properties['association_id'] = \
-            new_network_acl_association_ids[0]
+    try:
+        vpc_id = utils.find_ids_of_rels_by_node_type(
+            ctx.instance, VPC_TYPE)[0]
+    except IndexError:
+        vpc_id = None
+    acl_associations = iface.get_network_acls()
+    for acl in acl_associations['NetworkAcls']:
+        if acl[VPC_ID] != vpc_id and len(acl['Associations']) < 1:
+            continue
+        for assoc in acl['Associations']:
+            if assoc[SUBNET_ID] not in subnet_ids:
+                continue
+            ctx.logger.debug(
+                'Performing network acl assoc for {0}'.format(assoc))
+            if assoc[SUBNET_ID] not in network_acl_assoc_prop:
+                network_acl_assoc_prop[assoc[SUBNET_ID]] = {}
+            network_acl_assoc_prop[assoc[SUBNET_ID]]['original_acl'] = \
+                assoc['NetworkAclId']
+            network_acl_assoc_prop[assoc[SUBNET_ID]]['old_assoc_id'] = \
+                assoc['NetworkAclAssociationId']
+            params = {
+                ASSOCIATION_ID: assoc['NetworkAclAssociationId'],
+                NETWORKACL_ID: iface.resource_id
+            }
+            result = iface.replace(params)
+            if 'NewAssociationId' in result:
+                network_acl_assoc_prop[assoc[SUBNET_ID]]['new_assoc_id'] = \
+                    result['NewAssociationId']
+    ctx.instance.runtime_properties['network_acl_associations'] = \
+        network_acl_assoc_prop
 
 
 @decorators.aws_resource(EC2NetworkAcl, RESOURCE_TYPE,
@@ -222,10 +210,19 @@ def attach(ctx, iface, resource_config, **_):
 def detach(ctx, iface, resource_config, **_):
     '''Detach an AWS EC2 NetworkACL from a Subnet'''
     params = dict() if not resource_config else resource_config.copy()
-
-    params.update({NETWORKACL_ID: ctx.instance.runtime_properties[
-        'default_acl_id']})
-    params.update({ASSOCIATION_ID: ctx.instance.runtime_properties[
-        'association_id']})
-
-    iface.detach(params)
+    try:
+        vpc_id = utils.find_ids_of_rels_by_node_type(
+            ctx.instance, VPC_TYPE)[0]
+    except IndexError:
+        vpc_id = None
+    acl_associations = iface.get_network_acls()
+    for acl in acl_associations['NetworkAcls']:
+        if acl[VPC_ID] != vpc_id:
+            continue
+        if acl['IsDefault']:
+            break
+    for _, param in ctx.instance.runtime_properties.get(
+            'network_acl_associations', {}).items():
+        params[NETWORKACL_ID] = acl['NetworkAclId']
+        params[ASSOCIATION_ID] = param['new_assoc_id']
+        iface.replace(params)
