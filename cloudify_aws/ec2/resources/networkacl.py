@@ -23,7 +23,6 @@ from botocore.exceptions import ClientError
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.ec2 import EC2Base
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
-from cloudify.exceptions import NonRecoverableError
 
 RESOURCE_TYPE = 'EC2 Network Acl'
 NETWORKACLS = 'NetworkAcls'
@@ -181,10 +180,10 @@ def attach(ctx, iface, resource_config, **_):
         vpc_id = None
     acl_associations = iface.get_network_acls()
     for acl in acl_associations['NetworkAcls']:
-        if not acl[VPC_ID] == vpc_id and len(acl['Associations']) < 1:
+        if acl[VPC_ID] != vpc_id and len(acl['Associations']) < 1:
             continue
         for assoc in acl['Associations']:
-            if not assoc[SUBNET_ID] in subnet_ids:
+            if assoc[SUBNET_ID] not in subnet_ids:
                 continue
             ctx.logger.debug(
                 'Performing network acl assoc for {0}'.format(assoc))
@@ -218,7 +217,7 @@ def detach(ctx, iface, resource_config, **_):
         vpc_id = None
     acl_associations = iface.get_network_acls()
     for acl in acl_associations['NetworkAcls']:
-        if not acl[VPC_ID] == vpc_id:
+        if acl[VPC_ID] != vpc_id:
             continue
         if acl['IsDefault']:
             break
