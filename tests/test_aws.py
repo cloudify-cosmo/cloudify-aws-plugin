@@ -31,7 +31,10 @@ secrets = {
     'aws_availability_zone': 'ap-northeast-1b',
     'aws_secret_access_key': os.environ['AWS_SECRET_ACCESS_KEY'],
     'aws_access_key_id': os.environ['AWS_ACCESS_KEY_ID'],
+    'agent_key_private': '',
+    'agent_key_public': ''
 }
+
 for name, value in secrets.items():
     utils.execute_command(
         'cfy secrets create -u {0} -s {1}'.format(
@@ -39,49 +42,32 @@ for name, value in secrets.items():
         )
     )
 
+SSH_KEY_BP_ZIP = 'https://github.com/cloudify-examples/' \
+                 'helpful-blueprint/archive/master.zip'
+
 
 class TestAWS(EcosystemTestBase):
 
     @classmethod
     def setUpClass(cls):
-        pass
+        os.environ['ECOSYSTEM_SESSION_PASSWORD'] = 'admin'
 
     @classmethod
     def tearDownClass(cls):
-        pass
+        try:
+            del os.environ['ECOSYSTEM_SESSION_MANAGER_IP']
+            del os.environ['ECOSYSTEM_SESSION_LOADED']
+            del os.environ['ECOSYSTEM_SESSION_PASSWORD']
+            del os.environ['CLOUDIFY_STORAGE_DIR']
+            del os.environ['ECOSYSTEM_SESSION_BLUEPRINT_DIR']
+        except KeyError:
+            pass
 
     def setUp(self):
+        if self.password not in self.sensitive_data:
+            self.sensitive_data.append(self.password)
         os.environ['ECOSYSTEM_SESSION_MANAGER_IP'] = 'localhost'
         os.environ['AWS_DEFAULT_REGION'] = self.inputs.get('ec2_region_name')
-
-    def remove_deployment(self, deployment_id, nodes_to_check):
-
-        # UnDeploy the application
-        utils.execute_command(
-            'cfy executions start uninstall '
-            '-p ignore_failure=true -d {0}'.format(
-                deployment_id))
-
-        deployment_nodes = \
-            utils.get_deployment_resources_by_node_type_substring(
-                deployment_id, self.node_type_prefix)
-
-        self.check_resources_in_deployment_deleted(
-            deployment_nodes, nodes_to_check
-        )
-
-    # For testing/debugging
-    @property
-    def manager_blueprint_version(self):
-        return 'update-aws-plugin'
-
-    @staticmethod
-    def install_blueprint(blueprint_path, blueprint_id):
-        install_command =\
-            'cfy install {0} -b {1}'.format(blueprint_path, blueprint_id)
-        failed = utils.execute_command(install_command)
-        if failed:
-            raise Exception('Install {0} failed.'.format(blueprint_id))
 
     @property
     def manager_ip(self):
@@ -106,6 +92,44 @@ class TestAWS(EcosystemTestBase):
     @property
     def server_ip_property(self):
         return 'ip'
+
+    @property
+    def sensitive_data(self):
+        return [
+            os.environ['AWS_SECRET_ACCESS_KEY'],
+            os.environ['AWS_ACCESS_KEY_ID']
+        ]
+
+    def install_manager(self, _):
+        pass
+
+    @staticmethod
+    def uninstall_manager(cfy_local):
+        pass
+
+    def remove_deployment(self, deployment_id, nodes_to_check):
+
+        # UnDeploy the application
+        utils.execute_command(
+            'cfy executions start uninstall '
+            '-p ignore_failure=true -d {0}'.format(
+                deployment_id))
+
+        deployment_nodes = \
+            utils.get_deployment_resources_by_node_type_substring(
+                deployment_id, self.node_type_prefix)
+
+        self.check_resources_in_deployment_deleted(
+            deployment_nodes, nodes_to_check
+        )
+
+    @staticmethod
+    def install_blueprint(blueprint_path, blueprint_id):
+        install_command =\
+            'cfy install {0} -b {1}'.format(blueprint_path, blueprint_id)
+        failed = utils.execute_command(install_command)
+        if failed:
+            raise Exception('Install {0} failed.'.format(blueprint_id))
 
     @property
     def inputs(self):
