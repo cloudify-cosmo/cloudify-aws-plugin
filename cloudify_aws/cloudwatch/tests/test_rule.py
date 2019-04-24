@@ -119,9 +119,7 @@ class TestCloudwatchEventsRule(TestBase):
 
         current_ctx.set(_ctx)
 
-        self.fake_client.delete_rule = MagicMock(
-            return_value=DELETE_RESPONSE
-        )
+        self.fake_client.delete_rule = self.mock_return(DELETE_RESPONSE)
 
         rule.delete(ctx=_ctx, resource_config=None, iface=None)
 

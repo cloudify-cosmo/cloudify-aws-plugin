@@ -124,9 +124,7 @@ class TestCloudwatchTarget(TestBase):
     def test_delete(self):
         _ctx = self._prepare_context()
 
-        self.fake_client.remove_targets = MagicMock(
-            return_value=DELETE_RESPONSE
-        )
+        self.fake_client.remove_targets = self.mock_return(DELETE_RESPONSE)
 
         target.delete(ctx=_ctx, resource_config=None, iface=None)
 

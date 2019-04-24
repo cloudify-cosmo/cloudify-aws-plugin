@@ -114,9 +114,7 @@ class TestEFSFileSystemTagsTags(TestBase):
     def test_delete(self):
         _ctx = self._prepare_context(RUNTIME_PROPERTIES_AFTER_CREATE)
 
-        self.fake_client.delete_tags = MagicMock(
-            return_value=DELETE_RESPONSE
-        )
+        self.fake_client.delete_tags = self.mock_return(DELETE_RESPONSE)
 
         tags.delete(ctx=_ctx, resource_config=None, iface=None)
 

@@ -13,12 +13,32 @@
 # limitations under the License.
 
 import unittest
-from cloudify_aws.common.tests.test_base import \
-    TestBase, mock_decorator
-from cloudify_aws.s3.resources.bucket import \
-    S3Bucket, RESOURCE_NAME, LOCATION
-from mock import patch, MagicMock
+from mock import patch
+from cloudify.state import current_ctx
+from cloudify_aws.common.tests.test_base import TestBase, CLIENT_CONFIG
+from cloudify_aws.common.tests.test_base import DEFAULT_RUNTIME_PROPERTIES
+from cloudify_aws.common.tests.test_base import DELETE_RESPONSE
+from cloudify_aws.s3.resources.bucket import S3Bucket, RESOURCE_NAME, LOCATION
 from cloudify_aws.s3.resources import bucket
+
+# Constants
+BUCKET_TYPE = 'cloudify.nodes.aws.s3.Bucket'
+BUCKET_TH = ['cloudify.nodes.Root',
+             'cloudify.nodes.aws.s3.BaseBucket',
+             BUCKET_TYPE]
+
+NODE_PROPERTIES = {
+    'resource_id': 'CloudifyBucket',
+    'use_external_resource': False,
+    'resource_config': {RESOURCE_NAME: 'bucket'},
+    'client_config': CLIENT_CONFIG
+}
+
+RUNTIME_PROPERTIES_AFTER_CREATE = {
+    'aws_resource_id': 'bucket',
+    'resource_config': {},
+    LOCATION: 'location'
+}
 
 
 class TestS3Bucket(TestBase):
@@ -27,15 +47,15 @@ class TestS3Bucket(TestBase):
         super(TestS3Bucket, self).setUp()
         self.bucket = S3Bucket('', resource_id=True,
                                client=True, logger=None)
-        self.mock_resource = patch(
-            'cloudify_aws.common.decorators.aws_resource', mock_decorator
-        )
-        self.mock_resource.start()
-        reload(bucket)
+        self.fake_boto, self.fake_client = self.fake_boto_client('s3')
+
+        self.mock_patch = patch('boto3.client', self.fake_boto)
+        self.mock_patch.start()
 
     def tearDown(self):
-        self.mock_resource.stop()
-
+        self.mock_patch.stop()
+        self.fake_boto = None
+        self.fake_client = None
         super(TestS3Bucket, self).tearDown()
 
     def test_class_properties(self):
@@ -94,25 +114,75 @@ class TestS3Bucket(TestBase):
         self.assertEqual(params[LOCATION], 'location')
 
     def test_prepare(self):
-        ctx = self.get_mock_ctx("Backet")
-        bucket.prepare(ctx, 'config')
-        self.assertEqual(ctx.instance.runtime_properties['resource_config'],
-                         'config')
+        _ctx = self.get_mock_ctx(
+            'test_prepare',
+            test_properties=NODE_PROPERTIES,
+            test_runtime_properties=RUNTIME_PROPERTIES_AFTER_CREATE,
+            type_hierarchy=BUCKET_TH,
+            type_node=BUCKET_TYPE,
+        )
+
+        current_ctx.set(_ctx)
+
+        bucket.prepare(ctx=_ctx, resource_config=None, iface=None, params=None)
+
+        self.assertEqual(
+            _ctx.instance.runtime_properties['resource_config'],
+            {'Bucket': 'bucket'})
+
+    def test_create_raises_UnknownServiceError(self):
+        self._prepare_create_raises_UnknownServiceError(
+            type_hierarchy=BUCKET_TH,
+            type_node=BUCKET_TYPE,
+            type_name='s3',
+            type_class=bucket,
+        )
 
     def test_create(self):
-        ctx = self.get_mock_ctx("Backet")
-        config = {RESOURCE_NAME: 'bucket'}
-        iface = MagicMock()
-        iface.create = self.mock_return({LOCATION: 'location'})
-        bucket.create(ctx=ctx, iface=iface, resource_config=config)
-        self.assertEqual(ctx.instance.runtime_properties[LOCATION],
-                         'location')
+        _ctx = self.get_mock_ctx(
+            'test_create',
+            test_properties=NODE_PROPERTIES,
+            test_runtime_properties=DEFAULT_RUNTIME_PROPERTIES,
+            type_hierarchy=BUCKET_TH,
+            type_node=BUCKET_TYPE,
+        )
+
+        current_ctx.set(_ctx)
+
+        self.fake_client.create_bucket = self.mock_return(
+            {LOCATION: 'location'})
+
+        bucket.create(ctx=_ctx, resource_config=None, iface=None, params=None)
+
+        self.fake_boto.assert_called_with('s3', **CLIENT_CONFIG)
+
+        self.fake_client.create_bucket.assert_called_with(Bucket='bucket')
+
+        self.assertEqual(
+            _ctx.instance.runtime_properties,
+            RUNTIME_PROPERTIES_AFTER_CREATE
+        )
 
     def test_delete(self):
-        ctx = self.get_mock_ctx("Backet")
-        iface = MagicMock()
-        bucket.delete(ctx=ctx, iface=iface, resource_config={})
-        self.assertTrue(iface.delete.called)
+        _ctx = self.get_mock_ctx(
+            'test_delete',
+            test_properties=NODE_PROPERTIES,
+            test_runtime_properties=RUNTIME_PROPERTIES_AFTER_CREATE,
+            type_hierarchy=BUCKET_TH,
+            type_node=BUCKET_TYPE,
+        )
+
+        current_ctx.set(_ctx)
+
+        self.fake_client.delete_bucket = self.mock_return(DELETE_RESPONSE)
+
+        bucket.delete(ctx=_ctx, resource_config=None, iface=None)
+
+        self.fake_boto.assert_called_with('s3', **CLIENT_CONFIG)
+
+        self.fake_client.delete_bucket.assert_called_with(
+            Bucket='bucket'
+        )
 
 
 if __name__ == '__main__':

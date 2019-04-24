@@ -60,8 +60,7 @@ class TestLambdaPermission(TestBase):
                                               _test_node_properties,
                                               _test_runtime_properties,
                                               source,
-                                              target,
-                                              None)
+                                              target)
 
     def test_class_properties(self):
         ctx = self._get_ctx()

@@ -101,7 +101,7 @@ class TestDynamoDBTable(TestBase):
                     "ReadCapacityUnits": "5",
                     "WriteCapacityUnits": "5"
                 }
-            }, iface=None
+            }, iface=None, params=None
         )
 
         self.fake_boto.assert_called_with('dynamodb', **CLIENT_CONFIG)
@@ -141,9 +141,7 @@ class TestDynamoDBTable(TestBase):
 
         current_ctx.set(_ctx)
 
-        self.fake_client.delete_table = MagicMock(
-            return_value=DELETE_RESPONSE
-        )
+        self.fake_client.delete_table = self.mock_return(DELETE_RESPONSE)
 
         table.delete(ctx=_ctx, resource_config=None, iface=None)
 

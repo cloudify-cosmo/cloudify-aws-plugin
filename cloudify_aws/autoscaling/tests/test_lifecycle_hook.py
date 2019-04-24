@@ -107,7 +107,8 @@ class TestAutoscalingLifecycleHook(TestBase):
             'AutoScalingGroupARN': 'scaling_arn'
         })
 
-        lifecycle_hook.create(ctx=_ctx, resource_config=None, iface=None)
+        lifecycle_hook.create(ctx=_ctx, resource_config=None, iface=None,
+                              params=None)
 
         self.fake_boto.assert_called_with('autoscaling', **CLIENT_CONFIG)
 
@@ -125,9 +126,8 @@ class TestAutoscalingLifecycleHook(TestBase):
     def test_delete(self):
         _ctx = self._prepare_context(RUNTIME_PROPERTIES_AFTER_CREATE)
 
-        self.fake_client.delete_lifecycle_hook = MagicMock(
-            return_value=DELETE_RESPONSE
-        )
+        self.fake_client.delete_lifecycle_hook = self.mock_return(
+            DELETE_RESPONSE)
 
         lifecycle_hook.delete(ctx=_ctx, resource_config=None, iface=None)
 

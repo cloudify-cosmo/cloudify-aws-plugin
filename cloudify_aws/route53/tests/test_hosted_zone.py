@@ -49,8 +49,7 @@ class TestHostedZone(TestBase):
                                               _test_node_properties,
                                               _test_runtime_properties,
                                               source,
-                                              target,
-                                              None)
+                                              target)
 
     def setUp(self):
         super(TestHostedZone, self).setUp()
