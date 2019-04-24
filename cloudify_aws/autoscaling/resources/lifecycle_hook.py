@@ -83,20 +83,9 @@ def prepare(ctx, resource_config, **_):
 
 
 @decorators.aws_resource(AutoscalingLifecycleHook, RESOURCE_TYPE)
-def create(ctx, iface, resource_config, **_):
+@decorators.aws_params(RESOURCE_NAME)
+def create(ctx, iface, resource_config, params, **_):
     """Creates an AWS Autoscaling Lifecycle Hook"""
-    params = utils.clean_params(
-        dict() if not resource_config else resource_config.copy())
-    resource_id = params.get(RESOURCE_NAME)
-    if not resource_id:
-        resource_id = \
-            iface.resource_id or \
-            utils.get_resource_id(
-                ctx.node,
-                ctx.instance,
-                use_instance_id=True)
-        params[RESOURCE_NAME] = resource_id
-    utils.update_resource_id(ctx.instance, resource_id)
 
     # Ensure the $GROUP_NAME parameter is populated.
     autoscaling_group = params.get(GROUP_NAME)

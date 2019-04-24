@@ -118,20 +118,9 @@ def prepare(ctx, resource_config, **_):
 @decorators.wait_for_status(
     status_good=['active'],
     status_pending=['provisioning'])
-def create(ctx, iface, resource_config, **_):
+@decorators.aws_params('Name')
+def create(ctx, iface, resource_config, params, **_):
     '''Creates an AWS ELB load balancer'''
-    # Build API params
-    params = utils.clean_params(
-        dict() if not resource_config else resource_config.copy())
-    resource_id = \
-        params.get('Name') or \
-        iface.resource_id or \
-        utils.get_resource_id(
-            ctx.node,
-            ctx.instance,
-            use_instance_id=True)
-    params['Name'] = resource_id
-    utils.update_resource_id(ctx.instance, resource_id)
 
     # LB attributes are only applied in modify operation.
     params.pop(LB_ATTR, {})

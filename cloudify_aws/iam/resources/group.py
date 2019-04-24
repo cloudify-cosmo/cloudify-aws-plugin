@@ -121,20 +121,10 @@ class IAMGroup(IAMBase):
 
 
 @decorators.aws_resource(IAMGroup, RESOURCE_TYPE)
-def create(ctx, iface, resource_config, **_):
+@decorators.aws_params(RESOURCE_NAME)
+def create(ctx, iface, resource_config, params, **_):
     '''Creates an AWS IAM Group'''
-    # Build API params
-    params = utils.clean_params(
-        dict() if not resource_config else resource_config.copy())
-    resource_id = \
-        iface.resource_id or \
-        utils.get_resource_id(
-            ctx.node,
-            ctx.instance,
-            params.get(RESOURCE_NAME),
-            use_instance_id=True)
-    params[RESOURCE_NAME] = resource_id
-    utils.update_resource_id(ctx.instance, resource_id)
+
     # Actually create the resource
     res_id, res_arn = iface.create(params)
     utils.update_resource_id(ctx.instance, res_id)
