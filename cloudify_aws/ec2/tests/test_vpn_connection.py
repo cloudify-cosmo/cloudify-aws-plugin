@@ -146,6 +146,14 @@ class TestEC2VPNConnection(TestBase):
 
         self.assertEqual(self.vpn_connection.status, 'state_test')
 
+    def test_class_status_empty(self):
+        response = {vpn_connection.VPN_CONNECTIONS: [{}]}
+
+        self.vpn_connection.client = self.make_client_function(
+            'describe_vpn_connections', return_value=response)
+
+        self.assertIsNone(self.vpn_connection.status)
+
     def test_class_create(self):
         params = \
             {
