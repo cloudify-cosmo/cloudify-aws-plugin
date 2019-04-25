@@ -97,6 +97,7 @@ class TestBase(unittest.TestCase):
                      test_runtime_properties={},
                      test_relationships=None,
                      type_hierarchy=['cloudify.nodes.Root'],
+                     type_node='cloudify.nodes.Root',
                      ctx_operation_name=None):
 
         operation_ctx = {
@@ -111,12 +112,13 @@ class TestBase(unittest.TestCase):
             deployment_id=test_name,
             properties=copy.deepcopy(test_properties),
             runtime_properties=self._to_DirtyTrackingDict(
-                test_runtime_properties
+                copy.deepcopy(test_runtime_properties)
             ),
             relationships=test_relationships,
-            operation=operation_ctx
+            operation=operation_ctx,
         )
 
+        ctx.node._type = type_node
         ctx.node.type_hierarchy = type_hierarchy
 
         return ctx
@@ -126,8 +128,7 @@ class TestBase(unittest.TestCase):
                                   test_properties={},
                                   test_runtime_properties={},
                                   test_source=None,
-                                  test_target=None,
-                                  type_hierarchy=['cloudify.nodes.Root']):
+                                  test_target=None):
 
         ctx = MockCloudifyContext(
             deployment_id=deployment_name,
@@ -308,6 +309,57 @@ class TestBase(unittest.TestCase):
 
         fake_client.delete_queue = self._get_unknowservice(client_type)
 
+    def _fake_s3(self, fake_client, client_type):
+        fake_client.create_bucket = self._get_unknowservice(
+            client_type
+        )
+
+        fake_client.delete_bucket = self._get_unknowservice(
+            client_type
+        )
+
+    def _fake_elb(self, fake_client, client_type):
+        fake_client.create_load_balancer = self._get_unknowservice(
+            client_type
+        )
+        fake_client.delete_load_balancer = self._get_unknowservice(
+            client_type
+        )
+        fake_client.describe_load_balancers = self._get_unknowservice(
+            client_type
+        )
+        fake_client.modify_load_balancer_attributes = self._get_unknowservice(
+            client_type
+        )
+        fake_client.register_instances_with_load_balancer = \
+            self._get_unknowservice(client_type)
+        fake_client.deregister_instances_from_load_balancer = \
+            self._get_unknowservice(client_type)
+        fake_client.create_load_balancer_policy = self._get_unknowservice(
+            client_type
+        )
+        fake_client.create_lb_cookie_stickiness_policy = \
+            self._get_unknowservice(client_type)
+        fake_client.set_load_balancer_policies_of_listener = \
+            self._get_unknowservice(client_type)
+        fake_client.delete_load_balancer_policy = self._get_unknowservice(
+            client_type
+        )
+
+    def _fake_elbv2(self, fake_client, client_type):
+        fake_client.create_load_balancer = self._get_unknowservice(
+            client_type
+        )
+        fake_client.delete_load_balancer = self._get_unknowservice(
+            client_type
+        )
+        fake_client.describe_load_balancers = self._get_unknowservice(
+            client_type
+        )
+        fake_client.modify_load_balancer_attributes = self._get_unknowservice(
+            client_type
+        )
+
     def _fake_rds(self, fake_client, client_type):
 
         fake_client.create_db_instance_read_replica = self._get_unknowservice(
@@ -398,6 +450,12 @@ class TestBase(unittest.TestCase):
             self._fake_autoscaling(fake_client, client_type)
         elif client_type == "efs":
             self._fake_efs(fake_client, client_type)
+        elif client_type == "s3":
+            self._fake_s3(fake_client, client_type)
+        elif client_type == "elb":
+            self._fake_elb(fake_client, client_type)
+        elif client_type == "elbv2":
+            self._fake_elbv2(fake_client, client_type)
 
         return MagicMock(return_value=fake_client), fake_client
 
@@ -405,13 +463,15 @@ class TestBase(unittest.TestCase):
         return MagicMock(return_value=value)
 
     def _prepare_create_raises_UnknownServiceError(
-        self, type_hierarchy, type_name, type_class
+        self, type_hierarchy, type_name, type_class,
+        type_node='cloudify.nodes.Root'
     ):
         _ctx = self.get_mock_ctx(
             'test_create',
             test_properties=DEFAULT_NODE_PROPERTIES,
             test_runtime_properties=DEFAULT_RUNTIME_PROPERTIES,
-            type_hierarchy=type_hierarchy
+            type_hierarchy=type_hierarchy,
+            type_node=type_node
         )
 
         current_ctx.set(_ctx)
@@ -464,8 +524,7 @@ class TestBase(unittest.TestCase):
             test_properties={},
             test_runtime_properties={},
             test_source=_source_ctx,
-            test_target=_target_ctx,
-            type_hierarchy=['cloudify.nodes.Root']
+            test_target=_target_ctx
         )
 
         return _source_ctx, _target_ctx, _ctx

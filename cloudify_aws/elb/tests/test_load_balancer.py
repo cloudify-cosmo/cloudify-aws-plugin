@@ -13,7 +13,12 @@
 # limitations under the License.
 
 import unittest
-from cloudify_aws.common.tests.test_base import TestBase, mock_decorator
+
+from cloudify.state import current_ctx
+from cloudify.exceptions import NonRecoverableError
+from cloudify_aws.common.tests.test_base import TestBase, CLIENT_CONFIG
+from cloudify_aws.common.tests.test_base import DEFAULT_RUNTIME_PROPERTIES
+from cloudify_aws.common.tests.test_base import DELETE_RESPONSE
 from cloudify_aws.elb.resources.load_balancer import (ELBLoadBalancer,
                                                       LB_ARN,
                                                       RESOURCE_NAME,
@@ -22,7 +27,25 @@ from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
 from mock import patch, MagicMock
 from cloudify_aws.elb.resources import load_balancer
 
-PATCH_PREFIX = 'cloudify_aws.elb.resources.load_balancer.'
+# Constants
+LOADBALANCER_TYPE = 'cloudify.nodes.aws.elb.LoadBalancer'
+LOADBALANCER_TH = ['cloudify.nodes.Root',
+                   LOADBALANCER_TYPE]
+
+NODE_PROPERTIES = {
+    'resource_id': 'CloudifyELB',
+    'use_external_resource': False,
+    'resource_config': {
+        RESOURCE_NAME: 'loadbalancer',
+        LB_ARN: 'load_balancer'},
+    'client_config': CLIENT_CONFIG
+}
+
+RUNTIME_PROPERTIES_AFTER_CREATE = {
+    'aws_resource_arn': 'def',
+    'aws_resource_id': 'abc',
+    'resource_config': {}
+}
 
 
 class TestELBLoadBalancer(TestBase):
@@ -31,16 +54,16 @@ class TestELBLoadBalancer(TestBase):
         super(TestELBLoadBalancer, self).setUp()
         self.load_balancer = ELBLoadBalancer("ctx_node", resource_id=True,
                                              client=MagicMock(), logger=None)
-        mock1 = patch('cloudify_aws.common.decorators.aws_resource',
-                      mock_decorator)
-        mock2 = patch('cloudify_aws.common.decorators.wait_for_status',
-                      mock_decorator)
-        mock3 = patch('cloudify_aws.common.decorators.wait_for_delete',
-                      mock_decorator)
-        mock1.start()
-        mock2.start()
-        mock3.start()
-        reload(load_balancer)
+        self.fake_boto, self.fake_client = self.fake_boto_client('elb')
+
+        self.mock_patch = patch('boto3.client', self.fake_boto)
+        self.mock_patch.start()
+
+    def tearDown(self):
+        self.mock_patch.stop()
+        self.fake_boto = None
+        self.fake_client = None
+        super(TestELBLoadBalancer, self).tearDown()
 
     def test_class_properties(self):
         effect = self.get_client_error_exception(name='S3 ELB')
@@ -103,58 +126,215 @@ class TestELBLoadBalancer(TestBase):
         self.assertEqual(res, 'attr')
 
     def test_prepare(self):
-        ctx = self.get_mock_ctx("ELB")
-        load_balancer.prepare(ctx, 'config')
-        self.assertEqual(ctx.instance.runtime_properties['resource_config'],
-                         'config')
+        _ctx = self.get_mock_ctx(
+            'test_prepare',
+            test_properties=NODE_PROPERTIES,
+            test_runtime_properties=DEFAULT_RUNTIME_PROPERTIES,
+            type_hierarchy=LOADBALANCER_TH,
+            type_node=LOADBALANCER_TYPE,
+        )
+
+        current_ctx.set(_ctx)
+
+        load_balancer.prepare(ctx=_ctx, resource_config=None, iface=None,
+                              params=None)
+
+        self.assertEqual(
+            _ctx.instance.runtime_properties['resource_config'],
+            {'LoadBalancerArn': 'load_balancer',
+             'LoadBalancerName': 'loadbalancer'})
+
+    def test_create_raises_UnknownServiceError(self):
+        self._prepare_create_raises_UnknownServiceError(
+            type_hierarchy=LOADBALANCER_TH,
+            type_node=LOADBALANCER_TYPE,
+            type_name='elbv2',
+            type_class=load_balancer,
+        )
 
     def test_create(self):
-        ctx = self.get_mock_ctx("ELB", {}, {'resource_config': {}})
-        ctx_target = self.get_mock_relationship_ctx(
-            "elb",
-            test_target=self.get_mock_ctx("elb", {},
-                                          {EXTERNAL_RESOURCE_ID: 'ext_id'}))
-        iface = MagicMock()
-        config = {LB_ARN: 'load_balancer'}
-        with patch(PATCH_PREFIX + 'utils') as utils:
-            utils.find_rels_by_node_type = self.mock_return([ctx_target])
-            load_balancer.create(ctx, iface, config)
-            self.assertTrue(iface.create.called)
+        _ctx = self.get_mock_ctx(
+            'test_create',
+            test_properties=NODE_PROPERTIES,
+            test_runtime_properties=DEFAULT_RUNTIME_PROPERTIES,
+            type_hierarchy=LOADBALANCER_TH,
+            type_node=LOADBALANCER_TYPE,
+        )
+        _ctx.instance._relationships = [
+            self.get_mock_relationship_ctx(
+                "elb",
+                test_target=self.get_mock_ctx(
+                    "elb", {},
+                    {EXTERNAL_RESOURCE_ID: 'ext_id'}))
+        ]
+
+        current_ctx.set(_ctx)
+
+        self.fake_client.create_load_balancer = self.mock_return(
+            {'LoadBalancers': [{
+                RESOURCE_NAME: "abc",
+                LB_ARN: "def"
+            }]})
+        self.fake_client.describe_load_balancers = self.mock_return(
+            {'LoadBalancers': [{
+                RESOURCE_NAME: "abc",
+                LB_ARN: "def",
+                'State': {
+                    'Code': 'active'
+                }
+            }]})
+
+        load_balancer.create(ctx=_ctx, resource_config=None, iface=None,
+                             params=None)
+
+        self.fake_boto.assert_called_with('elbv2', **CLIENT_CONFIG)
+
+        self.fake_client.create_load_balancer.assert_called_with(
+            LoadBalancerArn='load_balancer', LoadBalancerName='loadbalancer',
+            Name='aws_resource', SecurityGroups=[], Subnets=[])
+        self.fake_client.describe_load_balancers.assert_called_with(
+            Names=['abc'])
+
+        self.assertEqual(
+            _ctx.instance.runtime_properties,
+            RUNTIME_PROPERTIES_AFTER_CREATE
+        )
+        # check error with no LB_ARN
+        self.fake_client.create_load_balancer = self.mock_return(
+            {'LoadBalancers': [{
+                RESOURCE_NAME: "abc"
+            }]})
+        with self.assertRaises(NonRecoverableError):
+            load_balancer.create(ctx=_ctx, resource_config=None, iface=None,
+                                 params=None)
 
     def test_modify(self):
-        ctx = self.get_mock_ctx("ELB", {}, {'resource_config': {}})
-        ctx_target = self.get_mock_relationship_ctx(
-            "elb",
-            test_target=self.get_mock_ctx("elb", {},
-                                          {EXTERNAL_RESOURCE_ID: 'ext_id'}))
-        iface = MagicMock()
-        config = {LB_ARN: 'load_balancer'}
-        with patch(PATCH_PREFIX + 'utils') as utils:
-            utils.find_rels_by_node_type = self.mock_return([ctx_target])
-            load_balancer.modify(ctx, iface, config)
-            self.assertIn(
-                LB_ATTR,
-                ctx.instance.runtime_properties['resource_config'])
+        # empty config
+        _ctx = self.get_mock_ctx(
+            'test_modify',
+            test_properties=NODE_PROPERTIES,
+            test_runtime_properties=RUNTIME_PROPERTIES_AFTER_CREATE,
+            type_hierarchy=LOADBALANCER_TH,
+            type_node=LOADBALANCER_TYPE,
+        )
+        _ctx.instance._relationships = [
+            self.get_mock_relationship_ctx(
+                "elb",
+                test_target=self.get_mock_ctx(
+                    "elb", {},
+                    {EXTERNAL_RESOURCE_ID: 'ext_id'}))
+        ]
 
-        config = {}
-        with patch(PATCH_PREFIX + 'utils') as utils:
-            utils.find_rels_by_node_type = self.mock_return([ctx_target])
-            load_balancer.modify(ctx, iface, config)
-            self.assertIn(
-                LB_ATTR,
-                ctx.instance.runtime_properties['resource_config'])
+        current_ctx.set(_ctx)
 
-        config = {LB_ATTR: 'attr'}
-        with patch(PATCH_PREFIX + 'utils') as utils:
-            utils.find_rels_by_node_type = self.mock_return([ctx_target])
-            load_balancer.modify(ctx, iface, config)
-            self.assertIn(LB_ATTR,
-                          ctx.instance.runtime_properties['resource_config'])
+        _ctx.instance.runtime_properties['resource_config'] = {}
+
+        load_balancer.modify(ctx=_ctx, resource_config=None, iface=None,
+                             params=None)
+
+        self.fake_boto.assert_called_with('elbv2', **CLIENT_CONFIG)
+
+        self.fake_client.modify_load_balancer_attributes.assert_not_called()
+        self.assertNotIn(
+            LB_ATTR,
+            _ctx.instance.runtime_properties['resource_config'])
+
+        # with ARN
+        _ctx = self.get_mock_ctx(
+            'test_modify',
+            test_properties=NODE_PROPERTIES,
+            test_runtime_properties=RUNTIME_PROPERTIES_AFTER_CREATE,
+            type_hierarchy=LOADBALANCER_TH,
+            type_node=LOADBALANCER_TYPE,
+        )
+        _ctx.instance._relationships = [
+            self.get_mock_relationship_ctx(
+                "elb",
+                test_target=self.get_mock_ctx(
+                    "elb", {},
+                    {EXTERNAL_RESOURCE_ID: 'ext_id'}))
+        ]
+
+        current_ctx.set(_ctx)
+
+        _ctx.instance.runtime_properties['resource_config'] = {
+            LB_ARN: 'load_balancer'}
+
+        load_balancer.modify(ctx=_ctx, resource_config=None, iface=None,
+                             params=None)
+
+        self.fake_boto.assert_called_with('elbv2', **CLIENT_CONFIG)
+
+        self.fake_client.modify_load_balancer_attributes.assert_not_called()
+        self.assertNotIn(
+            LB_ATTR,
+            _ctx.instance.runtime_properties['resource_config'])
+
+        # with ARN and LB_ATTR
+        _ctx = self.get_mock_ctx(
+            'test_modify',
+            test_properties=NODE_PROPERTIES,
+            test_runtime_properties=RUNTIME_PROPERTIES_AFTER_CREATE,
+            type_hierarchy=LOADBALANCER_TH,
+            type_node=LOADBALANCER_TYPE,
+        )
+        _ctx.node.properties['resource_config'] = {LB_ATTR: 'attr'}
+        _ctx.instance._relationships = [
+            self.get_mock_relationship_ctx(
+                "elb",
+                test_target=self.get_mock_ctx(
+                    "elb", {},
+                    {EXTERNAL_RESOURCE_ID: 'ext_id'}))
+        ]
+
+        current_ctx.set(_ctx)
+
+        self.fake_client.modify_load_balancer_attributes = self.mock_return(
+            {LB_ATTR: "attributes"})
+
+        load_balancer.modify(ctx=_ctx, resource_config=None, iface=None,
+                             params=None)
+
+        self.fake_boto.assert_called_with('elbv2', **CLIENT_CONFIG)
+
+        self.fake_client.modify_load_balancer_attributes.assert_called_with(
+            Attributes='attr', LoadBalancerArn='def'
+        )
+        self.assertIn(
+            LB_ATTR,
+            _ctx.instance.runtime_properties['resource_config'])
 
     def test_delete(self):
-        iface = MagicMock()
-        load_balancer.delete(None, iface, {})
-        self.assertTrue(iface.delete.called)
+        _ctx = self.get_mock_ctx(
+            'test_delete',
+            test_properties=NODE_PROPERTIES,
+            test_runtime_properties=RUNTIME_PROPERTIES_AFTER_CREATE,
+            type_hierarchy=LOADBALANCER_TH,
+            type_node=LOADBALANCER_TYPE,
+        )
+
+        current_ctx.set(_ctx)
+
+        self.fake_client.delete_load_balancer = self.mock_return(
+            DELETE_RESPONSE)
+        self.fake_client.describe_load_balancers = self.mock_return(
+            {'LoadBalancers': [{
+                RESOURCE_NAME: "abc",
+                LB_ARN: "def",
+                'State': {
+                    'Code': ""
+                }
+            }]})
+
+        load_balancer.delete(ctx=_ctx, resource_config=None, iface=None)
+
+        self.fake_boto.assert_called_with('elbv2', **CLIENT_CONFIG)
+
+        self.fake_client.delete_load_balancer.assert_called_with(
+            LoadBalancerArn='def'
+        )
+        self.fake_client.describe_load_balancers.assert_called_with(
+            Names=['abc'])
 
 
 if __name__ == '__main__':

@@ -88,7 +88,7 @@ class TestIAMGroup(TestBase):
             }
         })
 
-        group.create(ctx=_ctx, resource_config=None, iface=None)
+        group.create(ctx=_ctx, resource_config=None, iface=None, params=None)
 
         self.fake_boto.assert_called_with('iam', **CLIENT_CONFIG)
 
@@ -111,9 +111,7 @@ class TestIAMGroup(TestBase):
 
         current_ctx.set(_ctx)
 
-        self.fake_client.delete_group = MagicMock(
-            return_value=DELETE_RESPONSE
-        )
+        self.fake_client.delete_group = self.mock_return(DELETE_RESPONSE)
 
         group.delete(ctx=_ctx, resource_config=None, iface=None)
 

@@ -186,9 +186,7 @@ class TestRDSInstance(TestBase):
         )
         current_ctx.set(_ctx)
 
-        self.fake_client.delete_db_instance = MagicMock(
-            return_value=DELETE_RESPONSE
-        )
+        self.fake_client.delete_db_instance = self.mock_return(DELETE_RESPONSE)
 
         instance.delete(
             ctx=_ctx, resource_config=None, iface=None
@@ -241,8 +239,7 @@ class TestRDSInstance(TestBase):
             test_properties={'client_config': CLIENT_CONFIG},
             test_runtime_properties={},
             test_source=_source_ctx,
-            test_target=_target_ctx,
-            type_hierarchy=['cloudify.nodes.Root']
+            test_target=_target_ctx
         )
 
         return _source_ctx, _target_ctx, _ctx

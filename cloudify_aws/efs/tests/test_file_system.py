@@ -111,9 +111,7 @@ class TestEFSFileSystem(TestBase):
     def test_delete(self):
         _ctx = self._prepare_context(RUNTIME_PROPERTIES_AFTER_CREATE)
 
-        self.fake_client.delete_file_system = MagicMock(
-            return_value=DELETE_RESPONSE
-        )
+        self.fake_client.delete_file_system = self.mock_return(DELETE_RESPONSE)
 
         file_system.delete(ctx=_ctx, resource_config=None, iface=None)
 

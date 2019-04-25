@@ -217,9 +217,7 @@ class TestSQSQueue(TestBase):
 
         current_ctx.set(_ctx)
 
-        self.fake_client.delete_queue = MagicMock(
-            return_value=DELETE_RESPONSE
-        )
+        self.fake_client.delete_queue = self.mock_return(DELETE_RESPONSE)
 
         queue.delete(ctx=_ctx, resource_config=None, iface=None)
 

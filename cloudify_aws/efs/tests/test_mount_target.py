@@ -153,9 +153,8 @@ class TestEFSMountTarget(TestBase):
     def test_delete(self):
         _ctx = self._prepare_context(RUNTIME_PROPERTIES_AFTER_CREATE)
 
-        self.fake_client.delete_mount_target = MagicMock(
-            return_value=DELETE_RESPONSE
-        )
+        self.fake_client.delete_mount_target = self.mock_return(
+            DELETE_RESPONSE)
 
         mount_target.delete(ctx=_ctx, resource_config=None, iface=None)
 

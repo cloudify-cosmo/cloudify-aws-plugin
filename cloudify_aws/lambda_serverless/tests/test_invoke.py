@@ -60,8 +60,7 @@ class TestLambdaInvoke(TestBase):
                                               _test_node_properties,
                                               _test_runtime_properties,
                                               source,
-                                              target,
-                                              SUBNET_GROUP_F)
+                                              target)
 
     def test_configure(self):
         _test_name = 'test_configure'

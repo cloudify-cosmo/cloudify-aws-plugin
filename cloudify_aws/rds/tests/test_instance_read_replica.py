@@ -171,9 +171,7 @@ class TestRDSInstanceReadReplica(TestBase):
         )
         current_ctx.set(_ctx)
 
-        self.fake_client.delete_db_instance = MagicMock(
-            return_value=DELETE_RESPONSE
-        )
+        self.fake_client.delete_db_instance = self.mock_return(DELETE_RESPONSE)
 
         instance_read_replica.delete(
             ctx=_ctx, resource_config=None, iface=None

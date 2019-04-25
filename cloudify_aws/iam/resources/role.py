@@ -94,20 +94,9 @@ class IAMRole(IAMBase):
 
 
 @decorators.aws_resource(IAMRole, RESOURCE_TYPE)
-def create(ctx, iface, resource_config, **_):
+@decorators.aws_params(RESOURCE_NAME)
+def create(ctx, iface, resource_config, params, **_):
     '''Creates an AWS IAM Role'''
-    # Build API params
-    params = utils.clean_params(
-        dict() if not resource_config else resource_config.copy())
-    resource_id = \
-        utils.get_resource_id(
-            ctx.node,
-            ctx.instance,
-            params.get(RESOURCE_NAME),
-            use_instance_id=True
-        ) or iface.resource_id
-    params[RESOURCE_NAME] = resource_id
-    utils.update_resource_id(ctx.instance, resource_id)
 
     if 'AssumeRolePolicyDocument' in params and \
             isinstance(params['AssumeRolePolicyDocument'], dict):

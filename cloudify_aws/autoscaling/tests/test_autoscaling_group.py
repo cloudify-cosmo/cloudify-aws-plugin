@@ -133,7 +133,8 @@ class TestAutoscalingGroup(TestBase):
         autoscaling_group.create(
             ctx=_ctx,
             resource_config=None,
-            iface=None)
+            iface=None,
+            params=None)
 
         self.fake_boto.assert_called_with('autoscaling', **CLIENT_CONFIG)
 
@@ -155,13 +156,10 @@ class TestAutoscalingGroup(TestBase):
     def test_delete(self):
         _ctx = self._prepare_context(RUNTIME_PROPERTIES_AFTER_CREATE)
 
-        self.fake_client.delete_auto_scaling_group = MagicMock(
-            return_value=DELETE_RESPONSE
-        )
+        self.fake_client.delete_auto_scaling_group = self.mock_return(
+            DELETE_RESPONSE)
 
-        self.fake_client.detach_instances = MagicMock(
-            return_value=DELETE_RESPONSE
-        )
+        self.fake_client.detach_instances = self.mock_return(DELETE_RESPONSE)
 
         self.fake_client.describe_auto_scaling_groups = MagicMock(
             return_value={

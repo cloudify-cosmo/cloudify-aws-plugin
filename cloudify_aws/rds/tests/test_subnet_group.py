@@ -175,9 +175,8 @@ class TestRDSSubnetGroup(TestBase):
 
         current_ctx.set(_ctx)
 
-        self.fake_client.delete_db_subnet_group = MagicMock(
-            return_value=DELETE_RESPONSE
-        )
+        self.fake_client.delete_db_subnet_group = self.mock_return(
+            DELETE_RESPONSE)
         subnet_group.delete(ctx=_ctx, resource_config=None, iface=None)
 
         self.fake_client.delete_db_subnet_group.assert_called_with(
@@ -215,8 +214,7 @@ class TestRDSSubnetGroup(TestBase):
             test_properties={},
             test_runtime_properties={},
             test_source=_source_ctx,
-            test_target=_target_ctx,
-            type_hierarchy=['cloudify.nodes.Root']
+            test_target=_target_ctx
         )
 
         return _source_ctx, _target_ctx, _ctx

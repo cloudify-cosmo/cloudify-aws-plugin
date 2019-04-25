@@ -87,7 +87,7 @@ class TestIAMUser(TestBase):
             }
         })
 
-        user.create(ctx=_ctx, resource_config=None, iface=None)
+        user.create(ctx=_ctx, resource_config=None, iface=None, params=None)
         self.fake_boto.assert_called_with('iam', **CLIENT_CONFIG)
 
         self.fake_client.create_user.assert_called_with(
@@ -109,9 +109,7 @@ class TestIAMUser(TestBase):
 
         current_ctx.set(_ctx)
 
-        self.fake_client.delete_user = MagicMock(
-            return_value=DELETE_RESPONSE
-        )
+        self.fake_client.delete_user = self.mock_return(DELETE_RESPONSE)
 
         user.delete(ctx=_ctx, resource_config=None, iface=None)
 

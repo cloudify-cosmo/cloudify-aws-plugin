@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import collections
 from mock import patch, MagicMock
 import unittest
 from cloudify.state import current_ctx
@@ -30,16 +31,16 @@ NODE_PROPERTIES = {
     'resource_config': {
         'kwargs': {
             'Path': '/service-role/',
-            'AssumeRolePolicyDocument': {
-                'Version': '2012-10-17',
-                'Statement': [{
-                    'Effect': 'Allow',
-                    'Principal': {
+            'AssumeRolePolicyDocument': collections.OrderedDict([
+                ('Version', '2012-10-17'),
+                ('Statement', [collections.OrderedDict([
+                    ('Action', 'sts:AssumeRole'),
+                    ('Effect', 'Allow'),
+                    ('Principal', {
                         'Service': 'lambda.amazonaws.com'
-                    },
-                    'Action': 'sts:AssumeRole'
-                }]
-            }
+                    }),
+                ])])
+            ])
         }
     },
     'client_config': CLIENT_CONFIG
@@ -110,9 +111,14 @@ class TestIAMRole(TestBase):
             }
         })
 
-        role.create(ctx=_ctx, resource_config=None, iface=None)
+        role.create(ctx=_ctx, resource_config=None, iface=None, params=None)
 
         self.fake_boto.assert_called_with('iam', **CLIENT_CONFIG)
+
+        self.fake_client.create_role.assert_called_with(
+            AssumeRolePolicyDocument=ASSUME_STR,
+            Path='/service-role/',
+            RoleName='aws_resource')
 
         self.assertEqual(
             _ctx.instance.runtime_properties,
@@ -136,7 +142,7 @@ class TestIAMRole(TestBase):
             }
         })
 
-        role.create(ctx=_ctx, resource_config=None, iface=None)
+        role.create(ctx=_ctx, resource_config=None, iface=None, params=None)
 
         self.fake_boto.assert_called_with('iam', **CLIENT_CONFIG)
 
@@ -161,9 +167,7 @@ class TestIAMRole(TestBase):
 
         current_ctx.set(_ctx)
 
-        self.fake_client.delete_role = MagicMock(
-            return_value=DELETE_RESPONSE
-        )
+        self.fake_client.delete_role = self.mock_return(DELETE_RESPONSE)
 
         role.delete(ctx=_ctx, resource_config=None, iface=None)
 

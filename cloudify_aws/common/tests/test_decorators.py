@@ -330,8 +330,7 @@ class TestDecorators(TestBase):
             test_properties={},
             test_runtime_properties={},
             test_source=_source_ctx,
-            test_target=_target_ctx,
-            type_hierarchy=['cloudify.nodes.Root']
+            test_target=_target_ctx
         )
 
         current_ctx.set(_ctx)

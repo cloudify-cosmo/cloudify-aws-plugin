@@ -105,7 +105,7 @@ class TestAutoscalingPolicy(TestBase):
             }
         )
 
-        policy.create(ctx=_ctx, resource_config=None, iface=None)
+        policy.create(ctx=_ctx, resource_config=None, iface=None, params=None)
 
         self.fake_boto.assert_called_with('autoscaling', **CLIENT_CONFIG)
 
@@ -125,9 +125,7 @@ class TestAutoscalingPolicy(TestBase):
     def test_delete(self):
         _ctx = self._prepare_context(RUNTIME_PROPERTIES_AFTER_CREATE)
 
-        self.fake_client.delete_policy = MagicMock(
-            return_value=DELETE_RESPONSE
-        )
+        self.fake_client.delete_policy = self.mock_return(DELETE_RESPONSE)
 
         policy.delete(ctx=_ctx, resource_config=None, iface=None)
 

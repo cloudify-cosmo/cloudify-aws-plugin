@@ -168,9 +168,7 @@ class TestIAMPolicy(TestBase):
 
         current_ctx.set(_ctx)
 
-        self.fake_client.delete_policy = MagicMock(
-            return_value=DELETE_RESPONSE
-        )
+        self.fake_client.delete_policy = self.mock_return(DELETE_RESPONSE)
 
         policy.delete(ctx=_ctx, resource_config=None, iface=None)
 

@@ -87,6 +87,34 @@ def aws_relationship(class_decl=None,
     return wrapper_outer
 
 
+def aws_params(resource_name):
+    '''AWS resource decorator'''
+    def wrapper_outer(function):
+        '''Outer function'''
+        def wrapper_inner(*argc, **kwargs):
+            ctx = kwargs.get('ctx')
+            iface = kwargs.get('iface')
+            resource_config = kwargs.get('resource_config')
+
+            # Create a copy of the resource config for clean manipulation.
+            params = utils.clean_params(
+                dict() if not resource_config else resource_config.copy())
+            resource_id = params.get(resource_name)
+            if not resource_id:
+                resource_id = \
+                    iface.resource_id or \
+                    utils.get_resource_id(
+                        ctx.node,
+                        ctx.instance,
+                        use_instance_id=True)
+                params[resource_name] = resource_id
+            utils.update_resource_id(ctx.instance, resource_id)
+            kwargs['params'] = params
+            return function(*argc, **kwargs)
+        return wrapper_inner
+    return wrapper_outer
+
+
 def aws_resource(class_decl=None,
                  resource_type='AWS Resource',
                  ignore_properties=False):
