@@ -13,17 +13,47 @@
 # limitations under the License.
 
 import unittest
-from cloudify_aws.common.tests.test_base import TestBase, mock_decorator
+
+from cloudify.state import current_ctx
+from cloudify_aws.common.tests.test_base import TestBase, CLIENT_CONFIG
+from cloudify_aws.common.tests.test_base import DEFAULT_RUNTIME_PROPERTIES
+from cloudify_aws.common.tests.test_base import DELETE_RESPONSE
 from cloudify_aws.elb.resources.classic.policy import (ELBClassicPolicy,
-                                                       RESOURCE_NAMES,
                                                        RESOURCE_NAME,
-                                                       LB_NAME, LB_PORT,
-                                                       LISTENER_TYPE)
+                                                       LB_TYPE)
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
 from mock import patch, MagicMock
 from cloudify_aws.elb.resources.classic import policy
 
 PATCH_PREFIX = 'cloudify_aws.elb.resources.classic.policy.'
+
+# Constants
+POLICY_TYPE = 'cloudify.nodes.aws.elb.Classic.Policy'
+POLICY_TH = ['cloudify.nodes.Root',
+             POLICY_TYPE]
+
+POLICYSTICKY_TYPE = 'cloudify.nodes.aws.elb.Classic.Policy'
+POLICYSTICKY_TH = ['cloudify.nodes.Root',
+                   POLICYSTICKY_TYPE]
+
+NODE_PROPERTIES = {
+    'resource_id': 'CloudifyELB',
+    'use_external_resource': False,
+    'resource_config': {RESOURCE_NAME: 'policy'},
+    'client_config': CLIENT_CONFIG
+}
+
+RUNTIME_PROPERTIES_AFTER_CREATE = {
+    'LoadBalancerName': 'aws_resource',
+    'resource_config': {},
+    'aws_resource_id': 'aws_resource'
+}
+
+RUNTIME_STICKY_PROPERTIES_AFTER_CREATE = {
+    'PolicyName': 'aws_resource',
+    'resource_config': {},
+    'aws_resource_id': 'aws_resource'
+}
 
 
 class TestELBClassicPolicy(TestBase):
@@ -32,10 +62,16 @@ class TestELBClassicPolicy(TestBase):
         super(TestELBClassicPolicy, self).setUp()
         self.policy = ELBClassicPolicy("ctx_node", resource_id=True,
                                        client=MagicMock(), logger=None)
-        mock1 = patch('cloudify_aws.common.decorators.aws_resource',
-                      mock_decorator)
-        mock1.start()
-        reload(policy)
+        self.fake_boto, self.fake_client = self.fake_boto_client('elb')
+
+        self.mock_patch = patch('boto3.client', self.fake_boto)
+        self.mock_patch.start()
+
+    def tearDown(self):
+        self.mock_patch.stop()
+        self.fake_boto = None
+        self.fake_client = None
+        super(TestELBClassicPolicy, self).tearDown()
 
     def test_class_properties(self):
         res = self.policy.properties
@@ -70,101 +106,141 @@ class TestELBClassicPolicy(TestBase):
         self.assertEqual(res, 'del')
 
     def test_prepare(self):
-        ctx = self.get_mock_ctx("ELB")
-        policy.prepare(ctx, 'config')
-        self.assertEqual(ctx.instance.runtime_properties['resource_config'],
-                         'config')
+        _ctx = self.get_mock_ctx(
+            'test_prepare',
+            test_properties=NODE_PROPERTIES,
+            test_runtime_properties=DEFAULT_RUNTIME_PROPERTIES,
+            type_hierarchy=POLICY_TH,
+            type_node=POLICY_TYPE,
+        )
+
+        current_ctx.set(_ctx)
+
+        policy.prepare(ctx=_ctx, resource_config=None, iface=None,
+                       params=None)
+
+        self.assertEqual(
+            _ctx.instance.runtime_properties['resource_config'],
+            {'PolicyName': 'policy'})
 
     def test_create(self):
-        ctx = self.get_mock_ctx("ELB", {}, {'resource_config': {}})
-        ctx_target = self.get_mock_relationship_ctx(
-            "elb",
-            test_target=self.get_mock_ctx("elb", {},
-                                          {EXTERNAL_RESOURCE_ID: 'ext_id'}))
-        iface = MagicMock()
-        config = {LB_NAME: 'policy'}
-        policy.create(ctx, iface, config)
-        self.assertTrue(iface.create.called)
+        _ctx = self.get_mock_ctx(
+            'test_create',
+            test_properties=NODE_PROPERTIES,
+            test_runtime_properties=DEFAULT_RUNTIME_PROPERTIES,
+            type_hierarchy=POLICY_TH,
+            type_node=POLICY_TYPE,
+        )
+        _ctx.instance._relationships = [
+            self.get_mock_relationship_ctx(
+                "elb",
+                test_target=self.get_mock_ctx(
+                    "elb", {},
+                    {EXTERNAL_RESOURCE_ID: 'ext_id'},
+                    type_hierarchy=[LB_TYPE],
+                    type_node=LB_TYPE))
+        ]
 
-        config = {}
-        ctx = self.get_mock_ctx("ELB", {}, {'resource_config': {}})
-        with patch(PATCH_PREFIX + 'utils') as utils:
-            utils.find_rels_by_node_type = self.mock_return([ctx_target])
-            policy.create(ctx, iface, config)
-            self.assertTrue(iface.create.called)
+        current_ctx.set(_ctx)
+
+        self.fake_client.create_load_balancer_policy = self.mock_return({})
+
+        policy.create(ctx=_ctx, resource_config=None, iface=None,
+                      params=None)
+
+        self.fake_boto.assert_called_with('elb', **CLIENT_CONFIG)
+
+        self.fake_client.create_load_balancer_policy.assert_called_with(
+            LoadBalancerName='ext_id', PolicyName='aws_resource')
 
     def test_create_sticky(self):
-        ctx = self.get_mock_ctx("ELB", {}, {'resource_config': {}})
-        ctx_target = self.get_mock_relationship_ctx(
-            "elb",
-            test_target=self.get_mock_ctx("elb", {},
-                                          {EXTERNAL_RESOURCE_ID: 'ext_id'}))
-        iface = MagicMock()
-        config = {LB_NAME: 'policy'}
-        policy.create_sticky(ctx, iface, config)
-        self.assertTrue(iface.create_sticky.called)
+        _ctx = self.get_mock_ctx(
+            'test_create',
+            test_properties=NODE_PROPERTIES,
+            test_runtime_properties=DEFAULT_RUNTIME_PROPERTIES,
+            type_hierarchy=POLICYSTICKY_TH,
+            type_node=POLICYSTICKY_TYPE,
+        )
+        _ctx.instance._relationships = [
+            self.get_mock_relationship_ctx(
+                "elb",
+                test_target=self.get_mock_ctx(
+                    "elb", {},
+                    {EXTERNAL_RESOURCE_ID: 'ext_id'},
+                    type_hierarchy=[LB_TYPE],
+                    type_node=LB_TYPE))
+        ]
 
-        config = {}
-        ctx = self.get_mock_ctx("ELB", {}, {'resource_config': {}})
-        with patch(PATCH_PREFIX + 'utils') as utils:
-            utils.find_rels_by_node_type = self.mock_return([ctx_target])
-            policy.create_sticky(ctx, iface, config)
-            self.assertTrue(iface.create_sticky.called)
+        current_ctx.set(_ctx)
+
+        self.fake_client.create_lb_cookie_stickiness_policy = self.mock_return(
+            {})
+
+        policy.create_sticky(ctx=_ctx, resource_config=None, iface=None,
+                             params=None)
+
+        self.fake_boto.assert_called_with('elb', **CLIENT_CONFIG)
+
+        self.fake_client.create_lb_cookie_stickiness_policy.assert_called_with(
+            LoadBalancerName='ext_id', PolicyName='policy')
 
     def test_start_sticky(self):
-        def _side(*args):
-            if args[1] == LISTENER_TYPE:
-                return []
-            else:
-                return [ctx_target]
+        _ctx = self.get_mock_ctx(
+            'test_delete',
+            test_properties=NODE_PROPERTIES,
+            test_runtime_properties=RUNTIME_STICKY_PROPERTIES_AFTER_CREATE,
+            type_hierarchy=POLICYSTICKY_TH,
+            type_node=POLICYSTICKY_TYPE,
+        )
+        _ctx.instance._relationships = [
+            self.get_mock_relationship_ctx(
+                "elb",
+                test_target=self.get_mock_ctx(
+                    "elb", {},
+                    {
+                        EXTERNAL_RESOURCE_ID: 'ext_id',
+                        'resource_config': {
+                            'Listeners': [{}]
+                        }
+                    },
+                    type_hierarchy=[LB_TYPE],
+                    type_node=LB_TYPE))
+        ]
+        current_ctx.set(_ctx)
 
-        ctx = self.get_mock_ctx("ELB", {}, {'resource_config': {}})
-        ctx_target = self.get_mock_relationship_ctx(
-            "elb",
-            test_target=self.get_mock_ctx(
-                "elb", {},
-                {EXTERNAL_RESOURCE_ID: 'ext_id',
-                 'resource_config': {'Listeners': [{LB_PORT: 'port'}]}}))
-        iface = MagicMock()
-        config = {LB_NAME: 'policy', LB_PORT: 'port', RESOURCE_NAMES: 'names'}
-        policy.start_sticky(ctx, iface, config)
-        self.assertTrue(iface.start.called)
+        self.fake_client.set_load_balancer_policies_of_listener = \
+            self.mock_return(DELETE_RESPONSE)
 
-        config = {LB_PORT: 'port', RESOURCE_NAMES: 'names'}
-        ctx = self.get_mock_ctx("ELB", {}, {'resource_config': {}})
-        with patch(PATCH_PREFIX + 'utils') as utils:
-            utils.find_rels_by_node_type = self.mock_return([ctx_target])
-            policy.start_sticky(ctx, iface, config)
-            self.assertTrue(iface.start.called)
+        policy.start_sticky(ctx=_ctx, resource_config=None, iface=None)
 
-        config = {RESOURCE_NAMES: 'names'}
-        ctx = self.get_mock_ctx("ELB", {}, {'resource_config': {}})
-        with patch(PATCH_PREFIX + 'utils') as utils:
-            utils.find_rels_by_node_type = self.mock_return([ctx_target])
-            policy.start_sticky(ctx, iface, config)
-            self.assertTrue(iface.start.called)
+        self.fake_boto.assert_called_with('elb', **CLIENT_CONFIG)
 
-        config = {LB_NAME: 'policy', RESOURCE_NAMES: 'names'}
-        ctx = self.get_mock_ctx("ELB", {}, {'resource_config': {}})
-        with patch(PATCH_PREFIX + 'utils') as utils:
-            utils.find_rels_by_node_type = MagicMock(side_effect=_side)
-            policy.start_sticky(ctx, iface, config)
-            self.assertTrue(iface.start.called)
-
-        config = {}
-        ctx = self.get_mock_ctx("ELB", {}, {'resource_config': {},
-                                            RESOURCE_NAME: 'name'})
-        with patch(PATCH_PREFIX + 'utils') as utils:
-            utils.find_rels_by_node_type = self.mock_return([ctx_target])
-            policy.start_sticky(ctx, iface, config)
-            self.assertTrue(iface.start.called)
+        self.fake_client.set_load_balancer_policies_of_listener.\
+            assert_called_with(LoadBalancerName='ext_id',
+                               LoadBalancerPort=None,
+                               PolicyNames=['aws_resource'])
 
     def test_delete(self):
-        ctx = self.get_mock_ctx("ELB", {}, {'resource_config': {}})
-        iface = MagicMock()
-        config = {LB_NAME: 'policy', LB_PORT: 'port', RESOURCE_NAMES: 'names'}
-        policy.delete(ctx, iface, config)
-        self.assertTrue(iface.delete.called)
+        _ctx = self.get_mock_ctx(
+            'test_delete',
+            test_properties=NODE_PROPERTIES,
+            test_runtime_properties=RUNTIME_PROPERTIES_AFTER_CREATE,
+            type_hierarchy=POLICY_TH,
+            type_node=POLICY_TYPE,
+        )
+
+        current_ctx.set(_ctx)
+
+        self.fake_client.delete_load_balancer_policy = self.mock_return(
+            DELETE_RESPONSE)
+
+        policy.delete(ctx=_ctx, resource_config=None, iface=None)
+
+        self.fake_boto.assert_called_with('elb', **CLIENT_CONFIG)
+
+        self.fake_client.delete_load_balancer_policy.assert_called_with(
+            LoadBalancerName='aws_resource', PolicyName='policy'
+        )
 
 
 if __name__ == '__main__':

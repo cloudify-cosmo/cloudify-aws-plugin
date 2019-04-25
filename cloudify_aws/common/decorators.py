@@ -87,7 +87,7 @@ def aws_relationship(class_decl=None,
     return wrapper_outer
 
 
-def aws_params(resource_name):
+def aws_params(resource_name, params_priority=True):
     '''AWS resource decorator'''
     def wrapper_outer(function):
         '''Outer function'''
@@ -99,15 +99,30 @@ def aws_params(resource_name):
             # Create a copy of the resource config for clean manipulation.
             params = utils.clean_params(
                 dict() if not resource_config else resource_config.copy())
-            resource_id = params.get(resource_name)
-            if not resource_id:
+            if params_priority:
+                # params value will overwrite other resources id
+                resource_id = params.get(resource_name)
+                if not resource_id:
+                    resource_id = \
+                        iface.resource_id or \
+                        utils.get_resource_id(
+                            ctx.node,
+                            ctx.instance,
+                            use_instance_id=True)
+                    params[resource_name] = resource_id
+            else:
+                # resource id from runtime has priority over params
                 resource_id = \
                     iface.resource_id or \
                     utils.get_resource_id(
                         ctx.node,
                         ctx.instance,
+                        params.get(resource_name),
                         use_instance_id=True)
                 params[resource_name] = resource_id
+                ctx.instance.runtime_properties[resource_name] = \
+                    resource_id
+
             utils.update_resource_id(ctx.instance, resource_id)
             kwargs['params'] = params
             return function(*argc, **kwargs)

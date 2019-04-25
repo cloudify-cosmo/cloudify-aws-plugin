@@ -225,7 +225,7 @@ def start_sticky(ctx, iface, resource_config, **_):
         else:
             instance_cfg = \
                 targs[0].target.instance.runtime_properties['resource_config']
-        listener = instance_cfg.get('Listeners', [])[0]
+        listener = instance_cfg.get('Listeners', [{}])[0]
         lb_port = listener.get(LB_PORT)
         params.update({LB_PORT: lb_port})
 
