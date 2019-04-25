@@ -204,6 +204,9 @@ class TestBase(unittest.TestCase):
         fake_client.delete_auto_scaling_group = self._get_unknowservice(
             client_type
         )
+        fake_client.update_auto_scaling_group = self._get_unknowservice(
+            client_type
+        )
         fake_client.delete_launch_configuration = self._get_unknowservice(
             client_type
         )

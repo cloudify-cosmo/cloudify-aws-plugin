@@ -234,6 +234,27 @@ class TestELBClassicLoadBalancer(TestBase):
             LoadBalancerName='aws_resource', a='b'
         )
 
+        # start without resource configs
+        _ctx = self.get_mock_ctx(
+            'test_start',
+            test_properties=NODE_PROPERTIES,
+            test_runtime_properties=RUNTIME_PROPERTIES_AFTER_CREATE,
+            type_hierarchy=LOADBALANCER_TH,
+            type_node=LOADBALANCER_TYPE,
+        )
+
+        current_ctx.set(_ctx)
+
+        self.fake_client.modify_load_balancer_attributes = self.mock_return(
+            DELETE_RESPONSE)
+
+        # should be used resource config from inputs
+        load_balancer.start(ctx=_ctx, resource_config=None, iface=None)
+
+        self.fake_boto.assert_called_with('elb', **CLIENT_CONFIG)
+
+        self.fake_client.modify_load_balancer_attributes.assert_not_called()
+
     def test_delete(self):
         _ctx = self.get_mock_ctx(
             'test_delete',

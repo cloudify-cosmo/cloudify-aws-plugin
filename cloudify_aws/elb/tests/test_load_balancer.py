@@ -165,7 +165,16 @@ class TestELBLoadBalancer(TestBase):
                 "elb",
                 test_target=self.get_mock_ctx(
                     "elb", {},
-                    {EXTERNAL_RESOURCE_ID: 'ext_id'}))
+                    {EXTERNAL_RESOURCE_ID: 'subnet_id'},
+                    type_hierarchy=[load_balancer.SUBNET_TYPE],
+                    type_node=load_balancer.SUBNET_TYPE)),
+            self.get_mock_relationship_ctx(
+                "elb",
+                test_target=self.get_mock_ctx(
+                    "elb", {},
+                    {EXTERNAL_RESOURCE_ID: 'sec_id'},
+                    type_hierarchy=[load_balancer.SECGROUP_TYPE],
+                    type_node=load_balancer.SECGROUP_TYPE))
         ]
 
         current_ctx.set(_ctx)
@@ -191,7 +200,8 @@ class TestELBLoadBalancer(TestBase):
 
         self.fake_client.create_load_balancer.assert_called_with(
             LoadBalancerArn='load_balancer', LoadBalancerName='loadbalancer',
-            Name='aws_resource', SecurityGroups=[], Subnets=[])
+            Name='aws_resource', SecurityGroups=['sec_id'],
+            Subnets=['subnet_id'])
         self.fake_client.describe_load_balancers.assert_called_with(
             Names=['abc'])
 
