@@ -15,6 +15,7 @@ import unittest
 from mock import patch, MagicMock
 
 from cloudify.state import current_ctx
+from cloudify.exceptions import OperationRetry
 
 from cloudify_aws.common.tests.test_base import TestBase, CLIENT_CONFIG
 from cloudify_aws.common.tests.test_base import DELETE_RESPONSE
@@ -161,8 +162,8 @@ class TestAutoscalingGroup(TestBase):
 
         self.fake_client.detach_instances = self.mock_return(DELETE_RESPONSE)
 
-        self.fake_client.describe_auto_scaling_groups = MagicMock(
-            return_value={
+        self.fake_client.describe_auto_scaling_groups = self.mock_return(
+            {
                 'AutoScalingGroups': [{
                     'AutoScalingGroupName': 'test-autoscaling1',
                     'AutoScalingGroupARN': 'scaling_arn',
@@ -197,6 +198,76 @@ class TestAutoscalingGroup(TestBase):
                 'aws_resource_id': 'test-autoscaling1'
             }
         )
+
+    def test_stop(self):
+        _ctx = self._prepare_context(RUNTIME_PROPERTIES_AFTER_CREATE)
+
+        self.fake_client.update_auto_scaling_group = self.mock_return(
+            DELETE_RESPONSE)
+        self.fake_client.describe_auto_scaling_groups = MagicMock(
+            return_value={'AutoScalingGroups': [{'Status': 'Created',
+                                                 'MinSize': 0,
+                                                 'MaxSize': 0,
+                                                 'DesiredCapacity': 0,
+                                                 'Instances': []}]}
+        )
+
+        self.fake_client.detach_instances = self.mock_return(DELETE_RESPONSE)
+
+        # we don't have things for remove
+        autoscaling_group.stop(ctx=_ctx, resource_config=None,
+                               iface=None)
+
+        self.fake_boto.assert_called_with('autoscaling', **CLIENT_CONFIG)
+        self.fake_client.update_auto_scaling_group.assert_not_called()
+        self.fake_client.describe_auto_scaling_groups.assert_called_with(
+            AutoScalingGroupNames=['test-autoscaling1'])
+
+        # have some alive instances
+        self.fake_client.describe_auto_scaling_groups = MagicMock(
+            return_value={'AutoScalingGroups': [{'Status': 'Created',
+                                                 'MinSize': 0,
+                                                 'MaxSize': 0,
+                                                 'DesiredCapacity': 1,
+                                                 'Instances': [{}]}]}
+        )
+        with self.assertRaises(OperationRetry) as error:
+            autoscaling_group.stop(ctx=_ctx, resource_config=None,
+                                   iface=None)
+        self.assertEqual(
+            str(error.exception),
+            'Autoscaling Group ID# "test-autoscaling1" is deleting associated '
+            'instances.'
+        )
+
+        self.fake_boto.assert_called_with('autoscaling', **CLIENT_CONFIG)
+        self.fake_client.update_auto_scaling_group.assert_not_called()
+        self.fake_client.describe_auto_scaling_groups.assert_called_with(
+            AutoScalingGroupNames=['test-autoscaling1'])
+
+        # we have some scale staff
+        self.fake_client.describe_auto_scaling_groups = MagicMock(
+            return_value={'AutoScalingGroups': [{'Status': 'Created',
+                                                 'MinSize': 1,
+                                                 'MaxSize': 1,
+                                                 'DesiredCapacity': 1,
+                                                 'Instances': [{}]}]}
+        )
+        with self.assertRaises(OperationRetry) as error:
+            autoscaling_group.stop(ctx=_ctx, resource_config=None,
+                                   iface=None)
+        self.assertEqual(
+            str(error.exception),
+            'Updating Autoscaling Group ID# "test-autoscaling1" parameters '
+            'before deletion.'
+        )
+
+        self.fake_boto.assert_called_with('autoscaling', **CLIENT_CONFIG)
+        self.fake_client.update_auto_scaling_group.assert_called_with(
+            AutoScalingGroupName='test-autoscaling1', DesiredCapacity=0,
+            MaxSize=0, MinSize=0)
+        self.fake_client.describe_auto_scaling_groups.assert_called_with(
+            AutoScalingGroupNames=['test-autoscaling1'])
 
     def test_AutoscalingGroup_properties(self):
         test_instance = autoscaling_group.AutoscalingGroup(

@@ -134,6 +134,195 @@ class TestDecorators(TestBase):
 
         test_ignore(ctx=_ctx, iface=mock_interface)
 
+    def test_aws_params_default(self):
+        """params is in priority"""
+        @decorators.aws_params("name")
+        def test_default(*args, **kwargs):
+            return args, kwargs
+
+        _ctx = self.get_mock_ctx(
+            'test_aws_params',
+            test_properties={},
+            test_runtime_properties={}
+        )
+        current_ctx.set(_ctx)
+
+        _iface = MagicMock()
+        _iface.resource_id = None
+
+        # default name is node name
+        self.assertEqual(test_default(ctx=_ctx, iface=_iface),
+                         ((), {'ctx': _ctx, 'iface': _iface,
+                               'params': {'name': 'test_aws_params'}}))
+        self.assertEqual(_ctx.instance.runtime_properties,
+                         {'aws_resource_id': 'test_aws_params'})
+
+        # default name is node property
+        _ctx = self.get_mock_ctx(
+            'test_aws_params',
+            test_properties={"resource_id": "property"},
+            test_runtime_properties={}
+        )
+        current_ctx.set(_ctx)
+
+        self.assertEqual(test_default(ctx=_ctx, iface=_iface),
+                         ((), {'ctx': _ctx, 'iface': _iface,
+                               'params': {'name': 'property'}}))
+        self.assertEqual(_ctx.instance.runtime_properties,
+                         {'aws_resource_id': "property"})
+
+        # default name is node property
+        _ctx = self.get_mock_ctx(
+            'test_aws_params',
+            test_properties={"resource_id": "property"},
+            test_runtime_properties={"aws_resource_id": "runtime"}
+        )
+        current_ctx.set(_ctx)
+
+        self.assertEqual(test_default(ctx=_ctx, iface=_iface),
+                         ((), {'ctx': _ctx, 'iface': _iface,
+                               'params': {'name': "runtime"}}))
+        self.assertEqual(_ctx.instance.runtime_properties,
+                         {'aws_resource_id': "runtime"})
+
+        # default name is interface
+        _ctx = self.get_mock_ctx(
+            'test_aws_params',
+            test_properties={"resource_id": "property"},
+            test_runtime_properties={"aws_resource_id": "runtime"}
+        )
+        current_ctx.set(_ctx)
+        _iface.resource_id = 'interface'
+
+        self.assertEqual(test_default(ctx=_ctx, iface=_iface),
+                         ((), {'ctx': _ctx, 'iface': _iface,
+                               'params': {'name': "interface"}}))
+        self.assertEqual(_ctx.instance.runtime_properties,
+                         {'aws_resource_id': "interface"})
+
+        # default name is parameters
+        _ctx = self.get_mock_ctx(
+            'test_aws_params',
+            test_properties={"resource_id": "property"},
+            test_runtime_properties={"aws_resource_id": "runtime"}
+        )
+        current_ctx.set(_ctx)
+        _iface.resource_id = 'interface'
+
+        self.assertEqual(test_default(ctx=_ctx, iface=_iface,
+                                      resource_config={"name": 'config'}),
+                         ((), {'ctx': _ctx, 'iface': _iface,
+                               'params': {'name': "config"},
+                               'resource_config': {"name": 'config'}}))
+        self.assertEqual(_ctx.instance.runtime_properties,
+                         {'aws_resource_id': "config"})
+
+    def test_aws_params_runtime(self):
+        """runtime is in priority"""
+        @decorators.aws_params("name", params_priority=False)
+        def test_default(*args, **kwargs):
+            return args, kwargs
+
+        _ctx = self.get_mock_ctx(
+            'test_aws_params',
+            test_properties={},
+            test_runtime_properties={}
+        )
+        current_ctx.set(_ctx)
+
+        _iface = MagicMock()
+        _iface.resource_id = None
+
+        # default name is node name
+        self.assertEqual(test_default(ctx=_ctx, iface=_iface),
+                         ((), {'ctx': _ctx, 'iface': _iface,
+                               'params': {'name': 'test_aws_params'}}))
+        self.assertEqual(_ctx.instance.runtime_properties,
+                         {'name': 'test_aws_params',
+                          'aws_resource_id': 'test_aws_params'})
+
+        # default name is parameters, other values is empty
+        _ctx = self.get_mock_ctx(
+            'test_aws_params',
+            test_properties={},
+            test_runtime_properties={}
+        )
+        current_ctx.set(_ctx)
+        _iface.resource_id = None
+
+        self.assertEqual(test_default(ctx=_ctx, iface=_iface,
+                                      resource_config={"name": 'config'}),
+                         ((), {'ctx': _ctx, 'iface': _iface,
+                               'params': {'name': "config"},
+                               'resource_config': {"name": 'config'}}))
+        self.assertEqual(_ctx.instance.runtime_properties,
+                         {'name': 'config',
+                          'aws_resource_id': 'config'})
+
+        # default name is node property
+        _ctx = self.get_mock_ctx(
+            'test_aws_params',
+            test_properties={"resource_id": "property"},
+            test_runtime_properties={}
+        )
+        current_ctx.set(_ctx)
+
+        self.assertEqual(test_default(ctx=_ctx, iface=_iface),
+                         ((), {'ctx': _ctx, 'iface': _iface,
+                               'params': {'name': 'property'}}))
+        self.assertEqual(_ctx.instance.runtime_properties,
+                         {'name': 'property',
+                          'aws_resource_id': "property"})
+
+        # default name is runtime
+        _ctx = self.get_mock_ctx(
+            'test_aws_params',
+            test_properties={"resource_id": "property"},
+            test_runtime_properties={"aws_resource_id": "runtime"}
+        )
+        current_ctx.set(_ctx)
+
+        self.assertEqual(test_default(ctx=_ctx, iface=_iface),
+                         ((), {'ctx': _ctx, 'iface': _iface,
+                               'params': {'name': "runtime"}}))
+        self.assertEqual(_ctx.instance.runtime_properties,
+                         {'name': 'runtime',
+                          'aws_resource_id': "runtime"})
+
+        # default name is interface
+        _ctx = self.get_mock_ctx(
+            'test_aws_params',
+            test_properties={"resource_id": "property"},
+            test_runtime_properties={"aws_resource_id": "runtime"}
+        )
+        current_ctx.set(_ctx)
+        _iface.resource_id = 'interface'
+
+        self.assertEqual(test_default(ctx=_ctx, iface=_iface),
+                         ((), {'ctx': _ctx, 'iface': _iface,
+                               'params': {'name': "interface"}}))
+        self.assertEqual(_ctx.instance.runtime_properties,
+                         {'aws_resource_id': 'interface',
+                          'name': "interface"})
+
+        # default name is interface
+        _ctx = self.get_mock_ctx(
+            'test_aws_params',
+            test_properties={"resource_id": "property"},
+            test_runtime_properties={"aws_resource_id": "runtime"}
+        )
+        current_ctx.set(_ctx)
+        _iface.resource_id = 'interface'
+
+        self.assertEqual(test_default(ctx=_ctx, iface=_iface,
+                                      resource_config={"name": 'config'}),
+                         ((), {'ctx': _ctx, 'iface': _iface,
+                               'params': {'name': "interface"},
+                               'resource_config': {"name": 'config'}}))
+        self.assertEqual(_ctx.instance.runtime_properties,
+                         {'aws_resource_id': "interface",
+                          'name': 'interface'})
+
     def test_aws_resource(self):
 
         fake_class_instance = MagicMock()

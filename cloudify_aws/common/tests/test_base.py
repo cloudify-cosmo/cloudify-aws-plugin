@@ -204,6 +204,9 @@ class TestBase(unittest.TestCase):
         fake_client.delete_auto_scaling_group = self._get_unknowservice(
             client_type
         )
+        fake_client.update_auto_scaling_group = self._get_unknowservice(
+            client_type
+        )
         fake_client.delete_launch_configuration = self._get_unknowservice(
             client_type
         )
@@ -252,6 +255,7 @@ class TestBase(unittest.TestCase):
         fake_client.create_policy = self._get_unknowservice(client_type)
         fake_client.create_role = self._get_unknowservice(client_type)
         fake_client.create_user = self._get_unknowservice(client_type)
+        fake_client.put_role_policy = self._get_unknowservice(client_type)
 
         fake_client.delete_access_key = self._get_unknowservice(client_type)
         fake_client.delete_group = self._get_unknowservice(client_type)
@@ -262,6 +266,7 @@ class TestBase(unittest.TestCase):
         fake_client.detach_group_policy = self._get_unknowservice(client_type)
         fake_client.detach_role_policy = self._get_unknowservice(client_type)
         fake_client.detach_user_policy = self._get_unknowservice(client_type)
+        fake_client.delete_role_policy = self._get_unknowservice(client_type)
 
         fake_client.get_group = self._gen_client_error("get_group")
         fake_client.get_login_profile = self._gen_client_error(

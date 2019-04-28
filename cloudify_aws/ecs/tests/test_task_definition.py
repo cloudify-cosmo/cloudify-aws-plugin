@@ -124,6 +124,15 @@ class TestECSTaskDefinition(TestBase):
 
         self.assertEqual(self.task_definition.status, 'test_status')
 
+    def test_class_status_empty(self):
+        response = {task_definition.TASK_DEFINITION: {}}
+
+        self.task_definition.client = \
+            self.make_client_function('describe_task_definition',
+                                      return_value=response)
+
+        self.assertIsNone(self.task_definition.status)
+
     def test_class_create(self):
         params = {
             task_definition.TASK_DEFINITION_FAMILY:

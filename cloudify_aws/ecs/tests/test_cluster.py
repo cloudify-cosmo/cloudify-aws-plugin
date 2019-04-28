@@ -107,6 +107,13 @@ class TestECSCluster(TestBase):
 
         self.assertEqual(self.cluster.status, 'test_status')
 
+    def test_class_status_empty(self):
+        response = {cluster.CLUSTERS: [{}]}
+        self.cluster.client = self.make_client_function('describe_clusters',
+                                                        return_value=response)
+
+        self.assertIsNone(self.cluster.status)
+
     def test_class_create(self):
         params = {cluster.CLUSTER_RESOURCE_NAME: 'test_cluster_name'}
         response = \
