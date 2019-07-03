@@ -22,6 +22,7 @@
 import sys
 
 # Third party imports
+from cloudify.decorators import operation
 from cloudify.exceptions import (OperationRetry, NonRecoverableError)
 from cloudify.utils import exception_to_error_cause
 from botocore.exceptions import ClientError
@@ -84,7 +85,7 @@ def aws_relationship(class_decl=None,
             ctx.target.instance.runtime_properties._set_changed()
             return ret
         return wrapper_inner
-    return wrapper_outer
+    return operation(func=wrapper_outer, resumable=True)
 
 
 def aws_params(resource_name, params_priority=True):
@@ -247,7 +248,7 @@ def aws_resource(class_decl=None,
                                 % (resource_type, resource_id))
             return function(**kwargs)
         return wrapper_inner
-    return wrapper_outer
+    return operation(func=wrapper_outer, resumable=True)
 
 
 def wait_for_status(status_good=None,
@@ -408,7 +409,7 @@ def check_swift_resource(func):
             return response
 
         return func(**kwargs)
-    return wrapper
+    return operation(func=wrapper, resumable=True)
 
 
 def tag_resources(fn):
