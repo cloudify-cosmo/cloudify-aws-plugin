@@ -246,7 +246,13 @@ def aws_resource(class_decl=None,
                     return
                 ctx.logger.warn('%s ID# "%s" has force_operation set.'
                                 % (resource_type, resource_id))
-            return function(**kwargs)
+            result = function(**kwargs)
+            if ctx.operation.name == 'cloudify.interfaces.lifecycle.delete':
+                # cleanup runtime after delete
+                keys = ctx.instance.runtime_properties.keys()
+                for key in keys:
+                    del ctx.instance.runtime_properties[key]
+            return result
         return wrapper_inner
     return operation(func=wrapper_outer, resumable=True)
 
@@ -281,11 +287,6 @@ def wait_for_status(status_good=None,
                     # so updating iface object
                     iface.resource_id = \
                         ctx.instance.runtime_properties.get(EXT_RES_ID)
-                    # If sequence of install -> uninstall workflows was
-                    # executed, we should remove '__deleted'
-                    # flag set in the decorator wait_for_delete below
-                    if '__deleted' in ctx.instance.runtime_properties:
-                        del ctx.instance.runtime_properties['__deleted']
 
             # Get a resource interface and query for the status
             status = iface.status
@@ -325,6 +326,7 @@ def wait_for_delete(status_deleted=None, status_pending=None):
             # Run the operation if this is the first pass
             if not ctx.instance.runtime_properties.get('__deleted', False):
                 function(**kwargs)
+                # flag will be removed after first call without any exceptions
                 ctx.instance.runtime_properties['__deleted'] = True
             # Get a resource interface and query for the status
             status = iface.status

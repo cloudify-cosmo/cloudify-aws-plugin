@@ -177,9 +177,6 @@ def delete(iface, resource_config, **_):
 
     iface.delete({KEYNAME: key_name})
 
-    if ctx.node.properties['store_in_runtime_properties']:
-        del ctx.instance.runtime_properties['create_response']
-
     if ctx.node.properties['create_secret']:
         try:
             client = get_rest_client()
