@@ -1,11 +1,11 @@
-1.4.2
+1.4.2:
     - Moved EC2 and VPC to cloudify_aws package
     - Added an Instance-Subnet connected_to relationship
-1.4.3
+1.4.3:
     - Add Subnet create retry operation
     - Improvements to ELB creation
     - Fix bug that delete External Resource keypairs
-1.4.4
+1.4.4:
     - Improve Test Coverage
     - Improve function naming
     - Support tagging of all types (where available via API)
@@ -16,39 +16,39 @@
     - Support Security Group rules as a node type
     - Support resource state verification
     - Clearer log messages
-1.4.5 
-    - Support Security Group rules creation by ID 
-    - Fix validation errors 
+1.4.5:
+    - Support Security Group rules creation by ID
+    - Fix validation errors
     - Fix duplicated mapping key
-1.4.6 
+1.4.6:
     - Fix random EIP disassociated
-1.4.7
+1.4.7:
     - Support circular dependency of security groups
-1.4.8
+1.4.8:
     - Support attaching existing volume to instance
-1.4.9 
+1.4.9:
     - Add revoke rules from security group retry operation
     - Added handling for missing provider_context and missing homedir issues in 4.0.1
-1.4.10
+1.4.10:
     - Add delete security group retry operation
-1.4.11
+1.4.11:
     - Fixed bug that attempt to delete external security group
-1.4.12
+1.4.12:
     - Fixed error message when unlinking route table from gateway
     - Support passing runtime properties to create operation
-1.4.13
+1.4.13:
     - Fixed bug that instance get resource returns something when no id was provided
-1.5
+1.5:
     - Associate ElasticIP to resources base on ip property instead of base on resource type
     - Fix the need for an operations name to be in the format <something>.<create/start/stop/delete> (Aria Tosca)
     - Add connect Security Groups to Instance via InstanceConnectedToSecurityGroup relationship
     - Support adding VPC Peering Connection + Use external routes
     - Fix bug that disassociate the wrong elastic ip from its instance
-1.5.1
+1.5.1:
     - Support Windows instances with init_script agent installation method.
-1.5.1.1
+1.5.1.1:
     - Fix bug when init_script is empty string.
-1.5.1.2
+1.5.1.2:
     - Execute user-provided user data before agent install user data.
 2.0.0:
     - Update aws plugin node types
@@ -61,3 +61,5 @@
     - Support multiple subnet attachments to network acl.
 2.1.0:
     - Make Resource Naming Resolution consistent across the plugin.
+2.2.0:
+    - Add resumable support to operations
