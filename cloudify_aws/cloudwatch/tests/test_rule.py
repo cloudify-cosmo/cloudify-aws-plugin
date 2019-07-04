@@ -174,10 +174,6 @@ class TestCloudwatchEventsRule(TestBase):
 
         self.assertEqual(test_instance.status, None)
 
-        self.fake_client.describe_rule.assert_called_with(
-            Name=['rule_id']
-        )
-
     def test_CloudwatchEventsRuleClass_status_empty(self):
         test_instance = rule.CloudwatchEventsRule("ctx_node",
                                                   resource_id='rule_id',
@@ -185,10 +181,6 @@ class TestCloudwatchEventsRule(TestBase):
                                                   logger=None)
 
         self.assertEqual(test_instance.status, None)
-
-        self.fake_client.describe_rule.assert_called_with(
-            Name=['rule_id']
-        )
 
 
 if __name__ == '__main__':

@@ -201,14 +201,6 @@ def delete(ctx, iface, resource_config, **_):
             ctx.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
 
     iface.delete(params)
-    for prop in ['resource_config',
-                 'aws_resource_id',
-                 'device_index',
-                 'create_response']:
-        try:
-            del ctx.instance.runtime_properties[prop]
-        except KeyError:
-            pass
 
 
 @decorators.aws_resource(EC2NetworkInterface, RESOURCE_TYPE)

@@ -365,14 +365,6 @@ def delete(iface, resource_config, **_):
     params = \
         dict() if not resource_config else resource_config.copy()
     iface.delete({INSTANCE_IDS: params.get(INSTANCE_IDS, [iface.resource_id])})
-    for prop in ['ip',
-                 'private_ip_address',
-                 'public_ip_address',
-                 'create_response']:
-        try:
-            del ctx.instance.runtime_properties[prop]
-        except KeyError:
-            pass
 
 
 @decorators.aws_resource(EC2Instances, RESOURCE_TYPE)

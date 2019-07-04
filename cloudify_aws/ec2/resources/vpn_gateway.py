@@ -117,7 +117,6 @@ def create(ctx, iface, resource_config, **_):
         dict() if not resource_config else resource_config.copy()
 
     # Actually create the resource
-    # Actually create the resource
     create_response = iface.create(params)['VpnGateway']
     ctx.instance.runtime_properties['create_response'] = \
         utils.JsonCleanuper(create_response).to_dict()

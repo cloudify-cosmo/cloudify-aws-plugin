@@ -55,9 +55,6 @@ class AutoscalingPolicy(AutoscalingBase):
     @property
     def status(self):
         """Gets the status of an external resource"""
-        props = self.properties
-        if not props:
-            return None
         return None
 
     def create(self, params):

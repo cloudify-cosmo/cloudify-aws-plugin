@@ -173,7 +173,7 @@ def attach(ctx, iface, resource_config, **_):
             subnet_id or \
             targ.target.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
 
-    # # Actually attach the resources
+    # Actually attach the resources
     association_id_list = iface.attach(params)
     association_id = association_id_list.get(ASSOCIATION_ID)
     ctx.instance.runtime_properties['association_id'] = association_id

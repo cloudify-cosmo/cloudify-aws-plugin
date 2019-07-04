@@ -363,6 +363,19 @@ class TestDecorators(TestBase):
                           'aws_resource_id': 'res_id',
                           'resource_config': {}})
 
+        # run delete operation
+        _ctx = self._gen_decorators_context('test_aws_resource', runtime_prop={
+            'aws_resource_arn': 'res_arn',
+            'resource_config': {}
+        })
+        _operation = MagicMock()
+        _operation.name = 'cloudify.interfaces.lifecycle.delete'
+        _ctx._operation = _operation
+        test_func(ctx=_ctx, aws_resource_id='res_id')
+
+        self.assertEqual(_ctx.instance.runtime_properties,
+                         {})
+
     def test_aws_resource_update_resource_arn(self):
 
         fake_class_instance = MagicMock()

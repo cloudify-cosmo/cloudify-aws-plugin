@@ -192,10 +192,6 @@ class TestCloudwatchAlarm(TestBase):
 
         self.assertEqual(test_instance.status, None)
 
-        self.fake_client.describe_alarms.assert_called_with(
-            AlarmNames=['alarm_id']
-        )
-
     def test_CloudwatchAlarmClass_status_empty(self):
         test_instance = alarm.CloudwatchAlarm("ctx_node",
                                               resource_id='alarm_id',
@@ -203,10 +199,6 @@ class TestCloudwatchAlarm(TestBase):
                                               logger=None)
 
         self.assertEqual(test_instance.status, None)
-
-        self.fake_client.describe_alarms.assert_called_with(
-            AlarmNames=['alarm_id']
-        )
 
 
 if __name__ == '__main__':

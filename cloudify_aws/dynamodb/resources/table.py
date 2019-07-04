@@ -51,8 +51,8 @@ class DynamoDBTable(DynamoDBBase):
     def status(self):
         """Gets the status of an external resource"""
         props = self.properties
-        if props and 'TableStatus' in props:
-            return props['TableStatus']
+        if props:
+            return props.get('TableStatus')
         return None
 
     def create(self, params):
