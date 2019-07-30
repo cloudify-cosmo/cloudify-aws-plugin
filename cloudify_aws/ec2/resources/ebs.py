@@ -49,6 +49,8 @@ INUSE = 'in-use'
 DELETING = 'deleting'
 DELETED = 'deleted'
 
+EC2_INSTANCE_TYPE = 'cloudify.nodes.aws.ec2.Instances'
+
 
 class EC2VolumeMixin(object):
     """
@@ -82,6 +84,23 @@ class EC2VolumeMixin(object):
         return self.properties[VOLUME_STATE]\
             if self.properties and self.properties.get(VOLUME_STATE) else None
 
+    def attach(self, params):
+
+        return self.make_client_call('attach_volume', params)
+
+    def detach(self, params=None):
+        """
+        Detaches An AWS EC2 EBS Volume From Instance
+        :param params:
+        :return:
+        """
+        self.logger.debug('Detaching {0} with: {1}'
+                          .format(self.type_name, params.get(VOLUME_ID, None)))
+
+        res = self.client.detach_volume(**params)
+        self.logger.debug('Response: {0}'.format(res))
+        return res
+
 
 class EC2Volume(EC2VolumeMixin, EC2Base):
     """
@@ -111,7 +130,7 @@ class EC2Volume(EC2VolumeMixin, EC2Base):
 
 class EC2VolumeAttachment(EC2VolumeMixin, EC2Base):
     """
-        EC2 EBS Volume
+        EC2 EBS Volume Attachment
     """
 
     def create(self, params):
@@ -120,7 +139,7 @@ class EC2VolumeAttachment(EC2VolumeMixin, EC2Base):
         :param params:
         :return:
         """
-        return self.make_client_call('attach_volume', params)
+        return self.attach(params)
 
     def delete(self, params=None):
         """
@@ -128,12 +147,37 @@ class EC2VolumeAttachment(EC2VolumeMixin, EC2Base):
         :param params:
         :return:
         """
-        self.logger.debug('Detaching {0} with: {1}'
-                          .format(self.type_name, params.get(VOLUME_ID, None)))
+        return self.detach(params)
 
-        res = self.client.detach_volume(**params)
-        self.logger.debug('Response: {0}'.format(res))
-        return res
+
+def _attach_ebs(params, iface, _ctx):
+    """
+    :param params:
+    :param iface:
+    :param _ctx:
+    """
+    # Attach ebs volume to ec2 instance resource
+    create_response = iface.create(params)
+
+    # Check if the resource attaching done
+    if create_response:
+        _ctx.instance.runtime_properties['eps_attach'] =\
+            utils.JsonCleanuper(create_response).to_dict()
+        return create_response
+
+    else:
+        raise NonRecoverableError(
+            '{0} ID# "{1}" reported an empty response'
+            .format(RESOURCE_TYPE_VOLUME_ATTACHMENT, iface.resource_id))
+
+
+def _detach_ebs(iface, volume_id):
+    """
+    :param iface:
+    :param volume_id:
+    """
+    deleted_params = {'VolumeId': volume_id}
+    iface.delete(deleted_params)
 
 
 @decorators.aws_resource(resource_type=RESOURCE_TYPE_VOLUME)
@@ -204,58 +248,95 @@ def delete(ctx, iface, resource_config, **_):
     iface.delete(deleted_params)
 
 
+@decorators.aws_relationship(EC2Volume, RESOURCE_TYPE_VOLUME)
+@decorators.wait_on_relationship_status(status_good=[ATTACHED, INUSE],
+                                        status_pending=[ATTACHING])
+def attach_to(ctx, iface, **_):
+    """
+    Attaches an AWS EC2 EBS Volume TO Instance
+    :param ctx:
+    :param iface:
+    :param _:
+    :return:
+    """
+    device_name = ctx.source.node.properties.get('device_name')
+    # Check if device name is provide or not
+    if not device_name:
+        raise NonRecoverableError('Cannot attach volume {0} to EC2 instance '
+                                  'without specifying device name')
+    instance_id = utils.find_ids_of_rels_by_node_type(
+        ctx.source.instance, EC2_INSTANCE_TYPE)
+    volume_id = iface.resource_id
+    if not instance_id:
+        raise NonRecoverableError(
+            'EC2 instance id {0} is missing.Attaching volume'
+            ' {1} is not possible'.format(instance_id, volume_id)
+        )
+    # Prepare params in order to attach volume
+    params = {
+        'Device': device_name,
+        'InstanceId': instance_id[0],
+        'VolumeId': volume_id
+    }
+    iface = EC2VolumeAttachment(ctx.source.node, logger=ctx.logger,
+                                resource_id=utils.get_resource_id(
+                                    node=ctx.source.node,
+                                    instance=ctx.source.instance,
+                                    raise_on_missing=True))
+
+    _attach_ebs(params, iface, ctx.source)
+
+
+@decorators.aws_relationship(EC2Volume, RESOURCE_TYPE_VOLUME)
+@decorators.wait_on_relationship_status(status_good=[DETACHED, AVAILABLE],
+                                        status_pending=[DETACHING, INUSE])
+def detach_from(ctx, iface, **_):
+    """
+    De-attaches an AWS EC2 EBS Volume TO Instance
+    :param ctx:
+    :param iface:
+    :param _:
+    """
+    iface = EC2VolumeAttachment(ctx.source.node, logger=ctx.logger,
+                                resource_id=utils.get_resource_id(
+                                    node=ctx.source.node,
+                                    instance=ctx.source.instance,
+                                    raise_on_missing=True))
+    resource_id = \
+        ctx.source.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
+    _detach_ebs(iface, resource_id)
+
+
 @decorators.aws_resource(EC2VolumeAttachment, RESOURCE_TYPE_VOLUME_ATTACHMENT)
 @decorators.wait_for_status(status_good=[ATTACHED, INUSE],
                             status_pending=[ATTACHING])
-def attach(ctx, iface, resource_config, **_):
+def create_attachment(ctx, iface, resource_config, **_):
     """
     Attaches an AWS EC2 EBS Volume TO Instance
     :param ctx:
     :param iface:
     :param resource_config:
     :param _:
-    :return:
     """
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
-    # Attach ebs volume to ec2 instance resource
-    create_response = iface.create(params)
-
-    # Check if the resource attaching done
-    if create_response:
-        ctx.instance.runtime_properties['eps_attach'] =\
-            utils.JsonCleanuper(create_response).to_dict()
-
-        # Update the esp_id (volume_id)
-        esp_id = create_response.get(VOLUME_ID, '')
-        utils.update_resource_id(ctx.instance, esp_id)
-        iface.update_resource_id(esp_id)
-
-    else:
-        raise NonRecoverableError(
-            '{0} ID# "{1}" reported an empty response'
-            .format(RESOURCE_TYPE_VOLUME_ATTACHMENT, iface.resource_id))
+    params = dict() if not resource_config else resource_config.copy()
+    response = _attach_ebs(params, iface, ctx)
+    # Update the esp_id (volume_id)
+    esp_id = response.get(VOLUME_ID, '')
+    utils.update_resource_id(ctx.instance, esp_id)
+    iface.update_resource_id(esp_id)
 
 
 @decorators.aws_resource(EC2VolumeAttachment, RESOURCE_TYPE_VOLUME_ATTACHMENT,
                          ignore_properties=True)
 @decorators.wait_for_status(status_good=[DETACHED, AVAILABLE],
                             status_pending=[DETACHING, INUSE])
-def detach(ctx, iface, resource_config, **_):
+def delete_attachment(ctx, iface, **_):
     """
     De-attaches an AWS EC2 EBS Volume TO Instance
     :param ctx:
     :param iface:
-    :param resource_config:
     :param _:
-    :return:
     """
-    deleted_params = dict()
     resource_id = \
         ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
-    deleted_params[VOLUME_ID] = resource_id
-
-    volume_config = ctx.instance.runtime_properties['resource_config']
-    deleted_params['DryRun'] = volume_config.get('DryRun') or False
-    iface.delete(deleted_params)
+    _detach_ebs(iface, resource_id)

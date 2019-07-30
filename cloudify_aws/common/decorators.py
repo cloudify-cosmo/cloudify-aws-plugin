@@ -23,6 +23,7 @@ import sys
 
 # Third party imports
 from cloudify.decorators import operation
+from cloudify import ctx
 from cloudify.exceptions import (OperationRetry, NonRecoverableError)
 from cloudify.utils import exception_to_error_cause
 from botocore.exceptions import ClientError
@@ -34,6 +35,59 @@ from cloudify_aws.common.constants import (
     EXTERNAL_RESOURCE_ID as EXT_RES_ID,
     SWIFT_NODE_PREFIX,
     SWIFT_ERROR_TOKEN_CODE)
+
+
+def _wait_for_status(kwargs,
+                     _ctx,
+                     _operation,
+                     function,
+                     status_pending,
+                     status_good,
+                     fail_on_missing):
+    _, _, _, operation_name = _operation.name.split('.')
+    resource_type = kwargs.get('resource_type', 'AWS Resource')
+    iface = kwargs['iface']
+    # Run the operation if this is the first pass
+    if _operation.retry_number == 0:
+        function(**kwargs)
+        # issue 128 and issue 129
+        # by updating iface object with actual details from the
+        # AWS response assuming that actual state is available
+        # at ctx.instance.runtime_properties['create_response']
+        # and ctx.instance.runtime_properties[EXT_RES_ID]
+        # correctly updated after creation
+
+        # At first let's verify was a new AWS resource
+        # really created
+        if iface.resource_id != \
+                _ctx.instance.runtime_properties.get(EXT_RES_ID):
+            # Assuming new resource was really created,
+            # so updating iface object
+            iface.resource_id = \
+                _ctx.instance.runtime_properties.get(EXT_RES_ID)
+
+    # Get a resource interface and query for the status
+    status = iface.status
+    ctx.logger.debug('%s ID# "%s" reported status: %s'
+                     % (resource_type, iface.resource_id, status))
+    if status_pending and status in status_pending:
+        raise OperationRetry(
+            '%s ID# "%s" is still in a pending state.'
+            % (resource_type, iface.resource_id))
+
+    elif status_good and status in status_good:
+        if operation_name in ['create', 'configure']:
+            _ctx.instance.runtime_properties['create_response'] = \
+                utils.JsonCleanuper(iface.properties).to_dict()
+
+    elif not status and fail_on_missing:
+        raise NonRecoverableError(
+            '%s ID# "%s" no longer exists but "fail_on_missing" set'
+            % (resource_type, iface.resource_id))
+    elif status_good and status not in status_good and fail_on_missing:
+        raise NonRecoverableError(
+            '%s ID# "%s" reported an unexpected status: "%s"'
+            % (resource_type, iface.resource_id, status))
 
 
 def aws_relationship(class_decl=None,
@@ -265,51 +319,36 @@ def wait_for_status(status_good=None,
         '''Outer function'''
         def wrapper_inner(**kwargs):
             '''Inner, worker function'''
-            ctx = kwargs['ctx']
-            _, _, _, operation_name = ctx.operation.name.split('.')
-            resource_type = kwargs.get('resource_type', 'AWS Resource')
-            iface = kwargs['iface']
-            # Run the operation if this is the first pass
-            if ctx.operation.retry_number == 0:
-                function(**kwargs)
-                # issue 128 and issue 129
-                # by updating iface object with actual details from the
-                # AWS response assuming that actual state is available
-                # at ctx.instance.runtime_properties['create_response']
-                # and ctx.instance.runtime_properties[EXT_RES_ID]
-                # correctly updated after creation
+            _ctx = kwargs['ctx']
+            _operation = ctx.operation
+            _wait_for_status(kwargs,
+                             ctx,
+                             _operation,
+                             function,
+                             status_pending,
+                             status_good,
+                             fail_on_missing)
+        return wrapper_inner
+    return wrapper_outer
 
-                # At first let's verify was a new AWS resource
-                # really created
-                if iface.resource_id != \
-                        ctx.instance.runtime_properties.get(EXT_RES_ID):
-                    # Assuming new resource was really created,
-                    # so updating iface object
-                    iface.resource_id = \
-                        ctx.instance.runtime_properties.get(EXT_RES_ID)
 
-            # Get a resource interface and query for the status
-            status = iface.status
-            ctx.logger.debug('%s ID# "%s" reported status: %s'
-                             % (resource_type, iface.resource_id, status))
-            if status_pending and status in status_pending:
-                raise OperationRetry(
-                    '%s ID# "%s" is still in a pending state.'
-                    % (resource_type, iface.resource_id))
-
-            elif status_good and status in status_good:
-                if operation_name in ['create', 'configure']:
-                    ctx.instance.runtime_properties['create_response'] = \
-                        utils.JsonCleanuper(iface.properties).to_dict()
-
-            elif not status and fail_on_missing:
-                raise NonRecoverableError(
-                    '%s ID# "%s" no longer exists but "fail_on_missing" set'
-                    % (resource_type, iface.resource_id))
-            elif status_good and status not in status_good and fail_on_missing:
-                raise NonRecoverableError(
-                    '%s ID# "%s" reported an unexpected status: "%s"'
-                    % (resource_type, iface.resource_id, status))
+def wait_on_relationship_status(status_good=None,
+                                status_pending=None,
+                                fail_on_missing=True):
+    '''AWS resource decorator'''
+    def wrapper_outer(function):
+        '''Outer function'''
+        def wrapper_inner(**kwargs):
+            '''Inner, worker function'''
+            _ctx = kwargs['ctx']
+            _operation = ctx.operation
+            _wait_for_status(kwargs,
+                             ctx.source,
+                             _operation,
+                             function,
+                             status_pending,
+                             status_good,
+                             fail_on_missing)
         return wrapper_inner
     return wrapper_outer
 

@@ -364,7 +364,7 @@ class TestEC2VolumeAttachment(TestBase):
         self.ebs_volume_attachment.resource_id = config[VOLUME_ID]
         iface = MagicMock()
         iface.create = self.mock_return(config)
-        ebs.attach(ctx, iface, config)
+        ebs.create_attachment(ctx, iface, config)
         self.assertEqual(self.ebs_volume_attachment.resource_id,
                          'test_volume_id')
 
@@ -376,7 +376,7 @@ class TestEC2VolumeAttachment(TestBase):
             = 'test_volume_id'
         ctx.instance.runtime_properties['resource_config'] = {'DryRun': False}
 
-        ebs.detach(ctx, iface, {})
+        ebs.delete_attachment(ctx, iface)
         self.assertTrue(iface.delete.called)
 
 
