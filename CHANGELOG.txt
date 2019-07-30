@@ -63,3 +63,5 @@
     - Make Resource Naming Resolution consistent across the plugin.
 2.2.0:
     - Add resumable support to operations
+2.2.1:
+    - Fix bug when delete EC2 instance
