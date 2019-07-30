@@ -320,9 +320,9 @@ def wait_for_status(status_good=None,
         def wrapper_inner(**kwargs):
             '''Inner, worker function'''
             _ctx = kwargs['ctx']
-            _operation = ctx.operation
+            _operation = _ctx.operation
             _wait_for_status(kwargs,
-                             ctx,
+                             _ctx,
                              _operation,
                              function,
                              status_pending,
@@ -341,9 +341,9 @@ def wait_on_relationship_status(status_good=None,
         def wrapper_inner(**kwargs):
             '''Inner, worker function'''
             _ctx = kwargs['ctx']
-            _operation = ctx.operation
+            _operation = _ctx.operation
             _wait_for_status(kwargs,
-                             ctx.source,
+                             _ctx.source,
                              _operation,
                              function,
                              status_pending,
