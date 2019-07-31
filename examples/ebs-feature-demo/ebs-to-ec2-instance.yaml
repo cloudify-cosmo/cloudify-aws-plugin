@@ -14,11 +14,8 @@ inputs:
     description: YOUR AWS SECRET ACCESS KEY
     default: { get_secret: aws_secret_access_key }
 
-  ec2_region_name:
+  aws_region_name:
     default: { get_secret: ec2_region_name }
-
-  ec2_region_endpoint:
-    default: { get_secret: ec2_region_endpoint }
 
   availability_zone:
     default: { get_secret: availability_zone }
@@ -35,12 +32,19 @@ inputs:
   key_name:
     default: test-key
 
+  instance_type:
+    default: 't2.medium'
+
+  volume_attachment_device:
+    default: /dev/sdh
+
+
 dsl_definitions:
 
   client_config: &client_config
     aws_access_key_id: { get_input: aws_access_key_id }
     aws_secret_access_key: { get_input: aws_secret_access_key }
-    region_name: { get_input: ec2_region_name }
+    region_name: { get_input: aws_region_name }
 
 node_templates:
 
@@ -49,20 +53,10 @@ node_templates:
     properties:
       resource_config:
         CidrBlock: { get_input: vpc_cidr }
-        kwargs:
-          AmazonProvidedIpv6CidrBlock: True
       client_config: *client_config
       Tags:
         - Key: Name
           Value: MyVPC
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        configure:
-          implementation: aws.cloudify_aws.ec2.resources.vpc.create
-          inputs:
-            modify_vpc_attribute_args:
-              EnableDnsHostnames:
-                Value: True
 
   internet_gateway:
     type: cloudify.nodes.aws.ec2.InternetGateway
@@ -131,16 +125,11 @@ node_templates:
     relationships:
       - type: cloudify.relationships.depends_on
         target: vpc
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        configure:
-          inputs:
-            resource_config: { get_property: [ SELF, resource_config, kwargs] }
 
   security_group_rules:
     type: cloudify.nodes.aws.ec2.SecurityGroupRuleIngress
     properties:
-     client_config: *client_config
+      client_config: *client_config
       resource_config:
         IpPermissions:
          - IpProtocol: "-1"
@@ -171,14 +160,6 @@ node_templates:
         target: public_subnet
       - type: cloudify.relationships.depends_on
         target: security_group
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        configure:
-          inputs:
-            resource_config: { get_property: [ SELF, resource_config, kwargs] }
-            modify_network_interface_attribute_args:
-              SourceDestCheck:
-                Value: false
 
   ip:
     type: cloudify.nodes.aws.ec2.ElasticIP
@@ -239,6 +220,7 @@ node_templates:
   ebs_volume:
     type: cloudify.nodes.aws.ec2.EBSVolume
     properties:
+      device_name: { get_input: volume_attachment_device }
       resource_config:
         AvailabilityZone: { get_input: availability_zone }
         Size: 6

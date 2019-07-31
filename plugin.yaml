@@ -4,7 +4,7 @@ plugins:
     executor: central_deployment_agent
     source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/CY-1561-add-ebs-relationship-for-ec2.zip
     package_name: cloudify-aws-plugin
-    package_version: '2.2.2'
+    package_version: '2.3.0'
 
 data_types:
 
@@ -2797,10 +2797,10 @@ node_types:
           implementation: aws.cloudify_aws.ec2.resources.ebs.prepare
           inputs: *operation_inputs
         configure:
-          implementation: aws.cloudify_aws.ec2.resources.ebs.create_attachment
+          implementation: aws.cloudify_aws.ec2.resources.ebs.attach
           inputs: *operation_inputs
         delete:
-          implementation: aws.cloudify_aws.ec2.resources.ebs.delete_attachment
+          implementation: aws.cloudify_aws.ec2.resources.ebs.detach
           inputs: *operation_inputs
 
   cloudify.nodes.aws.autoscaling.Group:
@@ -3598,5 +3598,5 @@ relationships:
     derived_from: cloudify.relationships.aws.connected_to
     target_interfaces:
       cloudify.interfaces.relationship_lifecycle:
-        establish: { implementation: aws.cloudify_aws.ec2.resources.ebs.attach_to }
-        unlink: { implementation: aws.cloudify_aws.ec2.resources.ebs.detach_from }
+        establish: { implementation: aws.cloudify_aws.ec2.resources.ebs.attach_using_relationship }
+        unlink: { implementation: aws.cloudify_aws.ec2.resources.ebs.detach_using_relationship }

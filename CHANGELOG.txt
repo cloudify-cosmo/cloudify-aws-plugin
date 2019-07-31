@@ -65,5 +65,5 @@
     - Add resumable support to operations
 2.2.1:
     - Fix bug when delete EC2 instance
-2.2.2:
+2.3.0:
     - Add new EBS relationship to attach ebs volume to EC2 instance

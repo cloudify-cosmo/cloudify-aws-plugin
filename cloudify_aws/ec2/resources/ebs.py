@@ -88,7 +88,7 @@ class EC2VolumeMixin(object):
 
         return self.make_client_call('attach_volume', params)
 
-    def detach(self, params=None):
+    def detach(self, params={}):
         """
         Detaches An AWS EC2 EBS Volume From Instance
         :param params:
@@ -180,6 +180,30 @@ def _detach_ebs(iface, volume_id):
     iface.delete(deleted_params)
 
 
+def _create_attachment(ctx, iface, resource_config):
+    """
+    :param ctx:
+    :param iface:
+    :param resource_config:
+    """
+    params = dict() if not resource_config else resource_config.copy()
+    response = _attach_ebs(params, iface, ctx)
+    # Update the esp_id (volume_id)
+    esp_id = response.get(VOLUME_ID, '')
+    utils.update_resource_id(ctx.instance, esp_id)
+    iface.update_resource_id(esp_id)
+
+
+def _delete_attachment(ctx, iface):
+    """
+    :param ctx:
+    :param iface:
+    """
+    resource_id = \
+        ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
+    _detach_ebs(iface, resource_id)
+
+
 @decorators.aws_resource(resource_type=RESOURCE_TYPE_VOLUME)
 def prepare(ctx, resource_config, **_):
     """
@@ -251,13 +275,12 @@ def delete(ctx, iface, resource_config, **_):
 @decorators.aws_relationship(EC2Volume, RESOURCE_TYPE_VOLUME)
 @decorators.wait_on_relationship_status(status_good=[ATTACHED, INUSE],
                                         status_pending=[ATTACHING])
-def attach_to(ctx, iface, **_):
+def attach_using_relationship(ctx, iface, **_):
     """
     Attaches an AWS EC2 EBS Volume TO Instance
     :param ctx:
     :param iface:
     :param _:
-    :return:
     """
     device_name = ctx.source.node.properties.get('device_name')
     # Check if device name is provide or not
@@ -290,11 +313,10 @@ def attach_to(ctx, iface, **_):
 @decorators.aws_relationship(EC2Volume, RESOURCE_TYPE_VOLUME)
 @decorators.wait_on_relationship_status(status_good=[DETACHED, AVAILABLE],
                                         status_pending=[DETACHING, INUSE])
-def detach_from(ctx, iface, **_):
+def detach_using_relationship(ctx, **_):
     """
     De-attaches an AWS EC2 EBS Volume TO Instance
     :param ctx:
-    :param iface:
     :param _:
     """
     iface = EC2VolumeAttachment(ctx.source.node, logger=ctx.logger,
@@ -310,7 +332,7 @@ def detach_from(ctx, iface, **_):
 @decorators.aws_resource(EC2VolumeAttachment, RESOURCE_TYPE_VOLUME_ATTACHMENT)
 @decorators.wait_for_status(status_good=[ATTACHED, INUSE],
                             status_pending=[ATTACHING])
-def create_attachment(ctx, iface, resource_config, **_):
+def attach(ctx, iface, resource_config, **_):
     """
     Attaches an AWS EC2 EBS Volume TO Instance
     :param ctx:
@@ -318,25 +340,19 @@ def create_attachment(ctx, iface, resource_config, **_):
     :param resource_config:
     :param _:
     """
-    params = dict() if not resource_config else resource_config.copy()
-    response = _attach_ebs(params, iface, ctx)
-    # Update the esp_id (volume_id)
-    esp_id = response.get(VOLUME_ID, '')
-    utils.update_resource_id(ctx.instance, esp_id)
-    iface.update_resource_id(esp_id)
+    _create_attachment(ctx, iface, resource_config)
 
 
 @decorators.aws_resource(EC2VolumeAttachment, RESOURCE_TYPE_VOLUME_ATTACHMENT,
                          ignore_properties=True)
 @decorators.wait_for_status(status_good=[DETACHED, AVAILABLE],
                             status_pending=[DETACHING, INUSE])
-def delete_attachment(ctx, iface, **_):
+def detach(ctx, iface, resource_config, **_):
     """
     De-attaches an AWS EC2 EBS Volume TO Instance
     :param ctx:
     :param iface:
+    :param resource_config
     :param _:
     """
-    resource_id = \
-        ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
-    _detach_ebs(iface, resource_id)
+    _delete_attachment(ctx, iface)
