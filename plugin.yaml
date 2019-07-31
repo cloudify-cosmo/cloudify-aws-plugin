@@ -2,7 +2,7 @@ plugins:
 
   aws:
     executor: central_deployment_agent
-    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/CY-1561-add-ebs-relationship-for-ec2.zip
+    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/2.3.0.zip
     package_name: cloudify-aws-plugin
     package_version: '2.3.0'
 
@@ -3591,7 +3591,7 @@ relationships:
 
 
   ##
-  # EBS to to EC2 Instance
+  # EBS to EC2 Instance
   ##
 
   cloudify.relationships.aws.ebs.attachment.connected_to:
