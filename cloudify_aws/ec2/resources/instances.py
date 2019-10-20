@@ -485,7 +485,10 @@ def _handle_password(iface):
                     'create_response', {}).get('KeyMaterial')
     if not key_data:
         raise NonRecoverableError(
-            'No key_data was provided in agent config property or rel.')
+            "'use_password' is 'true', however private key was not specified; "
+            "please specify it either by using the 'key' field under "
+            "'agent_config' or by a relationship to a "
+            "'cloudify.nodes.aws.ec2.Keypair' node template")
     if os.path.exists(key_data):
         with open(key_data, 'r') as outfile:
             key_data = outfile.readlines()
