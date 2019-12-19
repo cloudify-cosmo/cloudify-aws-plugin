@@ -2,9 +2,9 @@ plugins:
 
   aws:
     executor: central_deployment_agent
-    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/2.2.1.zip
+    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/2.3.0.zip
     package_name: cloudify-aws-plugin
-    package_version: '2.2.1'
+    package_version: '2.3.0'
 
 data_types:
 
@@ -1135,6 +1135,12 @@ dsl_definitions:
     Tags:
       description: Tags to add to an EC2 resource.
       required: false
+
+  device_name: &device_name
+    device_name:
+      description: Device name which is requried when creating EBS volume which need to be attached to EC2 instance using relationship
+      type: string
+      default: ''
 
 node_types:
 
@@ -2754,6 +2760,7 @@ node_types:
       <<: *external_resource
       <<: *client_config
       <<: *resource_id
+      <<: *device_name
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -3581,3 +3588,15 @@ relationships:
       cloudify.interfaces.relationship_lifecycle:
         establish: { implementation: aws.cloudify_aws.elb.resources.classic.load_balancer.assoc }
         unlink: { implementation: aws.cloudify_aws.elb.resources.classic.load_balancer.disassoc }
+
+
+  ##
+  # EBS to EC2 Instance
+  ##
+
+  cloudify.relationships.aws.ebs.attachment.connected_to:
+    derived_from: cloudify.relationships.aws.connected_to
+    target_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish: { implementation: aws.cloudify_aws.ec2.resources.ebs.attach_using_relationship }
+        unlink: { implementation: aws.cloudify_aws.ec2.resources.ebs.detach_using_relationship }
