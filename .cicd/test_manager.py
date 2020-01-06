@@ -17,7 +17,6 @@ import os
 from random import random
 
 from integration_tests.tests.test_cases import PluginsTest
-from integration_tests.tests import utils as test_utils
 
 PLUGIN_NAME = 'cloudify-aws-plugin'
 DEVELOPMENT_ROOT = os.path.abspath(
@@ -70,4 +69,4 @@ class AWSPluginTestCase(PluginsTest):
         self.upload_plugins()
         self.create_secrets()
         self.check_hello_world_blueprint('aws', self.inputs, 400)
-        self.check_db_lb_app_blueprint('aws')
+        self.check_db_lb_app_blueprint('aws', 800)
