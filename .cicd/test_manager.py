@@ -14,19 +14,15 @@
 # limitations under the License.
 
 import os
-from random import random
 
 from integration_tests.tests.test_cases import PluginsTest
 
+DEVELOPMENT_ROOT = os.environ.get(
+    'REPO_BASE',
+    os.path.join(os.path.expanduser('~'), 'dev/repos'))
 PLUGIN_NAME = 'cloudify-aws-plugin'
-DEVELOPMENT_ROOT = os.path.abspath(
-    os.path.join(os.path.dirname(
-        os.path.realpath(__file__)), '../..'))
-
-test_id = '{0}{1}'.format(
-    os.getenv('CIRCLE_JOB', 'cfy'),
-    os.getenv('CIRCLE_BUILD_NUM', str(random())[-4:-1])
-)
+TEST_KEY_PATH = '/tmp/foo.rsa'
+TEST_PUB_PATH = '/tmp/foo.rsa.pub'
 
 
 class AWSPluginTestCase(PluginsTest):
@@ -45,19 +41,27 @@ class AWSPluginTestCase(PluginsTest):
 
     def create_secrets(self):
         secrets = {
+            'agent_key_private': os.getenv('agent_key_private',
+                                           open(TEST_KEY_PATH).read()),
+            'agent_key_public': os.getenv('agent_key_public',
+                                          open(TEST_PUB_PATH).read()),
             'aws_access_key_id': os.getenv('aws_access_key_id'),
-            'aws_secret_access_key': os.getenv('aws_secret_access_key'),
-            'aws_region_name': os.getenv('aws_region_name'),
-            'aws_availability_zone': os.getenv('aws_availability_zone'),
-            'ec2_region_endpoint': os.getenv('ec2_region_endpoint'),
-            'agent_key_private': os.getenv('agent_key_private'),
-            'agent_key_public': os.getenv('agent_key_public'),
+            'aws_secret_access_key': os.getenv(
+                'aws_secret_access_key'),
+            'aws_region_name': os.getenv('aws_region_name',
+                                         'eu-central-1'),
+            'aws_availability_zone': os.getenv('aws_availability_zone',
+                                               'eu-central-1b'),
+            'ec2_region_endpoint': os.getenv(
+                'ec2_region_endpoint',
+                'ec2.eu-central-1.amazonaws.com'),
         }
         self._create_secrets(secrets)
 
     def upload_plugins(self):
         self.upload_mock_plugin(
-            PLUGIN_NAME, self.plugin_root_directory)
+            PLUGIN_NAME,
+            os.path.join(DEVELOPMENT_ROOT, PLUGIN_NAME))
         self.upload_mock_plugin(
             'cloudify-utilities-plugin',
             os.path.join(DEVELOPMENT_ROOT, 'cloudify-utilities-plugin'))
