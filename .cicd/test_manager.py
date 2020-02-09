@@ -36,7 +36,8 @@ class AWSPluginTestCase(PluginsTest):
     @property
     def inputs(self):
         return {
-            'aws_region_name': os.getenv('aws_region_name'),
+            'aws_region_name': os.getenv('aws_region_name',
+                                         'eu-central-1'),
         }
 
     def create_secrets(self):
