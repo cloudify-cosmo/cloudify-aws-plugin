@@ -14,7 +14,6 @@
 # limitations under the License.
 
 import os
-from random import random
 
 from integration_tests.tests.test_cases import PluginsTest
 
@@ -48,13 +47,14 @@ class AWSPluginTestCase(PluginsTest):
                                           open(TEST_PUB_PATH).read()),
             'aws_access_key_id': os.getenv('aws_access_key_id'),
             'aws_secret_access_key': os.getenv(
-                'aws_secret_access_key',
-                'ec2.eu-central-1.amazonaws.com'),
+                'aws_secret_access_key'),
             'aws_region_name': os.getenv('aws_region_name',
                                          'eu-central-1'),
             'aws_availability_zone': os.getenv('aws_availability_zone',
                                                'eu-central-1b'),
-            'ec2_region_endpoint': os.getenv('ec2_region_endpoint'),
+            'ec2_region_endpoint': os.getenv(
+                'ec2_region_endpoint',
+                'ec2.eu-central-1.amazonaws.com'),
         }
         self._create_secrets(secrets)
 
