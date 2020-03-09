@@ -159,7 +159,7 @@ class TestEC2RouteTable(TestBase):
     def test_detach(self):
         ctx = self.get_mock_ctx("RouteTable")
         self.routetable.resource_id = 'route table'
-        ctx.instance.runtime_properties['association_ids'] = 'association_ids'
+        ctx.instance.runtime_properties['association_ids'] = ['association_id']
         iface = MagicMock()
         iface.detach = self.mock_return(ctx.instance.runtime_properties[
                                         'association_ids'])
