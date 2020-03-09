@@ -13,4 +13,4 @@ See [AWS Plugin](http://docs.getcloudify.org/latest/plugins/aws/)
 boto3 AWS Python Library version 1.9.57
 
 # Examples
-For more examples navigate to [cloudify blueprints examples github repository](https://github.com/cloudify-community/blueprint-examples/).
+For official blueprint examples using this Cloudify plugin, please see [Cloudify Community Blueprints Examples](https://github.com/cloudify-community/blueprint-examples/).
