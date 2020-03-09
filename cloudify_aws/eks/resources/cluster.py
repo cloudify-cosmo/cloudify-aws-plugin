@@ -20,6 +20,7 @@
 from __future__ import unicode_literals
 
 import base64
+import json
 
 # Boto
 import boto3
@@ -28,6 +29,7 @@ from botocore.exceptions import ClientError
 # Cloudify
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.eks import EKSBase
+from cloudify.exceptions import NonRecoverableError
 
 RESOURCE_TYPE = 'EKS Cluster'
 CLUSTER_NAME = 'name'
@@ -211,9 +213,15 @@ def create(ctx, iface, resource_config, **_):
     ctx.logger.info("Waiting for Cluster to become Active")
     iface.wait_for_cluster(params, 'cluster_active')
     if store_kube_config_in_runtime:
-        client_config = ctx.node.properties['client_config']
-        ctx.instance.runtime_properties['kubeconf'] = \
-            iface.get_kubeconf(client_config, params)
+        try:
+            client_config = ctx.node.properties['client_config']
+            kubeconf = iface.get_kubeconf(client_config, params)
+            # check if kubeconf is json serializable or not
+            json.dumps(kubeconf)
+            ctx.instance.runtime_properties['kubeconf'] = kubeconf
+        except TypeError as error:
+            raise NonRecoverableError(
+                'kubeconf not json serializable {0}'.format(str(error)))
 
 
 @decorators.aws_resource(EKSCluster, RESOURCE_TYPE)
