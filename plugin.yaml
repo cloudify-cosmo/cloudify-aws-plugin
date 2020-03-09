@@ -1062,6 +1062,18 @@ data_types:
         description: http://boto3.readthedocs.io/en/latest/reference/services/ecs.html#ECS.Client.register_task_definition
         default: {}
 
+  cloudify.datatypes.aws.EKS.Cluster.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/eks.html#EKS.Client.create_cluster
+        default: {}
+
+  cloudify.datatypes.aws.EKS.NodeGroup.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/eks.html#EKS.Client.create_nodegroup
+        default: {}
+
 dsl_definitions:
 
   use_external_resource_desc: &use_external_resource_desc >
@@ -3281,6 +3293,64 @@ node_types:
     derived_from: cloudify.nodes.aws.s3.BaseBucketObject
     properties:
       <<: *swift_config
+
+  ####
+   # EKS Nodes
+  ###
+  cloudify.nodes.aws.eks.Cluster:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.EKS.Cluster.config
+        required: false
+      store_kube_config_in_runtime:
+        type: boolean
+        default: true
+        required: true
+        description: >
+          it will store the kubernetes configuration into a runtime property ['kubeconf'] to
+          use later to interact with the cluster
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.cloudify_aws.eks.resources.cluster.prepare
+          inputs: *operation_inputs
+        configure:
+          implementation: aws.cloudify_aws.eks.resources.cluster.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.eks.resources.cluster.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.eks.NodeGroup:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.EKS.NodeGroup.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.cloudify_aws.eks.resources.node_group.prepare
+          inputs: *operation_inputs
+        configure:
+          implementation: aws.cloudify_aws.eks.resources.node_group.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.eks.resources.node_group.delete
+          inputs: *operation_inputs
 
 relationships:
 
