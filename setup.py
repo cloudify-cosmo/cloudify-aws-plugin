@@ -19,7 +19,7 @@ from setuptools import find_packages
 
 setup(
     name='cloudify-aws-plugin',
-    version='2.3.0',
+    version='2.3.1',
     author='Cloudify Platform Ltd.',
     author_email='hello@cloudify.co',
     license='LICENSE',

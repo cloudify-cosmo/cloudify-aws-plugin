@@ -67,3 +67,6 @@
     - Fix bug when delete EC2 instance
 2.3.0:
     - Add new EBS relationship to attach ebs volume to EC2 instance
+2.3.1:
+    - Upgrade Boto3 version 
+    - Add EKS Support
