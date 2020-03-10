@@ -92,7 +92,7 @@ class TestEC2RouteTable(TestBase):
         self.assertTrue(self.routetable.client.disassociate_route_table
                         .called)
         ctx = self.get_mock_ctx("RouteTable")
-        ctx.instance.runtime_properties['association_id'] = 'association_id'
+        ctx.instance.runtime_properties['association_ids'] = 'association_ids'
         params = {}
         self.routetable.delete(params)
         self.assertTrue(self.routetable.client.disassociate_route_table
@@ -145,7 +145,7 @@ class TestEC2RouteTable(TestBase):
         iface = MagicMock()
         iface.attach = self.mock_return(config)
         iface.resource_id = self.mock_return('route table')
-        with patch('cloudify_aws.common.utils.find_rel_by_node_type'):
+        with patch('cloudify_aws.common.utils.find_rels_by_node_type'):
             routetable.attach(ctx, iface, config)
             self.assertEqual(self.routetable.resource_id,
                              'route table')
@@ -159,10 +159,10 @@ class TestEC2RouteTable(TestBase):
     def test_detach(self):
         ctx = self.get_mock_ctx("RouteTable")
         self.routetable.resource_id = 'route table'
-        ctx.instance.runtime_properties['association_id'] = 'association_id'
+        ctx.instance.runtime_properties['association_ids'] = ['association_id']
         iface = MagicMock()
         iface.detach = self.mock_return(ctx.instance.runtime_properties[
-                                        'association_id'])
+                                        'association_ids'])
         routetable.detach(ctx, iface, {})
         self.assertEqual(self.routetable.resource_id,
                          'route table')
