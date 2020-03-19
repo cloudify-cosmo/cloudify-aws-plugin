@@ -34,6 +34,7 @@ class AWSResourceBase(object):
     '''
         AWS base interface
     '''
+
     def __init__(self, client, resource_id=None, logger=None):
         self.logger = logger or init_cloudify_logger(NullHandler(),
                                                      'AWSResourceBase')
@@ -91,8 +92,15 @@ class AWSResourceBase(object):
                 res = client_method_args()
         except fatal_handled_exceptions as error:
             _, _, tb = sys.exc_info()
+            message = error.message
+            if isinstance(error, ClientError):
+                message = error.message + ". If you are positive that you " \
+                                          "are using the correct" \
+                                          "credentials, verify that your" \
+                                          "system clock is in sync with its " \
+                                          "NTP server."
             raise NonRecoverableError(
-                str(error.message),
+                str(message),
                 causes=[exception_to_error_cause(error, tb)])
         else:
             if log_response:
