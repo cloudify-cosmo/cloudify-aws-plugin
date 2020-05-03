@@ -1,1 +1,1 @@
-cloudify-common===4.5
+https://github.com/cloudify-cosmo/cloudify-common/archive/master.zip

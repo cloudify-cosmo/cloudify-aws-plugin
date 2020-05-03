@@ -26,7 +26,7 @@ setup(
     packages=find_packages(exclude=['tests*']),
     description='A Cloudify plugin for AWS',
     install_requires=[
-        'cloudify-common>=4.5',
+        'cloudify-common==5.1.0.dev1',
         'boto3==1.12.13',
         'botocore==1.15.3',
         'pycrypto'
