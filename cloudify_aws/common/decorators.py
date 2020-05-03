@@ -230,7 +230,7 @@ def aws_resource(class_decl=None,
             # Check if "aws_config" is set and has a valid "dict" type because
             #  the expected data type for "aws_config" must be "dict"
             if aws_config:
-                if type(aws_config) is dict:
+                if isinstance(aws_config, dict):
                     class_decl_attr.update({'aws_config': aws_config})
                 else:
                     # Raise an error if the provided "aws_config" is not a
@@ -242,7 +242,7 @@ def aws_resource(class_decl=None,
             # Check the value of "aws_config" which could be part of "kwargs"
             # and it has to be the same validation for the above "aws_config"
             elif aws_config_kwargs:
-                if type(aws_config_kwargs) is dict:
+                if isinstance(aws_config_kwargs, dict):
                     class_decl_attr.update({'aws_config': aws_config_kwargs})
                 else:
                     # Raise an error if the provided "aws_config_kwargs"
