@@ -16,14 +16,20 @@
     ~~~~~~~~~~~~~~
     AWS CloudFormation Stack interface
 """
-# Cloudify
+# Standard imports
+import json
+from datetime import datetime
+
+# Cloudify imports
+from cloudify._compat import text_type
+
+# Third party imports
+from botocore.exceptions import ClientError
+
+# Local imports
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
 from cloudify_aws.cloudformation import AWSCloudFormationBase
-# Boto
-from botocore.exceptions import ClientError
-from datetime import datetime
-import json
 
 RESOURCE_TYPE = 'CloudFormation Stack'
 RESOURCE_NAME = 'StackName'
@@ -93,8 +99,7 @@ def prepare(ctx, resource_config, **_):
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS CloudFormation Stack"""
     # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
+    params = dict() if not resource_config else resource_config.copy()
     resource_id = \
         iface.resource_id or \
         utils.get_resource_id(
@@ -106,8 +111,7 @@ def create(ctx, iface, resource_config, **_):
     utils.update_resource_id(ctx.instance, resource_id)
 
     template_body = params.get(TEMPLATEBODY, {})
-    if template_body and \
-            not isinstance(template_body, basestring):
+    if template_body and not isinstance(template_body, text_type):
         params[TEMPLATEBODY] = json.dumps(template_body)
     if not iface.resource_id:
         setattr(iface, 'resource_id', params.get(RESOURCE_NAME))

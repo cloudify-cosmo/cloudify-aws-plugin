@@ -29,6 +29,6 @@ setup(
         'cloudify-common==5.1.0.dev1',
         'boto3==1.12.13',
         'botocore==1.15.3',
-        'pycrypto'
+        'pycrypto==2.6.1'
     ]
 )

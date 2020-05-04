@@ -17,19 +17,23 @@
     AWS EC2 Instances interface
 '''
 
-# Common
-from Crypto.PublicKey import RSA
-from collections import defaultdict
+# Standard Imports
 import json
 import os
+from collections import defaultdict
 
-# Boto
+# Third Party imports
 from botocore.exceptions import ClientError
+from Crypto.PublicKey import RSA
 
 # Cloudify
 from cloudify import compute
 from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError, OperationRetry
+# Cloudify imports
+from cloudify._compat import text_type
+
+# local imports
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
 from cloudify_aws.ec2 import EC2Base
@@ -231,7 +235,7 @@ def create(ctx, iface, resource_config, **_):
     for nic in (nics_from_rels, nics_from_params):
         for i in nic:
             nics[i[NIC_ID]].update(i)
-            merged_nics = nics.values()
+            merged_nics = list(nics.values())
     del nic, nics
 
     for counter, nic in enumerate(
@@ -416,7 +420,7 @@ def _handle_userdata(existing_userdata):
     elif isinstance(existing_userdata, dict) or \
             isinstance(existing_userdata, list):
         existing_userdata = json.dumps(existing_userdata)
-    elif not isinstance(existing_userdata, basestring):
+    elif not isinstance(existing_userdata, text_type):
         existing_userdata = str(existing_userdata)
 
     install_agent_userdata = ctx.agent.init_script()

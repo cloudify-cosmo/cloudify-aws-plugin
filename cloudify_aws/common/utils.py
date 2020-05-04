@@ -19,16 +19,19 @@
 
 # Local imports
 import sys
-from six.moves import urllib
 import re
 import uuid
 
 # Third party imports
 import requests
 from requests import exceptions
+
 from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
 from cloudify.utils import exception_to_error_cause
+from cloudify._compat import urljoin
+
+# Local imports
 from cloudify_aws.common import constants
 
 
@@ -205,7 +208,7 @@ def filter_boto_params(args, filters, preserve_none=False):
         if the value is None.
     '''
     return {
-        k: v for k, v in args.iteritems()
+        k: v for k, v in args.items()
         if k in filters and (preserve_none is True or v is not None)
     }
 
@@ -452,7 +455,7 @@ def generate_swift_access_config(auth_url, username, password):
             causes=[exception_to_error_cause(error, tb)])
 
     # Get the url which represent "endpoint_url"
-    endpoint_url = urllib.parse.urljoin(resp.headers.get('X-Storage-Url'), '/')
+    endpoint_url = urljoin(resp.headers.get('X-Storage-Url'), '/')
 
     # This represent "aws_secret_access_key" which should be used with boto3
     # client
@@ -492,7 +495,7 @@ def check_availability_zone(zone):
 def clean_params(p):
     if not isinstance(p, dict) or not p:
         return {}
-    for _k, _v in p.items():
+    for _k, _v in list(p.items()):
         if not _v:
             del p[_k]
         elif _k == 'AvailabilityZone':

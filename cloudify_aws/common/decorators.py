@@ -22,11 +22,13 @@
 import sys
 
 # Third party imports
+from botocore.exceptions import ClientError
+
 from cloudify.decorators import operation
 from cloudify import ctx
 from cloudify.exceptions import (OperationRetry, NonRecoverableError)
 from cloudify.utils import exception_to_error_cause
-from botocore.exceptions import ClientError
+
 
 # Local imports
 from cloudify_aws.common import utils
@@ -207,7 +209,7 @@ def aws_resource(class_decl=None,
                 ctx.instance.runtime_properties[EXT_RES_ARN] = resource_id
             # Override any runtime properties if needed
             runtime_properties = kwargs.get('runtime_properties') or dict()
-            for key, val in runtime_properties.iteritems():
+            for key, val in runtime_properties.items():
                 ctx.instance.runtime_properties[key] = val
             # Add new operation arguments
             kwargs['resource_type'] = resource_type
@@ -303,7 +305,7 @@ def aws_resource(class_decl=None,
             result = function(**kwargs)
             if ctx.operation.name == 'cloudify.interfaces.lifecycle.delete':
                 # cleanup runtime after delete
-                keys = ctx.instance.runtime_properties.keys()
+                keys = list(ctx.instance.runtime_properties.keys())
                 for key in keys:
                     del ctx.instance.runtime_properties[key]
             return result

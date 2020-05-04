@@ -16,8 +16,13 @@
     ~~~~~~~~~~~~
     AWS ELB load balancer interface
 '''
-# Cloudify
-# from cloudify.exceptions import NonRecoverableError
+
+# Third Party imports
+from botocore.exceptions import ClientError, ParamValidationError
+
+from cloudify.exceptions import NonRecoverableError
+
+# Local imports
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.elb import ELBBase
 from cloudify_aws.common.connection import Boto3Connection
@@ -25,10 +30,6 @@ from cloudify_aws.common.constants import (
     EXTERNAL_RESOURCE_ARN,
     EXTERNAL_RESOURCE_ID
 )
-# Boto
-from botocore.exceptions import ClientError, ParamValidationError
-
-from cloudify.exceptions import NonRecoverableError
 
 RESOURCE_TYPE = 'ELB Load Balancer'
 RESOURCE_NAME = 'LoadBalancerName'
@@ -174,7 +175,7 @@ def modify(ctx, iface, resource_config, **_):
     '''modify an AWS ELB load balancer attributes'''
     params = utils.clean_params(
         dict() if not resource_config else resource_config.copy())
-    if LB_ARN not in params.keys():
+    if LB_ARN not in params:
         params.update(
             {LB_ARN: ctx.instance.runtime_properties.get(
                 EXTERNAL_RESOURCE_ARN)})
@@ -197,6 +198,6 @@ def delete(ctx, iface, resource_config, **_):
     '''Deletes an AWS ELB load balancer'''
     params = utils.clean_params(
         dict() if not resource_config else resource_config.copy())
-    if LB_ARN not in params.keys():
+    if LB_ARN not in params:
         params.update({LB_ARN: iface.properties.get(LB_ARN)})
     iface.delete(params)

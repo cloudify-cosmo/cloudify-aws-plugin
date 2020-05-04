@@ -16,11 +16,12 @@
     ~~~~~~~~~~~~~~
     AWS Autoscaling Lifecycle Hook interface
 """
-# Cloudify
+# Third party imports
+from botocore.exceptions import ClientError
+
+# Local imports
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.autoscaling import AutoscalingBase
-# Boto
-from botocore.exceptions import ClientError
 
 RESOURCE_TYPE = 'Autoscaling Lifecycle Hook'
 HOOKS = 'LifecycleHooks'
@@ -106,8 +107,7 @@ def delete(ctx, iface, resource_config, **_):
     """Deletes an AWS Autoscaling Lifecycle Hook"""
 
     # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
+    params = dict() if not resource_config else resource_config.copy()
 
     # Ensure the $GROUP_NAME parameter is populated.
     autoscaling_group = params.get(GROUP_NAME)
@@ -117,6 +117,6 @@ def delete(ctx, iface, resource_config, **_):
         params.update(
             {GROUP_NAME: autoscaling_group})
 
-    if RESOURCE_NAME not in params.keys():
+    if RESOURCE_NAME not in params:
         params.update({RESOURCE_NAME: iface.resource_id})
     iface.delete(params)

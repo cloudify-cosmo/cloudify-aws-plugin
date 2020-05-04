@@ -16,10 +16,10 @@
     ~~~~~~~~~~~~
     AWS ELB load balancer interface
 """
-# Boto
+# Third Party imports
 from botocore.exceptions import ClientError
 
-# Cloudify
+# Local imports
 from cloudify.exceptions import OperationRetry
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.elb import ELBBase
@@ -216,7 +216,7 @@ def assoc(ctx, **_):
     if ctx.operation.retry_number == 0:
         iface.register_instances(
             {RESOURCE_NAME: lb, 'Instances': [{'InstanceId': instance_id}]})
-    if 'instances' not in ctx.target.instance.runtime_properties.keys():
+    if 'instances' not in ctx.target.instance.runtime_properties:
         ctx.target.instance.runtime_properties['instances'] = []
     instances_list = ctx.target.instance.runtime_properties['instances']
     if instance_id not in instances_list:

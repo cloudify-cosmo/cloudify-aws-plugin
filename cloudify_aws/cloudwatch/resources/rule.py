@@ -16,12 +16,14 @@
     ~~~~~~~~~~~~~~
     AWS Cloudwatch Events Rule interface
 """
-# Cloudify
+
+# Third party imports
+from botocore.exceptions import ClientError
+
+# Local imports
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.cloudwatch import AWSCloudwatchBase
 from cloudify_aws.common.connection import Boto3Connection
-# Boto
-from botocore.exceptions import ClientError
 
 RESOURCE_TYPE = 'Cloudwatch Alarm'
 RESOURCE_NAME = 'Name'

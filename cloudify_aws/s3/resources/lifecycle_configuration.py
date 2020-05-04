@@ -16,10 +16,10 @@
     ~~~~~~~~~~~~~~
     AWS S3 Bucket Lifecycle Configuration interface
 """
-# Boto
+# Standard imports
 from botocore.exceptions import ClientError, ParamValidationError
 
-# Cloudify
+# Local imports
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.s3 import S3Base
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
@@ -122,11 +122,10 @@ def delete(iface, resource_config, **_):
     """Deletes an AWS S3 Bucket Lifecycle Configuration"""
 
     # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
+    params = dict() if not resource_config else resource_config.copy()
 
     # Add the required BUCKET parameter.
-    if BUCKET not in params.keys():
+    if BUCKET not in params:
         params.update({BUCKET: iface.resource_id})
 
     # Actually delete the resource

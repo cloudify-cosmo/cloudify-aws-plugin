@@ -16,11 +16,12 @@
     ~~~~~~~~
     AWS SNS Topic interface
 """
-# Cloudify
+# Standard imports
+from botocore.exceptions import ClientError
+
+# Local imports
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.sns import SNSBase
-# Boto
-from botocore.exceptions import ClientError
 
 RESOURCE_TYPE = 'SNS Topic'
 SUB_ARN = 'SubscriptionArn'
@@ -121,9 +122,8 @@ def delete(ctx, iface, resource_config, **_):
     """Deletes an AWS SNS Topic"""
 
     # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-    if TOPIC_ARN not in params.keys():
+    params = dict() if not resource_config else resource_config.copy()
+    if TOPIC_ARN not in params:
         params.update(
             {TOPIC_ARN:
              utils.get_resource_arn(

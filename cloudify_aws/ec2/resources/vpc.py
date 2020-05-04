@@ -16,10 +16,10 @@
     ~~~~~~~~~~~~~~
     AWS EC2 VPC interface
 '''
-# Boto
+# Third Party imports
 from botocore.exceptions import ClientError
 
-# Cloudify
+# Local imports
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.ec2 import EC2Base
 
@@ -129,10 +129,9 @@ def create(ctx, iface, resource_config, **_):
 def delete(iface, resource_config, **_):
     '''Deletes an AWS EC2 Vpc'''
 
-    params = \
-        dict() if not resource_config else resource_config.copy()
+    params = dict() if not resource_config else resource_config.copy()
 
-    if VPC_ID not in params.keys():
+    if VPC_ID not in params:
         params.update({VPC_ID: iface.resource_id})
 
     iface.delete(params)
