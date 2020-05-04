@@ -13,6 +13,7 @@
 # limitations under the License.
 
 # flake8: noqa
+# pylint: skip-file
 
 import sys
 PY2 = sys.version_info[0] == 2
