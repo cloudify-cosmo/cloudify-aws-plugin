@@ -12,15 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Standard imports
 import copy
 import unittest
-from cloudify_aws.common.tests.test_base import TestBase, mock_decorator
-from cloudify_aws.ec2.resources.eni import EC2NetworkInterface, \
-    NETWORKINTERFACES, NETWORKINTERFACE_ID, SUBNET_ID, \
-    SUBNET_TYPE, INSTANCE_TYPE_DEPRECATED, ATTACHMENT_ID, \
-    SEC_GROUPS, SEC_GROUP_TYPE
+
+# Third party imports
 from mock import patch, MagicMock
+
+# Local imports
 from cloudify_aws.ec2.resources import eni
+from cloudify_aws.common.tests.test_base import (
+    TestBase,
+    mock_decorator,
+    reload_module
+)
+from cloudify_aws.ec2.resources.eni import (
+    EC2NetworkInterface,
+    NETWORKINTERFACES,
+    NETWORKINTERFACE_ID,
+    SUBNET_ID,
+    SUBNET_TYPE,
+    INSTANCE_TYPE_DEPRECATED,
+    ATTACHMENT_ID,
+    SEC_GROUPS, SEC_GROUP_TYPE
+)
 
 
 class TestEC2NetworkInterface(TestBase):
@@ -34,7 +49,7 @@ class TestEC2NetworkInterface(TestBase):
                       mock_decorator)
         mock1.start()
         mock2.start()
-        reload(eni)
+        reload_module(eni)
 
     def test_class_properties(self):
         effect = self.get_client_error_exception(name='EC2 Network Interface')

@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Standard imports
 import unittest
+
+# Local imports
 from cloudify_aws.common.tests.test_base import TestServiceBase
 from cloudify_aws.lambda_serverless import LambdaBase
 

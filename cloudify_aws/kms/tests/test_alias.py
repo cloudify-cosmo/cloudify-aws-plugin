@@ -12,15 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from mock import MagicMock
+# Standard imports
 import unittest
 
+# Third party imports
+from mock import MagicMock
 from botocore.exceptions import UnknownServiceError
 
+from cloudify._compat import text_type
+
+# Local imports
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
 from cloudify_aws.common.tests.test_base import CLIENT_CONFIG
 from cloudify_aws.kms.tests.test_kms import TestKMS
-
 from cloudify_aws.kms.resources import alias
 
 
@@ -60,7 +64,7 @@ class TestKMSAlias(TestKMS):
             alias.create(ctx=_ctx, resource_config=None, iface=None)
 
         self.assertEqual(
-            str(error.exception),
+            text_type(error.exception),
             "Unknown service: 'kms'. Valid service names are: ['rds']"
         )
 

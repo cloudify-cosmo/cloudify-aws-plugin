@@ -12,15 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cloudify_aws.rds.resources import option_group
-from botocore.exceptions import UnknownServiceError, ClientError
-from cloudify.exceptions import OperationRetry
-
-from mock import patch, MagicMock
+# Standard imports
 import unittest
 
-from cloudify.state import current_ctx
+# Third party imports
+from mock import patch, MagicMock
+from botocore.exceptions import UnknownServiceError, ClientError
 
+from cloudify.state import current_ctx
+from cloudify.exceptions import OperationRetry
+from cloudify._compat import text_type
+
+# Local imports
+from cloudify_aws.rds.resources import option_group
 from cloudify_aws.common.tests.test_base import TestBase, CLIENT_CONFIG
 
 # Constants
@@ -87,7 +91,7 @@ class TestRDSOptionGroup(TestBase):
             )
 
         self.assertEqual(
-            str(error.exception),
+            text_type(error.exception),
             "Unknown service: 'rds'. Valid service names are: ['rds']"
         )
 
@@ -189,7 +193,7 @@ class TestRDSOptionGroup(TestBase):
             )
 
         self.assertEqual(
-            str(error.exception),
+            text_type(error.exception),
             (
                 'RDS Option Group ID# "dev-db-option-group" is still ' +
                 'in a pending state.'
@@ -216,7 +220,7 @@ class TestRDSOptionGroup(TestBase):
             )
 
         self.assertEqual(
-            str(error.exception), 'SomeMessage'
+            text_type(error.exception), 'SomeMessage'
         )
 
     def test_delete_unexpected_client_error(self):
@@ -239,7 +243,7 @@ class TestRDSOptionGroup(TestBase):
             )
 
         self.assertEqual(
-            str(error.exception), (
+            text_type(error.exception), (
                 'An error occurred (InvalidFault) when calling the ' +
                 'client_error_test_delete operation: SomeMessage'
             )

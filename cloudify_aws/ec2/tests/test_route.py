@@ -12,13 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Standard imports
 import unittest
-from cloudify_aws.common.tests.test_base import TestBase, mock_decorator
-from cloudify_aws.ec2.resources.route import EC2Route, \
-    ROUTETABLE_ID, ROUTETABLE_TYPE, GATEWAY_ID, \
-    INTERNETGATEWAY_TYPE
+
+# Third party imports
 from mock import patch, MagicMock
+
+# Local imports
 from cloudify_aws.ec2.resources import route
+from cloudify_aws.common.tests.test_base import (
+    TestBase,
+    mock_decorator,
+    reload_module
+)
+from cloudify_aws.ec2.resources.route import (
+    EC2Route,
+    ROUTETABLE_ID,
+    ROUTETABLE_TYPE,
+    GATEWAY_ID,
+    INTERNETGATEWAY_TYPE
+)
 
 
 class TestEC2Route(TestBase):
@@ -29,7 +42,7 @@ class TestEC2Route(TestBase):
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',
                       mock_decorator)
         mock1.start()
-        reload(route)
+        reload_module(route)
 
     def test_class_create(self):
         value = True

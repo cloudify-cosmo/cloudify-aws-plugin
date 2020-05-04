@@ -12,13 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cloudify_aws.rds.resources import parameter
-
-from mock import patch, MagicMock
+# Standard imports
 import unittest
+
+# Third party imports
+from mock import patch, MagicMock
 
 from cloudify.state import current_ctx
 
+# Local imports
+from cloudify_aws.rds.resources import parameter
 from cloudify_aws.common.tests.test_base import TestBase, CLIENT_CONFIG
 
 # Constants

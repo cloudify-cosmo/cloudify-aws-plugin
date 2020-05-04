@@ -12,14 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Standard imports
 import unittest
-from cloudify_aws.common.tests.test_base import TestBase, mock_decorator
-from cloudify_aws.elb.resources.rule import (ELBRule,
-                                             LISTENER_ARN, RULE_ARN,
-                                             TARGET_ARN)
-from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ARN
+
+# Third party imports
 from mock import patch, MagicMock
+
+# Local imports
+from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ARN
 from cloudify_aws.elb.resources import rule
+from cloudify_aws.common.tests.test_base import (
+    TestBase,
+    mock_decorator,
+    reload_module
+)
+from cloudify_aws.elb.resources.rule import (
+    ELBRule,
+    LISTENER_ARN,
+    RULE_ARN,
+    TARGET_ARN
+)
 
 PATCH_PREFIX = 'cloudify_aws.elb.resources.rule.'
 
@@ -33,7 +45,7 @@ class TestELBRule(TestBase):
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',
                       mock_decorator)
         mock1.start()
-        reload(rule)
+        reload_module(rule)
 
     def test_class_properties(self):
         effect = self.get_client_error_exception(name='S3 ELB')

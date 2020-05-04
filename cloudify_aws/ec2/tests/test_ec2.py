@@ -12,13 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Standard imports
 import unittest
+
+# Third party imports
 import mock
 
+from cloudify.exceptions import NonRecoverableError
+
+# Local imports
 from cloudify_aws.common.tests.test_base import TestServiceBase
 from cloudify_aws.ec2 import EC2Base
 from cloudify_aws.common.constants import AWS_CONFIG_PROPERTY
-from cloudify.exceptions import NonRecoverableError
 
 
 class TestEC2Init(TestServiceBase):

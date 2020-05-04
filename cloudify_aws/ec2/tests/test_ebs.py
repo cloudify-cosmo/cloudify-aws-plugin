@@ -19,14 +19,19 @@ import unittest
 from mock import patch, MagicMock
 
 # Local Imports
-from cloudify_aws.ec2.resources.ebs import (EC2Volume,
-                                            EC2VolumeAttachment,
-                                            VOLUME_ID,
-                                            VOLUMES,
-                                            VOLUME_STATE,
-                                            AVAILABLE)
-from cloudify_aws.common.tests.test_base import TestBase
-from cloudify_aws.common.tests.test_base import mock_decorator
+from cloudify_aws.ec2.resources.ebs import (
+    EC2Volume,
+    EC2VolumeAttachment,
+    VOLUME_ID,
+    VOLUMES,
+    VOLUME_STATE,
+    AVAILABLE
+)
+from cloudify_aws.common.tests.test_base import (
+    TestBase,
+    mock_decorator,
+    reload_module
+)
 from cloudify_aws.ec2.resources import ebs
 from cloudify_aws.common import constants
 
@@ -45,7 +50,7 @@ class TestEC2Volume(TestBase):
         )
         mock1.start()
         mock2.start()
-        reload(ebs)
+        reload_module(ebs)
 
     def test_class_properties(self):
         effect = self.get_client_error_exception(name='EC2 EBS Volume')
@@ -213,7 +218,7 @@ class TestEC2VolumeAttachment(TestBase):
         )
         mock1.start()
         mock2.start()
-        reload(ebs)
+        reload_module(ebs)
 
     def test_class_properties(self):
         effect = self.get_client_error_exception(name='EC2 EBS Volume '

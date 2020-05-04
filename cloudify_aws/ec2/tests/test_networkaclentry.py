@@ -12,13 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Standard imports
 import unittest
-from cloudify_aws.common.tests.test_base import TestBase, mock_decorator
-from cloudify_aws.ec2.resources.networkaclentry import EC2NetworkAclEntry, \
-    NETWORKACL_ID, RULE_NUMBER, NETWORKACLS, \
-    EGRESS, NETWORKACL_TYPE
+
+# Third party imports
 from mock import patch, MagicMock
+
+# Local imports
 from cloudify_aws.ec2.resources import networkaclentry
+from cloudify_aws.common.tests.test_base import (
+    TestBase,
+    mock_decorator,
+    reload_module
+)
+from cloudify_aws.ec2.resources.networkaclentry import (
+    EC2NetworkAclEntry,
+    NETWORKACL_ID,
+    RULE_NUMBER,
+    NETWORKACLS,
+    EGRESS,
+    NETWORKACL_TYPE
+)
 
 
 class TestEC2NetworkAclEntry(TestBase):
@@ -30,7 +44,7 @@ class TestEC2NetworkAclEntry(TestBase):
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',
                       mock_decorator)
         mock1.start()
-        reload(networkaclentry)
+        reload_module(networkaclentry)
 
     def test_class_properties_by_filter(self):
         effect = self.get_client_error_exception(name='EC2 Network Acl Entry')

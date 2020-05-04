@@ -13,11 +13,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Standard imports
 import unittest
+
+# Third party imports
 from mock import patch, MagicMock
-from cloudify_aws.common.tests.test_base import TestBase, mock_decorator
+
+# Local imports
 from cloudify_aws.route53.resources import hosted_zone
 from cloudify_aws.common import constants
+from cloudify_aws.common.tests.test_base import (
+    TestBase,
+    mock_decorator,
+    reload_module
+)
 
 PATCH_PREFIX = 'cloudify_aws.route53.resources.hosted_zone.'
 
@@ -62,7 +71,7 @@ class TestHostedZone(TestBase):
         mock1.start()
         mock2.start()
         mock3.start()
-        reload(hosted_zone)
+        reload_module(hosted_zone)
 
     def test_class_properties(self):
         res_id = "test_resource"

@@ -22,7 +22,9 @@ from cloudify.mocks import MockCloudifyContext
 
 
 # Local imports
-from cloudify_aws.common.tests.test_base import TestBase, mock_decorator
+from cloudify_aws.common.tests.test_base import (TestBase,
+                                                 mock_decorator,
+                                                 reload_module)
 from cloudify_aws.s3.resources.bucket_policy\
     import (S3BucketPolicy, BUCKET, POLICY)
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
@@ -81,7 +83,7 @@ class TestS3BucketPolicy(TestBase):
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',
                       mock_decorator)
         mock1.start()
-        reload(bucket_policy)
+        reload_module(bucket_policy)
 
     def test_class_properties(self):
         effect = self.get_client_error_exception(name='S3 Bucket')

@@ -11,11 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from mock import patch, MagicMock
-from cloudify_aws.lambda_serverless.resources import permission
+
+# Standard imports
 import unittest
+
+# Third party imports
+from mock import patch, MagicMock
+
 from cloudify.manager import DirtyTrackingDict
-from cloudify_aws.common.tests.test_base import TestBase, mock_decorator
+
+# Local imports
+from cloudify_aws.lambda_serverless.resources import permission
+from cloudify_aws.common.tests.test_base import (
+    TestBase,
+    mock_decorator,
+    reload_module
+)
 
 PATCH_PREFIX = 'cloudify_aws.lambda_serverless.resources.permission.'
 
@@ -30,7 +41,7 @@ class TestLambdaPermission(TestBase):
                       mock_decorator)
         mock1.start()
         mock2.start()
-        reload(permission)
+        reload_module(permission)
 
     def _get_ctx(self):
         _test_name = 'test_properties'

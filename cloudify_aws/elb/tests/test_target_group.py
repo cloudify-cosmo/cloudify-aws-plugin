@@ -12,14 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Standard imports
 import unittest
-from cloudify_aws.common.tests.test_base import TestBase, mock_decorator
-from cloudify_aws.elb.resources.target_group import (ELBTargetGroup,
-                                                     VPC_ID,
-                                                     TARGETGROUP_ARN,
-                                                     GRP_ATTR)
-from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
+
+# Third party imports
 from mock import patch, MagicMock
+
+from cloudify_aws.common.tests.test_base import (
+    TestBase,
+    mock_decorator,
+    reload_module
+)
+
+# Local imports
+from cloudify_aws.elb.resources.target_group import (
+    ELBTargetGroup,
+    VPC_ID,
+    TARGETGROUP_ARN,
+    GRP_ATTR
+)
+from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
 from cloudify_aws.elb.resources import target_group
 
 PATCH_PREFIX = 'cloudify_aws.elb.resources.target_group.'
@@ -40,7 +52,7 @@ class TestELBTargetGroup(TestBase):
         mock1.start()
         mock2.start()
         mock3.start()
-        reload(target_group)
+        reload_module(target_group)
 
     def test_class_properties(self):
         effect = self.get_client_error_exception(name='S3 ELB')

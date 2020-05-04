@@ -17,7 +17,7 @@
     AWS helper utilities
 '''
 
-# Local imports
+# Standard imports
 import sys
 import re
 import uuid
@@ -29,7 +29,7 @@ from requests import exceptions
 from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
 from cloudify.utils import exception_to_error_cause
-from cloudify._compat import urljoin
+from cloudify._compat import urljoin, text_type
 
 # Local imports
 from cloudify_aws.common import constants
@@ -67,7 +67,7 @@ def get_resource_string(
     runtime_props = instance.runtime_properties if instance else {}
     # Search instance runtime properties first, then the node properties
     value = runtime_props.get(attribute_key, props.get(property_key))
-    return str(value) if value else None
+    return text_type(value) if value else None
 
 
 def get_resource_id(node=None,
@@ -163,12 +163,14 @@ def get_ec2_vpc_resource_name(name):
 
 def update_resource_id(instance, val):
     '''Updates an instance's resource ID'''
-    instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID] = str(val)
+    instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID] = \
+        text_type(val)
 
 
 def update_resource_arn(instance, val):
     '''Updates an instance's resource ARN'''
-    instance.runtime_properties[constants.EXTERNAL_RESOURCE_ARN] = str(val)
+    instance.runtime_properties[constants.EXTERNAL_RESOURCE_ARN] = \
+        text_type(val)
 
 
 def get_parent_resource_id(node_instance,
@@ -390,7 +392,7 @@ def validate_arn(arn_candidate, arn_regex=constants.ARN_REGEX):
 
 
 def get_uuid():
-    return str(uuid.uuid4())
+    return text_type(uuid.uuid4())
 
 
 class JsonCleanuper(object):
@@ -417,9 +419,8 @@ class JsonCleanuper(object):
             elif isinstance(v, dict):
                 self._cleanuped_dict(v)
             elif (not isinstance(v, int) and  # integer and bool
-                  not isinstance(v, str) and
-                  not isinstance(v, unicode)):
-                resource[k] = str(v)
+                  not isinstance(v, text_type)):
+                resource[k] = text_type(v)
 
     def _cleanuped_dict(self, resource):
         for k in resource:
@@ -430,9 +431,8 @@ class JsonCleanuper(object):
             elif isinstance(resource[k], dict):
                 self._cleanuped_dict(resource[k])
             elif (not isinstance(resource[k], int) and  # integer and bool
-                  not isinstance(resource[k], str) and
-                  not isinstance(resource[k], unicode)):
-                resource[k] = str(resource[k])
+                  not isinstance(resource[k], text_type)):
+                resource[k] = text_type(resource[k])
 
     def to_dict(self):
         return self.value

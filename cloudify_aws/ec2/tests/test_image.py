@@ -12,13 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Standard imports
 import unittest
-from cloudify_aws.common.tests.test_base import TestBase, mock_decorator
-from cloudify_aws.ec2.resources.image import EC2Image, IMAGES, IMAGE_ID, \
-    OWNERS
+
+# Third party imports
 from mock import patch, MagicMock
 from cloudify.exceptions import NonRecoverableError
+
+# Local imports
 from cloudify_aws.ec2.resources import image
+from cloudify_aws.common.tests.test_base import (
+    TestBase,
+    mock_decorator,
+    reload_module
+)
+from cloudify_aws.ec2.resources.image import (
+    EC2Image,
+    IMAGES,
+    IMAGE_ID,
+    OWNERS
+)
 
 
 class TestEC2Image(TestBase):
@@ -29,7 +42,7 @@ class TestEC2Image(TestBase):
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',
                       mock_decorator)
         mock1.start()
-        reload(image)
+        reload_module(image)
 
     def test_class_properties(self):
         effect = self.get_client_error_exception(name='EC2 Image')

@@ -16,9 +16,14 @@
     ~~~~~~~~~~~~~~~~~
     AWS Lambda Permission interface
 '''
+# Standard imports
 import json
 from uuid import uuid4
-# Cloudify
+
+# Third party imports
+from cloudify._compat import text_type
+
+# Local imports
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.lambda_serverless import LambdaBase
 
@@ -105,7 +110,7 @@ def create(ctx, iface, resource_config, **_):
     # as python dict type
 
     if statement:
-        if isinstance(statement, unicode):
+        if isinstance(statement, text_type):
             statement = json.loads(statement)
 
         resource_id = statement['Sid'] if statement.get('Sid') else None

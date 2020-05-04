@@ -12,14 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from mock import patch, MagicMock
+# Standard imports
 import unittest
 import copy
+
+# Third party imports
+from mock import patch, MagicMock
+
 from cloudify.state import current_ctx
+
+# Local imports
+from cloudify_aws.dynamodb.resources import table
 from cloudify_aws.common.tests.test_base import TestBase, CLIENT_CONFIG
 from cloudify_aws.common.tests.test_base import DELETE_RESPONSE
 from cloudify_aws.common.tests.test_base import DEFAULT_RUNTIME_PROPERTIES
-from cloudify_aws.dynamodb.resources import table
 
 # Constants
 TABLE_TH = ['cloudify.nodes.Root',

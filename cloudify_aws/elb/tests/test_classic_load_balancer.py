@@ -12,18 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Standard imports
 import unittest
+
+# Third party imports
+from mock import patch, Mock
+
 from cloudify.state import current_ctx
+from cloudify.exceptions import OperationRetry
+
+# Local imports
+from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
+from cloudify_aws.elb.resources.classic import load_balancer
 from cloudify_aws.common.tests.test_base import TestBase, CLIENT_CONFIG
 from cloudify_aws.common.tests.test_base import DEFAULT_RUNTIME_PROPERTIES
 from cloudify_aws.common.tests.test_base import DELETE_RESPONSE
 from cloudify_aws.elb.resources.classic.load_balancer import (
-    ELBClassicLoadBalancer, RESOURCE_NAME, LB_ARN)
-from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
-from mock import patch, Mock
-from cloudify_aws.elb.resources.classic import load_balancer
-
-from cloudify.exceptions import OperationRetry
+    ELBClassicLoadBalancer,
+    RESOURCE_NAME,
+    LB_ARN
+)
 
 PATCH_PREFIX = 'cloudify_aws.elb.resources.classic.load_balancer.'
 

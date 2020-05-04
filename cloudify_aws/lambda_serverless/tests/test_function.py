@@ -11,12 +11,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from mock import patch, MagicMock
-from cloudify_aws.lambda_serverless.resources import function
+
+# Standard imports
 import unittest
-from io import StringIO
-from cloudify_aws.common.tests.test_base import TestBase, mock_decorator
+
+# Third party imports
+from mock import patch, MagicMock
+
 from cloudify.mocks import MockCloudifyContext, MockRelationshipContext
+from cloudify._compat import StringIO
+
+# Local imports
+from cloudify_aws.lambda_serverless.resources import function
+from cloudify_aws.common.tests.test_base import (
+    TestBase,
+    mock_decorator,
+    reload_module
+)
+
 
 PATCH_PREFIX = 'cloudify_aws.lambda_serverless.resources.function.'
 # Constants
@@ -36,7 +48,7 @@ class TestLambdaFunction(TestBase):
                       mock_decorator)
         mock1.start()
         mock2.start()
-        reload(function)
+        reload_module(function)
 
     def _get_ctx(self):
         _test_name = 'test_properties'

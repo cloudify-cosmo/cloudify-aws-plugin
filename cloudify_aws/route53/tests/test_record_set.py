@@ -13,11 +13,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Standard imports
 import unittest
+
+# Third party imports
 from mock import patch, MagicMock
-from cloudify_aws.common.tests.test_base import TestBase, mock_decorator
+
+# Local imports
 from cloudify_aws.route53.resources import record_set
 from cloudify.exceptions import NonRecoverableError
+from cloudify_aws.common.tests.test_base import (
+    TestBase,
+    mock_decorator,
+    reload_module
+)
 
 PATCH_PREFIX = 'cloudify_aws.route53.resources.record_set.'
 
@@ -59,7 +68,7 @@ class TestRecordSet(TestBase):
                       mock_decorator)
         mock1.start()
         mock2.start()
-        reload(record_set)
+        reload_module(record_set)
 
     def test_prepare(self):
         ctx = self._get_ctx()

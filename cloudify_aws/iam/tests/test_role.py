@@ -11,14 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import collections
-from mock import patch, MagicMock
+
+# Standard imports
 import unittest
+import collections
+
+# Third party imports
+from mock import patch, MagicMock
+
 from cloudify.state import current_ctx
+
+# Local imports
+from cloudify_aws.iam.resources import role
 from cloudify_aws.common.tests.test_base import TestBase, CLIENT_CONFIG
 from cloudify_aws.common.tests.test_base import DELETE_RESPONSE
 from cloudify_aws.common.tests.test_base import DEFAULT_RUNTIME_PROPERTIES
-from cloudify_aws.iam.resources import role
 
 
 # Constants

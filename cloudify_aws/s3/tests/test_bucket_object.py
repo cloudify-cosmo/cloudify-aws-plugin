@@ -16,13 +16,16 @@
 import unittest
 import datetime
 import tempfile
-from dateutil.tz import tzutc
+
 
 # Third Party Imports
 from mock import patch, MagicMock
+from dateutil.tz import tzutc
 
 # Local Imports
-from cloudify_aws.common.tests.test_base import TestBase, mock_decorator
+from cloudify_aws.common.tests.test_base import (TestBase,
+                                                 mock_decorator,
+                                                 reload_module)
 from cloudify_aws.s3.resources.bucket_object import (S3BucketObject, BUCKET)
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
 from cloudify_aws.s3.resources import bucket_object
@@ -55,7 +58,7 @@ class TestS3BucketObject(TestBase):
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',
                       mock_decorator)
         mock1.start()
-        reload(bucket_object)
+        reload_module(bucket_object)
 
     def test_class_properties(self):
         effect = self.get_client_error_exception(name='S3 Bucket Object')

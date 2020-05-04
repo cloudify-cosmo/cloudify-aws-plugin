@@ -12,12 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Standard imports
 import unittest
-from cloudify_aws.common.tests.test_base import TestBase, mock_decorator
-from cloudify_aws.ec2.resources.vpc import EC2Vpc, VPC, CIDR_BLOCK, VPC_ID
+
+# Third party imports
 from mock import patch, MagicMock
-from cloudify_aws.ec2.resources import vpc
+
 from cloudify.exceptions import OperationRetry
+
+# Local imports
+from cloudify_aws.ec2.resources import vpc
+from cloudify_aws.common.tests.test_base import (
+    TestBase,
+    mock_decorator,
+    reload_module
+)
+from cloudify_aws.ec2.resources.vpc import (
+    EC2Vpc,
+    VPC,
+    CIDR_BLOCK,
+    VPC_ID
+)
 
 
 class TestEC2Vpc(TestBase):
@@ -32,7 +47,7 @@ class TestEC2Vpc(TestBase):
                       mock_decorator)
         mock1.start()
         mock2.start()
-        reload(vpc)
+        reload_module(vpc)
 
     def test_class_properties(self):
         effect = self.get_client_error_exception(name='EC2 Vpc')
