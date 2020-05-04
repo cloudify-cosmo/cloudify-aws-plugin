@@ -104,8 +104,7 @@ class TestEC2Image(TestBase):
 
     def test_delete(self):
         config = {IMAGE_ID: 'image'}
-        res = self.image.delete(config)
-        self.assertIsNone(res)
+        self.assertIsNone(self.image.delete(config))
 
 
 if __name__ == '__main__':

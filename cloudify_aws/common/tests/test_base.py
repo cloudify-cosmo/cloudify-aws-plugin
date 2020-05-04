@@ -12,8 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# flake8: noqa
 
 import sys
+PY2 = sys.version_info[0] == 2
+
+if PY2:
+    reload_module = reload
+else:
+    from imp import reload as reload_module
 import unittest
 import copy
 from functools import wraps
@@ -29,13 +36,6 @@ from cloudify.manager import DirtyTrackingDict
 
 from cloudify_aws.common import AWSResourceBase
 
-# flake8: noqa
-PY2 = sys.version_info[0] == 2
-
-if PY2:
-    reload_module = reload
-else:
-    from imp import reload as reload_module
 
 CLIENT_CONFIG = {
     'aws_access_key_id': 'xxx',

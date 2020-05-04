@@ -253,7 +253,7 @@ def create(ctx, iface, resource_config, **_):
     except (KeyError, IndexError) as e:
         raise NonRecoverableError(
             'Error {0}: create response has no instances: {1}'.format(
-                e.message, create_response))
+                text_type(e), create_response))
     instance_id = instance.get(INSTANCE_ID, '')
     iface.update_resource_id(instance_id)
     utils.update_resource_id(ctx.instance, instance_id)

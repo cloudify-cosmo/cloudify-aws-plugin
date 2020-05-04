@@ -63,8 +63,7 @@ class TestELBClassicHealthCheck(TestBase):
 
     def test_class_delete(self):
         params = {}
-        res = self.health_check.delete(params)
-        self.assertIsNone(res)
+        self.assertIsNone(self.health_check.delete(params))
 
     def test_prepare(self):
         ctx = self.get_mock_ctx("ELB")
