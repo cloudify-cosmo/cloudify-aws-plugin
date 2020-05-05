@@ -77,7 +77,7 @@ def prepare(ctx, resource_config, **_):
             utils.update_resource_id(
                 ctx.instance, resource_config['StatementId'])
         else:
-            utils.update_resource_id(ctx.instance, str(uuid4()))
+            utils.update_resource_id(ctx.instance, text_type(uuid4()))
     ctx.instance.runtime_properties['resource_config'] = resource_config
 
 

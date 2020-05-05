@@ -16,16 +16,18 @@
     ~~~~~~~~~~~~
     AWS RDS instance interface
 '''
-
+# Standard Imports
 from datetime import datetime
 
-# Cloudify
+# Third party imports
+from botocore.exceptions import ClientError
+
+from cloudify._compat import text_type
+
+# Local imports
 from cloudify.exceptions import NonRecoverableError
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.rds import RDSBase
-
-# Boto
-from botocore.exceptions import ClientError
 
 RESOURCE_TYPE = 'RDS DB Instance'
 
@@ -110,7 +112,7 @@ def create(ctx, iface, resource_config, **_):
             utils.update_resource_arn(ctx.instance, value)
             continue
         elif isinstance(value, datetime):
-            value = str(value)
+            value = text_type(value)
         ctx.instance.runtime_properties[key] = value
 
 
@@ -129,7 +131,7 @@ def start(ctx, iface, resource_config, **_):
             utils.update_resource_arn(ctx.instance, value)
             continue
         elif isinstance(value, datetime):
-            value = str(value)
+            value = text_type(value)
         ctx.instance.runtime_properties[key] = value
 
 

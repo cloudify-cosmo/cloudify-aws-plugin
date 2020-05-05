@@ -24,11 +24,11 @@ import sys
 # Third party imports
 from botocore.exceptions import ClientError
 
-from cloudify.decorators import operation
 from cloudify import ctx
-from cloudify.exceptions import (OperationRetry, NonRecoverableError)
+from cloudify._compat import text_type
+from cloudify.decorators import operation
 from cloudify.utils import exception_to_error_cause
-
+from cloudify.exceptions import OperationRetry, NonRecoverableError
 
 # Local imports
 from cloudify_aws.common import utils
@@ -447,7 +447,7 @@ def check_swift_resource(func):
                         causes=[exception_to_error_cause(error, tb)])
             except Exception as error:
                 error_traceback = utils.get_traceback_exception()
-                raise NonRecoverableError('{0}'.format(str(error)),
+                raise NonRecoverableError('{0}'.format(text_type(error)),
                                           causes=[error_traceback])
             return response
 

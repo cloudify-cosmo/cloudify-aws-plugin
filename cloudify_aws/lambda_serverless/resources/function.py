@@ -90,15 +90,7 @@ class LambdaFunction(LambdaBase):
         return res
 
 
-@decorators.aws_resource(LambdaFunction, RESOURCE_TYPE)
-def create(ctx, iface, resource_config, **_):
-    '''Creates an AWS Lambda Function'''
-    # Build API params
-    params = utils.clean_params(
-        dict() if not resource_config else resource_config.copy())
-    if RESOURCE_ID not in params:
-        params[RESOURCE_ID] = iface.resource_id
-    vpc_config = params.get('VpcConfig', dict())
+def _get_subnets_to_attach(ctx, vpc_config):
     # Attach a Subnet Group if it exists
     subnet_ids = vpc_config.get('SubnetIds', list())
 
@@ -113,8 +105,10 @@ def create(ctx, iface, resource_config, **_):
             node=rel.target.node,
             instance=rel.target.instance,
             raise_on_missing=True))
-    vpc_config['SubnetIds'] = subnet_ids
-    # Attach any security groups if they exist
+    return subnet_ids
+
+
+def _get_security_groups_to_attach(ctx, vpc_config):
     security_groups = vpc_config.get('SecurityGroupIds', list())
 
     sg_rels = \
@@ -129,16 +123,47 @@ def create(ctx, iface, resource_config, **_):
                 node=rel.target.node,
                 instance=rel.target.instance,
                 raise_on_missing=True))
-    vpc_config['SecurityGroupIds'] = security_groups
-    params['VpcConfig'] = vpc_config
-    # Attach an IAM Role if it exists
+    return security_groups
+
+
+def _get_iam_role_to_attach(ctx):
+    role_arn = None
     iam_role = utils.find_rel_by_node_type(
         ctx.instance, 'cloudify.nodes.aws.iam.Role')
     if iam_role:
-        params['Role'] = utils.get_resource_arn(
+        role_arn = utils.get_resource_arn(
             node=iam_role.target.node,
             instance=iam_role.target.instance,
             raise_on_missing=True)
+    return role_arn
+
+
+@decorators.aws_resource(LambdaFunction, RESOURCE_TYPE)
+def create(ctx, iface, resource_config, **_):
+    '''Creates an AWS Lambda Function'''
+    # Build API params
+    params = utils.clean_params(
+        dict() if not resource_config else resource_config.copy())
+    if RESOURCE_ID not in params:
+        params[RESOURCE_ID] = iface.resource_id
+    vpc_config = params.get('VpcConfig', dict())
+
+    # Attach a Subnet Group if it exists
+    subnet_ids = _get_subnets_to_attach(ctx, vpc_config)
+    if subnet_ids:
+        vpc_config['SubnetIds'] = subnet_ids
+
+    # Attach any security groups if they exist
+    security_groups = _get_security_groups_to_attach(ctx, vpc_config)
+    if security_groups:
+        vpc_config['SecurityGroupIds'] = security_groups
+
+    params['VpcConfig'] = vpc_config
+    # Attach an IAM Role if it exists
+    iam_role = _get_iam_role_to_attach(ctx)
+    if iam_role:
+        params['Role'] = iam_role
+
     # Handle user-profided code ZIP file
     if params.get('Code', dict()).get('ZipFile'):
         codezip = params['Code']['ZipFile']

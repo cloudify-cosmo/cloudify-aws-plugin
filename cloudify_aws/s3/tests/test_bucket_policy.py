@@ -13,6 +13,7 @@
 # limitations under the License.
 
 # Standard imports
+from __future__ import unicode_literals
 import unittest
 
 # Third part imports

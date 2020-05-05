@@ -30,7 +30,6 @@ from Crypto.PublicKey import RSA
 from cloudify import compute
 from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError, OperationRetry
-# Cloudify imports
 from cloudify._compat import text_type
 
 # local imports
@@ -421,7 +420,7 @@ def _handle_userdata(existing_userdata):
             isinstance(existing_userdata, list):
         existing_userdata = json.dumps(existing_userdata)
     elif not isinstance(existing_userdata, text_type):
-        existing_userdata = str(existing_userdata)
+        existing_userdata = text_type(existing_userdata)
 
     install_agent_userdata = ctx.agent.init_script()
     os_family = ctx.node.properties['os_family']

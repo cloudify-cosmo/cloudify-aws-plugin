@@ -125,7 +125,7 @@ def start(ctx, iface, **_):
 
     def test(_value):
         if isinstance(_value, datetime):
-            return str(_value)
+            return text_type(_value)
         elif isinstance(_value, list):
             for _value_item in _value:
                 i = _value.index(_value_item)

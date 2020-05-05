@@ -103,7 +103,7 @@ def create(ctx, iface, resource_config, params, **_):
     if iam_instance_profile:
         if isinstance(iam_instance_profile, text_type):
             iam_instance_profile = iam_instance_profile.strip()
-            params[IAM_INSTANCE_PROFILE] = str(iam_instance_profile)
+            params[IAM_INSTANCE_PROFILE] = text_type(iam_instance_profile)
         else:
             raise NonRecoverableError(
                 'Invalid {0} data type for {1}'

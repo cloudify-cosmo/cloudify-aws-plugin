@@ -111,6 +111,7 @@ def create(ctx, iface, resource_config, **_):
                 EXTERNAL_RESOURCE_ID
             )
         params[BUCKET] = bucket_name
+
     ctx.instance.runtime_properties[BUCKET] = bucket_name
     utils.update_resource_id(ctx.instance, bucket_name)
 

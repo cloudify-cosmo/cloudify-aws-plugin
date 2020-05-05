@@ -16,14 +16,18 @@
     ~~~~~~~~~~~~~~~~~~
     AWS Route53 Hosted Zone interface
 '''
-# Sleep
+# Standard Imports
 from time import sleep
-# Cloudify
+
+# Third party imports
+from botocore.exceptions import ClientError
+
+from cloudify._compat import text_type
+
+# Local imports
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.common.connection import Boto3Connection
 from cloudify_aws.route53 import Route53Base
-# Boto
-from botocore.exceptions import ClientError
 
 RESOURCE_TYPE = 'Route53 Hosted Zone'
 
@@ -104,7 +108,7 @@ def create(ctx, iface, resource_config, **_):
     if iface.resource_id:
         params.update({'Name': iface.resource_id})
     if not params.get('CallerReference'):
-        params.update(dict(CallerReference=str(ctx.instance.id)))
+        params.update(dict(CallerReference=text_type(ctx.instance.id)))
     # Actually create the resource
     create_response = iface.create(params)['HostedZone']['Id']
     iface.update_resource_id(create_response)

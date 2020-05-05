@@ -31,6 +31,7 @@ from mock import MagicMock, patch
 from botocore.exceptions import UnknownServiceError
 from botocore.exceptions import ClientError
 
+from cloudify._compat import text_type
 from cloudify.mocks import MockCloudifyContext
 from cloudify.state import current_ctx
 from cloudify.manager import DirtyTrackingDict
@@ -500,7 +501,7 @@ class TestBase(unittest.TestCase):
                 type_class.create(ctx=_ctx, resource_config=None, iface=None)
 
             self.assertEqual(
-                str(error.exception),
+                text_type(error.exception),
                 (
                     "Unknown service: '" +
                     type_name +

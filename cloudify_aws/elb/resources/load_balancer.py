@@ -21,6 +21,7 @@
 from botocore.exceptions import ClientError, ParamValidationError
 
 from cloudify.exceptions import NonRecoverableError
+from cloudify._compat import text_type
 
 # Local imports
 from cloudify_aws.common import decorators, utils
@@ -63,7 +64,7 @@ class ELBLoadBalancer(ELBBase):
             resources = self.client.describe_load_balancers(
                 Names=[self.resource_id])
         except (ClientError, ParamValidationError) as e:
-            self.logger.warn('Ignoring error: {0}'.format(str(e)))
+            self.logger.warn('Ignoring error: {0}'.format(text_type(e)))
         else:
             if resources:
                 return resources['LoadBalancers'][0]
@@ -166,7 +167,7 @@ def create(ctx, iface, resource_config, params, **_):
     except (IndexError, KeyError) as e:
         raise NonRecoverableError(
             '{0}: {1} or {2} not located in response: {3}'.format(
-                str(e), RESOURCE_NAME, LB_ARN, output))
+                text_type(e), RESOURCE_NAME, LB_ARN, output))
 
 
 @decorators.aws_resource(ELBLoadBalancer,

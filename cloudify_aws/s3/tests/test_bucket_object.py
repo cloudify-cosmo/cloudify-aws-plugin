@@ -47,7 +47,9 @@ class TestS3BucketObject(TestBase):
         super(TestS3BucketObject, self).setUp()
         self.resource_config = RESOURCE_CONFIG
         self.resource_config['resource_config']['kwargs'] = \
-            {BUCKET: 'test_bucket'}
+            {
+                BUCKET: 'test_bucket'
+            }
         self.ctx = self.get_mock_ctx(test_name="Backet",
                                      test_properties=self.resource_config)
 
