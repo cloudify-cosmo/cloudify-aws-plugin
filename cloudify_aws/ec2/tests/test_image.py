@@ -17,7 +17,9 @@ import unittest
 
 # Third party imports
 from mock import patch, MagicMock
+
 from cloudify.exceptions import NonRecoverableError
+from cloudify._compat import text_type
 
 # Local imports
 from cloudify_aws.ec2.resources import image
@@ -56,8 +58,8 @@ class TestEC2Image(TestBase):
                                                       return_value=value)
         with self.assertRaises(NonRecoverableError) as e:
             self.image.properties
-        self.assertEqual(e.exception.message,
-                         "Found no AMIs matching provided filters.")
+        self.assertEqual(text_type(e.exception),
+                         u"Found no AMIs matching provided filters.")
 
         value = {IMAGES: [{IMAGE_ID: 'test_name'}]}
         self.image.client = self.make_client_function('describe_images',
@@ -71,8 +73,8 @@ class TestEC2Image(TestBase):
                                                       return_value=value)
         with self.assertRaises(NonRecoverableError) as e:
             self.image.status
-        self.assertEqual(e.exception.message,
-                         "Found no AMIs matching provided filters.")
+        self.assertEqual(text_type(e.exception),
+                         u"Found no AMIs matching provided filters.")
 
         value = {IMAGES: [None]}
         self.image.client = self.make_client_function('describe_images',

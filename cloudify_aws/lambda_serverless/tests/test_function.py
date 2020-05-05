@@ -65,7 +65,7 @@ class TestLambdaFunction(TestBase):
 
     def _mock_function_file(self):
         with open('/tmp/mock_function.txt', 'wb') as _file:
-            _file.write('test')
+            _file.write(b'test')
 
     def test_class_properties(self):
         ctx = self._get_ctx()
