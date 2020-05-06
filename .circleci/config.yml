@@ -27,6 +27,7 @@ executors:
     machine:
       image: ubuntu-1604:201903-01
 
+
 commands:
   run_unittest:
     steps:
@@ -64,8 +65,6 @@ commands:
               cat futurize_diffs
               exit 1
             fi
-
-
 
   generate_wagon:
     steps:
@@ -106,16 +105,12 @@ commands:
 
   run_integration_tests:
     steps:
-      - attach_workspace:
-          at: workspace
       - run:
           name: "Pull Submodules"
           command: |
-            git submodule init
-            git submodule update --remote
-      - run:
-          name: install test requirements
-          command: pip install nose testtools https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/9e78969f30dcaa9efce9b8fd7b078357f3d8adc8.zip
+            git submodule update --init --recursive
+      - attach_workspace:
+          at: workspace
       - run:
           name: update pip
           command: pip install -U pip
@@ -138,29 +133,41 @@ commands:
           name: start docker container
           command: docker run --name cfy_manager -d --restart unless-stopped -v /sys/fs/cgroup:/sys/fs/cgroup:ro --tmpfs /run --tmpfs /run/lock --security-opt seccomp:unconfined --cap-add SYS_ADMIN --network host cloudifyplatform/premium-cloudify-manager-aio
       - run:
-          name: init CLI profile
-          command: |
-            counter=0
-            until [ $counter -ge 15 ]
-            do
-                cfy profiles use localhost -u admin -p admin -t default_tenant && break
-                counter=$[$counter+1]
-                sleep 2
-            done
-      - run:
-          name: upload license
-          command: |
-            set +x
-            echo ${TEST_LICENSE} | base64 --decode > license.yaml
-            set -x
-            cfy license upload license.yaml
-      - run:
-          name: install plugins bundle
-          command: cfy plugins bundle-upload
-      - run:
-          name: execute test
-          command: nosetests -s tests/test_aws.py
+          name: install local project
+          command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/latest.zip
+      - run: pytest -s .circleci/test_examples.py
 
+  release_plugin:
+    steps:
+      - run:
+          name: "Pull Submodules"
+          command: |
+            git submodule init
+            git submodule update --remote --recursive
+      - run:
+          name: Download pip
+          command: curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
+      - run:
+          name: Install pip
+          command: sudo python get-pip.py
+      - run:
+          name: Install virtualenv
+          command: pip install --user virtualenv
+      - run:
+          name: Init virtualenv
+          command: virtualenv env
+      - run:
+          name: install tox
+          command: pip install --user pygithub pyyaml==3.10
+      - run:
+          name: upgrade setuptools
+          command: pip install --upgrade setuptools
+      - run:
+          name: install local project
+          command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/latest.zip
+      - attach_workspace:
+          at: workspace
+      - run: python .circleci/package_release.py
 
 jobs:
 
@@ -190,9 +197,16 @@ jobs:
     executor: cloudify-machine
     environment:
       CLOUDIFY_SSL_TRUST_ALL: true
+      IAAS: aws
     steps:
       - checkout
       - run_integration_tests
+
+  release:
+    executor: py27
+    steps:
+      - checkout
+      - release_plugin
 
 workflows:
   version: 2
@@ -211,6 +225,13 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
+      - release:
+          filters:
+            branches:
+              only: /master/
+          requires:
+            - wagon
+            - integration_tests
   nightly:
     triggers:
     - schedule:
