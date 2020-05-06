@@ -19,14 +19,14 @@ import unittest
 from mock import patch, MagicMock
 
 from cloudify.mocks import MockCloudifyContext
-from cloudify._compat import StringIO
+from cloudify_aws.common._compat import StringIO
 
 # Local imports
+from cloudify_aws.common._compat import reload_module
 from cloudify_aws.lambda_serverless.resources import function
 from cloudify_aws.common.tests.test_base import (
     TestBase,
-    mock_decorator,
-    reload_module
+    mock_decorator
 )
 
 

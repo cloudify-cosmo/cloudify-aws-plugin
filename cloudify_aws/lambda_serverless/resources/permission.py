@@ -20,10 +20,8 @@
 import json
 from uuid import uuid4
 
-# Third party imports
-from cloudify._compat import text_type
-
 # Local imports
+from cloudify_aws.common._compat import text_type
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.lambda_serverless import LambdaBase
 

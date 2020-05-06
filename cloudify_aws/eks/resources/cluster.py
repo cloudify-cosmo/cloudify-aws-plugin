@@ -24,9 +24,8 @@ import json
 import boto3
 from botocore.exceptions import ClientError
 
-from cloudify._compat import text_type
-
-# Cloudify
+# Local imports
+from cloudify_aws.common._compat import text_type
 from cloudify_aws.eks import EKSBase
 from cloudify_aws.common import decorators, utils
 from cloudify.exceptions import NonRecoverableError

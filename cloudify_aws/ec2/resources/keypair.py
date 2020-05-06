@@ -22,9 +22,11 @@ from botocore.exceptions import ClientError
 
 # Cloudify
 from cloudify import ctx
-from cloudify._compat import text_type
 from cloudify.exceptions import NonRecoverableError
 from cloudify.manager import get_rest_client
+
+# Lcaol imports
+from cloudify_aws.common._compat import text_type
 from cloudify_aws.ec2 import EC2Base
 from cloudify_aws.common import decorators, utils
 from cloudify_rest_client.exceptions import CloudifyClientError

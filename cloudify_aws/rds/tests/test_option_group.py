@@ -21,9 +21,9 @@ from botocore.exceptions import UnknownServiceError, ClientError
 
 from cloudify.state import current_ctx
 from cloudify.exceptions import OperationRetry
-from cloudify._compat import text_type
 
 # Local imports
+from cloudify_aws.common._compat import text_type
 from cloudify_aws.rds.resources import option_group
 from cloudify_aws.common.tests.test_base import TestBase, CLIENT_CONFIG
 

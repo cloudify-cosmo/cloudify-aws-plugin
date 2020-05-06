@@ -30,9 +30,9 @@ from Crypto.PublicKey import RSA
 from cloudify import compute
 from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError, OperationRetry
-from cloudify._compat import text_type
 
 # local imports
+from cloudify_aws.common._compat import text_type
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
 from cloudify_aws.ec2 import EC2Base

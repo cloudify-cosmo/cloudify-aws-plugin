@@ -19,9 +19,9 @@ import unittest
 from mock import MagicMock
 from botocore.exceptions import UnknownServiceError
 
-from cloudify._compat import text_type
 
 # Local imports
+from cloudify_aws.common._compat import text_type
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
 from cloudify_aws.common.tests.test_base import CLIENT_CONFIG
 from cloudify_aws.kms.tests.test_kms import TestKMS

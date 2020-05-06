@@ -19,7 +19,7 @@ import unittest
 from mock import patch, MagicMock
 
 from cloudify.state import current_ctx
-from cloudify._compat import text_type
+from cloudify_aws.common._compat import text_type
 from cloudify.exceptions import OperationRetry
 
 # Local imports

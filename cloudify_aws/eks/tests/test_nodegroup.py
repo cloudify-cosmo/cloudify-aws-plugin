@@ -19,10 +19,10 @@ import unittest
 from mock import patch, MagicMock
 
 # Local imports
+from cloudify_aws.common._compat import reload_module
 from cloudify_aws.common.tests.test_base import (
     TestBase,
-    mock_decorator,
-    reload_module
+    mock_decorator
 )
 from cloudify_aws.eks.resources.node_group import EKSNodeGroup
 from cloudify_aws.eks.resources import node_group

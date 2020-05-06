@@ -12,16 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# flake8: noqa
-# pylint: skip-file
-
-import sys
-PY2 = sys.version_info[0] == 2
-
-if PY2:
-    reload_module = reload
-else:
-    from imp import reload as reload_module
 import unittest
 import copy
 from functools import wraps
@@ -31,11 +21,11 @@ from mock import MagicMock, patch
 from botocore.exceptions import UnknownServiceError
 from botocore.exceptions import ClientError
 
-from cloudify._compat import text_type
 from cloudify.mocks import MockCloudifyContext
 from cloudify.state import current_ctx
 from cloudify.manager import DirtyTrackingDict
 
+from cloudify_aws.common._compat import text_type
 from cloudify_aws.common import AWSResourceBase
 
 

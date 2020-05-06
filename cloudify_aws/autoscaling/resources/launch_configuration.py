@@ -20,10 +20,10 @@
 from botocore.exceptions import ClientError
 
 # Cloudify imports
-from cloudify._compat import text_type
 from cloudify.exceptions import NonRecoverableError
 
 # Local imports
+from cloudify_aws.common._compat import text_type
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.autoscaling import AutoscalingBase
 

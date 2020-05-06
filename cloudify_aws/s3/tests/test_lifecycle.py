@@ -19,11 +19,10 @@ import unittest
 from mock import patch, MagicMock
 
 # Local imports
+from cloudify_aws.common._compat import reload_module
 from cloudify_aws.s3.resources.lifecycle_configuration import (
     S3BucketLifecycleConfiguration, BUCKET, RULES, ID)
-from cloudify_aws.common.tests.test_base import (TestBase,
-                                                 mock_decorator,
-                                                 reload_module)
+from cloudify_aws.common.tests.test_base import TestBase, mock_decorator
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
 from cloudify_aws.s3.resources import lifecycle_configuration
 

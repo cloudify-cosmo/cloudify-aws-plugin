@@ -19,12 +19,12 @@ import unittest
 from mock import patch, MagicMock
 
 # Local imports
+from cloudify_aws.common._compat import reload_module
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ARN
 from cloudify_aws.elb.resources import rule
 from cloudify_aws.common.tests.test_base import (
     TestBase,
-    mock_decorator,
-    reload_module
+    mock_decorator
 )
 from cloudify_aws.elb.resources.rule import (
     ELBRule,

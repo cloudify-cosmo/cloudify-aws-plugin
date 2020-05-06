@@ -19,9 +19,8 @@ import unittest
 from mock import patch, MagicMock
 
 # local imports
-from cloudify_aws.common.tests.test_base import (TestBase,
-                                                 mock_decorator,
-                                                 reload_module)
+from cloudify_aws.common._compat import reload_module
+from cloudify_aws.common.tests.test_base import TestBase, mock_decorator
 from cloudify_aws.s3.resources.tagging import (
     S3BucketTagging, BUCKET, TAGSET)
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID

@@ -25,13 +25,13 @@ import sys
 from botocore.exceptions import ClientError
 
 from cloudify import ctx
-from cloudify._compat import text_type
 from cloudify.decorators import operation
 from cloudify.utils import exception_to_error_cause
 from cloudify.exceptions import OperationRetry, NonRecoverableError
 
 # Local imports
 from cloudify_aws.common import utils
+from cloudify_aws.common._compat import text_type
 from cloudify_aws.common.constants import (
     EXTERNAL_RESOURCE_ARN as EXT_RES_ARN,
     EXTERNAL_RESOURCE_ID as EXT_RES_ID,

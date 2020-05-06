@@ -20,13 +20,11 @@
 import json
 from datetime import datetime
 
-# Cloudify imports
-from cloudify._compat import text_type
-
 # Third party imports
 from botocore.exceptions import ClientError
 
 # Local imports
+from cloudify_aws.common._compat import text_type
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
 from cloudify_aws.cloudformation import AWSCloudFormationBase

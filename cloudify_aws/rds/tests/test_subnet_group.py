@@ -20,9 +20,9 @@ from mock import patch, MagicMock
 from botocore.exceptions import UnknownServiceError
 
 from cloudify.state import current_ctx
-from cloudify._compat import text_type
 
 # Local imports
+from cloudify_aws.common._compat import text_type
 from cloudify_aws.rds.resources import subnet_group
 from cloudify_aws.common.tests.test_base import TestBase, CLIENT_CONFIG
 from cloudify_aws.common.tests.test_base import DELETE_RESPONSE

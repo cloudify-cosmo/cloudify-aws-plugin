@@ -24,7 +24,7 @@ import tempfile
 from botocore.exceptions import ClientError
 
 from cloudify import ctx
-from cloudify._compat import urlopen
+from cloudify_aws.common._compat import urlopen
 from cloudify.utils import exception_to_error_cause
 from cloudify.exceptions import (
     NonRecoverableError,

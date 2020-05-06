@@ -19,10 +19,10 @@
 # Boto
 from botocore.exceptions import ClientError
 
-from cloudify._compat import text_type
+from cloudify.exceptions import OperationRetry
 
 # Cloudify
-from cloudify.exceptions import OperationRetry
+from cloudify_aws.common._compat import text_type
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.ec2 import EC2Base
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID

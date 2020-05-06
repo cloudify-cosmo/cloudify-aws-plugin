@@ -18,10 +18,10 @@ import unittest
 # Third party imports
 from mock import patch, MagicMock
 
+from cloudify_aws.common._compat import reload_module
 from cloudify_aws.common.tests.test_base import (
     TestBase,
-    mock_decorator,
-    reload_module
+    mock_decorator
 )
 
 # Local imports

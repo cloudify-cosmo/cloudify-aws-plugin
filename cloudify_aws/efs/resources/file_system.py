@@ -19,11 +19,10 @@
 # Third Party imports
 from botocore.exceptions import ClientError
 
-from cloudify._compat import text_type
-
 # Local imports
-from cloudify_aws.common import decorators, utils
 from cloudify_aws.efs import EFSBase
+from cloudify_aws.common._compat import text_type
+from cloudify_aws.common import decorators, utils
 
 RESOURCE_TYPE = 'EFS File System'
 FILESYSTEM_ID = 'FileSystemId'

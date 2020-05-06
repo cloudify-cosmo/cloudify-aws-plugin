@@ -26,7 +26,7 @@ from botocore.exceptions import ClientError, ParamValidationError
 from cloudify.exceptions import NonRecoverableError
 from cloudify.logs import init_cloudify_logger
 from cloudify.utils import exception_to_error_cause
-from cloudify._compat import text_type
+from cloudify_aws.common._compat import text_type
 
 FATAL_EXCEPTIONS = (ClientError, ParamValidationError)
 

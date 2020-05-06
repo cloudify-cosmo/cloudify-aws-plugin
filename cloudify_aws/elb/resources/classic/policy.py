@@ -19,12 +19,12 @@
 # Third party imports
 from botocore.exceptions import ClientError
 
-from cloudify._compat import text_type
 from cloudify.exceptions import OperationRetry
 
 # Local imports
-from cloudify_aws.common import decorators, utils
 from cloudify_aws.elb import ELBBase
+from cloudify_aws.common._compat import text_type
+from cloudify_aws.common import decorators, utils
 from cloudify_aws.common.connection import Boto3Connection
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
 

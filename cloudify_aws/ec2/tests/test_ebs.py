@@ -19,6 +19,7 @@ import unittest
 from mock import patch, MagicMock
 
 # Local Imports
+from cloudify_aws.common._compat import reload_module
 from cloudify_aws.ec2.resources.ebs import (
     EC2Volume,
     EC2VolumeAttachment,
@@ -29,8 +30,7 @@ from cloudify_aws.ec2.resources.ebs import (
 )
 from cloudify_aws.common.tests.test_base import (
     TestBase,
-    mock_decorator,
-    reload_module
+    mock_decorator
 )
 from cloudify_aws.ec2.resources import ebs
 from cloudify_aws.common import constants

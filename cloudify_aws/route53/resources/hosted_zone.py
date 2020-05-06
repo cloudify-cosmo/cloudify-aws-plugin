@@ -22,7 +22,7 @@ from time import sleep
 # Third party imports
 from botocore.exceptions import ClientError
 
-from cloudify._compat import text_type
+from cloudify_aws.common._compat import text_type
 
 # Local imports
 from cloudify_aws.common import decorators, utils

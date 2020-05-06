@@ -22,9 +22,9 @@ import json
 # Third Party imports
 from botocore.exceptions import ClientError, ParamValidationError
 
-from cloudify._compat import text_type
 
 # Local imports
+from cloudify_aws.common._compat import text_type
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.s3 import S3Base
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID

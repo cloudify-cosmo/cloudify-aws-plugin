@@ -23,9 +23,8 @@ from cloudify.mocks import MockCloudifyContext
 
 
 # Local imports
-from cloudify_aws.common.tests.test_base import (TestBase,
-                                                 mock_decorator,
-                                                 reload_module)
+from cloudify_aws.common._compat import reload_module
+from cloudify_aws.common.tests.test_base import TestBase, mock_decorator
 from cloudify_aws.s3.resources.bucket_policy\
     import (S3BucketPolicy, BUCKET, POLICY)
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID

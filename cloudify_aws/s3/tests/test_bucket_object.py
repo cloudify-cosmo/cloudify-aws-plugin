@@ -23,10 +23,9 @@ from mock import patch, MagicMock
 from dateutil.tz import tzutc
 
 # Local Imports
-from cloudify_aws.common.tests.test_base import (TestBase,
-                                                 mock_decorator,
-                                                 reload_module)
-from cloudify_aws.s3.resources.bucket_object import (S3BucketObject, BUCKET)
+from cloudify_aws.common._compat import reload_module
+from cloudify_aws.common.tests.test_base import TestBase, mock_decorator
+from cloudify_aws.s3.resources.bucket_object import S3BucketObject, BUCKET
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
 from cloudify_aws.s3.resources import bucket_object
 

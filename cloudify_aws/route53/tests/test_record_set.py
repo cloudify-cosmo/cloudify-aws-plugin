@@ -20,12 +20,12 @@ import unittest
 from mock import patch, MagicMock
 
 # Local imports
+from cloudify_aws.common._compat import reload_module
 from cloudify_aws.route53.resources import record_set
 from cloudify.exceptions import NonRecoverableError
 from cloudify_aws.common.tests.test_base import (
     TestBase,
-    mock_decorator,
-    reload_module
+    mock_decorator
 )
 
 PATCH_PREFIX = 'cloudify_aws.route53.resources.record_set.'

@@ -21,11 +21,11 @@ from mock import patch, MagicMock
 from cloudify.exceptions import NonRecoverableError
 
 # local imports
+from cloudify_aws.common._compat import reload_module
 from cloudify_aws.sns.resources import subscription
 from cloudify_aws.common.tests.test_base import (
     TestBase,
-    mock_decorator,
-    reload_module
+    mock_decorator
 )
 from cloudify_aws.sns.resources.subscription import (
     SNSSubscription,

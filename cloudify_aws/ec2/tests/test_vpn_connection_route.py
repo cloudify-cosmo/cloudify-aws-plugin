@@ -19,14 +19,14 @@ import unittest
 from mock import patch, MagicMock
 
 # Local imports
+from cloudify_aws.common._compat import reload_module
 from cloudify_aws.common import constants
 from cloudify_aws.ec2.resources import vpn_connection_route
 from cloudify_aws.ec2.resources.vpn_connection_route\
     import EC2VPNConnectionRoute
 from cloudify_aws.common.tests.test_base import (
     TestBase,
-    mock_decorator,
-    reload_module
+    mock_decorator
 )
 
 

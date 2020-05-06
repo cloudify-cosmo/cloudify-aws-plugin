@@ -19,15 +19,13 @@ import unittest
 from mock import patch, MagicMock
 
 from cloudify.exceptions import NonRecoverableError
-from cloudify._compat import text_type
 
 # Local imports
+from cloudify_aws.common._compat import text_type, reload_module
 from cloudify_aws.ec2.resources import image
 from cloudify_aws.common.tests.test_base import (
     TestBase,
-    mock_decorator,
-    reload_module
-)
+    mock_decorator)
 from cloudify_aws.ec2.resources.image import (
     EC2Image,
     IMAGES,

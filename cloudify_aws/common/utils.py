@@ -29,7 +29,7 @@ from requests import exceptions
 from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
 from cloudify.utils import exception_to_error_cause
-from cloudify._compat import urljoin, text_type
+from cloudify_aws.common._compat import urljoin, text_type
 
 # Local imports
 from cloudify_aws.common import constants

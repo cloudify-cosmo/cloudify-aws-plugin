@@ -21,9 +21,9 @@
 from botocore.exceptions import ClientError, ParamValidationError
 
 from cloudify.exceptions import NonRecoverableError
-from cloudify._compat import text_type
 
 # Local imports
+from cloudify_aws.common._compat import text_type
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.elb import ELBBase
 from cloudify_aws.common.connection import Boto3Connection
