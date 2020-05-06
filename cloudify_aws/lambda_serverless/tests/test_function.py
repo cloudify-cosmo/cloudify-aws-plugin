@@ -165,9 +165,9 @@ class TestLambdaFunction(TestBase):
             result = fun.invoke({'param': 'params'})
             self.assertEqual(result, '')
 
-    @patch('{0}{1}'.format(PATCH_PREFIX, '_get_iam_role_to_attach'))
-    @patch('{0}{1}'.format(PATCH_PREFIX, '_get_security_groups_to_attach'))
-    @patch('{0}{1}'.format(PATCH_PREFIX, '_get_subnets_to_attach'))
+    @patch(u'{0}{1}'.format(PATCH_PREFIX, '_get_iam_role_to_attach'))
+    @patch(u'{0}{1}'.format(PATCH_PREFIX, '_get_security_groups_to_attach'))
+    @patch(u'{0}{1}'.format(PATCH_PREFIX, '_get_subnets_to_attach'))
     def test_create(self,
                     mock_subnet_attach,
                     mock_security_groups_attach,
@@ -207,9 +207,9 @@ class TestLambdaFunction(TestBase):
                 resource_config['VpcConfig']
             )
 
-    @patch('{0}{1}'.format(PATCH_PREFIX, '_get_iam_role_to_attach'))
-    @patch('{0}{1}'.format(PATCH_PREFIX, '_get_security_groups_to_attach'))
-    @patch('{0}{1}'.format(PATCH_PREFIX, '_get_subnets_to_attach'))
+    @patch(u'{0}{1}'.format(PATCH_PREFIX, '_get_iam_role_to_attach'))
+    @patch(u'{0}{1}'.format(PATCH_PREFIX, '_get_security_groups_to_attach'))
+    @patch(u'{0}{1}'.format(PATCH_PREFIX, '_get_subnets_to_attach'))
     def test_create_with_download(self,
                                   mock_subnet_attach,
                                   mock_security_groups_attach,

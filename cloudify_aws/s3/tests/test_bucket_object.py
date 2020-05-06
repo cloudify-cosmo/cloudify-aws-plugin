@@ -13,6 +13,7 @@
 # limitations under the License.
 
 # Standard Imports
+import json
 import unittest
 import datetime
 import tempfile
@@ -40,15 +41,22 @@ RESOURCE_CONFIG = {
 }
 
 
+def _dump_dict_to_unicode(value):
+    return json.loads(json.dumps(value))
+
+
 class TestS3BucketObject(TestBase):
 
     def setUp(self):
         super(TestS3BucketObject, self).setUp()
+        bucket_config = {
+            BUCKET: 'test_bucket'
+        }
         self.resource_config = RESOURCE_CONFIG
         self.resource_config['resource_config']['kwargs'] = \
-            {
-                BUCKET: 'test_bucket'
-            }
+            _dump_dict_to_unicode(
+                bucket_config
+            )
         self.ctx = self.get_mock_ctx(test_name="Backet",
                                      test_properties=self.resource_config)
 
@@ -72,8 +80,8 @@ class TestS3BucketObject(TestBase):
 
         value = \
             {
-                u'AcceptRanges': 'bytes',
-                u'ContentType': 'binary/octet-stream',
+                'AcceptRanges': 'bytes',
+                'ContentType': 'binary/octet-stream',
                 'ResponseMetadata': {
                     'HTTPStatusCode': 200,
                     'RetryAttempts': 0,
@@ -95,12 +103,15 @@ class TestS3BucketObject(TestBase):
                         'content-type': 'binary/octet-stream'
                     }
                 },
-                u'LastModified': datetime.datetime(2018, 7, 10, 11, 17, 40,
-                                                   tzinfo=tzutc()),
-                u'ContentLength': 40,
-                u'ETag': '"1e3f27797e784c874944e6feb115df7a"',
-                u'Metadata': {}
+                'LastModified': datetime.datetime(
+                    2018, 7, 10, 11, 17, 40,
+                    tzinfo=tzutc()
+                ).strftime('%m/%d/%Y, %H:%M:%S'),
+                'ContentLength': 40,
+                'ETag': '"1e3f27797e784c874944e6feb115df7a"',
+                'Metadata': {}
             }
+        value = _dump_dict_to_unicode(value)
         self.bucket_object.client =\
             self.make_client_function('head_object', return_value=value)
         res = self.bucket_object.properties
@@ -120,8 +131,8 @@ class TestS3BucketObject(TestBase):
 
         value = \
             {
-                u'AcceptRanges': 'bytes',
-                u'ContentType': 'binary/octet-stream',
+                'AcceptRanges': 'bytes',
+                'ContentType': 'binary/octet-stream',
                 'ResponseMetadata': {
                     'HTTPStatusCode': 200,
                     'RetryAttempts': 0,
@@ -143,12 +154,15 @@ class TestS3BucketObject(TestBase):
                         'content-type': 'binary/octet-stream'
                     }
                 },
-                u'LastModified': datetime.datetime(2018, 7, 10, 11, 17, 40,
-                                                   tzinfo=tzutc()),
-                u'ContentLength': 40,
-                u'ETag': '"1e3f27797e784c874944e6feb115df7a"',
-                u'Metadata': {}
+                'LastModified': datetime.datetime(
+                    2018, 7, 10, 11, 17, 40,
+                    tzinfo=tzutc()
+                ).strftime('%m/%d/%Y, %H:%M:%S'),
+                'ContentLength': 40,
+                'ETag': '"1e3f27797e784c874944e6feb115df7a"',
+                'Metadata': {}
             }
+        value = _dump_dict_to_unicode(value)
         self.bucket_object.client =\
             self.make_client_function('head_object',
                                       return_value=value)
@@ -165,6 +179,7 @@ class TestS3BucketObject(TestBase):
             'Bucket': 'test_bucket',
             'Key': 'test-object.txt'
         }
+        bucket_object_request = _dump_dict_to_unicode(bucket_object_request)
         res = self.bucket_object.create(bucket_object_request)
         self.assertIsNone(res)
 
@@ -173,6 +188,7 @@ class TestS3BucketObject(TestBase):
             'Bucket': 'test_bucket',
             'Key': 'test-object.txt'
         }
+        params = _dump_dict_to_unicode(params)
         self.bucket_object.client = self.make_client_function('delete_object')
         self.bucket_object.delete(params)
         self.assertTrue(self.bucket_object.client.delete_object.called)
@@ -188,6 +204,7 @@ class TestS3BucketObject(TestBase):
             'Body': 'test/path/test-object.txt',
             'Key': 'test-object.txt'
         }
+        bucket_object_request = _dump_dict_to_unicode(bucket_object_request)
         config = self.resource_config['resource_config']['kwargs']
         config.update(**bucket_object_request)
 

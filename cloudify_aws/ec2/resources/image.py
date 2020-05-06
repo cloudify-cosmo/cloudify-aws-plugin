@@ -77,7 +77,7 @@ class EC2Image(EC2Base):
         return res
 
     def delete(self, params=None):
-        return None
+        return
 
 
 def prepare_describe_image_filter(params, iface):
