@@ -43,7 +43,7 @@ def blueprint_examples(request):
         basic_blueprint_test(
             request.param,
             dirname_param,
-            inputs='aws_region_name=ca-central-1'
+            inputs='aws_region_name=us-east-1'
         )
     except:
         cleanup_on_failure(dirname_param)
