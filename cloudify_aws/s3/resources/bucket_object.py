@@ -138,9 +138,9 @@ def _download_remote_file(file_url):
     target_file = urlopen(file_url)
 
     # Open "file_path" for write
-    with open(file_path, 'w') as fh:
+    with open(file_path, 'wb') as fh:
         for output in _read_file_chunks(target_file):
-            fh.write(output.decode('utf-8'))
+            fh.write(output)
 
     # Return file_path to be uploaded
     return file_path
