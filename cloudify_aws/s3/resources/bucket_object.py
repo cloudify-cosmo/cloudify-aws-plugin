@@ -140,7 +140,7 @@ def _download_remote_file(file_url):
     # Open "file_path" for write
     with open(file_path, 'w') as fh:
         for output in _read_file_chunks(target_file):
-            fh.write(output)
+            fh.write(output.decode('utf-8'))
 
     # Return file_path to be uploaded
     return file_path

@@ -492,8 +492,8 @@ def _handle_password(iface):
             "'agent_config' or by a relationship to a "
             "'cloudify.nodes.aws.ec2.Keypair' node template")
     if os.path.exists(key_data):
-        with open(key_data, 'r') as outfile:
-            key_data = outfile.readlines()
+        with open(key_data) as outfile:
+            key_data = outfile.read()
     password_data = iface.get_password(
         {
             'InstanceId': ctx.instance.runtime_properties[EXTERNAL_RESOURCE_ID]

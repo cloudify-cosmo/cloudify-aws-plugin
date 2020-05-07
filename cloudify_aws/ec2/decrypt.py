@@ -44,7 +44,7 @@ def long_to_bytes(val, endianness='big'):
 
 def decrypt_password(rsa_key, password):
     # Undo the whatever-they-do to the ciphertext to get the integer
-    encryptedData = base64.b64decode(password)
+    encryptedData = base64.b64decode(password.encode('utf-8'))
     ciphertext = int(binascii.hexlify(encryptedData), 16)
 
     # Decrypt it
