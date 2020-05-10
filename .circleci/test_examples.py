@@ -24,8 +24,12 @@ from ecosystem_tests.dorkl import (
 
 SECRETS_TO_CREATE = {
     'aws_access_key_id': False,
-    'aws_secret_access_key': False
+    'aws_secret_access_key': False,
+    'kubernetes_token': False,
 }
+
+# Place holder for this secret.
+os.environ['kubernetes_token'] = ''
 
 prepare_test(secrets=SECRETS_TO_CREATE)
 
