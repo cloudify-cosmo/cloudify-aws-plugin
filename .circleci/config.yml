@@ -19,9 +19,9 @@ executors:
     docker:
       - image: circleci/python:3.6
 
-  centos7_py27:
-    docker:
-      - image: cloudifyplatform/cloudify-centos-7-wagon-builder
+  wagon_generator:
+    machine:
+      image: ubuntu-1604:201903-01
 
   cloudify-machine:
     machine:
@@ -66,8 +66,20 @@ commands:
               exit 1
             fi
 
-  generate_wagon:
+  generate_py27_wagon:
     steps:
+      - run:
+          name: Create Workspace Build directory.
+          command: mkdir -p workspace/build
+      - run:
+          name: Build 27 Wagon
+          command: |
+              git clone https://github.com/cloudify-cosmo/cloudify-wagon-build-containers.git
+              docker build -t cloudify-centos-7-wagon-builder cloudify-wagon-build-containers/centos_7
+              docker run -v ~/project/:/packaging cloudify-centos-7-wagon-builder
+      - run:
+          name: copy wagon to workspace
+          command: cp *.wgn workspace/build/
       - persist_to_workspace:
           root: workspace
           paths:
@@ -158,10 +170,10 @@ jobs:
       - check_py3_compat
 
   wagon:
-    executor: centos7_py27
+    executor: wagon_generator
     steps:
       - checkout
-      - generate_wagon
+      - generate_py27_wagon
 
   integration_tests:
     executor: cloudify-machine
