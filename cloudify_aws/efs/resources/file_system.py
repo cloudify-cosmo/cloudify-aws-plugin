@@ -16,11 +16,13 @@
     ~~~~~~~~
     AWS EFS File System interface
 """
-# Cloudify
-from cloudify_aws.common import decorators, utils
-from cloudify_aws.efs import EFSBase
-# Boto
+# Third Party imports
 from botocore.exceptions import ClientError
+
+# Local imports
+from cloudify_aws.efs import EFSBase
+from cloudify_aws.common._compat import text_type
+from cloudify_aws.common import decorators, utils
 
 RESOURCE_TYPE = 'EFS File System'
 FILESYSTEM_ID = 'FileSystemId'
@@ -115,4 +117,4 @@ def delete(ctx, iface, resource_config, **_):
     try:
         iface.delete(params)
     except ClientError as e:
-        return ctx.operation.retry(str(e))
+        return ctx.operation.retry(text_type(e))

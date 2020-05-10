@@ -16,13 +16,14 @@
     ~~~~~~~~~~~~
     AWS ELB target group
 '''
-# Cloudify
+# Third Party imports
+from botocore.exceptions import ClientError
+
+# Local imports
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.elb import ELBBase
 from cloudify_aws.common.connection import Boto3Connection
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
-# Boto
-from botocore.exceptions import ClientError
 
 RESOURCE_TYPE = 'ELB Target Group'
 TARGETGROUP_ARN = 'TargetGroupArn'
@@ -79,7 +80,7 @@ class ELBTargetGroup(ELBBase):
         .. note:
             See http://bit.ly/2pWJDtz for config details.
         '''
-        if TARGETGROUP_ARN not in params.keys():
+        if TARGETGROUP_ARN not in params:
             params.update({TARGETGROUP_ARN: self.resource_id})
         self.logger.debug('Deleting %s with parameters: %s'
                           % (self.type_name, params))
@@ -113,7 +114,7 @@ def create(ctx, iface, resource_config, **_):
         dict() if not resource_config else resource_config.copy())
     # TG attributes are only applied in modify operation.
     params.pop(GRP_ATTR, {})
-    if VPC_ID not in params.keys():
+    if VPC_ID not in params:
         targs = \
             utils.find_rels_by_node_type(
                 ctx.instance,
@@ -151,7 +152,7 @@ def modify(ctx, iface, resource_config, **_):
     params = \
         ctx.instance.runtime_properties['resource_config'] \
         or resource_config
-    if TARGETGROUP_ARN not in params.keys():
+    if TARGETGROUP_ARN not in params:
         params.update(
             {TARGETGROUP_ARN: ctx.instance.runtime_properties.get(
                 EXTERNAL_RESOURCE_ID)})

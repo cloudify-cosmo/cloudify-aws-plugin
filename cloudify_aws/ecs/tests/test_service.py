@@ -12,14 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Standard imports
 import unittest
 
+# Third party imports
 from mock import patch, MagicMock
 
-from cloudify_aws.common.tests.test_base import \
-    TestBase, mock_decorator
-from cloudify_aws.ecs.resources.service import \
-    ECSService
+from cloudify_aws.common._compat import reload_module
+from cloudify_aws.common.tests.test_base import (
+    TestBase,
+    mock_decorator
+)
+
+# Local imports
+from cloudify_aws.ecs.resources.service import ECSService
 from cloudify_aws.ecs.resources import service
 
 
@@ -34,7 +40,7 @@ class TestECSService(TestBase):
             'cloudify_aws.common.decorators.aws_resource', mock_decorator
         )
         self.mock_resource.start()
-        reload(service)
+        reload_module(service)
 
     def tearDown(self):
         self.mock_resource.stop()

@@ -11,12 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# Standard imports
 import unittest
+
+# Third party imports
 from mock import patch, MagicMock
 
 from cloudify.state import current_ctx
+from cloudify_aws.common._compat import text_type
 from cloudify.exceptions import OperationRetry
 
+# Local imports
 from cloudify_aws.common.tests.test_base import TestBase, CLIENT_CONFIG
 from cloudify_aws.common.tests.test_base import DELETE_RESPONSE
 from cloudify_aws.autoscaling.resources import autoscaling_group
@@ -235,7 +241,7 @@ class TestAutoscalingGroup(TestBase):
             autoscaling_group.stop(ctx=_ctx, resource_config=None,
                                    iface=None)
         self.assertEqual(
-            str(error.exception),
+            text_type(error.exception),
             'Autoscaling Group ID# "test-autoscaling1" is deleting associated '
             'instances.'
         )
@@ -257,7 +263,7 @@ class TestAutoscalingGroup(TestBase):
             autoscaling_group.stop(ctx=_ctx, resource_config=None,
                                    iface=None)
         self.assertEqual(
-            str(error.exception),
+            text_type(error.exception),
             'Updating Autoscaling Group ID# "test-autoscaling1" parameters '
             'before deletion.'
         )

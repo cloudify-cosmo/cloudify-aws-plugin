@@ -12,14 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Standard imports
 import unittest
-from cloudify.exceptions import NonRecoverableError
-from cloudify_aws.common.tests.test_base import TestBase, mock_decorator
-from cloudify_aws.sns.resources.subscription import (SNSSubscription,
-                                                     SUB_ARN, TOPIC_ARN,
-                                                     CONFIRM_AUTHENTICATED)
+
+# Third party imports
 from mock import patch, MagicMock
+
+from cloudify.exceptions import NonRecoverableError
+
+# local imports
+from cloudify_aws.common._compat import reload_module
 from cloudify_aws.sns.resources import subscription
+from cloudify_aws.common.tests.test_base import (
+    TestBase,
+    mock_decorator
+)
+from cloudify_aws.sns.resources.subscription import (
+    SNSSubscription,
+    SUB_ARN,
+    TOPIC_ARN,
+    CONFIRM_AUTHENTICATED
+)
 
 PATCH_PREFIX = 'cloudify_aws.sns.resources.subscription.'
 
@@ -35,7 +48,7 @@ class TestSNSSubscription(TestBase):
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',
                       mock_decorator)
         mock1.start()
-        reload(subscription)
+        reload_module(subscription)
 
     def test_class_properties(self):
         effect = self.get_client_error_exception(name='S3 SNS')

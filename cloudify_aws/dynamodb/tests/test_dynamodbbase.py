@@ -12,9 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Standard imports
 import unittest
-from cloudify_aws.common.tests.test_base import TestServiceBase
+
+# Local imports
 from cloudify_aws.dynamodb import DynamoDBBase
+from cloudify_aws.common.tests.test_base import TestServiceBase
 
 
 class TestDynamoDBBase(TestServiceBase):

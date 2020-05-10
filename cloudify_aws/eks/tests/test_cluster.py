@@ -12,14 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Standard imports
 import unittest
 
+# Third party imports
 from mock import patch, MagicMock
 
-from cloudify_aws.common.tests.test_base import \
-    TestBase, mock_decorator
-from cloudify_aws.eks.resources.cluster import \
-    EKSCluster
+# Local imports
+from cloudify_aws.common._compat import reload_module
+from cloudify_aws.common.tests.test_base import (
+    TestBase,
+    mock_decorator
+)
+from cloudify_aws.eks.resources.cluster import EKSCluster
 from cloudify_aws.eks.resources import cluster
 from cloudify_aws.common import constants
 
@@ -35,7 +40,7 @@ class TestEKSCluster(TestBase):
             'cloudify_aws.common.decorators.aws_resource', mock_decorator
         )
         self.mock_resource.start()
-        reload(cluster)
+        reload_module(cluster)
 
     def tearDown(self):
         self.mock_resource.stop()

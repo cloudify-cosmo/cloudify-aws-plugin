@@ -12,16 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cloudify_aws.rds.resources import instance_read_replica
-from botocore.exceptions import UnknownServiceError
-
-from cloudify.exceptions import NonRecoverableError
-
-from mock import patch, MagicMock
+# Standard imports
 import unittest
 
-from cloudify.state import current_ctx
+# Third party imports
+from mock import patch, MagicMock
+from botocore.exceptions import UnknownServiceError
 
+from cloudify.state import current_ctx
+from cloudify.exceptions import NonRecoverableError
+
+# Local imports
+from cloudify_aws.common._compat import text_type
+from cloudify_aws.rds.resources import instance_read_replica
 from cloudify_aws.common.tests.test_base import TestBase, CLIENT_CONFIG
 from cloudify_aws.common.tests.test_base import DELETE_RESPONSE
 
@@ -94,7 +97,7 @@ class TestRDSInstanceReadReplica(TestBase):
             )
 
         self.assertEqual(
-            str(error.exception),
+            text_type(error.exception),
             "Unknown service: 'rds'. Valid service names are: ['rds']"
         )
 
@@ -277,7 +280,7 @@ class TestRDSInstanceReadReplica(TestBase):
                 ctx=_ctx, resource_config=None, iface=None
             )
         self.assertEqual(
-            str(error.exception),
+            text_type(error.exception),
             (
                 'Missing required relationship inputs ' +
                 '"iam_role_type_key" and/or "iam_role_id_key".'

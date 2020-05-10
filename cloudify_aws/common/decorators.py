@@ -22,14 +22,16 @@
 import sys
 
 # Third party imports
-from cloudify.decorators import operation
-from cloudify import ctx
-from cloudify.exceptions import (OperationRetry, NonRecoverableError)
-from cloudify.utils import exception_to_error_cause
 from botocore.exceptions import ClientError
+
+from cloudify import ctx
+from cloudify.decorators import operation
+from cloudify.utils import exception_to_error_cause
+from cloudify.exceptions import OperationRetry, NonRecoverableError
 
 # Local imports
 from cloudify_aws.common import utils
+from cloudify_aws.common._compat import text_type
 from cloudify_aws.common.constants import (
     EXTERNAL_RESOURCE_ARN as EXT_RES_ARN,
     EXTERNAL_RESOURCE_ID as EXT_RES_ID,
@@ -207,7 +209,7 @@ def aws_resource(class_decl=None,
                 ctx.instance.runtime_properties[EXT_RES_ARN] = resource_id
             # Override any runtime properties if needed
             runtime_properties = kwargs.get('runtime_properties') or dict()
-            for key, val in runtime_properties.iteritems():
+            for key, val in runtime_properties.items():
                 ctx.instance.runtime_properties[key] = val
             # Add new operation arguments
             kwargs['resource_type'] = resource_type
@@ -230,7 +232,7 @@ def aws_resource(class_decl=None,
             # Check if "aws_config" is set and has a valid "dict" type because
             #  the expected data type for "aws_config" must be "dict"
             if aws_config:
-                if type(aws_config) is dict:
+                if isinstance(aws_config, dict):
                     class_decl_attr.update({'aws_config': aws_config})
                 else:
                     # Raise an error if the provided "aws_config" is not a
@@ -242,7 +244,7 @@ def aws_resource(class_decl=None,
             # Check the value of "aws_config" which could be part of "kwargs"
             # and it has to be the same validation for the above "aws_config"
             elif aws_config_kwargs:
-                if type(aws_config_kwargs) is dict:
+                if isinstance(aws_config_kwargs, dict):
                     class_decl_attr.update({'aws_config': aws_config_kwargs})
                 else:
                     # Raise an error if the provided "aws_config_kwargs"
@@ -303,7 +305,7 @@ def aws_resource(class_decl=None,
             result = function(**kwargs)
             if ctx.operation.name == 'cloudify.interfaces.lifecycle.delete':
                 # cleanup runtime after delete
-                keys = ctx.instance.runtime_properties.keys()
+                keys = list(ctx.instance.runtime_properties.keys())
                 for key in keys:
                     del ctx.instance.runtime_properties[key]
             return result
@@ -445,7 +447,7 @@ def check_swift_resource(func):
                         causes=[exception_to_error_cause(error, tb)])
             except Exception as error:
                 error_traceback = utils.get_traceback_exception()
-                raise NonRecoverableError('{0}'.format(str(error)),
+                raise NonRecoverableError('{0}'.format(text_type(error)),
                                           causes=[error_traceback])
             return response
 

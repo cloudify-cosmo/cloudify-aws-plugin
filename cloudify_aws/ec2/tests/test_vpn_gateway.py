@@ -12,13 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Standard imports
 import unittest
-from cloudify_aws.common.tests.test_base import TestBase, mock_decorator
-from cloudify_aws.ec2.resources.vpn_gateway import EC2VPNGateway, \
-    VPNGATEWAYS, VPNGATEWAY_ID, \
-    VPC_ID, VPC_TYPE
+
+# Third party imports
 from mock import patch, MagicMock
+
+# Local imports
+from cloudify_aws.common._compat import reload_module
 from cloudify_aws.ec2.resources import vpn_gateway
+from cloudify_aws.common.tests.test_base import (
+    TestBase,
+    mock_decorator
+)
+from cloudify_aws.ec2.resources.vpn_gateway import (
+    EC2VPNGateway,
+    VPNGATEWAYS,
+    VPNGATEWAY_ID,
+    VPC_ID,
+    VPC_TYPE
+)
 
 
 class TestEC2VPNGateway(TestBase):
@@ -35,7 +48,7 @@ class TestEC2VPNGateway(TestBase):
         mock1.start()
         mock2.start()
         mock3.start()
-        reload(vpn_gateway)
+        reload_module(vpn_gateway)
 
     def test_class_properties(self):
         effect = self.get_client_error_exception(name='EC2 VPN '

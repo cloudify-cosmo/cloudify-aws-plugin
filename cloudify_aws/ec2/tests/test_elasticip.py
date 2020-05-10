@@ -12,14 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Standard imports
 import unittest
-from cloudify_aws.common.tests.test_base import TestBase, mock_decorator
-from cloudify_aws.ec2.resources.elasticip import EC2ElasticIP, \
-    ADDRESSES, ELASTICIP_ID, INSTANCE_ID, \
-    INSTANCE_TYPE_DEPRECATED, NETWORKINTERFACE_ID, NETWORKINTERFACE_TYPE, \
-    NETWORKINTERFACE_TYPE_DEPRECATED, ALLOCATION_ID
+
+# Third party imports
 from mock import patch, MagicMock
+
+# Local imports
 from cloudify_aws.ec2.resources import elasticip
+from cloudify_aws.common._compat import reload_module
+from cloudify_aws.common.tests.test_base import (
+    TestBase,
+    mock_decorator
+)
+from cloudify_aws.ec2.resources.elasticip import (
+    EC2ElasticIP,
+    ADDRESSES,
+    ELASTICIP_ID,
+    INSTANCE_ID,
+    INSTANCE_TYPE_DEPRECATED,
+    NETWORKINTERFACE_ID,
+    NETWORKINTERFACE_TYPE,
+    NETWORKINTERFACE_TYPE_DEPRECATED,
+    ALLOCATION_ID
+)
 
 
 class TestEC2NetworkInterface(TestBase):
@@ -30,7 +46,7 @@ class TestEC2NetworkInterface(TestBase):
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',
                       mock_decorator)
         mock1.start()
-        reload(elasticip)
+        reload_module(elasticip)
 
     def test_class_properties(self):
         effect = self.get_client_error_exception(name='EC2 Ellastic IP')

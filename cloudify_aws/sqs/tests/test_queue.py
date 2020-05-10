@@ -12,16 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from mock import patch, MagicMock
+# Standard imports
+from __future__ import unicode_literals
 import unittest
+
+# Third party imports
+from mock import patch, MagicMock
+from botocore.exceptions import UnknownServiceError
 
 from cloudify.state import current_ctx
 
-from botocore.exceptions import UnknownServiceError
-
+# Local imports
+from cloudify_aws.common._compat import text_type
 from cloudify_aws.common.tests.test_base import TestBase, CLIENT_CONFIG
 from cloudify_aws.common.tests.test_base import DELETE_RESPONSE
-
 from cloudify_aws.sqs.resources import queue
 
 
@@ -114,7 +118,7 @@ class TestSQSQueue(TestBase):
             queue.create(ctx=_ctx, resource_config=None, iface=None)
 
         self.assertEqual(
-            str(error.exception),
+            text_type(error.exception),
             "Unknown service: 'sqs'. Valid service names are: ['rds']"
         )
 

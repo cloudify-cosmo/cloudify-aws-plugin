@@ -1,15 +1,18 @@
-# Built-in Imports
+# Standard imports
 import os
 import re
-from time import sleep
 import sys
+from time import sleep
 
-# Cloudify Imports
+# Third party imports
 from ecosystem_tests import (
     EcosystemTestBase,
     utils,
     IP_ADDRESS_REGEX,
-    PasswordFilter)
+    PasswordFilter
+)
+
+from cloudify._compat import text_type
 
 os.environ['ECOSYSTEM_SESSION_PASSWORD'] = 'admin'
 sensitive_data = [os.environ['AWS_SECRET_ACCESS_KEY'],
@@ -161,7 +164,7 @@ class TestAWS(EcosystemTestBase):
         print 'Checking AWS resource args {0} {1} {2} {3}'.format(
             resource_id, resource_type, exists, command)
 
-        if not isinstance(resource_id, basestring):
+        if not isinstance(resource_id, text_type):
             print 'Warning resource_id is {0}'.format(resource_id)
             resource_id = str(resource_id)
         sleep(1)

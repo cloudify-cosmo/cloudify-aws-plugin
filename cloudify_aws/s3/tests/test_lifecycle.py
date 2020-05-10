@@ -12,11 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Standard imports
 import unittest
-from cloudify_aws.common.tests.test_base import TestBase, mock_decorator
+
+# Third party imports
+from mock import patch, MagicMock
+
+# Local imports
+from cloudify_aws.common._compat import reload_module
 from cloudify_aws.s3.resources.lifecycle_configuration import (
     S3BucketLifecycleConfiguration, BUCKET, RULES, ID)
-from mock import patch, MagicMock
+from cloudify_aws.common.tests.test_base import TestBase, mock_decorator
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
 from cloudify_aws.s3.resources import lifecycle_configuration
 
@@ -34,7 +40,7 @@ class TestS3BucketLifecycleConfiguration(TestBase):
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',
                       mock_decorator)
         mock1.start()
-        reload(lifecycle_configuration)
+        reload_module(lifecycle_configuration)
 
     def test_class_properties(self):
         effect = self.get_client_error_exception(name='S3 Bucket')

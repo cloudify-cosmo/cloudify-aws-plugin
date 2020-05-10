@@ -12,18 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from mock import MagicMock, patch
 import unittest
 import copy
 from functools import wraps
 
-from cloudify.mocks import MockCloudifyContext
-from cloudify.state import current_ctx
-from cloudify.manager import DirtyTrackingDict
+from mock import MagicMock, patch
+
 from botocore.exceptions import UnknownServiceError
 from botocore.exceptions import ClientError
 
+from cloudify.mocks import MockCloudifyContext
+from cloudify.state import current_ctx
+from cloudify.manager import DirtyTrackingDict
+
+from cloudify_aws.common._compat import text_type
 from cloudify_aws.common import AWSResourceBase
+
 
 CLIENT_CONFIG = {
     'aws_access_key_id': 'xxx',
@@ -487,7 +491,7 @@ class TestBase(unittest.TestCase):
                 type_class.create(ctx=_ctx, resource_config=None, iface=None)
 
             self.assertEqual(
-                str(error.exception),
+                text_type(error.exception),
                 (
                     "Unknown service: '" +
                     type_name +

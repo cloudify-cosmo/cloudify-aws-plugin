@@ -16,13 +16,15 @@
     ~~~~~~~~~~~~~~
     AWS S3 Bucket interface
 """
-# Generic
+# Standard imports
 import json
 
-# Boto
+# Third Party imports
 from botocore.exceptions import ClientError, ParamValidationError
 
-# Cloudify
+
+# Local imports
+from cloudify_aws.common._compat import text_type
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.s3 import S3Base
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
@@ -109,12 +111,13 @@ def create(ctx, iface, resource_config, **_):
                 EXTERNAL_RESOURCE_ID
             )
         params[BUCKET] = bucket_name
+
     ctx.instance.runtime_properties[BUCKET] = bucket_name
     utils.update_resource_id(ctx.instance, bucket_name)
 
     # Get the policy name from either params or a relationship.
     bucket_policy = params.get(POLICY)
-    if not isinstance(bucket_policy, basestring):
+    if not isinstance(bucket_policy, text_type):
         bucket_policy = json.dumps(bucket_policy)
         params[POLICY] = bucket_policy
     ctx.instance.runtime_properties[POLICY] = bucket_policy
@@ -129,11 +132,10 @@ def delete(iface, resource_config, **_):
     """Deletes an AWS S3 Bucket Policy"""
 
     # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
+    params = dict() if not resource_config else resource_config.copy()
 
     # Add the required BUCKET parameter.
-    if BUCKET not in params.keys():
+    if BUCKET not in params:
         params.update({BUCKET: iface.resource_id})
 
     # Actually delete the resource

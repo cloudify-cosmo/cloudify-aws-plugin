@@ -12,13 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Standard imports
 import unittest
-from cloudify_aws.common.tests.test_base import TestBase, mock_decorator
-from cloudify_aws.ec2.resources.routetable import EC2RouteTable, \
-    ROUTETABLES, ROUTETABLE_ID, \
-    VPC_ID, VPC_TYPE, SUBNET_ID, SUBNET_TYPE, ASSOCIATION_ID
+
+# Third party imports
 from mock import patch, MagicMock
+
+# Local imports
+from cloudify_aws.common._compat import reload_module
 from cloudify_aws.ec2.resources import routetable
+from cloudify_aws.common.tests.test_base import (
+    TestBase,
+    mock_decorator
+)
+from cloudify_aws.ec2.resources.routetable import (
+    EC2RouteTable,
+    ROUTETABLES,
+    ROUTETABLE_ID,
+    VPC_ID,
+    VPC_TYPE,
+    SUBNET_ID,
+    SUBNET_TYPE,
+    ASSOCIATION_ID
+)
 
 
 class TestEC2RouteTable(TestBase):
@@ -32,7 +48,7 @@ class TestEC2RouteTable(TestBase):
                       mock_decorator)
         mock1.start()
         mock2.start()
-        reload(routetable)
+        reload_module(routetable)
 
     def test_class_properties(self):
         effect = self.get_client_error_exception(name='EC2 Route Table')

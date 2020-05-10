@@ -12,13 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Standard imports
 import unittest
-from cloudify_aws.common.tests.test_base import TestBase, mock_decorator
-from cloudify_aws.ec2.resources.image import EC2Image, IMAGES, IMAGE_ID, \
-    OWNERS
+
+# Third party imports
 from mock import patch, MagicMock
+
 from cloudify.exceptions import NonRecoverableError
+
+# Local imports
+from cloudify_aws.common._compat import text_type, reload_module
 from cloudify_aws.ec2.resources import image
+from cloudify_aws.common.tests.test_base import (
+    TestBase,
+    mock_decorator)
+from cloudify_aws.ec2.resources.image import (
+    EC2Image,
+    IMAGES,
+    IMAGE_ID,
+    OWNERS
+)
 
 
 class TestEC2Image(TestBase):
@@ -29,7 +42,7 @@ class TestEC2Image(TestBase):
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',
                       mock_decorator)
         mock1.start()
-        reload(image)
+        reload_module(image)
 
     def test_class_properties(self):
         effect = self.get_client_error_exception(name='EC2 Image')
@@ -43,8 +56,8 @@ class TestEC2Image(TestBase):
                                                       return_value=value)
         with self.assertRaises(NonRecoverableError) as e:
             self.image.properties
-        self.assertEqual(e.exception.message,
-                         "Found no AMIs matching provided filters.")
+        self.assertEqual(text_type(e.exception),
+                         u"Found no AMIs matching provided filters.")
 
         value = {IMAGES: [{IMAGE_ID: 'test_name'}]}
         self.image.client = self.make_client_function('describe_images',
@@ -58,8 +71,8 @@ class TestEC2Image(TestBase):
                                                       return_value=value)
         with self.assertRaises(NonRecoverableError) as e:
             self.image.status
-        self.assertEqual(e.exception.message,
-                         "Found no AMIs matching provided filters.")
+        self.assertEqual(text_type(e.exception),
+                         u"Found no AMIs matching provided filters.")
 
         value = {IMAGES: [None]}
         self.image.client = self.make_client_function('describe_images',
@@ -91,8 +104,7 @@ class TestEC2Image(TestBase):
 
     def test_delete(self):
         config = {IMAGE_ID: 'image'}
-        res = self.image.delete(config)
-        self.assertIsNone(res)
+        self.assertIsNone(self.image.delete(config))
 
 
 if __name__ == '__main__':

@@ -11,12 +11,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from mock import patch, MagicMock
-from cloudify_aws.lambda_serverless.resources import function
+
+# Standard imports
 import unittest
-from io import StringIO
-from cloudify_aws.common.tests.test_base import TestBase, mock_decorator
-from cloudify.mocks import MockCloudifyContext, MockRelationshipContext
+
+# Third party imports
+from mock import patch, MagicMock
+
+from cloudify.mocks import MockCloudifyContext
+from cloudify_aws.common._compat import StringIO
+
+# Local imports
+from cloudify_aws.common._compat import reload_module
+from cloudify_aws.lambda_serverless.resources import function
+from cloudify_aws.common.tests.test_base import (
+    TestBase,
+    mock_decorator
+)
+
 
 PATCH_PREFIX = 'cloudify_aws.lambda_serverless.resources.function.'
 # Constants
@@ -36,7 +48,7 @@ class TestLambdaFunction(TestBase):
                       mock_decorator)
         mock1.start()
         mock2.start()
-        reload(function)
+        reload_module(function)
 
     def _get_ctx(self):
         _test_name = 'test_properties'
@@ -44,9 +56,16 @@ class TestLambdaFunction(TestBase):
             'use_external_resource': False
         }
         _test_runtime_properties = {'resource_config': False}
-        return self.get_mock_ctx(_test_name, _test_node_properties,
-                                 _test_runtime_properties,
-                                 None)
+        return self.get_mock_ctx(
+            _test_name,
+            _test_node_properties,
+            _test_runtime_properties,
+            None
+        )
+
+    def _mock_function_file(self):
+        with open('/tmp/mock_function.txt', 'wb') as _file:
+            _file.write(b'test')
 
     def test_class_properties(self):
         ctx = self._get_ctx()
@@ -146,51 +165,59 @@ class TestLambdaFunction(TestBase):
             result = fun.invoke({'param': 'params'})
             self.assertEqual(result, '')
 
-    def test_create(self):
-        subnettarget = MockRelationshipContext(
-            target=MockCloudifyContext('subnet'))
-        subnettarget.target.node.type_hierarchy =\
-            ['cloudify.nodes.aws.ec2.Subnet']
+    @patch(u'{0}{1}'.format(PATCH_PREFIX, '_get_iam_role_to_attach'))
+    @patch(u'{0}{1}'.format(PATCH_PREFIX, '_get_security_groups_to_attach'))
+    @patch(u'{0}{1}'.format(PATCH_PREFIX, '_get_subnets_to_attach'))
+    def test_create(self,
+                    mock_subnet_attach,
+                    mock_security_groups_attach,
+                    mock_iam_role_attach):
         ctx = MockCloudifyContext("test_create")
-        with patch(PATCH_PREFIX + 'LambdaBase'),\
-            patch(PATCH_PREFIX + 'utils') as utils,\
-            patch(PATCH_PREFIX + 'path_exists', MagicMock(return_value=True)),\
-            patch(PATCH_PREFIX + 'open',
-                  MagicMock(return_value=StringIO(u"test"))):
+        zip_file = self._mock_function_file()
+        with patch(PATCH_PREFIX + 'LambdaBase'):
             fun = function.LambdaFunction(ctx)
             fun.logger = MagicMock()
             fun.resource_id = 'test_function'
             fake_client = self.make_client_function(
                 'create_function',
-                return_value={'FunctionArn': 'test_function_arn',
-                              'FunctionName': 'test_function'})
+                return_value={
+                    'FunctionArn': 'test_function_arn',
+                    'FunctionName': 'test_function'
+                }
+            )
             fun.client = fake_client
-            resource_config = {'VpcConfig': {'SubnetIds': []},
-                               'Code': {'ZipFile': True}}
-            utils.find_rels_by_node_type = MagicMock(
-                return_value=[subnettarget])
-            utils.get_resource_id = MagicMock(return_value='test_id')
-            utils.find_rel_by_node_type = MagicMock(return_value=subnettarget)
-            utils.get_resource_id = MagicMock(return_value='Role')
-            function.create(ctx, fun, resource_config)
-            self.assertEqual(True, resource_config['Code']['ZipFile'])
-            self.assertEqual({'SubnetIds': []},
-                             resource_config['VpcConfig'])
+            resource_config = {
+                'VpcConfig': {
+                    'SubnetIds': []
+                }, 'Code': {
+                    'ZipFile': zip_file
+                }
+            }
+            mock_iam_role_attach.return_value = ['role-1']
+            mock_security_groups_attach.return_value = ['sg-1']
+            mock_subnet_attach.return_value = ['subnet-1']
 
-    def test_create_with_download(self):
-        subnettarget = MockRelationshipContext(
-            target=MockCloudifyContext('subnet'))
-        subnettarget.target.node.type_hierarchy =\
-            ['cloudify.nodes.aws.ec2.Subnet']
+            function.create(ctx, fun, resource_config)
+            self.assertEqual(zip_file, resource_config['Code']['ZipFile'])
+            self.assertEqual(
+                {
+                    'SubnetIds': ['subnet-1'],
+                    'SecurityGroupIds': ['sg-1']
+                },
+                resource_config['VpcConfig']
+            )
+
+    @patch(u'{0}{1}'.format(PATCH_PREFIX, '_get_iam_role_to_attach'))
+    @patch(u'{0}{1}'.format(PATCH_PREFIX, '_get_security_groups_to_attach'))
+    @patch(u'{0}{1}'.format(PATCH_PREFIX, '_get_subnets_to_attach'))
+    def test_create_with_download(self,
+                                  mock_subnet_attach,
+                                  mock_security_groups_attach,
+                                  mock_iam_role_attach):
         ctx = MockCloudifyContext("test_create")
-        ctx.download_resource = MagicMock(return_value='abc')
-        with patch(PATCH_PREFIX + 'LambdaBase'),\
-            patch(PATCH_PREFIX + 'utils') as utils,\
-            patch(PATCH_PREFIX + 'path_exists',
-                  MagicMock(return_value=False)),\
-            patch(PATCH_PREFIX + 'os_remove', MagicMock(return_value=True)),\
-            patch(PATCH_PREFIX + 'open',
-                  MagicMock(return_value=StringIO(u"test"))):
+        zip_file = self._mock_function_file()
+        ctx.download_resource = MagicMock(return_value=zip_file)
+        with patch(PATCH_PREFIX + 'LambdaBase'):
             fun = function.LambdaFunction(ctx)
             fun.logger = MagicMock()
             fun.resource_id = 'test_function'
@@ -199,17 +226,26 @@ class TestLambdaFunction(TestBase):
                 return_value={'FunctionArn': 'test_function_arn',
                               'FunctionName': 'test_function'})
             fun.client = fake_client
-            resource_config = {'VpcConfig': {'SubnetIds': []},
-                               'Code': {'ZipFile': True}}
-            utils.find_rels_by_node_type = MagicMock(
-                return_value=[subnettarget])
-            utils.get_resource_id = MagicMock(return_value='test_id')
-            utils.find_rel_by_node_type = MagicMock(return_value=subnettarget)
-            utils.get_resource_id = MagicMock(return_value='Role')
+            resource_config = {
+                'VpcConfig': {
+                    'SubnetIds': []
+                }, 'Code': {
+                    'ZipFile': zip_file
+                }
+            }
+            mock_iam_role_attach.return_value = ['role-1']
+            mock_security_groups_attach.return_value = ['sg-1']
+            mock_subnet_attach.return_value = ['subnet-1']
+
             function.create(ctx, fun, resource_config)
-            self.assertEqual(True, resource_config['Code']['ZipFile'])
-            self.assertEqual({'SubnetIds': []},
-                             resource_config['VpcConfig'])
+            self.assertEqual(zip_file, resource_config['Code']['ZipFile'])
+            self.assertEqual(
+                {
+                    'SubnetIds': ['subnet-1'],
+                    'SecurityGroupIds': ['sg-1']
+                },
+                resource_config['VpcConfig']
+            )
 
     def test_delete(self):
         iface = MagicMock()

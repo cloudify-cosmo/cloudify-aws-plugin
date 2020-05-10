@@ -12,15 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Standard imports
 import unittest
-from cloudify_aws.common.tests.test_base import TestBase, mock_decorator
+
+# Third party imports
+from mock import patch, MagicMock
+
+# Local imports
+from cloudify_aws.common._compat import reload_module
+from cloudify_aws.ec2.resources import internet_gateway
+from cloudify_aws.common.tests.test_base import (
+    TestBase,
+    mock_decorator
+)
 from cloudify_aws.ec2.resources.internet_gateway import (
     EC2InternetGateway,
     INTERNETGATEWAYS,
     INTERNETGATEWAY_ID,
-    VPC_ID, VPC_TYPE)
-from mock import patch, MagicMock
-from cloudify_aws.ec2.resources import internet_gateway
+    VPC_ID,
+    VPC_TYPE
+)
 
 
 class TestEC2InternetGateway(TestBase):
@@ -35,7 +46,7 @@ class TestEC2InternetGateway(TestBase):
                       mock_decorator)
         mock1.start()
         mock2.start()
-        reload(internet_gateway)
+        reload_module(internet_gateway)
 
     def test_class_properties(self):
         effect = self.get_client_error_exception(name='EC2 Internet '

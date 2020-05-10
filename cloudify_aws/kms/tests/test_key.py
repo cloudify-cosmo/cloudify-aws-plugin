@@ -11,8 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# Standard imports
 import unittest
+
+# Third party imports
 from mock import MagicMock
+
+# Local imports
 from cloudify_aws.common.tests.test_base import CLIENT_CONFIG
 from cloudify_aws.kms.tests.test_kms import TestKMS
 from cloudify_aws.kms.resources import key

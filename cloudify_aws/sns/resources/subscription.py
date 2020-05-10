@@ -16,14 +16,16 @@
     ~~~~~~~~
     AWS SNS Subscription interface
 """
-# Cloudify
+# Standard imports
+from botocore.exceptions import ClientError
+
+# Local imports
 from cloudify.exceptions import NonRecoverableError
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.sns import SNSBase
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ARN
 from .topic import SNSTopic
-# Boto
-from botocore.exceptions import ClientError
+
 
 RESOURCE_TYPE = 'SNS Subscription'
 SUB_ARN = 'SubscriptionArn'
@@ -153,10 +155,9 @@ def start(ctx, iface, resource_config, **_):
     """Confirm an AWS SNS Subscription"""
 
     # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
+    params = dict() if not resource_config else resource_config.copy()
     # Add the required SubscriptionArn parameter.
-    if SUB_ARN not in params.keys():
+    if SUB_ARN not in params:
         arn = \
             utils.get_resource_arn(
                 ctx.node,
@@ -176,10 +177,9 @@ def delete(ctx, iface, resource_config, **_):
     """Deletes an AWS SNS Subscription"""
 
     # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
+    params = dict() if not resource_config else resource_config.copy()
     # Add the required SubscriptionArn parameter.
-    if SUB_ARN not in params.keys():
+    if SUB_ARN not in params:
         arn = \
             utils.get_resource_arn(
                 ctx.node,

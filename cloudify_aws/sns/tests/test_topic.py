@@ -12,13 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Standard imports
 import unittest
-from cloudify_aws.common.tests.test_base import TestBase, mock_decorator
-from cloudify_aws.sns.resources.topic import (SNSTopic,
-                                              SUB_ARN, TOPIC_ARN)
+
+# Third party imports
 from mock import patch, MagicMock
-from cloudify_aws.sns.resources import topic
+
 from cloudify.state import current_ctx
+
+# Local imports
+from cloudify_aws.common._compat import reload_module
+from cloudify_aws.sns.resources import topic
+from cloudify_aws.common.tests.test_base import (
+    TestBase,
+    mock_decorator
+)
+from cloudify_aws.sns.resources.topic import (
+    SNSTopic,
+    SUB_ARN,
+    TOPIC_ARN
+)
 
 PATCH_PREFIX = 'cloudify_aws.sns.resources.topic.'
 
@@ -34,7 +47,7 @@ class TestSNSTopic(TestBase):
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',
                       mock_decorator)
         mock1.start()
-        reload(topic)
+        reload_module(topic)
 
     def test_class_properties(self):
         effect = self.get_client_error_exception(name='S3 SNS')

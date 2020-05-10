@@ -26,6 +26,7 @@ from botocore.exceptions import ClientError, ParamValidationError
 from cloudify.exceptions import NonRecoverableError
 from cloudify.logs import init_cloudify_logger
 from cloudify.utils import exception_to_error_cause
+from cloudify_aws.common._compat import text_type
 
 FATAL_EXCEPTIONS = (ClientError, ParamValidationError)
 
@@ -39,7 +40,7 @@ class AWSResourceBase(object):
         self.logger = logger or init_cloudify_logger(NullHandler(),
                                                      'AWSResourceBase')
         self.client = client
-        self.resource_id = str(resource_id) if resource_id else None
+        self.resource_id = text_type(resource_id) if resource_id else None
 
     def update_resource_id(self, resource_id):
         '''Updates the resource_id value'''
@@ -100,7 +101,7 @@ class AWSResourceBase(object):
                                           "system clock is in sync with its " \
                                           "NTP server."
             raise NonRecoverableError(
-                str(message),
+                text_type(message),
                 causes=[exception_to_error_cause(error, tb)])
         else:
             if log_response:

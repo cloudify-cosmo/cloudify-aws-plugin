@@ -19,8 +19,10 @@
 # Boto
 from botocore.exceptions import ClientError
 
-# Cloudify
 from cloudify.exceptions import OperationRetry
+
+# Cloudify
+from cloudify_aws.common._compat import text_type
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.ec2 import EC2Base
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
@@ -157,7 +159,7 @@ def delete(ctx, iface, resource_config, **_):
     try:
         iface.delete(params)
     except ClientError as e:
-        if 'AuthFailure' is str(e):
+        if 'AuthFailure' is text_type(e):
             raise OperationRetry('Address has not released yet.')
         else:
             pass

@@ -1,4 +1,4 @@
-version: 2
+version: 2.1
 
 checkout:
   post:
@@ -9,36 +9,65 @@ checkout:
         git checkout -qf FETCH_HEAD
       fi
 
-jobs:
 
-  unittests:
+executors:
+  py27:
     docker:
-      - image: circleci/python:2.7.15-stretch
+      - image: circleci/python:2.7
+
+  py36:
+    docker:
+      - image: circleci/python:3.6
+
+  centos7:
+    docker:
+      - image: amd64/centos:centos7.3.1611
+
+  cloudify-machine:
+    machine:
+      image: ubuntu-1604:201903-01
+
+
+commands:
+  run_unittest:
     steps:
       - checkout
-      - run:
-          name: Download pip
-          command: curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
-      - run:
-          name: Install pip
-          command: sudo python get-pip.py
-      - run:
-          name: Install virtualenv
-          command: pip install --user virtualenv==15.1.0
-      - run:
-          name: Init virtualenv
-          command: virtualenv env && source env/bin/activate
       - run:
           name: install tox
           command: pip install --user tox
-      - run: /home/circleci/.local/bin/tox -e pep8
-      - run: /home/circleci/.local/bin/tox -e py27
+      - run:
+          name: Run Flake8
+          command: /home/circleci/.local/bin/tox -e pep8
+      - run:
+         name: Run nosetest
+         command: /home/circleci/.local/bin/tox -e nosetest
 
-  wagon:
-    docker:
-      - image: amd64/centos:centos7.3.1611
+  check_py3_compat:
     steps:
-      - checkout
+      - run:
+          name: install futurize
+          command: pip install future --user
+      - run:
+          name: find python3-incompatible code
+          command: |
+            FUTURIZE="futurize ."
+            while read line; do
+              [[ "$line" =~ ^#.* ]] && continue
+              FUTURIZE="${FUTURIZE} ${line}"
+            done<.circleci/py3fixers
+            echo "Running: $FUTURIZE"
+            $FUTURIZE>futurize_diffs
+      - run:
+          name: check that there is no python3-incompatible code
+          command: |
+            if [[ -s futurize_diffs ]]; then
+              echo "Python-3-incompatible code found"
+              cat futurize_diffs
+              exit 1
+            fi
+
+  generate_wagon:
+    steps:
       - run:
           name: Install dependencies
           command: yum -y install python-devel gcc openssl git libxslt-devel libxml2-devel openldap-devel libffi-devel openssl-devel libvirt-devel
@@ -74,17 +103,8 @@ jobs:
           paths:
             - build/*
 
-
-  cloudify-manager:
-    machine:
-      enabled: true
-      python:
-        version: pypy-2.2.1
-    environment:
-      CLOUDIFY_SSL_TRUST_ALL: true
-      IAAS: aws
+  run_integration_tests:
     steps:
-      - checkout
       - run:
           name: "Pull Submodules"
           command: |
@@ -117,12 +137,8 @@ jobs:
           command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/latest.zip
       - run: pytest -s .circleci/test_examples.py
 
-
-  release:
-    docker:
-      - image: circleci/python:2.7.15-stretch
+  release_plugin:
     steps:
-      - checkout
       - run:
           name: "Pull Submodules"
           command: |
@@ -153,16 +169,57 @@ jobs:
           at: workspace
       - run: python .circleci/package_release.py
 
+jobs:
+
+  unittests_py27:
+    executor: py27
+    steps:
+      - run_unittest
+
+  unittests_py36:
+    executor: py36
+    steps:
+      - run_unittest
+
+  py3_compat:
+    executor: py27
+    steps:
+      - checkout
+      - check_py3_compat
+
+  wagon:
+    executor: centos7
+    steps:
+      - checkout
+      - generate_wagon
+
+  integration_tests:
+    executor: cloudify-machine
+    environment:
+      CLOUDIFY_SSL_TRUST_ALL: true
+      IAAS: aws
+    steps:
+      - checkout
+      - run_integration_tests
+
+  release:
+    executor: py27
+    steps:
+      - checkout
+      - release_plugin
+
 workflows:
   version: 2
   tests:
     jobs: &all_jobs
-      - unittests
+      - py3_compat
+      - unittests_py27
+      - unittests_py36
       - wagon:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-      - cloudify-manager:
+      - integration_tests:
           requires:
             - wagon
           filters:
@@ -174,7 +231,7 @@ workflows:
               only: /master/
           requires:
             - wagon
-            - cloudify-manager
+            - integration_tests
   nightly:
     triggers:
     - schedule:

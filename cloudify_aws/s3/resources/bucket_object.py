@@ -19,16 +19,17 @@
 # Standard Imports
 import sys
 import tempfile
-import urllib
 
 # Third Party Imports
 from botocore.exceptions import ClientError
+
+from cloudify import ctx
+from cloudify_aws.common._compat import urlopen
+from cloudify.utils import exception_to_error_cause
 from cloudify.exceptions import (
     NonRecoverableError,
     HttpException,
 )
-from cloudify import ctx
-from cloudify.utils import exception_to_error_cause
 
 # Local Imports
 from cloudify_aws.common import decorators, utils
@@ -134,10 +135,10 @@ def _download_remote_file(file_url):
     _, file_path = tempfile.mkstemp()
 
     # Try to download and read file url
-    target_file = urllib.urlopen(file_url)
+    target_file = urlopen(file_url)
 
     # Open "file_path" for write
-    with open(file_path, 'w') as fh:
+    with open(file_path, 'wb') as fh:
         for output in _read_file_chunks(target_file):
             fh.write(output)
 

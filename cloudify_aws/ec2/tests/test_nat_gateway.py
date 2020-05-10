@@ -12,13 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Standard imports
 import unittest
-from cloudify_aws.common.tests.test_base import TestBase, mock_decorator
-from cloudify_aws.ec2.resources.nat_gateway import EC2NatGateway, \
-    NATGATEWAYS, NATGATEWAY_ID, SUBNET_ID, ALLOCATION_ID, SUBNET_TYPE, \
-    ELASTICIP_TYPE
+
+# Third party imports
 from mock import patch, MagicMock
+
+# Local imports
+from cloudify_aws.common._compat import reload_module
 from cloudify_aws.ec2.resources import nat_gateway
+from cloudify_aws.common.tests.test_base import (
+    TestBase,
+    mock_decorator
+)
+from cloudify_aws.ec2.resources.nat_gateway import (
+    EC2NatGateway,
+    NATGATEWAYS,
+    NATGATEWAY_ID,
+    SUBNET_ID,
+    ALLOCATION_ID,
+    SUBNET_TYPE,
+    ELASTICIP_TYPE
+)
 
 
 class TestEC2NatGateway(TestBase):
@@ -35,7 +50,7 @@ class TestEC2NatGateway(TestBase):
         mock1.start()
         mock2.start()
         mock3.start()
-        reload(nat_gateway)
+        reload_module(nat_gateway)
 
     def test_class_properties(self):
         effect = self.get_client_error_exception(name='EC2 NAT Gateway')

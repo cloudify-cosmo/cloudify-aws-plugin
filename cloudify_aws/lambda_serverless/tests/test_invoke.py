@@ -12,13 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cloudify_aws.lambda_serverless.resources import invoke
-from mock import patch, MagicMock
-
+# Standard imports
 import unittest
 
+# Third party imports
+from mock import patch, MagicMock
+
 from cloudify.manager import DirtyTrackingDict
-from cloudify_aws.common.tests.test_base import TestBase, mock_decorator
+
+# Local imports
+from cloudify_aws.common._compat import reload_module
+from cloudify_aws.lambda_serverless.resources import invoke
+from cloudify_aws.common.tests.test_base import (
+    TestBase,
+    mock_decorator
+)
 
 # Constants
 SUBNET_GROUP_I = ['cloudify.nodes.Root', 'cloudify.nodes.aws.lambda.Invoke']
@@ -40,7 +48,7 @@ class TestLambdaInvoke(TestBase):
                       mock_decorator)
         mock1.start()
         mock2.start()
-        reload(invoke)
+        reload_module(invoke)
 
     def _get_relationship_context(self, subnet_group):
         _test_name = 'test_lambda'

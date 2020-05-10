@@ -16,11 +16,12 @@
     ~~~~~~~~~~~~~~
     AWS DynamoDB Table interface
 """
+# Third party imports
+from botocore.exceptions import ClientError
+
 # Cloudify
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.dynamodb import DynamoDBBase
-# Boto
-from botocore.exceptions import ClientError
 
 RESOURCE_TYPE = 'DynamoDB Table'
 RESOURCE_NAME = 'TableName'
@@ -97,7 +98,7 @@ def delete(iface, resource_config, **_):
         dict() if not resource_config else resource_config.copy()
 
     # Add the required TableName parameter.
-    if RESOURCE_NAME not in params.keys():
+    if RESOURCE_NAME not in params:
         params.update({RESOURCE_NAME: iface.resource_id})
 
     iface.delete(params)

@@ -12,11 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Standard imports
 import unittest
+
+# Third party imports
+from mock import patch, MagicMock
+
+# local imports
+from cloudify_aws.common._compat import reload_module
 from cloudify_aws.common.tests.test_base import TestBase, mock_decorator
 from cloudify_aws.s3.resources.tagging import (
     S3BucketTagging, BUCKET, TAGSET)
-from mock import patch, MagicMock
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
 from cloudify_aws.s3.resources import tagging
 
@@ -33,7 +39,7 @@ class TestS3BucketTagging(TestBase):
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',
                       mock_decorator)
         mock1.start()
-        reload(tagging)
+        reload_module(tagging)
 
     def test_class_properties(self):
         effect = self.get_client_error_exception(name='S3 Bucket')

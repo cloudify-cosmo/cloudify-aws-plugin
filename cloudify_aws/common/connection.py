@@ -16,11 +16,10 @@
     ~~~~~~~~~~
     AWS connection
 """
-
-# Boto
+# Third party imports
 import boto3
 
-# Cloudify
+# Local imports
 from cloudify_aws.common.constants import AWS_CONFIG_PROPERTY
 
 # pylint: disable=R0903
@@ -49,7 +48,7 @@ class Boto3Connection(object):
             aws_config_whitelist.append('endpoint_url')
 
         # Delete all non-whitelisted keys
-        self.aws_config = {k: v for k, v in self.aws_config.iteritems()
+        self.aws_config = {k: v for k, v in self.aws_config.items()
                            if k in aws_config_whitelist}
 
     def client(self, service_name):

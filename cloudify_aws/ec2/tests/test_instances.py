@@ -12,16 +12,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Standard imports
 import unittest
-from cloudify_aws.common.tests.test_base import TestBase, mock_decorator
-from cloudify_aws.ec2.resources.instances import (
-    EC2Instances, INSTANCES, RESERVATIONS, INSTANCE_ID,
-    GROUP_TYPE, NETWORK_INTERFACE_TYPE, SUBNET_TYPE,
-    INSTANCE_IDS)
+
+# Third party imports
 from mock import patch, MagicMock
-from cloudify_aws.ec2.resources import instances
+
 from cloudify.state import current_ctx
 from cloudify.exceptions import OperationRetry
+
+# Local imports
+from cloudify_aws.common._compat import reload_module
+from cloudify_aws.ec2.resources import instances
+from cloudify_aws.common.tests.test_base import (
+    TestBase,
+    mock_decorator
+)
+from cloudify_aws.ec2.resources.instances import (
+    EC2Instances,
+    INSTANCES,
+    RESERVATIONS,
+    INSTANCE_ID,
+    GROUP_TYPE,
+    NETWORK_INTERFACE_TYPE,
+    SUBNET_TYPE,
+    INSTANCE_IDS
+)
 
 
 class TestEC2Instances(TestBase):
@@ -35,7 +51,7 @@ class TestEC2Instances(TestBase):
                       mock_decorator)
         mock1.start()
         mock2.start()
-        reload(instances)
+        reload_module(instances)
 
     def test_class_properties(self):
         effect = self.get_client_error_exception(name='EC2 Instances')
@@ -213,6 +229,7 @@ class TestEC2Instances(TestBase):
                 target_type_hierarchy=['cloudify.nodes.Root',
                                        NETWORK_INTERFACE_TYPE])
         _target_ctx1.instance.runtime_properties['aws_resource_id'] = 'eni-0'
+        _target_ctx1.instance.runtime_properties['device_index'] = 0
 
         _source_ctx2, _target_ctx2, _nic_type2 = \
             self._create_common_relationships(
@@ -223,6 +240,7 @@ class TestEC2Instances(TestBase):
                 target_type_hierarchy=['cloudify.nodes.Root',
                                        NETWORK_INTERFACE_TYPE])
         _target_ctx2.instance.runtime_properties['aws_resource_id'] = 'eni-1'
+        _target_ctx2.instance.runtime_properties['device_index'] = 1
 
         _ctx = self.get_mock_ctx(
             "EC2Instances",

@@ -12,13 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Standard imports
 import unittest
-from cloudify_aws.common.tests.test_base import TestBase, mock_decorator
-from cloudify_aws.elb.resources.classic.health_check import (
-    ELBClassicHealthCheck, LB_NAME)
-from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
+
+# Third party imports
 from mock import patch, MagicMock
+
+# Local imports
+from cloudify_aws.common._compat import reload_module
+from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
 from cloudify_aws.elb.resources.classic import health_check
+from cloudify_aws.common.tests.test_base import (
+    TestBase,
+    mock_decorator
+)
+from cloudify_aws.elb.resources.classic.health_check import (
+    ELBClassicHealthCheck,
+    LB_NAME
+)
 
 PATCH_PREFIX = 'cloudify_aws.elb.resources.classic.health_check.'
 
@@ -33,7 +44,7 @@ class TestELBClassicHealthCheck(TestBase):
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',
                       mock_decorator)
         mock1.start()
-        reload(health_check)
+        reload_module(health_check)
 
     def test_class_properties(self):
         res = self.health_check.properties
@@ -52,8 +63,7 @@ class TestELBClassicHealthCheck(TestBase):
 
     def test_class_delete(self):
         params = {}
-        res = self.health_check.delete(params)
-        self.assertIsNone(res)
+        self.assertIsNone(self.health_check.delete(params))
 
     def test_prepare(self):
         ctx = self.get_mock_ctx("ELB")

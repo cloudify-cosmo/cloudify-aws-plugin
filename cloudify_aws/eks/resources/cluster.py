@@ -17,8 +17,6 @@
     ~~~~~~~~~~~~~~
     AWS EKS Cluster interface
 """
-from __future__ import unicode_literals
-
 import base64
 import json
 
@@ -26,9 +24,10 @@ import json
 import boto3
 from botocore.exceptions import ClientError
 
-# Cloudify
-from cloudify_aws.common import decorators, utils
+# Local imports
+from cloudify_aws.common._compat import text_type
 from cloudify_aws.eks import EKSBase
+from cloudify_aws.common import decorators, utils
 from cloudify.exceptions import NonRecoverableError
 
 RESOURCE_TYPE = 'EKS Cluster'
@@ -136,8 +135,8 @@ class EKSCluster(EKSBase):
             "clusters": [
                 {
                     "cluster": {
-                        "server": str(cluster_ep),
-                        "certificate-authority-data": str(cluster_cert)
+                        "server": text_type(cluster_ep),
+                        "certificate-authority-data": text_type(cluster_cert)
                     },
                     "name": "kubernetes"
                 }
@@ -221,7 +220,7 @@ def create(ctx, iface, resource_config, **_):
             ctx.instance.runtime_properties['kubeconf'] = kubeconf
         except TypeError as error:
             raise NonRecoverableError(
-                'kubeconf not json serializable {0}'.format(str(error)))
+                'kubeconf not json serializable {0}'.format(text_type(error)))
 
 
 @decorators.aws_resource(EKSCluster, RESOURCE_TYPE)

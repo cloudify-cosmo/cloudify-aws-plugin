@@ -20,10 +20,11 @@
 # Standard imports
 from re import sub
 
-# Cloudify
+# Third party imports
 from cloudify.exceptions import OperationRetry
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.autoscaling import AutoscalingBase
+
 # Boto
 from botocore.exceptions import ClientError
 
@@ -215,10 +216,9 @@ def stop(iface,
 def delete(iface, resource_config, **_):
     """Deletes an AWS Autoscaling Group"""
     # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
+    params = dict() if not resource_config else resource_config.copy()
 
-    if RESOURCE_NAME not in params.keys():
+    if RESOURCE_NAME not in params:
         params.update({RESOURCE_NAME: iface.resource_id})
 
     autoscaling_group = iface.properties

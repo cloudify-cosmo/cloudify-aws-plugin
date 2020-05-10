@@ -16,12 +16,16 @@
     ~~~~~~~~~~~~~~
     AWS Autoscaling Launch Configuration interface
 """
-# Cloudify
+# Third party imports
+from botocore.exceptions import ClientError
+
+# Cloudify imports
+from cloudify.exceptions import NonRecoverableError
+
+# Local imports
+from cloudify_aws.common._compat import text_type
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.autoscaling import AutoscalingBase
-from cloudify.exceptions import NonRecoverableError
-# Boto
-from botocore.exceptions import ClientError
 
 RESOURCE_TYPE = 'Autoscaling Launch Configuration'
 LCS = 'LaunchConfigurations'
@@ -97,9 +101,9 @@ def create(ctx, iface, resource_config, params, **_):
     # Check if the "IamInstanceProfile" is passed or not and then update it
     iam_instance_profile = params.get(IAM_INSTANCE_PROFILE)
     if iam_instance_profile:
-        if isinstance(iam_instance_profile, basestring):
+        if isinstance(iam_instance_profile, text_type):
             iam_instance_profile = iam_instance_profile.strip()
-            params[IAM_INSTANCE_PROFILE] = str(iam_instance_profile)
+            params[IAM_INSTANCE_PROFILE] = text_type(iam_instance_profile)
         else:
             raise NonRecoverableError(
                 'Invalid {0} data type for {1}'
@@ -159,8 +163,7 @@ def create(ctx, iface, resource_config, params, **_):
 def delete(iface, resource_config, **_):
     """Deletes an AWS Autoscaling Autoscaling Launch Configuration"""
     # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-    if RESOURCE_NAME not in params.keys():
+    params = dict() if not resource_config else resource_config.copy()
+    if RESOURCE_NAME not in params:
         params.update({RESOURCE_NAME: iface.resource_id})
     iface.delete(params)

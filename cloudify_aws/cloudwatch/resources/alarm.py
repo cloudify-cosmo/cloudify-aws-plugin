@@ -16,11 +16,12 @@
     ~~~~~~~~~~~~~~
     AWS Cloudwatch Alarm interface
 """
-# Cloudify
+# Third party imports
+from botocore.exceptions import ClientError
+
+# Local imports
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.cloudwatch import AWSCloudwatchBase
-# Boto
-from botocore.exceptions import ClientError
 
 RESOURCE_TYPE = 'Cloudwatch Alarm'
 RESOURCE_NAME = 'AlarmName'
@@ -104,8 +105,7 @@ def create(ctx, iface, resource_config, **_):
 def delete(iface, resource_config, **_):
     """Deletes an AWS Cloudwatch Alarm"""
     # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-    if RESOURCE_NAMES not in params.keys():
+    params = dict() if not resource_config else resource_config.copy()
+    if RESOURCE_NAMES not in params:
         params.update({RESOURCE_NAMES: [iface.resource_id]})
     iface.delete(params)

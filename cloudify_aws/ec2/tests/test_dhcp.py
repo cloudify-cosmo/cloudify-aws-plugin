@@ -12,13 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Standard imports
 import unittest
-from cloudify_aws.common.tests.test_base import TestBase, mock_decorator
-from cloudify_aws.ec2.resources.dhcp import EC2DHCPOptions, \
-    DHCPOPTIONS, DHCPOPTIONS_ID, \
-    VPC_ID, VPC_TYPE
+
+# Third party imports
 from mock import patch, MagicMock
+
+# Local imports
+from cloudify_aws.common._compat import reload_module
 from cloudify_aws.ec2.resources import dhcp
+from cloudify_aws.common.tests.test_base import (
+    TestBase,
+    mock_decorator
+)
+from cloudify_aws.ec2.resources.dhcp import (
+    EC2DHCPOptions,
+    DHCPOPTIONS, DHCPOPTIONS_ID,
+    VPC_ID,
+    VPC_TYPE
+)
 
 
 class TestEC2DHCPOptions(TestBase):
@@ -29,7 +41,7 @@ class TestEC2DHCPOptions(TestBase):
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',
                       mock_decorator)
         mock1.start()
-        reload(dhcp)
+        reload_module(dhcp)
 
     def test_class_properties(self):
         effect = self.get_client_error_exception(name='EC2 Dhcp Options')

@@ -11,16 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from __future__ import unicode_literals
 
+# Standard imports
 import unittest
 
+# Third party imports
 from mock import patch, MagicMock
 
-from cloudify_aws.common.tests.test_base import TestBase, mock_decorator
+# Local imports
+from cloudify_aws.common._compat import reload_module
 from cloudify_aws.ec2.resources.vpn_connection import EC2VPNConnection
 from cloudify_aws.ec2.resources import vpn_connection
 from cloudify_aws.common import constants
+from cloudify_aws.common.tests.test_base import (
+    TestBase,
+    mock_decorator
+)
 
 
 class TestEC2VPNConnection(TestBase):
@@ -32,7 +38,7 @@ class TestEC2VPNConnection(TestBase):
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',
                       mock_decorator)
         mock1.start()
-        reload(vpn_connection)
+        reload_module(vpn_connection)
 
     def test_class_properties(self):
         effect = self.get_client_error_exception(

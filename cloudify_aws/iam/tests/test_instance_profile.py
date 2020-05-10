@@ -12,14 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from mock import patch, MagicMock
+# Standard imports
 import unittest
+
+# Third party imports
+from mock import patch, MagicMock
 
 from cloudify.state import current_ctx
 
-from cloudify_aws.common.tests.test_base import TestBase, CLIENT_CONFIG
-
+# Local imports
 from cloudify_aws.iam.resources import instance_profile
+from cloudify_aws.common.tests.test_base import TestBase, CLIENT_CONFIG
 
 INSTANCE_PROFILE_TH = ['cloudify.nodes.Root',
                        'cloudify.nodes.aws.iam.InstanceProfile']

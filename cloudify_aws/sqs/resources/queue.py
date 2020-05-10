@@ -16,13 +16,16 @@
     ~~~~~~~~
     AWS SQS Queue interface
 """
-# Generic
+# Standard imports
 import json
-# Cloudify
+
+# Third party imports
+from botocore.exceptions import ClientError
+
+# Local imports
+from cloudify_aws.common._compat import text_type
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.sqs import SQSBase
-# Boto
-from botocore.exceptions import ClientError
 
 RESOURCE_TYPE = 'SQS Queue'
 RESOURCE_NAME = 'QueueName'
@@ -98,7 +101,7 @@ def create(ctx, iface, resource_config, **_):
 
     queue_attributes = params.get('Attributes', {})
     queue_attributes_policy = queue_attributes.get('Policy')
-    if not isinstance(queue_attributes_policy, basestring):
+    if not isinstance(queue_attributes_policy, text_type):
         queue_attributes[POLICY] = json.dumps(queue_attributes_policy)
 
     # Actually create the resource
@@ -125,10 +128,9 @@ def delete(iface, resource_config, **_):
     """Deletes an AWS SQS Queue"""
 
     # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
+    params = dict() if not resource_config else resource_config.copy()
     # Add the required QueueUrl parameter.
-    if QUEUE_URL not in params.keys():
+    if QUEUE_URL not in params:
         params.update({QUEUE_URL: iface.resource_id})
 
     # Actually delete the resource

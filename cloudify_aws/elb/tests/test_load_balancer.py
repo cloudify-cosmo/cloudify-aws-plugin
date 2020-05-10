@@ -12,20 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Standard imports
 import unittest
+
+# Third party imports
+from mock import patch, MagicMock
 
 from cloudify.state import current_ctx
 from cloudify.exceptions import NonRecoverableError
+
+# Local imports
+from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
+from cloudify_aws.elb.resources import load_balancer
 from cloudify_aws.common.tests.test_base import TestBase, CLIENT_CONFIG
 from cloudify_aws.common.tests.test_base import DEFAULT_RUNTIME_PROPERTIES
 from cloudify_aws.common.tests.test_base import DELETE_RESPONSE
-from cloudify_aws.elb.resources.load_balancer import (ELBLoadBalancer,
-                                                      LB_ARN,
-                                                      RESOURCE_NAME,
-                                                      LB_ATTR)
-from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
-from mock import patch, MagicMock
-from cloudify_aws.elb.resources import load_balancer
+from cloudify_aws.elb.resources.load_balancer import (
+    ELBLoadBalancer,
+    LB_ARN,
+    RESOURCE_NAME,
+    LB_ATTR
+)
 
 # Constants
 LOADBALANCER_TYPE = 'cloudify.nodes.aws.elb.LoadBalancer'

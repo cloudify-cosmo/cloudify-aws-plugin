@@ -16,15 +16,18 @@
     ~~~~~~~~~~~~
     AWS ELB listener interface
 '''
-# Generic
+# Standard Imports
 import re
+
+# Third party imports
+from botocore.exceptions import ClientError
+
 # Cloudify
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.elb import ELBBase
 from cloudify_aws.common.connection import Boto3Connection
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ARN
-# Boto
-from botocore.exceptions import ClientError
+
 
 RESOURCE_TYPE = 'ELB Listener'
 LISTENER_ARN = 'ListenerArn'
@@ -83,7 +86,7 @@ class ELBListener(ELBBase):
         .. note:
             See http://bit.ly/2oWfEln for config details.
         '''
-        if LISTENER_ARN not in params.keys():
+        if LISTENER_ARN not in params:
             params.update({LISTENER_ARN: self.resource_id})
         self.logger.debug('Deleting %s with parameters: %s'
                           % (self.type_name, params))

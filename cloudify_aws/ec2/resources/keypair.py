@@ -17,15 +17,18 @@
     AWS EC2 Keypair interface
 '''
 
-# Boto
+# Third Party imports
 from botocore.exceptions import ClientError
 
 # Cloudify
 from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
 from cloudify.manager import get_rest_client
-from cloudify_aws.common import decorators, utils
+
+# Lcaol imports
+from cloudify_aws.common._compat import text_type
 from cloudify_aws.ec2 import EC2Base
+from cloudify_aws.common import decorators, utils
 from cloudify_rest_client.exceptions import CloudifyClientError
 
 RESOURCE_TYPE = 'EC2 Keypairs'
@@ -147,7 +150,7 @@ def create(ctx, iface, resource_config, **_):
                         key=secret_name,
                         value=secret_value)
             except CloudifyClientError as e:
-                raise NonRecoverableError(str(e))
+                raise NonRecoverableError(text_type(e))
 
     cleaned_create_response = \
         utils.JsonCleanuper(create_response).to_dict()
@@ -188,4 +191,4 @@ def delete(iface, resource_config, **_):
             client.secrets.delete(key=secret_name)
         except CloudifyClientError as e:
             raise NonRecoverableError(
-                'Failed to store secret: {0}.'.format(str(e)))
+                'Failed to store secret: {0}.'.format(text_type(e)))

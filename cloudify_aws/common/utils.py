@@ -17,18 +17,21 @@
     AWS helper utilities
 '''
 
-# Local imports
+# Standard imports
 import sys
-from six.moves import urllib
 import re
 import uuid
 
 # Third party imports
 import requests
 from requests import exceptions
+
 from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
 from cloudify.utils import exception_to_error_cause
+from cloudify_aws.common._compat import urljoin, text_type
+
+# Local imports
 from cloudify_aws.common import constants
 
 
@@ -64,7 +67,7 @@ def get_resource_string(
     runtime_props = instance.runtime_properties if instance else {}
     # Search instance runtime properties first, then the node properties
     value = runtime_props.get(attribute_key, props.get(property_key))
-    return str(value) if value else None
+    return text_type(value) if value else None
 
 
 def get_resource_id(node=None,
@@ -160,12 +163,14 @@ def get_ec2_vpc_resource_name(name):
 
 def update_resource_id(instance, val):
     '''Updates an instance's resource ID'''
-    instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID] = str(val)
+    instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID] = \
+        text_type(val)
 
 
 def update_resource_arn(instance, val):
     '''Updates an instance's resource ARN'''
-    instance.runtime_properties[constants.EXTERNAL_RESOURCE_ARN] = str(val)
+    instance.runtime_properties[constants.EXTERNAL_RESOURCE_ARN] = \
+        text_type(val)
 
 
 def get_parent_resource_id(node_instance,
@@ -205,7 +210,7 @@ def filter_boto_params(args, filters, preserve_none=False):
         if the value is None.
     '''
     return {
-        k: v for k, v in args.iteritems()
+        k: v for k, v in args.items()
         if k in filters and (preserve_none is True or v is not None)
     }
 
@@ -387,7 +392,7 @@ def validate_arn(arn_candidate, arn_regex=constants.ARN_REGEX):
 
 
 def get_uuid():
-    return str(uuid.uuid4())
+    return text_type(uuid.uuid4())
 
 
 class JsonCleanuper(object):
@@ -414,9 +419,8 @@ class JsonCleanuper(object):
             elif isinstance(v, dict):
                 self._cleanuped_dict(v)
             elif (not isinstance(v, int) and  # integer and bool
-                  not isinstance(v, str) and
-                  not isinstance(v, unicode)):
-                resource[k] = str(v)
+                  not isinstance(v, text_type)):
+                resource[k] = text_type(v)
 
     def _cleanuped_dict(self, resource):
         for k in resource:
@@ -427,9 +431,8 @@ class JsonCleanuper(object):
             elif isinstance(resource[k], dict):
                 self._cleanuped_dict(resource[k])
             elif (not isinstance(resource[k], int) and  # integer and bool
-                  not isinstance(resource[k], str) and
-                  not isinstance(resource[k], unicode)):
-                resource[k] = str(resource[k])
+                  not isinstance(resource[k], text_type)):
+                resource[k] = text_type(resource[k])
 
     def to_dict(self):
         return self.value
@@ -452,7 +455,7 @@ def generate_swift_access_config(auth_url, username, password):
             causes=[exception_to_error_cause(error, tb)])
 
     # Get the url which represent "endpoint_url"
-    endpoint_url = urllib.parse.urljoin(resp.headers.get('X-Storage-Url'), '/')
+    endpoint_url = urljoin(resp.headers.get('X-Storage-Url'), '/')
 
     # This represent "aws_secret_access_key" which should be used with boto3
     # client
@@ -492,7 +495,7 @@ def check_availability_zone(zone):
 def clean_params(p):
     if not isinstance(p, dict) or not p:
         return {}
-    for _k, _v in p.items():
+    for _k, _v in list(p.items()):
         if not _v:
             del p[_k]
         elif _k == 'AvailabilityZone':

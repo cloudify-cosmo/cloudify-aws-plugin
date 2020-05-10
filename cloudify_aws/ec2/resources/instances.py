@@ -17,19 +17,22 @@
     AWS EC2 Instances interface
 '''
 
-# Common
-from Crypto.PublicKey import RSA
-from collections import defaultdict
+# Standard Imports
 import json
 import os
+from collections import defaultdict
 
-# Boto
+# Third Party imports
 from botocore.exceptions import ClientError
+from Crypto.PublicKey import RSA
 
 # Cloudify
 from cloudify import compute
 from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError, OperationRetry
+
+# local imports
+from cloudify_aws.common._compat import text_type
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
 from cloudify_aws.ec2 import EC2Base
@@ -231,9 +234,8 @@ def create(ctx, iface, resource_config, **_):
     for nic in (nics_from_rels, nics_from_params):
         for i in nic:
             nics[i[NIC_ID]].update(i)
-            merged_nics = nics.values()
+            merged_nics = list(nics.values())
     del nic, nics
-
     for counter, nic in enumerate(
             sorted(merged_nics,
                    key=lambda k: k.get(DEVICE_INDEX))):
@@ -249,7 +251,7 @@ def create(ctx, iface, resource_config, **_):
     except (KeyError, IndexError) as e:
         raise NonRecoverableError(
             'Error {0}: create response has no instances: {1}'.format(
-                e.message, create_response))
+                text_type(e), create_response))
     instance_id = instance.get(INSTANCE_ID, '')
     iface.update_resource_id(instance_id)
     utils.update_resource_id(ctx.instance, instance_id)
@@ -416,8 +418,8 @@ def _handle_userdata(existing_userdata):
     elif isinstance(existing_userdata, dict) or \
             isinstance(existing_userdata, list):
         existing_userdata = json.dumps(existing_userdata)
-    elif not isinstance(existing_userdata, basestring):
-        existing_userdata = str(existing_userdata)
+    elif not isinstance(existing_userdata, text_type):
+        existing_userdata = text_type(existing_userdata)
 
     install_agent_userdata = ctx.agent.init_script()
     os_family = ctx.node.properties['os_family']
@@ -490,8 +492,8 @@ def _handle_password(iface):
             "'agent_config' or by a relationship to a "
             "'cloudify.nodes.aws.ec2.Keypair' node template")
     if os.path.exists(key_data):
-        with open(key_data, 'r') as outfile:
-            key_data = outfile.readlines()
+        with open(key_data) as outfile:
+            key_data = outfile.read()
     password_data = iface.get_password(
         {
             'InstanceId': ctx.instance.runtime_properties[EXTERNAL_RESOURCE_ID]
