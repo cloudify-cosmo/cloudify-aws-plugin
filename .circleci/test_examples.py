@@ -29,7 +29,7 @@ SECRETS_TO_CREATE = {
 }
 
 # Place holder for this secret.
-os.environ['kubernetes_token'] = ''
+os.environ['kubernetes_token'] = 'placeholder'
 
 prepare_test(secrets=SECRETS_TO_CREATE)
 
