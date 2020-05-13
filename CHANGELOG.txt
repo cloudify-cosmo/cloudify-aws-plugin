@@ -70,3 +70,9 @@
 2.3.1:
     - Upgrade Boto3 version 
     - Add EKS Support
+2.3.2:
+    - Notify users of possible NTP sync issue when authentication error occurs.
+2.3.3:
+    - Python 3 Compatibility.
+2.3.4:
+    - Update AZ regex.
