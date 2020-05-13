@@ -26,7 +26,7 @@ REGION_REGEX = (
     '^[a-z]{2}\-([a-z]{4,10}|[a-z]{3}\-[a-z]{4,10})\-[1-3]{1}$'
 )
 AVAILABILITY_ZONE_REGEX = (
-    '^[a-z]{2}\-([a-z]{4,10}|[a-z]{3}\-[a-z]{4,10})\-[1-3]{1}[a-e]{1}$'
+    '^[a-z]{2}\-([a-z]{4,10}|[a-z]{3}\-[a-z]{4,10})\-[1-3]{1}[a-z]{1}$'
 )
 
 SWIFT_NODE_PREFIX = 'cloudify.nodes.swift'
