@@ -39,11 +39,16 @@ blueprint_list = ['examples/blueprint-examples/hello-world-example/aws.yaml',
 @pytest.fixture(scope='function', params=blueprint_list)
 def blueprint_examples(request):
     dirname_param = os.path.dirname(request.param).split('/')[-1:][0]
+    if 'eks' in request.param:
+        inputs = 'aws_region_name=us-east-1 -i resource_suffix={0}'.format(
+            os.environ.get('CIRCLE_BUILD_NUM', 'tst'))
+    else:
+        inputs = 'aws_region_name=us-east-1'
     try:
         basic_blueprint_test(
             request.param,
             dirname_param,
-            inputs='aws_region_name=us-east-1'
+            inputs=inputs
         )
     except:
         cleanup_on_failure(dirname_param)
