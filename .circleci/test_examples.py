@@ -49,7 +49,7 @@ def blueprint_examples(request):
             request.param,
             test_name,
             inputs=inputs,
-            timeout=2000
+            timeout=3000
         )
     except:
         cleanup_on_failure(test_name)
