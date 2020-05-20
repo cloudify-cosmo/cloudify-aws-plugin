@@ -175,11 +175,32 @@ jobs:
       - checkout
       - generate_py27_wagon
 
-  integration_tests:
+  cf_integration_tests:
     executor: cloudify-machine
     environment:
       CLOUDIFY_SSL_TRUST_ALL: true
       IAAS: aws
+      TEST_NAME: cloudformation
+    steps:
+      - checkout
+      - run_integration_tests
+
+  eks_integration_tests:
+    executor: cloudify-machine
+    environment:
+      CLOUDIFY_SSL_TRUST_ALL: true
+      IAAS: aws
+      TEST_NAME: eks
+    steps:
+      - checkout
+      - run_integration_tests
+
+  hw_integration_tests:
+    executor: cloudify-machine
+    environment:
+      CLOUDIFY_SSL_TRUST_ALL: true
+      IAAS: aws
+      TEST_NAME: hello-world
     steps:
       - checkout
       - run_integration_tests
@@ -201,7 +222,19 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-      - integration_tests:
+      - cf_integration_tests:
+          requires:
+            - wagon
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+      - eks_integration_tests:
+          requires:
+            - wagon
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+      - hw_integration_tests:
           requires:
             - wagon
           filters:
@@ -213,7 +246,9 @@ workflows:
               only: /master/
           requires:
             - wagon
-            - integration_tests
+            - cf_integration_tests
+            - eks_integration_tests
+            - hw_integration_tests
   nightly:
     triggers:
     - schedule:
