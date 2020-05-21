@@ -85,6 +85,25 @@ commands:
           paths:
             - build/*
 
+  generate_rhel_py27_wagon:
+    steps:
+      - run:
+          name: Create Workspace Build directory.
+          command: mkdir -p workspace/build
+      - run:
+          name: Build RHEL 27 Wagon
+          command: |
+              git clone https://github.com/cloudify-cosmo/cloudify-wagon-build-containers.git
+              docker build -t cloudify-redhat-7-wagon-builder cloudify-wagon-build-containers/redhat_7 --build-arg USERNAME="RHEL_USER" --build-arg PASSWORD="RHEL_PASS"
+              docker run -v ~/project/:/packaging cloudify-redhat-7-wagon-builder
+      - run:
+          name: copy wagon to workspace
+          command: cp *.wgn workspace/build/
+      - persist_to_workspace:
+          root: workspace
+          paths:
+            - build/*
+
   run_integration_tests:
     steps:
       - run:
@@ -174,6 +193,7 @@ jobs:
     steps:
       - checkout
       - generate_py27_wagon
+      - generate_rhel_py27_wagon
 
   cf_integration_tests:
     executor: cloudify-machine
