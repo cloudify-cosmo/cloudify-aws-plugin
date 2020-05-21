@@ -74,7 +74,7 @@ commands:
       - run:
           name: Build 27 Wagon
           command: |
-              git clone https://github.com/cloudify-cosmo/cloudify-wagon-build-containers.git || true
+              git clone https://github.com/cloudify-cosmo/cloudify-wagon-build-containers.git
               docker build -t cloudify-centos-7-wagon-builder cloudify-wagon-build-containers/centos_7
               docker run -v ~/project/:/packaging cloudify-centos-7-wagon-builder
       - run:
@@ -93,7 +93,7 @@ commands:
       - run:
           name: Build RHEL 27 Wagon
           command: |
-              git clone https://github.com/cloudify-cosmo/cloudify-wagon-build-containers.git || true
+              git clone https://github.com/cloudify-cosmo/cloudify-wagon-build-containers.git
               docker build -t cloudify-redhat-7-wagon-builder cloudify-wagon-build-containers/redhat_7 --build-arg USERNAME="RHEL_USER" --build-arg PASSWORD="RHEL_PASS"
               docker run -v ~/project/:/packaging cloudify-redhat-7-wagon-builder
       - run:
@@ -193,6 +193,11 @@ jobs:
     steps:
       - checkout
       - generate_py27_wagon
+
+  rhel_wagon:
+    executor: wagon_generator
+    steps:
+      - checkout
       - generate_rhel_py27_wagon
 
   cf_integration_tests:
@@ -238,24 +243,31 @@ workflows:
       - py3_compat
       - unittests_py27
       - unittests_py36
+      - rhel_wagon:
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - wagon:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - cf_integration_tests:
           requires:
+            - rhel_wagon
             - wagon
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - eks_integration_tests:
           requires:
+            - rhel_wagon
             - wagon
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - hw_integration_tests:
           requires:
+            - rhel_wagon
             - wagon
           filters:
             branches:
@@ -265,6 +277,7 @@ workflows:
             branches:
               only: /master/
           requires:
+            - rhel_wagon
             - wagon
             - cf_integration_tests
             - eks_integration_tests
