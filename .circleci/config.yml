@@ -74,8 +74,8 @@ commands:
       - run:
           name: Build 27 Wagon
           command: |
-              git clone https://github.com/cloudify-cosmo/cloudify-wagon-build-containers.git
-              docker build -t cloudify-centos-7-wagon-builder cloudify-wagon-build-containers/centos_7
+              git clone -branch add-py2py3-wagon-builder-with-pip-path https://github.com/cloudify-cosmo/cloudify-wagon-build-containers.git
+              docker build -t cloudify-centos-7-wagon-builder cloudify-wagon-build-containers/centos_7_py2py3
               docker run -v ~/project/:/packaging cloudify-centos-7-wagon-builder
       - run:
           name: copy wagon to workspace
@@ -93,8 +93,8 @@ commands:
       - run:
           name: Build RHEL 27 Wagon
           command: |
-              git clone https://github.com/cloudify-cosmo/cloudify-wagon-build-containers.git
-              docker build -t cloudify-redhat-7-wagon-builder cloudify-wagon-build-containers/redhat_7 --build-arg USERNAME="$USERNAME" --build-arg PASSWORD="$PASSWORD"
+              git clone -branch add-py2py3-wagon-builder-with-pip-path https://github.com/cloudify-cosmo/cloudify-wagon-build-containers.git
+              docker build -t cloudify-redhat-7-wagon-builder cloudify-wagon-build-containers/redhat_7_py2py3 --build-arg USERNAME="$USERNAME" --build-arg PASSWORD="$PASSWORD"
               docker run -v ~/project/:/packaging cloudify-redhat-7-wagon-builder
       - run:
           name: copy wagon to workspace
@@ -236,6 +236,52 @@ jobs:
       - checkout
       - release_plugin
 
+#workflows:
+#  version: 2
+#  tests:
+#    jobs: &all_jobs
+#      - py3_compat
+#      - unittests_py27
+#      - unittests_py36
+#      - rhel_wagon:
+#          filters:
+#            branches:
+#              only: /([0-9\.]*\-build|master|dev)/
+#      - wagon:
+#          filters:
+#            branches:
+#              only: /([0-9\.]*\-build|master|dev)/
+#      - cf_integration_tests:
+#          requires:
+#            - rhel_wagon
+#            - wagon
+#          filters:
+#            branches:
+#              only: /([0-9\.]*\-build|master|dev)/
+#      - eks_integration_tests:
+#          requires:
+#            - rhel_wagon
+#            - wagon
+#          filters:
+#            branches:
+#              only: /([0-9\.]*\-build|master|dev)/
+#      - hw_integration_tests:
+#          requires:
+#            - rhel_wagon
+#            - wagon
+#          filters:
+#            branches:
+#              only: /([0-9\.]*\-build|master|dev)/
+#      - release:
+#          filters:
+#            branches:
+#              only: /master/
+#          requires:
+#            - rhel_wagon
+#            - wagon
+#            - cf_integration_tests
+#            - eks_integration_tests
+#            - hw_integration_tests
 workflows:
   version: 2
   tests:
@@ -243,35 +289,23 @@ workflows:
       - py3_compat
       - unittests_py27
       - unittests_py36
-      - rhel_wagon:
-          filters:
-            branches:
-              only: /([0-9\.]*\-build|master|dev)/
-      - wagon:
-          filters:
-            branches:
-              only: /([0-9\.]*\-build|master|dev)/
+      - rhel_wagon
+      - wagon
       - cf_integration_tests:
           requires:
             - rhel_wagon
             - wagon
-          filters:
-            branches:
-              only: /([0-9\.]*\-build|master|dev)/
+
       - eks_integration_tests:
           requires:
             - rhel_wagon
             - wagon
-          filters:
-            branches:
-              only: /([0-9\.]*\-build|master|dev)/
+
       - hw_integration_tests:
           requires:
             - rhel_wagon
             - wagon
-          filters:
-            branches:
-              only: /([0-9\.]*\-build|master|dev)/
+
       - release:
           filters:
             branches:
