@@ -236,52 +236,6 @@ jobs:
       - checkout
       - release_plugin
 
-#workflows:
-#  version: 2
-#  tests:
-#    jobs: &all_jobs
-#      - py3_compat
-#      - unittests_py27
-#      - unittests_py36
-#      - rhel_wagon:
-#          filters:
-#            branches:
-#              only: /([0-9\.]*\-build|master|dev)/
-#      - wagon:
-#          filters:
-#            branches:
-#              only: /([0-9\.]*\-build|master|dev)/
-#      - cf_integration_tests:
-#          requires:
-#            - rhel_wagon
-#            - wagon
-#          filters:
-#            branches:
-#              only: /([0-9\.]*\-build|master|dev)/
-#      - eks_integration_tests:
-#          requires:
-#            - rhel_wagon
-#            - wagon
-#          filters:
-#            branches:
-#              only: /([0-9\.]*\-build|master|dev)/
-#      - hw_integration_tests:
-#          requires:
-#            - rhel_wagon
-#            - wagon
-#          filters:
-#            branches:
-#              only: /([0-9\.]*\-build|master|dev)/
-#      - release:
-#          filters:
-#            branches:
-#              only: /master/
-#          requires:
-#            - rhel_wagon
-#            - wagon
-#            - cf_integration_tests
-#            - eks_integration_tests
-#            - hw_integration_tests
 workflows:
   version: 2
   tests:
@@ -289,23 +243,35 @@ workflows:
       - py3_compat
       - unittests_py27
       - unittests_py36
-      - rhel_wagon
-      - wagon
+      - rhel_wagon:
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+      - wagon:
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - cf_integration_tests:
           requires:
             - rhel_wagon
             - wagon
-
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - eks_integration_tests:
           requires:
             - rhel_wagon
             - wagon
-
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - hw_integration_tests:
           requires:
             - rhel_wagon
             - wagon
-
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - release:
           filters:
             branches:
@@ -316,6 +282,7 @@ workflows:
             - cf_integration_tests
             - eks_integration_tests
             - hw_integration_tests
+
   nightly:
     triggers:
     - schedule:
