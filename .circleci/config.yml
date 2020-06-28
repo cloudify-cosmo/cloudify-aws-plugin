@@ -27,6 +27,9 @@ executors:
     machine:
       image: ubuntu-1604:201903-01
 
+  cloudify-machine-510:
+    machine:
+      image: ubuntu-1604:201903-01
 
 commands:
   run_unittest:
@@ -104,12 +107,12 @@ commands:
           paths:
             - build/*
 
-  run_integration_tests:
+  run_integration_tests_505:
     steps:
       - run:
           name: "Pull Submodules"
           command: |
-            git submodule update --init --recursive
+            git submodule update --init --recursive --remote
       - attach_workspace:
           at: workspace
       - run:
@@ -117,7 +120,8 @@ commands:
           command: pip install -U pip
       - run:
           name: install cloudify
-          command: pip install -U cloudify==5.0.0 pytest==4.6.3 pyyaml==3.10
+          command: |
+            pip install -r test-requirements.txt
       - run:
           name: download manager docker image
           command: wget http://repository.cloudifysource.org/cloudify/5.0.0/ga-release/cloudify-docker-manager-5.0.0.tar
@@ -127,6 +131,41 @@ commands:
       - run:
           name: retain space by dumping the tar
           command: rm cloudify-docker-manager-5.0.0.tar
+      - run:
+          name: show images
+          command: docker images
+      - run:
+          name: start docker container
+          command: docker run --name cfy_manager -d --restart unless-stopped -v /sys/fs/cgroup:/sys/fs/cgroup:ro --tmpfs /run --tmpfs /run/lock --security-opt seccomp:unconfined --cap-add SYS_ADMIN --network host cloudifyplatform/premium-cloudify-manager-aio
+      - run:
+          name: install local project
+          command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/latest.zip
+      - run: pytest -s .circleci/test_examples.py
+
+  run_integration_tests_510:
+    steps:
+      - run:
+          name: "Pull Submodules"
+          command: |
+            git submodule update --init --recursive --remote
+      - attach_workspace:
+          at: workspace
+      - run:
+          name: update pip
+          command: pip install -U pip
+      - run:
+          name: install cloudify
+          command: |
+            pip install -r test-requirements.txt
+      - run:
+          name: download manager docker image
+          command:  wget http://repository.cloudifysource.org/cloudify/5.1.0/.dev1-release/cloudify-docker-manager-5.1.0.dev1.tar
+      - run:
+          name: load docker image
+          command: docker load -i cloudify-docker-manager-5.1.0.dev1.tar
+      - run:
+          name: retain space by dumping the tar
+          command: rm cloudify-docker-manager-5.1.0.dev1.tar
       - run:
           name: show images
           command: docker images
@@ -200,7 +239,7 @@ jobs:
       - checkout
       - generate_rhel_py27py36_wagon
 
-  cf_integration_tests:
+  cf_integration_tests_505:
     executor: cloudify-machine
     environment:
       CLOUDIFY_SSL_TRUST_ALL: true
@@ -208,9 +247,9 @@ jobs:
       TEST_NAME: cloudformation
     steps:
       - checkout
-      - run_integration_tests
+      - run_integration_tests_505
 
-  eks_integration_tests:
+  eks_integration_tests_505:
     executor: cloudify-machine
     environment:
       CLOUDIFY_SSL_TRUST_ALL: true
@@ -218,9 +257,9 @@ jobs:
       TEST_NAME: eks
     steps:
       - checkout
-      - run_integration_tests
+      - run_integration_tests_505
 
-  hw_integration_tests:
+  hw_integration_tests_505:
     executor: cloudify-machine
     environment:
       CLOUDIFY_SSL_TRUST_ALL: true
@@ -228,7 +267,37 @@ jobs:
       TEST_NAME: hello-world
     steps:
       - checkout
-      - run_integration_tests
+      - run_integration_tests_505
+
+  cf_integration_tests_510:
+    executor: cloudify-machine-510
+    environment:
+      CLOUDIFY_SSL_TRUST_ALL: true
+      IAAS: aws
+      TEST_NAME: cloudformation
+    steps:
+      - checkout
+      - run_integration_tests_510
+
+  eks_integration_tests_510:
+    executor: cloudify-machine-510
+    environment:
+      CLOUDIFY_SSL_TRUST_ALL: true
+      IAAS: aws
+      TEST_NAME: eks
+    steps:
+      - checkout
+      - run_integration_tests_510
+
+  hw_integration_tests_510:
+    executor: cloudify-machine-510
+    environment:
+      CLOUDIFY_SSL_TRUST_ALL: true
+      IAAS: aws
+      TEST_NAME: hello-world
+    steps:
+      - checkout
+      - run_integration_tests_510
 
   release:
     executor: py27
@@ -239,7 +308,7 @@ jobs:
 workflows:
   version: 2
   tests:
-    jobs: &all_jobs
+    jobs:
       - py3_compat
       - unittests_py27
       - unittests_py36
@@ -251,21 +320,42 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-      - cf_integration_tests:
+      - cf_integration_tests_505:
           requires:
             - rhel_wagon
             - wagon
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-      - eks_integration_tests:
+#      - eks_integration_tests_505:
+#          requires:
+#            - rhel_wagon
+#            - wagon
+#          filters:
+#            branches:
+#              only: /([0-9\.]*\-build|master|dev)/
+      - hw_integration_tests_505:
           requires:
             - rhel_wagon
             - wagon
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-      - hw_integration_tests:
+      - cf_integration_tests_510:
+          requires:
+            - rhel_wagon
+            - wagon
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+#      - eks_integration_tests_510:
+#          requires:
+#            - rhel_wagon
+#            - wagon
+#          filters:
+#            branches:
+#              only: /([0-9\.]*\-build|master|dev)/
+      - hw_integration_tests_510:
           requires:
             - rhel_wagon
             - wagon
@@ -277,11 +367,16 @@ workflows:
             branches:
               only: /master/
           requires:
+            - unittests_py27
+            - unittests_py36
             - rhel_wagon
             - wagon
-            - cf_integration_tests
-            - eks_integration_tests
-            - hw_integration_tests
+            - cf_integration_tests_505
+#            - eks_integration_tests_505
+            - hw_integration_tests_505
+            - cf_integration_tests_510
+#            - eks_integration_tests_510
+            - hw_integration_tests_510
 
   nightly:
     triggers:
@@ -291,4 +386,57 @@ workflows:
           branches:
             only:
               - master
-    jobs: *all_jobs
+    jobs:
+      - py3_compat
+      - unittests_py27
+      - unittests_py36
+      - rhel_wagon:
+        filters:
+          branches:
+            only: /([0-9\.]*\-build|master|dev)/
+      - wagon:
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+      - cf_integration_tests_505:
+          requires:
+            - rhel_wagon
+            - wagon
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+#      - eks_integration_tests_505:
+#          requires:
+#            - rhel_wagon
+#            - wagon
+#          filters:
+#            branches:
+#              only: /([0-9\.]*\-build|master|dev)/
+      - hw_integration_tests_505:
+          requires:
+            - rhel_wagon
+            - wagon
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+      - cf_integration_tests_510:
+          requires:
+            - rhel_wagon
+            - wagon
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+#            - eks_integration_tests_510:
+#                requires:
+#                  - rhel_wagon
+#                  - wagon
+#                filters:
+#                  branches:
+#                    only: /([0-9\.]*\-build|master|dev)/
+      - hw_integration_tests_505:
+          requires:
+            - rhel_wagon
+            - wagon
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
