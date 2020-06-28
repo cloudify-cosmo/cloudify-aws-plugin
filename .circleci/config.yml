@@ -315,18 +315,18 @@ workflows:
       - rhel_wagon:
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
+              only: /([0-9\.]*\-build|master|dev|add-5.1-integration-tests)/
       - wagon:
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
+              only: /([0-9\.]*\-build|master|dev|add-5.1-integration-tests)/
       - cf_integration_tests_505:
           requires:
             - rhel_wagon
             - wagon
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
+              only: /([0-9\.]*\-build|master|dev|add-5.1-integration-tests)/
 #      - eks_integration_tests_505:
 #          requires:
 #            - rhel_wagon
@@ -340,14 +340,14 @@ workflows:
             - wagon
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
+              only: /([0-9\.]*\-build|master|dev|add-5.1-integration-tests)/
       - cf_integration_tests_510:
           requires:
             - rhel_wagon
             - wagon
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
+              only: /([0-9\.]*\-build|master|dev|add-5.1-integration-tests)/
 #      - eks_integration_tests_510:
 #          requires:
 #            - rhel_wagon
@@ -361,7 +361,7 @@ workflows:
             - wagon
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
+              only: /([0-9\.]*\-build|master|dev|add-5.1-integration-tests)/
       - release:
           filters:
             branches:
