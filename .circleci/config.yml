@@ -327,13 +327,13 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-#      - eks_integration_tests_505:
-#          requires:
-#            - rhel_wagon
-#            - wagon
-#          filters:
-#            branches:
-#              only: /([0-9\.]*\-build|master|dev)/
+      - eks_integration_tests_505:
+          requires:
+            - rhel_wagon
+            - wagon
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - hw_integration_tests_505:
           requires:
             - rhel_wagon
@@ -348,13 +348,13 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-#      - eks_integration_tests_510:
-#          requires:
-#            - rhel_wagon
-#            - wagon
-#          filters:
-#            branches:
-#              only: /([0-9\.]*\-build|master|dev)/
+      - eks_integration_tests_510:
+          requires:
+            - rhel_wagon
+            - wagon
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - hw_integration_tests_510:
           requires:
             - rhel_wagon
@@ -372,10 +372,10 @@ workflows:
             - rhel_wagon
             - wagon
             - cf_integration_tests_505
-#            - eks_integration_tests_505
+            - eks_integration_tests_505
             - hw_integration_tests_505
             - cf_integration_tests_510
-#            - eks_integration_tests_510
+            - eks_integration_tests_510
             - hw_integration_tests_510
 
   nightly:
@@ -405,13 +405,13 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-#      - eks_integration_tests_505:
-#          requires:
-#            - rhel_wagon
-#            - wagon
-#          filters:
-#            branches:
-#              only: /([0-9\.]*\-build|master|dev)/
+      - eks_integration_tests_505:
+          requires:
+            - rhel_wagon
+            - wagon
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - hw_integration_tests_505:
           requires:
             - rhel_wagon
@@ -426,13 +426,13 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-#            - eks_integration_tests_510:
-#                requires:
-#                  - rhel_wagon
-#                  - wagon
-#                filters:
-#                  branches:
-#                    only: /([0-9\.]*\-build|master|dev)/
+            - eks_integration_tests_510:
+                requires:
+                  - rhel_wagon
+                  - wagon
+                filters:
+                  branches:
+                    only: /([0-9\.]*\-build|master|dev)/
       - hw_integration_tests_505:
           requires:
             - rhel_wagon
