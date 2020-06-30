@@ -315,53 +315,54 @@ workflows:
       - rhel_wagon:
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev|add-5.1-integration-tests)/
+              only: /([0-9\.]*\-build|master|dev)/
       - wagon:
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev|add-5.1-integration-tests)/
+              only: /([0-9\.]*\-build|master|dev)/
       - cf_integration_tests_505:
           requires:
             - rhel_wagon
             - wagon
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev|add-5.1-integration-tests)/
+              only: /([0-9\.]*\-build|master|dev)/
       - eks_integration_tests_505:
           requires:
             - rhel_wagon
             - wagon
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev|add-5.1-integration-tests)/
+              only: /([0-9\.]*\-build|master|dev)/
       - hw_integration_tests_505:
           requires:
             - rhel_wagon
             - wagon
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev|add-5.1-integration-tests)/
+              only: /([0-9\.]*\-build|master|dev)/
       - cf_integration_tests_510:
           requires:
             - rhel_wagon
             - wagon
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev|add-5.1-integration-tests)/
+              only: /([0-9\.]*\-build|master|dev)/
       - eks_integration_tests_510:
           requires:
             - rhel_wagon
             - wagon
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev|add-5.1-integration-tests)/
+              only: /([0-9\.]*\-build|master|dev)/
       - hw_integration_tests_510:
           requires:
             - rhel_wagon
             - wagon
+            - hw_integration_tests_505
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev|add-5.1-integration-tests)/
+              only: /([0-9\.]*\-build|master|dev)/
       - release:
           filters:
             branches:
