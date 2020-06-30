@@ -36,7 +36,14 @@ AN_WAGON = 'https://github.com/cloudify-cosmo/cloudify-ansible-plugin/' \
            'Core-py27.py36-none-linux_x86_64.wgn'.format(v=AN_VERSION)
 AN_PLUGIN = 'https://github.com/cloudify-cosmo/cloudify-ansible-plugin' \
             '/releases/download/{v}/plugin.yaml'.format(v=AN_VERSION)
-PLUGINS_TO_UPLOAD = [(UT_WAGON, UT_PLUGIN), (AN_WAGON, AN_PLUGIN)]
+K8S_VERSION = '2.8.2'
+K8S_WAGON = 'https://github.com/cloudify-cosmo/cloudify-kubernetes-plugin/' \
+            'releases/download/{v}/cloudify_kubernetes_plugin-{v}-' \
+            'centos-Core-py27.py36-none-linux_x86_64.wgn'.format(v=K8S_VERSION)
+K8S_PLUGIN = 'https://github.com/cloudify-cosmo/cloudify-kubernetes-plugin/' \
+             'releases/download/{v}/plugin.yaml'.format(v=K8S_VERSION)
+PLUGINS_TO_UPLOAD = [(UT_WAGON, UT_PLUGIN), (AN_WAGON, AN_PLUGIN),
+                     (K8S_WAGON, K8S_PLUGIN)]
 SECRETS_TO_CREATE = {
     'aws_access_key_id': False,
     'aws_secret_access_key': False,
