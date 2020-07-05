@@ -142,6 +142,21 @@ def create(ctx, iface, resource_config, **_):
         ipv6_cidr_block = ipv6_cidr_block[:-2] + '64'
         params[IPV6_CIDR_BLOCK] = ipv6_cidr_block
 
+    # check the AvailabilityZone
+    valid_zones = []
+    region_name = ctx.node.properties['client_config']['region_name']
+    aws_azs = iface.client.describe_availability_zones(
+        Filters=[{'Name': 'region-name', 'Values': [region_name]}]
+    )
+    for az in aws_azs['AvailabilityZones']:
+        zone = az['ZoneName']
+        zone_state = az['State']
+        if zone_state == 'available':
+            valid_zones.append(zone)
+    if valid_zones and params['AvailabilityZone'] not in valid_zones:
+        # take the first available
+        params['AvailabilityZone'] = valid_zones[0]
+
     # Actually create the resource
     create_response = iface.create(params)[SUBNET]
     ctx.instance.runtime_properties['create_response'] = \

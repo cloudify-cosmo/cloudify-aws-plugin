@@ -110,7 +110,9 @@ class TestEC2Subnet(TestBase):
                          config)
 
     def test_create(self):
-        ctx = self.get_mock_ctx("Subnet")
+        ctx = self.get_mock_ctx("Subnet", {'client_config': {
+            'region_name': 'aq-testzone-1'
+        }})
         config = {SUBNET_ID: 'subnet', CIDR_BLOCK: 'cidr_block',
                   VPC_ID: 'vpc'}
         self.subnet.resource_id = config[SUBNET_ID]
@@ -121,7 +123,9 @@ class TestEC2Subnet(TestBase):
                          'subnet')
 
     def test_create_with_relationships(self):
-        ctx = self.get_mock_ctx("Subnet", type_hierarchy=[VPC_TYPE])
+        ctx = self.get_mock_ctx("Subnet", test_properties={'client_config': {
+            'region_name': 'aq-testzone-1'
+        }}, type_hierarchy=[VPC_TYPE])
         config = {SUBNET_ID: 'subnet', CIDR_BLOCK: 'cidr_block'}
         self.subnet.resource_id = config[SUBNET_ID]
         iface = MagicMock()

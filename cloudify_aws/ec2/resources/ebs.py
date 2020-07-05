@@ -232,6 +232,21 @@ def create(ctx, iface, resource_config, **_):
     params = utils.clean_params(
         dict() if not resource_config else resource_config.copy())
 
+    # check the AvailabilityZone
+    valid_zones = []
+    region_name = ctx.node.properties['client_config']['region_name']
+    aws_azs = iface.client.describe_availability_zones(
+        Filters=[{'Name': 'region-name', 'Values': [region_name]}]
+    )
+    for az in aws_azs['AvailabilityZones']:
+        zone = az['ZoneName']
+        zone_state = az['State']
+        if zone_state == 'available':
+            valid_zones.append(zone)
+    if valid_zones and params['AvailabilityZone'] not in valid_zones:
+        # take the first available
+        params['AvailabilityZone'] = valid_zones[0]
+
     # Create ebs resource
     create_response = iface.create(params)
     # Check if the resource created
