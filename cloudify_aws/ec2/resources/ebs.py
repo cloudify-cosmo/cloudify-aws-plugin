@@ -18,6 +18,7 @@
 """
 # Boto
 from botocore.exceptions import ClientError
+from botocore.exceptions import CapacityNotAvailableError
 
 # Cloudify
 from cloudify.exceptions import NonRecoverableError
@@ -232,23 +233,30 @@ def create(ctx, iface, resource_config, **_):
     params = utils.clean_params(
         dict() if not resource_config else resource_config.copy())
 
-    # check the AvailabilityZone
-    valid_zones = []
+    # Actually create ebs resource
     region_name = ctx.node.properties['client_config']['region_name']
-    aws_azs = iface.client.describe_availability_zones(
-        Filters=[{'Name': 'region-name', 'Values': [region_name]}]
-    )
-    for az in aws_azs['AvailabilityZones']:
-        zone = az['ZoneName']
-        zone_state = az['State']
-        if zone_state == 'available':
-            valid_zones.append(zone)
-    if valid_zones and params['AvailabilityZone'] not in valid_zones:
-        # take the first available
-        params['AvailabilityZone'] = valid_zones[0]
-
-    # Create ebs resource
-    create_response = iface.create(params)
+    use_available_zones = params.pop('UseAvailableZones', False)
+    try:
+        create_response = iface.create(params)
+    except CapacityNotAvailableError:
+        ctx.logger.info("The Availability Zone chosen is not available")
+        if use_available_zones:
+            valid_zone = \
+                iface.get_available_zone({
+                    'Filters': [
+                        {'Name': 'region-name', 'Values': [region_name]}
+                    ]
+                })
+            if valid_zone:
+                params['AvailabilityZone'] = valid_zone
+                create_response = iface.create(params)
+            else:
+                raise NonRecoverableError(
+                    "no available Availability Zones "
+                    "in region {0}".format(region_name))
+        else:
+            raise NonRecoverableError(
+                "The Availability Zone chosen is not available")
     # Check if the resource created
     if create_response:
         ctx.instance.runtime_properties['eps_create'] =\

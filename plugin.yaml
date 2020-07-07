@@ -651,6 +651,10 @@ data_types:
         type: string
         description: The Availability Zone for the subnet.
         required: false
+      UseAvailableZones:
+        type: boolean
+        description: A boolean to choose another available zone if the one provided is not available.
+        required: false
       CidrBlock:
         type: string
         description: The IPv4 network range for the subnet, in CIDR notation.
@@ -842,6 +846,10 @@ data_types:
         type: string
         description: The Availability Zone in which to create the volume.
         required: true
+      UseAvailableZones:
+        type: boolean
+        description: A boolean to choose another available zone if the one provided is not available.
+        required: false
       Size:
         type: integer
         description: The size of the volume, in GiBs.

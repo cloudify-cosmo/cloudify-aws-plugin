@@ -18,8 +18,10 @@
 '''
 # Boto
 from botocore.exceptions import ClientError
+from botocore.exceptions import CapacityNotAvailableError
 
 # Cloudify
+from cloudify.exceptions import NonRecoverableError
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.ec2 import EC2Base
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
@@ -142,23 +144,31 @@ def create(ctx, iface, resource_config, **_):
         ipv6_cidr_block = ipv6_cidr_block[:-2] + '64'
         params[IPV6_CIDR_BLOCK] = ipv6_cidr_block
 
-    # check the AvailabilityZone
-    valid_zones = []
-    region_name = ctx.node.properties['client_config']['region_name']
-    aws_azs = iface.client.describe_availability_zones(
-        Filters=[{'Name': 'region-name', 'Values': [region_name]}]
-    )
-    for az in aws_azs['AvailabilityZones']:
-        zone = az['ZoneName']
-        zone_state = az['State']
-        if zone_state == 'available':
-            valid_zones.append(zone)
-    if valid_zones and params['AvailabilityZone'] not in valid_zones:
-        # take the first available
-        params['AvailabilityZone'] = valid_zones[0]
-
     # Actually create the resource
-    create_response = iface.create(params)[SUBNET]
+    region_name = ctx.node.properties['client_config']['region_name']
+    use_available_zones = params.pop('UseAvailableZones', False)
+    try:
+        create_response = iface.create(params)[SUBNET]
+    except CapacityNotAvailableError:
+        ctx.logger.info("The Availability Zone chosen is not available")
+        if use_available_zones:
+            valid_zone = \
+                iface.get_available_zone({
+                    'Filters': [
+                        {'Name': 'region-name', 'Values': [region_name]}
+                    ]
+                })
+            if valid_zone:
+                params['AvailabilityZone'] = valid_zone
+                create_response = iface.create(params)[SUBNET]
+            else:
+                raise NonRecoverableError(
+                    "no available Availability Zones "
+                    "in region {0}".format(region_name))
+        else:
+            raise NonRecoverableError(
+                "The Availability Zone chosen is not available")
+
     ctx.instance.runtime_properties['create_response'] = \
         utils.JsonCleanuper(create_response).to_dict()
     subnet_id = create_response.get(SUBNET_ID)
