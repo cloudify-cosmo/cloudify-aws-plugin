@@ -315,46 +315,46 @@ workflows:
       - rhel_wagon:
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
+              only: /([0-9\.]*\-build|master|dev|CY-3060-use-bundle)/
       - wagon:
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
+              only: /([0-9\.]*\-build|master|dev|CY-3060-use-bundle)/
       - cf_integration_tests_505:
           requires:
             - rhel_wagon
             - wagon
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
+              only: /([0-9\.]*\-build|master|dev|CY-3060-use-bundle)/
       - eks_integration_tests_505:
           requires:
             - rhel_wagon
             - wagon
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
+              only: /([0-9\.]*\-build|master|dev|CY-3060-use-bundle)/
       - hw_integration_tests_505:
           requires:
             - rhel_wagon
             - wagon
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
+              only: /([0-9\.]*\-build|master|dev|CY-3060-use-bundle)/
       - cf_integration_tests_510:
           requires:
             - rhel_wagon
             - wagon
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
+              only: /([0-9\.]*\-build|master|dev|CY-3060-use-bundle)/
       - eks_integration_tests_510:
           requires:
             - rhel_wagon
             - wagon
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
+              only: /([0-9\.]*\-build|master|dev|CY-3060-use-bundle)/
       - hw_integration_tests_510:
           requires:
             - rhel_wagon
@@ -362,7 +362,7 @@ workflows:
             - hw_integration_tests_505
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
+              only: /([0-9\.]*\-build|master|dev|CY-3060-use-bundle)/
       - release:
           filters:
             branches:
