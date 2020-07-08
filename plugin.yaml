@@ -2,9 +2,9 @@ plugins:
 
   aws:
     executor: central_deployment_agent
-    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/2.3.5.zip
+    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/2.4.0.zip
     package_name: cloudify-aws-plugin
-    package_version: '2.3.5'
+    package_version: '2.4.0'
 
 data_types:
 
@@ -2213,6 +2213,10 @@ node_types:
           Boto3 method. Key names must match the case that Boto3 requires.
         type: cloudify.datatypes.aws.ec2.Subnet.config
         required: false
+      use_available_zones:
+        type: boolean
+        description: A boolean to choose another available zone if the one provided is not available.
+        required: false
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
@@ -2778,6 +2782,10 @@ node_types:
           Configuration key-value data to be passed as-is to the corresponding
           Boto3 method. Key names must match the case that Boto3 requires.
         type: cloudify.datatypes.aws.ec2.EBSVolume.config
+        required: false
+      use_available_zones:
+        type: boolean
+        description: A boolean to choose another available zone if the one provided is not available.
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:

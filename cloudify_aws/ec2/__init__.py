@@ -69,3 +69,18 @@ class EC2Base(AWSResourceBase):
         res = self.client.delete_tags(**params)
         self.logger.debug('Response: %s' % res)
         return res
+
+    def get_available_zone(self, params):
+        """method to get the first available zone given a region"""
+        self.logger.info('checking available zones given {0}'.format(params))
+        valid_zones = []
+        aws_azs = self.client.describe_availability_zones(**params)
+        for az in aws_azs['AvailabilityZones']:
+            zone = az['ZoneName']
+            zone_state = az['State']
+            if zone_state == 'available':
+                valid_zones.append(zone)
+        self.logger.info('valid zones {0}'.format(valid_zones))
+        if valid_zones and len(valid_zones) >= 1:
+            return valid_zones[0]
+        return None

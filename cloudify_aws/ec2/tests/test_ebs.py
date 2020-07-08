@@ -165,7 +165,9 @@ class TestEC2Volume(TestBase):
             ctx.instance.runtime_properties['resource_config'], config)
 
     def test_create(self):
-        ctx = self.get_mock_ctx("EBSVolume")
+        ctx = self.get_mock_ctx("EBSVolume", {'client_config': {
+            'region_name': 'aq-testzone-1'
+        }})
         config = \
             {
                 'AvailabilityZone': 'aq-testzone-1a',
