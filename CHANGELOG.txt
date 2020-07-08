@@ -68,7 +68,7 @@
 2.3.0:
     - Add new EBS relationship to attach ebs volume to EC2 instance
 2.3.1:
-    - Upgrade Boto3 version 
+    - Upgrade Boto3 version
     - Add EKS Support
 2.3.2:
     - Notify users of possible NTP sync issue when authentication error occurs.
@@ -79,3 +79,6 @@
 2.3.5:
     - Update wagon builder to py2py3 wagon.
     - Add 5.1.0 integration tests.
+2.4.0:
+    - Add AvailabilityZone Retry logic if the zone selected is not available
+

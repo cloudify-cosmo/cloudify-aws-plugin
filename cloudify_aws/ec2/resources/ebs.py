@@ -18,6 +18,7 @@
 """
 # Boto
 from botocore.exceptions import ClientError
+from botocore.exceptions import CapacityNotAvailableError
 
 # Cloudify
 from cloudify.exceptions import NonRecoverableError
@@ -232,8 +233,35 @@ def create(ctx, iface, resource_config, **_):
     params = utils.clean_params(
         dict() if not resource_config else resource_config.copy())
 
-    # Create ebs resource
-    create_response = iface.create(params)
+    # Actually create ebs resource
+    region_name = ctx.node.properties['client_config']['region_name']
+    use_available_zones = ctx.node.properties.get('use_available_zones', False)
+    try:
+        create_response = iface.create(params)
+    except CapacityNotAvailableError:
+        if use_available_zones:
+            ctx.logger.warn(
+                "The Availability Zone chosen {0} "
+                "is not available".format(params['AvailabilityZone']))
+            valid_zone = \
+                iface.get_available_zone({
+                    'Filters': [
+                        {'Name': 'region-name', 'Values': [region_name]}
+                    ]
+                })
+            if valid_zone:
+                ctx.logger.info(
+                    "using {0} Availability Zone instead".format(valid_zone))
+                params['AvailabilityZone'] = valid_zone
+                create_response = iface.create(params)
+            else:
+                raise NonRecoverableError(
+                    "no available Availability Zones "
+                    "in region {0}".format(region_name))
+        else:
+            raise NonRecoverableError(
+                "The Availability Zone chosen "
+                "{0} is not available".format(params['AvailabilityZone']))
     # Check if the resource created
     if create_response:
         ctx.instance.runtime_properties['eps_create'] =\
