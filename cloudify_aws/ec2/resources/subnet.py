@@ -146,12 +146,14 @@ def create(ctx, iface, resource_config, **_):
 
     # Actually create the resource
     region_name = ctx.node.properties['client_config']['region_name']
-    use_available_zones = params.pop('UseAvailableZones', False)
+    use_available_zones = ctx.node.properties.get('use_available_zones', False)
     try:
         create_response = iface.create(params)[SUBNET]
     except CapacityNotAvailableError:
-        ctx.logger.info("The Availability Zone chosen is not available")
         if use_available_zones:
+            ctx.logger.warn(
+                "The Availability Zone chosen {0} "
+                "is not available".format(params['AvailabilityZone']))
             valid_zone = \
                 iface.get_available_zone({
                     'Filters': [
@@ -159,6 +161,8 @@ def create(ctx, iface, resource_config, **_):
                     ]
                 })
             if valid_zone:
+                ctx.logger.info(
+                    "using {0} Availability Zone instead".format(valid_zone))
                 params['AvailabilityZone'] = valid_zone
                 create_response = iface.create(params)[SUBNET]
             else:
@@ -167,7 +171,8 @@ def create(ctx, iface, resource_config, **_):
                     "in region {0}".format(region_name))
         else:
             raise NonRecoverableError(
-                "The Availability Zone chosen is not available")
+                "The Availability Zone chosen "
+                "{0} is not available".format(params['AvailabilityZone']))
 
     ctx.instance.runtime_properties['create_response'] = \
         utils.JsonCleanuper(create_response).to_dict()

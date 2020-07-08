@@ -2,9 +2,9 @@ plugins:
 
   aws:
     executor: central_deployment_agent
-    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/2.3.6.zip
+    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/2.4.0.zip
     package_name: cloudify-aws-plugin
-    package_version: '2.3.6'
+    package_version: '2.4.0'
 
 data_types:
 
@@ -651,10 +651,6 @@ data_types:
         type: string
         description: The Availability Zone for the subnet.
         required: false
-      UseAvailableZones:
-        type: boolean
-        description: A boolean to choose another available zone if the one provided is not available.
-        required: false
       CidrBlock:
         type: string
         description: The IPv4 network range for the subnet, in CIDR notation.
@@ -846,10 +842,6 @@ data_types:
         type: string
         description: The Availability Zone in which to create the volume.
         required: true
-      UseAvailableZones:
-        type: boolean
-        description: A boolean to choose another available zone if the one provided is not available.
-        required: false
       Size:
         type: integer
         description: The size of the volume, in GiBs.
@@ -2221,6 +2213,10 @@ node_types:
           Boto3 method. Key names must match the case that Boto3 requires.
         type: cloudify.datatypes.aws.ec2.Subnet.config
         required: false
+      use_available_zones:
+        type: boolean
+        description: A boolean to choose another available zone if the one provided is not available.
+        required: false
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
@@ -2786,6 +2782,10 @@ node_types:
           Configuration key-value data to be passed as-is to the corresponding
           Boto3 method. Key names must match the case that Boto3 requires.
         type: cloudify.datatypes.aws.ec2.EBSVolume.config
+        required: false
+      use_available_zones:
+        type: boolean
+        description: A boolean to choose another available zone if the one provided is not available.
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
