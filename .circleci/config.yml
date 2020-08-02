@@ -269,7 +269,7 @@ jobs:
     environment:
       CLOUDIFY_SSL_TRUST_ALL: true
       IAAS: aws
-      TEST_NAME: cloudformation
+      TEST_NAME: virtual-machine
     steps:
       - checkout
       - run_integration_tests_505

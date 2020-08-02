@@ -41,7 +41,7 @@ def blueprint_examples(request):
     test_name = os.path.dirname(request.param).split('/')[-1:][0]
     if os.environ['TEST_NAME'] not in test_name:
         return
-    if 'eks' in test_name or 'cloudformation' in test_name:
+    if 'eks' in test_name or 'virtual-machine' in test_name:
         inputs = 'aws_region_name=us-east-1 -i resource_suffix={0}'.format(
             os.environ.get('CIRCLE_BUILD_NUM', 'tst'))
     else:
