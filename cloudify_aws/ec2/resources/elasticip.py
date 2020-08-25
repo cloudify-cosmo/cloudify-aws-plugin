@@ -47,17 +47,30 @@ class EC2ElasticIP(EC2Base):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
 
+    def list(self, params=None):
+        try:
+            if params:
+                resources = self.client.describe_addresses(**params)
+            else:
+                resources = self.client.describe_addresses()
+        except ClientError:
+            return []
+        return resources.get(ADDRESSES, [])
+
     @property
     def properties(self):
         """Gets the properties of an external resource"""
         params = {ELASTICIP_IDS: [self.resource_id]}
-        try:
-            resources = \
-                self.client.describe_addresses(**params)
-        except ClientError:
-            pass
-        else:
-            return resources.get(ADDRESSES)[0] if resources else None
+        resources = self.list(params)
+        return resources[0] if resources else None
+
+    @property
+    def status(self):
+        '''Gets the status of an external resource'''
+        props = self.properties
+        if not props:
+            return None
+        return bool(props.get('AssociationId', False))
 
     def create(self, params):
         """
@@ -98,6 +111,12 @@ class EC2ElasticIP(EC2Base):
         return res
 
 
+def get_already_allocated_ip(address_list):
+    for create_response in address_list:
+        if not create_response.get('AssociationId'):
+            return create_response
+
+
 @decorators.aws_resource(resource_type=RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     """Prepares an AWS EC2 ElasticIP"""
@@ -114,7 +133,14 @@ def create(ctx, iface, resource_config, **_):
         dict() if not resource_config else resource_config.copy())
 
     # Actually create the resource
-    create_response = iface.create(params)
+    create_response = None
+    if ctx.node.properties.get('use_unassociated_addresses', False):
+        create_response = get_already_allocated_ip(iface.list())
+    if not create_response:
+        create_response = iface.create(params)
+    else:
+        ctx.instance.runtime_properties['unassociated_address'] = \
+            create_response.get(ELASTICIP_ID)
     ctx.instance.runtime_properties['create_response'] = \
         utils.JsonCleanuper(create_response).to_dict()
     elasticip_id = create_response.get(ELASTICIP_ID, '')
@@ -155,6 +181,14 @@ def delete(ctx, iface, resource_config, **_):
             del params[ALLOCATION_ID]
         except KeyError:
             pass
+
+    if ctx.node.properties.get('use_unassociated_addresses', False):
+        address = ctx.instance.runtime_properties.pop(
+            'unassociated_address', None)
+        if address:
+            ctx.logger.info('Not deleting address {address}'.format(
+                address=address))
+            return
 
     try:
         iface.delete(params)

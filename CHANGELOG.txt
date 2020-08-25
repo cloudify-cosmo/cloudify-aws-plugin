@@ -81,4 +81,5 @@
     - Add 5.1.0 integration tests.
 2.4.0:
     - Add AvailabilityZone Retry logic if the zone selected is not available
-
+2.4.1:
+    - Allow users to use already allocated IPs.

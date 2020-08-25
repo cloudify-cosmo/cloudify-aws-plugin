@@ -97,10 +97,10 @@ class TestBase(unittest.TestCase):
 
     def get_mock_ctx(self,
                      test_name,
-                     test_properties={},
-                     test_runtime_properties={},
+                     test_properties=None,
+                     test_runtime_properties=None,
                      test_relationships=None,
-                     type_hierarchy=['cloudify.nodes.Root'],
+                     type_hierarchy=None,
                      type_node='cloudify.nodes.Root',
                      ctx_operation_name=None):
 
@@ -109,6 +109,8 @@ class TestBase(unittest.TestCase):
         } if not ctx_operation_name else {
             'retry_number': 0, 'name': ctx_operation_name
         }
+        test_properties = test_properties or {}
+        test_runtime_properties = test_runtime_properties or {}
 
         ctx = MockCloudifyContext(
             node_id=test_name,
@@ -116,14 +118,13 @@ class TestBase(unittest.TestCase):
             deployment_id=test_name,
             properties=copy.deepcopy(test_properties),
             runtime_properties=self._to_DirtyTrackingDict(
-                copy.deepcopy(test_runtime_properties)
-            ),
+                copy.deepcopy(test_runtime_properties)),
             relationships=test_relationships,
             operation=operation_ctx,
         )
 
         ctx.node._type = type_node
-        ctx.node.type_hierarchy = type_hierarchy
+        ctx.node.type_hierarchy = type_hierarchy or ['cloudify.nodes.Root']
 
         return ctx
 

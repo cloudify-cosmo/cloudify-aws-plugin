@@ -2,9 +2,9 @@ plugins:
 
   aws:
     executor: central_deployment_agent
-    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/2.4.0.zip
+    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/2.4.1.zip
     package_name: cloudify-aws-plugin
-    package_version: '2.4.0'
+    package_version: '2.4.1'
 
 data_types:
 
@@ -2449,6 +2449,12 @@ node_types:
           Boto3 method. Key names must match the case that Boto3 requires.
         type: cloudify.datatypes.aws.ec2.ElasticIP.config
         required: false
+      use_unassociated_addresses:
+        description: >
+          Sometimes an IP has already been allocated,
+          but is not assigned to a NIC.
+          In order to work with limited quota, set this to true.
+        default: false
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
