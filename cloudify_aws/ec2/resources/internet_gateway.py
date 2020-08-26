@@ -19,6 +19,8 @@
 # Boto
 from botocore.exceptions import ClientError
 
+from cloudify.exceptions import OperationRetry
+
 # Cloudify
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.ec2 import EC2Base
@@ -186,4 +188,7 @@ def detach(ctx, iface, resource_config, **_):
             vpc_id or \
             targ.target.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
 
-    iface.detach(params)
+    try:
+        iface.detach(params)
+    except ClientError as e:
+        raise OperationRetry(e.message)

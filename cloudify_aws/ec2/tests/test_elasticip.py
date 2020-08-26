@@ -100,16 +100,16 @@ class TestEC2NetworkInterface(TestBase):
             res = self.elasticip.attach(value)
             self.assertEqual(res[ALLOCATION_ID], value[ALLOCATION_ID])
 
-    # def test_class_attach_eni(self):
-    #     value = {'AssociationId': 'elasticip-assos'}
-    #     config = {ALLOCATION_ID: 'elasticip-attach'}
-    #     self.elasticip.client = \
-    #         self.make_client_function('associate_address',
-    #                                   return_value=value)
-    #     with patch('cloudify_aws.ec2.resources.elasticip'
-    #                '.EC2ElasticIP.attach'):
-    #         res = self.elasticip.attach(config)
-    #         self.assertEqual(res['AssociationId'], value['AssociationId'])
+    def test_class_attach_eni(self):
+        value = {'AssociationId': 'elasticip-assos'}
+        config = {ALLOCATION_ID: 'elasticip-attach'}
+        self.elasticip.client = \
+            self.make_client_function('associate_address',
+                                      return_value=value)
+        with patch('cloudify_aws.ec2.resources.elasticip'
+                   '.EC2ElasticIP.attach'):
+            res = self.elasticip.attach(config)
+            self.assertEqual(res['AssociationId'], value['AssociationId'])
 
     def test_class_detach(self):
         params = {}
@@ -139,6 +139,76 @@ class TestEC2NetworkInterface(TestBase):
         elasticip.create(ctx=ctx, iface=iface, resource_config=config)
         self.assertEqual(self.elasticip.resource_id,
                          'elasticip')
+
+    def test_create_use_allocated(self):
+        value = {
+            ADDRESSES: [
+                {
+                    NETWORKINTERFACE_ID: 'test_name',
+                    'AssociationId': 'test_name',
+                    'AllocationId': 'test_name',
+                },
+                {
+                    NETWORKINTERFACE_ID: 'test_name2',
+                    'AssociationId': '',
+                    'AllocationId': 'test_name2'
+                }
+            ]
+        }
+        value[ADDRESSES]
+        self.elasticip.client = self.make_client_function(
+            'describe_addresses', return_value=value)
+
+        test_node_props = {'use_unassociated_addresses': True}
+        ctx = self.get_mock_ctx("PublicIp",
+                                test_properties=test_node_props)
+        config = {ELASTICIP_ID: 'elasticip', INSTANCE_ID: 'instance'}
+        self.elasticip.resource_id = config[ELASTICIP_ID]
+        iface = MagicMock()
+        iface.create = self.mock_return(config)
+        iface.list = self.mock_return(value[ADDRESSES])
+        elasticip.create(ctx=ctx, iface=iface, resource_config=config)
+        self.assertEqual(self.elasticip.resource_id, 'elasticip')
+        self.assertEqual(
+            ctx.instance.runtime_properties.get('allocation_id'),
+            'test_name2')
+
+    def test_create_use_allocated_no_allocated(self):
+        value = {
+            ADDRESSES: [
+                {
+                    NETWORKINTERFACE_ID: 'test_name',
+                    'AssociationId': 'test_name',
+                    'AllocationId': 'test_name',
+                },
+                {
+                    NETWORKINTERFACE_ID: 'test_name2',
+                    'AssociationId': 'test_name2',
+                    'AllocationId': 'test_name2'
+                }
+            ]
+        }
+
+        self.elasticip.client = self.make_client_function(
+            'describe_addresses', return_value=value)
+
+        test_node_props = {'use_unassociated_addresses': True}
+        ctx = self.get_mock_ctx("PublicIp",
+                                test_properties=test_node_props)
+        config = {
+            ELASTICIP_ID: 'elasticip',
+            INSTANCE_ID: 'instance',
+            'AllocationId': 'elasticip'
+        }
+        self.elasticip.resource_id = config[ELASTICIP_ID]
+        iface = MagicMock()
+        iface.create = self.mock_return(config)
+        iface.list = self.mock_return(value[ADDRESSES])
+        elasticip.create(ctx=ctx, iface=iface, resource_config=config)
+        self.assertEqual(self.elasticip.resource_id, 'elasticip')
+        self.assertEqual(
+            ctx.instance.runtime_properties.get('allocation_id'),
+            'elasticip')
 
     def test_create_with_relationships(self):
         ctx = self.get_mock_ctx("PublicIp",
