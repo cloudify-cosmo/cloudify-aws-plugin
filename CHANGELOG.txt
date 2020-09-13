@@ -83,3 +83,5 @@
     - Add AvailabilityZone Retry logic if the zone selected is not available
 2.4.1:
     - Allow users to use already allocated IPs.
+2.4.2:
+    - Handle Issue with Exception with no message attribute.
