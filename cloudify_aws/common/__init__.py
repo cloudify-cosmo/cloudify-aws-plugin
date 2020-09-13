@@ -29,6 +29,9 @@ from cloudify.utils import exception_to_error_cause
 from cloudify_aws.common._compat import text_type
 
 FATAL_EXCEPTIONS = (ClientError, ParamValidationError)
+NTP_NOTE = ". If you are positive that you are using the correct " \
+           "credentials, " \
+           "verify that your system clock is in sync with its NTP server."
 
 
 class AWSResourceBase(object):
@@ -95,11 +98,8 @@ class AWSResourceBase(object):
             _, _, tb = sys.exc_info()
             message = error.message
             if isinstance(error, ClientError):
-                message = error.message + ". If you are positive that you " \
-                                          "are using the correct" \
-                                          "credentials, verify that your" \
-                                          "system clock is in sync with its " \
-                                          "NTP server."
+                if hasattr(error, 'message'):
+                    message = error.message + NTP_NOTE
             raise NonRecoverableError(
                 text_type(message),
                 causes=[exception_to_error_cause(error, tb)])
