@@ -10,4 +10,4 @@ plugin_yaml = path.join(
 
 if __name__ == '__main__':
     plugin_release_with_latest(
-        'cloudify-ansible-plugin', get_plugin_yaml_version(plugin_yaml))
+        'cloudify-aws-plugin', get_plugin_yaml_version(plugin_yaml))
