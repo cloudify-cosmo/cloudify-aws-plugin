@@ -85,3 +85,5 @@
     - Allow users to use already allocated IPs.
 2.4.2:
     - Handle Issue with Exception with no message attribute.
+2.4.3:
+    - Correct build system bug.
