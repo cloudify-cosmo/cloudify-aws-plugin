@@ -242,7 +242,7 @@ commands:
             pip install -r test-requirements.txt
       - run:
           name: download manager docker image
-          command:  wget http://repository.cloudifysource.org/cloudify/5.1.0/.dev1-release/cloudify-manager-aio-docker-5.1.0.dev1.tar
+          command:  wget https://cloudify-release-eu.s3-eu-west-1.amazonaws.com/cloudify/5.1.0/.dev1-release/cloudify-manager-aio-docker-5.1.0.dev1.tar
       - run:
           name: load docker image
           command: docker load -i cloudify-manager-aio-docker-5.1.0.dev1.tar
