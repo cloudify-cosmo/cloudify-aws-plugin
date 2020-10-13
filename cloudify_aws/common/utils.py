@@ -468,9 +468,11 @@ def get_tags_list(node_prop, runtime_prop, input_prop):
     if isinstance(node_prop, list):
         tags_list = node_prop
     if isinstance(runtime_prop, list):
-        tags_list = list(set(tags_list + runtime_prop))
+        tags_list.extend(runtime_prop)
     if isinstance(input_prop, list):
-        tags_list = list(set(tags_list + input_prop))
+        tags_list.extend(input_prop)
+    tags_list = dedup_tags(tags_list)
+    cleanup_tags(tags_list)
     return tags_list
 
 
@@ -502,3 +504,12 @@ def clean_params(p):
             check_availability_zone(_v)
         del _k, _v
     return p
+
+
+def cleanup_tags(tags):
+    for tag in tags:
+        tag['Value'] = text_type(tag['Value'])
+
+
+def dedup_tags(tags):
+    return [dict(y) for y in set(tuple(t.items()) for t in tags)]

@@ -87,3 +87,5 @@
     - Handle Issue with Exception with no message attribute.
 2.4.3:
     - Correct build system bug.
+2.4.4:
+    - Handle non string tags.

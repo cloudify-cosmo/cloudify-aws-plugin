@@ -13,14 +13,15 @@
 # limitations under the License.
 
 import unittest
-from cloudify_aws.common.tests.test_base import TestBase
 from mock import MagicMock
 
-from cloudify.mocks import MockCloudifyContext
 from cloudify.state import current_ctx
+from cloudify.mocks import MockCloudifyContext
 from cloudify.exceptions import NonRecoverableError
 
 from cloudify_aws.common import utils
+from cloudify_aws.common._compat import text_type
+from cloudify_aws.common.tests.test_base import TestBase
 
 
 class TestUtils(TestBase):
@@ -316,6 +317,19 @@ class TestUtils(TestBase):
             else:
                 with self.assertRaises(NonRecoverableError):
                     utils.check_availability_zone(zone)
+
+    def test_get_tags_list(self):
+        a = [{'Key': 'foo',
+              'Value': 'bar'}]
+        b = [{'Key': 'baz',
+              'Value': 1}]
+        c = [{'Key': 'qux',
+              'Value': True}]
+        c.extend(c)
+        out = utils.get_tags_list(a, b, c)
+        self.assertTrue(
+            all([isinstance(t['Value'], text_type) for t in out]))
+        self.assertTrue(len(out) is 3)
 
 
 if __name__ == '__main__':
