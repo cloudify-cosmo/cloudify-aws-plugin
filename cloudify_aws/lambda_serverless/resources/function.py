@@ -83,6 +83,8 @@ class LambdaFunction(LambdaBase):
         '''
         params = params or dict()
         params.update(dict(FunctionName=self.resource_id))
+        if params.get('Payload'):
+            params['Payload'] =  _encode_payload(params['Payload'])
         self.logger.debug('Invoking %s with parameters: %s'
                           % (self.type_name, params))
         res = self.client.invoke(**params)
@@ -96,6 +98,13 @@ class LambdaFunction(LambdaBase):
               pass
         self.logger.debug('Response: %s' % res)
         return res
+
+def _encode_payload(payload):
+    if isinstance(payload, dict):
+        payload = json.dumps(payload)
+    if isinstance(payload, str):
+        return payload.encode('utf-8')
+    return payload
 
 def _get_subnets_to_attach(ctx, vpc_config):
     # Attach a Subnet Group if it exists
