@@ -81,13 +81,15 @@ class LambdaFunction(LambdaBase):
         '''
             Invokes an AWS Lambda Function.
         '''
-        params = params or dict()
-        params.update(dict(FunctionName=self.resource_id))
-        if params.get('Payload'):
-            params['Payload'] =  _encode_payload(params['Payload'])
+        invoke_params = dict()
+        invoke_params.update(params)
+        invoke_params.update(dict(FunctionName=self.resource_id))
+        if invoke_params.get('Payload'):
+            invoke_params['Payload'] = _encode_payload(
+                invoke_params['Payload'])
         self.logger.debug('Invoking %s with parameters: %s'
-                          % (self.type_name, params))
-        res = self.client.invoke(**params)
+                          % (self.type_name, invoke_params))
+        res = self.client.invoke(**invoke_params)
         if res and res.get('Payload'):
             try:
                 res['Payload'] = res['Payload'].read()
