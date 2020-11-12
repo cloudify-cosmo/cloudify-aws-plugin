@@ -16,6 +16,8 @@
     ~~~~~~~~~~~~~~~~~~~
     AWS Lambda Function interface
 '''
+import json
+
 from os import remove as os_remove
 from os.path import exists as path_exists
 # Cloudify
@@ -85,10 +87,15 @@ class LambdaFunction(LambdaBase):
                           % (self.type_name, params))
         res = self.client.invoke(**params)
         if res and res.get('Payload'):
-            res['Payload'] = res['Payload'].read()
+            try:
+                res['Payload'] = res['Payload'].read()
+                res['Payload'] = json.loads(res['Payload'].decode('utf-8'))
+                if res['Payload'].get('body'):
+                    res['Payload']['body'] = json.loads(res['Payload']['body'])
+            except json.JSONDecodeError:
+              pass
         self.logger.debug('Response: %s' % res)
         return res
-
 
 def _get_subnets_to_attach(ctx, vpc_config):
     # Attach a Subnet Group if it exists
