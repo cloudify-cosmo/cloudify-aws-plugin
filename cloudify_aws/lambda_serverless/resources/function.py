@@ -95,12 +95,11 @@ class LambdaFunction(LambdaBase):
                 encoded_payload:
             if encoded_payload is not None:
                 invoke_params['Payload'] = encoded_payload
-        self.logger.debug('Invoking %s with parameters: %s'
-                          % (self.type_name, invoke_params))
-        res = self.client.invoke(**invoke_params)
-        payload = self._decode_payload(res.get('Payload'))
-        if payload:
-            res['Payload'] = payload
+            self.logger.debug('Invoking %s with parameters: %s'
+                              % (self.type_name, invoke_params))
+            res = self.client.invoke(**invoke_params)
+        if res and res.get('Payload'):
+            res['Payload'] = self._decode_payload(res['Payload'])
         self.logger.debug('Response: %s' % res)
         return res
 
@@ -109,23 +108,22 @@ class LambdaFunction(LambdaBase):
         if isinstance(payload, str):
             with file(payload, 'r') as payload_file:
                 yield payload_file
-        if isinstance(payload, dict):
+        elif isinstance(payload, dict):
             yield json.dumps(payload).encode(self.resource_encoding)
-        yield payload
+        else:
+            yield payload
 
     def _decode_payload(self, payload_stream):
-        payload = None
-        if payload_stream:
-            try:
-                payload = json.loads(
-                    payload_stream.read().decode(self.resource_encoding))
-                if payload.get('body'):
-                    try:
-                        payload['body'] = json.loads(payload['body'])
-                    except ValueError as e:
-                        self.logger.warn('Cannot decode body: %s' % e)
-            except (ValueError, UnicodeDecodeError) as e:
-                self.logger.warn('Cannot decode Payload: %s' % e)
+        payload = payload_stream.read().decode(self.resource_encoding)
+        try:
+            payload = json.loads(payload)
+            if payload.get('body'):
+                try:
+                    payload['body'] = json.loads(payload['body'])
+                except ValueError as e:
+                    self.logger.warn('Cannot decode body: %s' % e)
+        except (ValueError, UnicodeDecodeError) as e:
+            self.logger.warn('Cannot decode Payload: %s' % e)
         return payload
 
 
