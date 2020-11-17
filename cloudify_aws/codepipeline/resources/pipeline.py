@@ -1,0 +1,101 @@
+# Copyright (c) 2018 Cloudify Platform Ltd. All rights reserved
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#        http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+    CodePipeline.Pipeline
+    ~~~~~~~~~~~~~~
+    AWS pipeline interface
+"""
+# Third party imports
+from botocore.exceptions import ClientError
+import CodePipeline.Client.exceptions.PipelineNotFoundException
+
+# Cloudify
+from cloudify_aws.common import decorators, utils
+from cloudify_aws.codepipeline import CodePipelineBase
+
+RESOURCE_TYPE = 'CodePipeline pipeline'
+RESOURCE_NAME = 'name'
+CREATED_STATUS = 'Created'
+
+class CodePipelinePipeline(CodePipelineBase):
+    """
+        AWS CodePipeline pipeline interface
+    """
+    def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
+        CodePipelineBase.__init__(self, ctx_node, resource_id, client, logger)
+        self.type_name = RESOURCE_TYPE
+
+    @property
+    def properties(self):
+        """Gets the properties of an external resource"""
+        resources = None
+        try:
+            resources = self.client.get_pipeline_state(
+                name=self.resource_id)
+        except ClientError:
+            pass
+        return resources
+
+    @property
+    def status(self):
+        """Gets the status of an external resource"""
+        props = self.properties
+        if props:
+            if props.get('created'):
+                return CREATED_STATUS
+        return None
+
+    def create(self, params):
+        """
+            Create a new Pipeline .
+        """
+        return self.make_client_call('create_pipeline', params)
+
+    def delete(self, params=None):
+        """
+            Deletes an existing Pipeline.
+        """
+        self.logger.debug('Deleting {resource_type} with parameters:'
+                          ' {params}}'.format(
+                                        resource_type=self.type_name,
+                                        params=params))
+        self.client.delete_pipeline(**params)
+
+
+@decorators.aws_resource(CodePipelinePipeline, RESOURCE_TYPE)
+@decorators.wait_for_delete()
+def delete(iface, resource_config, **_):
+    """Deletes a Pipeline"""
+
+    # Create a copy of the resource config for clean manipulation.
+    params = \
+        dict() if not resource_config else resource_config.copy()
+
+    # Add the required name parameter.
+    if RESOURCE_NAME not in params:
+        params.update({RESOURCE_NAME: iface.resource_id})
+
+    iface.delete(params)
+
+
+@decorators.aws_resource(CodePipelinePipeline, RESOURCE_TYPE)
+@decorators.wait_for_status(status_good=[CREATED_STATUS])
+@decorators.aws_params(RESOURCE_NAME)
+def create(ctx, iface, resource_config, params, **_):
+    # Actually create the resource
+    create_response = iface.create(params)
+    resource_id = create_response['pipeline']['name']
+    iface.update_resource_id(resource_id)
+    utils.update_resource_id(ctx.instance, resource_id)
+
