@@ -1389,6 +1389,10 @@ node_types:
           Boto3 method. Key names must match the case that Boto3 requires.
         type: cloudify.datatypes.aws.lambda.Invoke.config
         required: false
+      resource_encoding:
+        description: >
+          Encoding used to encode requests and decode replies
+        default: 'utf-8'
     interfaces:
       cloudify.interfaces.lifecycle:
         configure:

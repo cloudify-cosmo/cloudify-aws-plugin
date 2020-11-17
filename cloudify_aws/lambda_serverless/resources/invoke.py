@@ -35,10 +35,14 @@ def configure(ctx, resource_config, **_):
 def attach_to(ctx, resource_config, **_):
     '''Attaches an Lambda Invoke to something else'''
     rtprops = ctx.source.instance.runtime_properties
+    resource_encoding = \
+        ctx.source.instance.runtime_properties.get('resource_encoding') or \
+        ctx.source.node.properties.get('resource_encoding')
     if utils.is_node_type(ctx.target.node,
                           'cloudify.nodes.aws.lambda.Function'):
         ctx.source.instance.runtime_properties['output'] = LambdaFunction(
             ctx.target.node, logger=ctx.logger,
+            resource_encoding=resource_encoding,
             resource_id=utils.get_resource_id(
                 node=ctx.target.node,
                 instance=ctx.target.instance,
