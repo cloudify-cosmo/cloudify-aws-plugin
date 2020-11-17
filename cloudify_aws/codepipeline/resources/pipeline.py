@@ -92,7 +92,7 @@ def delete(iface, resource_config, **_):
 @decorators.aws_resource(CodePipelinePipeline, RESOURCE_TYPE)
 @decorators.wait_for_status(status_good=[CREATED_STATUS])
 @decorators.aws_params(RESOURCE_NAME)
-def create(ctx, iface, resource_config, params, **_):
+def create(ctx, iface, params, **_):
     # Actually create the resource
     create_response = iface.create(params)
     resource_id = create_response['pipeline']['name']
