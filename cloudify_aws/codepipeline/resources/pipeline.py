@@ -18,7 +18,6 @@
 """
 # Third party imports
 from botocore.exceptions import ClientError
-import CodePipeline.Client.exceptions.PipelineNotFoundException
 
 # Cloudify
 from cloudify_aws.common import decorators, utils
@@ -28,10 +27,12 @@ RESOURCE_TYPE = 'CodePipeline pipeline'
 RESOURCE_NAME = 'name'
 CREATED_STATUS = 'Created'
 
+
 class CodePipelinePipeline(CodePipelineBase):
     """
         AWS CodePipeline pipeline interface
     """
+
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         CodePipelineBase.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
@@ -67,25 +68,26 @@ class CodePipelinePipeline(CodePipelineBase):
             Deletes an existing Pipeline.
         """
         self.logger.debug('Deleting {resource_type} with parameters:'
-                          ' {params}}'.format(
-                                        resource_type=self.type_name,
-                                        params=params))
+                          ' {params}'.format(
+                                            resource_type=self.type_name,
+                                            params=params))
         self.client.delete_pipeline(**params)
 
 
 @decorators.aws_resource(CodePipelinePipeline, RESOURCE_TYPE)
 @decorators.wait_for_delete()
-def delete(iface, resource_config, **_):
+def delete(ctx, iface, resource_config, **_):
     """Deletes a Pipeline"""
 
     # Create a copy of the resource config for clean manipulation.
     params = \
         dict() if not resource_config else resource_config.copy()
-
     # Add the required name parameter.
     if RESOURCE_NAME not in params:
-        params.update({RESOURCE_NAME: iface.resource_id})
-
+        params = {RESOURCE_NAME: iface.resource_id}
+    else:
+        params = {RESOURCE_NAME: params.get(RESOURCE_NAME)}
+    ctx.logger.info("delete params {}".format(params))
     iface.delete(params)
 
 
@@ -94,8 +96,9 @@ def delete(iface, resource_config, **_):
 @decorators.aws_params(RESOURCE_NAME)
 def create(ctx, iface, params, **_):
     # Actually create the resource
+    ctx.logger.info("create params {}".format(params))
+    params.pop(RESOURCE_NAME)
     create_response = iface.create(params)
     resource_id = create_response['pipeline']['name']
     iface.update_resource_id(resource_id)
     utils.update_resource_id(ctx.instance, resource_id)
-

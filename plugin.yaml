@@ -1076,50 +1076,6 @@ data_types:
 
   cloudify.datatypes.aws.CodePipeline.Pipeline.config:
     properties:
-      pipeline:
-        name:
-          type: string
-          required: true
-        roleArn:
-          type: string
-          required: true
-        artifactStore:
-          type:
-            type: string
-#            required: true
-          location:
-            type: string
-#            required: true
-          encryptionKey:
-            id:
-              type: string
-#              required: true
-            type:
-              type: string
-#              required: true
-        artifactStores:
-          string:
-            type:
-            location:
-              type: string
-            encryptionKey:
-              id:
-                type: string
-              #  required: true
-              type:
-                type: string
-            #    required: true
-        stages:
-          type: list
-          defautlt: []
-          description:
-            The stage in which to perform the action.
-            list of dictionarys to define the stages. See https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/codepipeline.html#CodePipeline.Client.create_pipeline
-        version:
-          type: integer
-          default: 1
-      tags:
-        default: []
       kwargs:
         description: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/codepipeline.html#CodePipeline.Client.create_pipeline
         default: {}
