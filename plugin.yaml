@@ -1074,7 +1074,7 @@ data_types:
         description: http://boto3.readthedocs.io/en/latest/reference/services/eks.html#EKS.Client.create_nodegroup
         default: {}
 
-  cloudify.datatypes.aws.CodePipeline.Pipeline.config:
+  cloudify.datatypes.aws.codepipeline.Pipeline.config:
     properties:
       kwargs:
         description: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/codepipeline.html#CodePipeline.Client.create_pipeline
@@ -3373,7 +3373,7 @@ node_types:
           inputs: *operation_inputs
 
 
-  cloudify.nodes.aws.CodePipeline.Pipeline:
+  cloudify.nodes.aws.codepipeline.Pipeline:
     derived_from: cloudify.nodes.Root
     properties:
       <<: *external_resource
@@ -3383,7 +3383,7 @@ node_types:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
           Boto3 method. Key names must match the case that Boto3 requires.
-        type: cloudify.datatypes.aws.CodePipeline.Pipeline.config
+        type: cloudify.datatypes.aws.codepipeline.Pipeline.config
 #        required: false
     interfaces:
       cloudify.interfaces.lifecycle:

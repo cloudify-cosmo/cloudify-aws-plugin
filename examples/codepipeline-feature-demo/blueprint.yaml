@@ -20,19 +20,15 @@ inputs:
 
   code_pipeline_service_role:
     type: string
-    default: 'arn:aws:iam::919239153674:role/service-role/adar-role'
 
   artifact_store_bucket_name:
     type: string
-    default: 'adar-test-bucket'
 
   source_code_bucket:
     type: string
-    default: 'adar-test-bucket'
 
   deployment_bucket_name:
    type: string
-   default: 'adar-test-bucket'
 
 dsl_definitions:
   client_config: &client_config
@@ -43,7 +39,7 @@ dsl_definitions:
 node_templates:
 
   codepipeline:
-    type: cloudify.nodes.aws.CodePipeline.Pipeline
+    type: cloudify.nodes.aws.codepipeline.Pipeline
     properties:
       client_config: *client_config
       resource_config:

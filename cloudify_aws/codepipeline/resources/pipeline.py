@@ -96,7 +96,7 @@ def delete(ctx, iface, resource_config, **_):
 @decorators.aws_params(RESOURCE_NAME)
 def create(ctx, iface, params, **_):
     # Actually create the resource
-    ctx.logger.info("create params {}".format(params))
+    ctx.logger.debug("create params: {params}".format(params=params))
     params.pop(RESOURCE_NAME)
     create_response = iface.create(params)
     resource_id = create_response['pipeline']['name']
