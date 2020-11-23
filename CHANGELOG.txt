@@ -89,3 +89,5 @@
     - Correct build system bug.
 2.4.4:
     - Handle non string tags.
+2.5.0:
+    - Added AWS codepipeline support.

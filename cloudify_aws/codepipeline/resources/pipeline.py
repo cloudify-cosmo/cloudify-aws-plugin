@@ -40,13 +40,13 @@ class CodePipelinePipeline(CodePipelineBase):
     @property
     def properties(self):
         """Gets the properties of an external resource"""
-        resources = None
+        resource = None
         try:
-            resources = self.client.get_pipeline_state(
+            resource = self.client.get_pipeline_state(
                 name=self.resource_id)
         except ClientError:
             pass
-        return resources
+        return resource
 
     @property
     def status(self):
@@ -55,7 +55,6 @@ class CodePipelinePipeline(CodePipelineBase):
         if props:
             if props.get('created'):
                 return CREATED_STATUS
-        return None
 
     def create(self, params):
         """
