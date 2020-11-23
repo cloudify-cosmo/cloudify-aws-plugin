@@ -72,6 +72,17 @@ class CodePipelinePipeline(CodePipelineBase):
                                             params=params))
         self.client.delete_pipeline(**params)
 
+    def execute(self, params):
+        """
+            start execution of an existing Pipeline.
+        """
+        self.logger.debug('Executing {resource_type} with parameters:'
+                          ' {params}'.format(
+                                            resource_type=self.type_name,
+                                            params=params))
+
+        return self.client.start_pipeline_execution(**params)
+
 
 @decorators.aws_resource(CodePipelinePipeline, RESOURCE_TYPE)
 @decorators.wait_for_delete()
@@ -101,3 +112,11 @@ def create(ctx, iface, params, **_):
     resource_id = create_response['pipeline']['name']
     iface.update_resource_id(resource_id)
     utils.update_resource_id(ctx.instance, resource_id)
+
+
+@decorators.aws_resource(CodePipelinePipeline, RESOURCE_TYPE)
+@decorators.aws_params(RESOURCE_NAME)
+def execute(ctx, iface, params, **_):
+    execute_response = iface.execute(params)
+    ctx.instance.runtime_properties[
+        'execute_pipeline_response'] = execute_response
