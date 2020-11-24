@@ -20,6 +20,8 @@
 from botocore.exceptions import ClientError
 
 # Cloudify
+
+from cloudify.decorators import operation
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.codepipeline import CodePipelineBase
 
@@ -72,10 +74,13 @@ class CodePipelinePipeline(CodePipelineBase):
                                             params=params))
         self.client.delete_pipeline(**params)
 
-    def execute(self, params):
+    def execute(self, name=None, clientRequestToken=None):
         """
             start execution of an existing Pipeline.
         """
+        params = {'name': name if name else self.resource_id}
+        if clientRequestToken:
+            params.update({"clientRequestToken": clientRequestToken})
         self.logger.debug('Executing {resource_type} with parameters:'
                           ' {params}'.format(
                                             resource_type=self.type_name,
@@ -114,9 +119,9 @@ def create(ctx, iface, params, **_):
     utils.update_resource_id(ctx.instance, resource_id)
 
 
+@operation
 @decorators.aws_resource(CodePipelinePipeline, RESOURCE_TYPE)
-@decorators.aws_params(RESOURCE_NAME)
-def execute(ctx, iface, params, **_):
-    execute_response = iface.execute(params)
+def execute(ctx, iface, name=None, clientRequestToken=None, **_):
+    execute_response = iface.execute(name, clientRequestToken)
     ctx.instance.runtime_properties[
         'execute_pipeline_response'] = execute_response

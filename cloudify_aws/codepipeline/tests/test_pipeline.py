@@ -29,6 +29,8 @@ from cloudify_aws.common.tests.test_base import DELETE_RESPONSE
 from cloudify_aws.common.tests.test_base import DEFAULT_RUNTIME_PROPERTIES
 
 # Constants
+PIPELINE_NAME = 'Demopipeline'
+
 PIPELINE_TH = ['cloudify.nodes.Root',
                'cloudify.nodes.aws.codepipeline.Pipeline']
 
@@ -36,12 +38,12 @@ NODE_PROPERTIES = {
     'resource_id': 'node_resource_id',
     'use_external_resource': False,
     'resource_config': {
-        'kwargs': {'pipeline': {'name': 'Demopipeline', 'version': 1}}},
+        'kwargs': {'pipeline': {'name': PIPELINE_NAME, 'version': 1}}},
     'client_config': CLIENT_CONFIG
 }
 
 RUNTIME_PROPERTIES_AFTER_CREATE = {
-    'aws_resource_id': 'Demopipeline',
+    'aws_resource_id': PIPELINE_NAME,
     'resource_config': {},
 }
 
@@ -85,10 +87,10 @@ class TestCodePipeline(TestBase):
         current_ctx.set(_ctx)
 
         self.fake_client.create_pipeline = MagicMock(
-            return_value={'pipeline': {'name': 'Demopipeline', 'version': 1}})
+            return_value={'pipeline': {'name': PIPELINE_NAME, 'version': 1}})
 
         self.fake_client.get_pipeline_state = MagicMock(return_value={
-            'pipelineName': 'Demopipeline',
+            'pipelineName': PIPELINE_NAME,
             'pipelineVersion': 1,
             'created': TEST_DATE
         })
@@ -100,12 +102,12 @@ class TestCodePipeline(TestBase):
         self.fake_boto.assert_called_with('codepipeline', **CLIENT_CONFIG)
 
         self.fake_client.create_pipeline.assert_called_with(
-            pipeline={"name": "Demopipeline", "version": 1}
+            pipeline={"name": PIPELINE_NAME, "version": 1}
         )
 
         updated_runtime_prop = copy.deepcopy(RUNTIME_PROPERTIES_AFTER_CREATE)
         updated_runtime_prop['create_response'] = {
-            'pipelineName': 'Demopipeline',
+            'pipelineName': PIPELINE_NAME,
             'pipelineVersion': 1,
             'created': str(TEST_DATE)}
 
@@ -129,7 +131,7 @@ class TestCodePipeline(TestBase):
         self.fake_boto.assert_called_with('codepipeline', **CLIENT_CONFIG)
 
         self.fake_client.delete_pipeline.assert_called_with(
-            name='Demopipeline'
+            name=PIPELINE_NAME
         )
 
         self.assertEqual(
@@ -137,6 +139,39 @@ class TestCodePipeline(TestBase):
             {
                 '__deleted': True,
             }
+        )
+
+    def test_execute(self):
+        _ctx = self.get_mock_ctx(
+            'test_execute_pipeline',
+            test_properties=NODE_PROPERTIES,
+            test_runtime_properties=RUNTIME_PROPERTIES_AFTER_CREATE,
+            type_hierarchy=PIPELINE_TH
+        )
+
+        current_ctx.set(_ctx)
+
+        self.fake_client.start_pipeline_execution = MagicMock(
+            return_value={'pipelineExecutionId': '12345'})
+
+        pipeline.execute(ctx=_ctx, iface=None, name=PIPELINE_NAME,
+                         clientRequestToken=None)
+
+        self.fake_boto.assert_called_with('codepipeline', **CLIENT_CONFIG)
+
+        self.fake_client.start_pipeline_execution.assert_called_with(
+            name=PIPELINE_NAME
+        )
+        pipeline.execute(ctx=_ctx, iface=None, name=PIPELINE_NAME,
+                         clientRequestToken='fake-token123')
+
+        self.fake_client.start_pipeline_execution.assert_called_with(
+            name=PIPELINE_NAME, clientRequestToken='fake-token123'
+        )
+
+        pipeline.execute(ctx=_ctx, iface=None)
+        self.fake_client.start_pipeline_execution.assert_called_with(
+            name=PIPELINE_NAME
         )
 
 
