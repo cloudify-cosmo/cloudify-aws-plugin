@@ -20,8 +20,8 @@
 from botocore.exceptions import ClientError
 
 # Cloudify
-
 from cloudify.decorators import operation
+from cloudify.exceptions import OperationRetry
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.codepipeline import CodePipelineBase
 
@@ -122,6 +122,13 @@ def create(ctx, iface, params, **_):
 @operation
 @decorators.aws_resource(CodePipelinePipeline, RESOURCE_TYPE)
 def execute(ctx, iface, name=None, clientRequestToken=None, **_):
-    execute_response = iface.execute(name, clientRequestToken)
-    ctx.instance.runtime_properties[
-        'execute_pipeline_response'] = execute_response
+    try:
+        execute_response = iface.execute(name, clientRequestToken)
+        ctx.instance.runtime_properties[
+            'execute_pipeline_response'] = execute_response
+    except ClientError:
+        error_traceback = utils.get_traceback_exception()
+        raise OperationRetry(
+            'Re-try start_pipeline_execution operation.',
+            retry_after=2,
+            causes=[error_traceback])
