@@ -20,6 +20,8 @@
 from botocore.exceptions import ClientError
 
 # Cloudify
+from cloudify.decorators import operation
+from cloudify.exceptions import OperationRetry
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.codepipeline import CodePipelineBase
 
@@ -72,6 +74,20 @@ class CodePipelinePipeline(CodePipelineBase):
                                             params=params))
         self.client.delete_pipeline(**params)
 
+    def execute(self, name=None, clientRequestToken=None):
+        """
+            start execution of an existing Pipeline.
+        """
+        params = {'name': name if name else self.resource_id}
+        if clientRequestToken:
+            params.update({"clientRequestToken": clientRequestToken})
+        self.logger.debug('Executing {resource_type} with parameters:'
+                          ' {params}'.format(
+                                            resource_type=self.type_name,
+                                            params=params))
+
+        return self.client.start_pipeline_execution(**params)
+
 
 @decorators.aws_resource(CodePipelinePipeline, RESOURCE_TYPE)
 @decorators.wait_for_delete()
@@ -101,3 +117,18 @@ def create(ctx, iface, params, **_):
     resource_id = create_response['pipeline']['name']
     iface.update_resource_id(resource_id)
     utils.update_resource_id(ctx.instance, resource_id)
+
+
+@operation
+@decorators.aws_resource(CodePipelinePipeline, RESOURCE_TYPE)
+def execute(ctx, iface, name=None, clientRequestToken=None, **_):
+    try:
+        execute_response = iface.execute(name, clientRequestToken)
+        ctx.instance.runtime_properties[
+            'execute_pipeline_response'] = execute_response
+    except ClientError:
+        error_traceback = utils.get_traceback_exception()
+        raise OperationRetry(
+            'Re-try start_pipeline_execution operation.',
+            retry_after=2,
+            causes=[error_traceback])

@@ -3393,6 +3393,10 @@ node_types:
         delete:
           implementation: aws.cloudify_aws.codepipeline.resources.pipeline.delete
           inputs: *operation_inputs
+      aws.codepipeline.pipeline:
+        start_pipeline_execution:
+          implementation: aws.cloudify_aws.codepipeline.resources.pipeline.execute
+          inputs: *operation_inputs
 
 relationships:
 
