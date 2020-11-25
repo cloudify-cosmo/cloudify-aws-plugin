@@ -3388,6 +3388,9 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
+          implementation: aws.cloudify_aws.codepipeline.resources.pipeline.prepare
+          inputs: *operation_inputs
+        configure:
           implementation: aws.cloudify_aws.codepipeline.resources.pipeline.create
           inputs: *operation_inputs
         delete:

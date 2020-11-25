@@ -73,6 +73,12 @@ class CodePipelinePipeline(CodePipelineBase):
         self.client.delete_pipeline(**params)
 
 
+@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+def prepare(ctx, resource_config, **_):
+    # Save the parameters
+    ctx.instance.runtime_properties['resource_config'] = resource_config
+
+
 @decorators.aws_resource(CodePipelinePipeline, RESOURCE_TYPE)
 @decorators.wait_for_delete()
 def delete(ctx, iface, resource_config, **_):
