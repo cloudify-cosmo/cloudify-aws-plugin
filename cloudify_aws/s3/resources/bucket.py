@@ -101,7 +101,7 @@ def create(ctx, iface, resource_config, params, **_):
     """Creates an AWS S3 Bucket"""
 
     # Actually create the resource
-    bucket = iface.create(resource_config)
+    bucket = iface.create(params)
     ctx.instance.runtime_properties[LOCATION] = \
         bucket.get(LOCATION)
 

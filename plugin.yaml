@@ -2,9 +2,9 @@ plugins:
 
   aws:
     executor: central_deployment_agent
-    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/2.5.0.zip
+    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/2.5.1.zip
     package_name: cloudify-aws-plugin
-    package_version: '2.5.0'
+    package_version: '2.5.1'
 
 data_types:
 
@@ -582,7 +582,7 @@ data_types:
     properties:
       LocationConstraint:
         type: string
-        required: true
+        required: false
         description: Specifies the region where the bucket will be created. If you don't specify a region, the bucket will be created in US Standard.
 
   cloudify.datatypes.aws.s3.Bucket.config:
