@@ -1,0 +1,2 @@
+pyyaml>=4.2b4
+cloudify-common>=5.1.0

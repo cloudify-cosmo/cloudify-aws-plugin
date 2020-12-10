@@ -47,7 +47,7 @@ setup(
     install_requires=[
         'cloudify-common>=4.5',
         'boto3==1.12.13',
-        'botocore==1.15.3',
+        'botocore',
         'pycryptodome==3.9.7'
     ]
 )
