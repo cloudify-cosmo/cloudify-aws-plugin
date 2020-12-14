@@ -93,3 +93,5 @@
     - Added AWS codepipeline support.
 2.5.1:
     - Fix bug that mandated providing S3 LocationConstraint.
+2.5.2:
+    - Fix bug causing API error messages to not print properly.

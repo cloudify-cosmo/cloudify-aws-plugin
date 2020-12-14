@@ -96,10 +96,10 @@ class AWSResourceBase(object):
                 res = client_method_args()
         except fatal_handled_exceptions as error:
             _, _, tb = sys.exc_info()
-            message = error.message
-            if isinstance(error, ClientError):
-                if hasattr(error, 'message'):
-                    message = error.message + NTP_NOTE
+            if isinstance(error, ClientError) and hasattr(error, 'message'):
+                message = error.message + NTP_NOTE
+            else:
+                message = 'API error encountered: {}'.format(error)
             raise NonRecoverableError(
                 text_type(message),
                 causes=[exception_to_error_cause(error, tb)])
