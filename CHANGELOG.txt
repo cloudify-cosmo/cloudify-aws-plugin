@@ -97,3 +97,4 @@
     - Fix bug causing API error messages to not print properly.
 2.5.3:
     - Fix bug causing routing tables with no associations to fail on deletion.
+    - Fix bug causing internet gateways created with tag to fail on attachments.
