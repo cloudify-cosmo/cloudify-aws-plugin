@@ -457,13 +457,13 @@ jobs:
       - run_integration_tests_510
 
   release:
-    executor: py27
+    executor: py36
     steps:
       - checkout
       - release_plugin
 
   merge_docs:
-    executor: py27
+    executor: py36
     steps:
       - checkout
       - merge_docs
