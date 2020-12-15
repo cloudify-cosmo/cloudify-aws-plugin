@@ -95,3 +95,5 @@
     - Fix bug that mandated providing S3 LocationConstraint.
 2.5.2:
     - Fix bug causing API error messages to not print properly.
+2.5.3:
+    - Fix bug causing routing tables with no associations to fail on deletion.
