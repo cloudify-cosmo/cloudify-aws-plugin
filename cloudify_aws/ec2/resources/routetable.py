@@ -170,8 +170,8 @@ def attach(ctx, iface, resource_config, **_):
             target.target.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
         association_id = iface.attach(params).get(ASSOCIATION_ID)
         association_id_list.append(association_id)
-        ctx.instance.runtime_properties['association_ids'] = \
-            association_id_list
+    ctx.instance.runtime_properties['association_ids'] = \
+        association_id_list
 
 
 @decorators.aws_resource(EC2RouteTable, RESOURCE_TYPE,
