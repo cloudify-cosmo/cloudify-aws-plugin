@@ -24,7 +24,10 @@ from cloudify.exceptions import OperationRetry
 # Cloudify
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.ec2 import EC2Base
-from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
+from cloudify_aws.common.constants import (
+    EXTERNAL_RESOURCE_ID,
+    TAG_SPECIFICATIONS_KWARG
+    )
 
 RESOURCE_TYPE = 'EC2 Internet Gateway Bucket'
 INTERNETGATEWAYS = 'InternetGateways'
@@ -161,7 +164,9 @@ def attach(ctx, iface, resource_config, **_):
             targ.target.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
 
     # Actually create the resource
-    iface.attach(params)
+    attach_params = params.copy()
+    attach_params.pop(TAG_SPECIFICATIONS_KWARG, None)
+    iface.attach(attach_params)
 
 
 @decorators.aws_resource(EC2InternetGateway, RESOURCE_TYPE,

@@ -20,6 +20,8 @@
 AWS_CONFIG_PROPERTY = 'client_config'
 EXTERNAL_RESOURCE_ID = 'aws_resource_id'
 EXTERNAL_RESOURCE_ARN = 'aws_resource_arn'
+TAG_SPECIFICATIONS_KWARG = 'TagSpecifications'
+
 REL_CONTAINED_IN = 'cloudify.relationships.contained_in'
 ARN_REGEX = '^arn\:aws\:'
 REGION_REGEX = (
