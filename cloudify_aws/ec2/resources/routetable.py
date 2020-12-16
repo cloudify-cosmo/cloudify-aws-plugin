@@ -21,8 +21,11 @@ from botocore.exceptions import ClientError
 
 # Cloudify
 from cloudify_aws.common import decorators, utils
-from cloudify_aws.ec2 import EC2Base
+from cloudify_aws.common.connection import Boto3Connection
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
+from cloudify_aws.ec2 import EC2Base
+
+from cloudify.exceptions import NonRecoverableError
 
 RESOURCE_TYPE = 'EC2 Route Table'
 ROUTETABLE = 'RouteTable'
@@ -185,3 +188,31 @@ def detach(ctx, iface, resource_config, **_):
         for association_id in association_ids:
             params.update({ASSOCIATION_ID: association_id})
             iface.detach(params)
+
+
+def attach_as_main(ctx, **_):
+    if ctx.source.node.properties['use_external_resource']:
+        targets = utils.find_rels_by_node_type(ctx.source.instance, VPC_TYPE)
+        if not targets:
+            raise NonRecoverableError(
+                "Asked to attach routing table to VPC as a main route table, "
+                "however no relationship exists to a VPC node template")
+        # len(targets) > 1 is impossible as this relationship is contained_in.
+        vpc_id = targets[0].target.instance.runtime_properties[
+            EXTERNAL_RESOURCE_ID]
+        client = Boto3Connection(ctx.source.node).client('ec2')
+        route_tables = client.describe_route_tables(
+            Filters=[{
+                "Name": "vpc-id",
+                "Values": [vpc_id]
+            }])['RouteTables']
+        main_route_table_id = None
+        for route_table in route_tables:
+            for association in route_table.get('Associations', []):
+                if association.get('Main'):
+                    main_route_table_id = route_table['RouteTableId']
+        if not main_route_table_id:
+            raise NonRecoverableError(
+                "VPC '%s' does not have a main routing table" % vpc_id)
+        ctx.source.instance.runtime_properties[EXTERNAL_RESOURCE_ID] = \
+            main_route_table_id
