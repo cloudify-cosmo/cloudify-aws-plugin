@@ -404,9 +404,6 @@ jobs:
       TEST_NAME: virtual-machine
     steps:
       - checkout
-      - run:
-          name: wait for starter
-          command: docker exec -it cfy_manager cfy_manager wait-for-starter
       - run_integration_tests_505
 
   eks_integration_tests_505:
@@ -417,9 +414,6 @@ jobs:
       TEST_NAME: eks
     steps:
       - checkout
-      - run:
-          name: wait for starter
-          command: docker exec -it cfy_manager cfy_manager wait-for-starter
       - run_integration_tests_505
 
   hw_integration_tests_505:
@@ -430,9 +424,6 @@ jobs:
       TEST_NAME: hello-world
     steps:
       - checkout
-      - run:
-          name: wait for starter
-          command: docker exec -it cfy_manager cfy_manager wait-for-starter
       - run_integration_tests_505
 
   cf_integration_tests_510:
