@@ -120,10 +120,10 @@ class LambdaFunction(LambdaBase):
             if payload.get('body'):
                 try:
                     payload['body'] = json.loads(payload['body'])
-                except ValueError as e:
-                    self.logger.warn('Cannot decode body: %s' % e)
-        except (ValueError, UnicodeDecodeError) as e:
-            self.logger.warn('Cannot decode Payload: %s' % e)
+                except ValueError:
+                    pass
+        except (ValueError, UnicodeDecodeError):
+            pass
         return payload
 
 
