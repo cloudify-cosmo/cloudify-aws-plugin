@@ -434,6 +434,9 @@ jobs:
       TEST_NAME: cloudformation
     steps:
       - checkout
+      - run:
+          name: wait for starter
+          command: docker exec -it cfy_manager cfy_manager wait-for-starter
       - run_integration_tests_510
 
   eks_integration_tests_510:
@@ -444,6 +447,9 @@ jobs:
       TEST_NAME: eks
     steps:
       - checkout
+      - run:
+          name: wait for starter
+          command: docker exec -it cfy_manager cfy_manager wait-for-starter
       - run_integration_tests_510
 
   hw_integration_tests_510:
@@ -454,6 +460,9 @@ jobs:
       TEST_NAME: hello-world
     steps:
       - checkout
+      - run:
+          name: wait for starter
+          command: docker exec -it cfy_manager cfy_manager wait-for-starter
       - run_integration_tests_510
 
   release:
