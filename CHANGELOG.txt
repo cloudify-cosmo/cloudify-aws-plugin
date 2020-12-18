@@ -98,4 +98,3 @@
 2.5.3:
     - Fix bug causing routing tables with no associations to fail on deletion.
     - Fix bug causing internet gateways created with tag to fail on attachments.
-    - Added ability to have a RouteTable node, representing a VPC's main route table.
