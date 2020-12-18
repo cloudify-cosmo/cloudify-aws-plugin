@@ -196,16 +196,13 @@ def attach_as_main(ctx, **_):
             "'use_external_resource' must be set to 'true' for the default "
             "route table")
 
-    # EXTERNAL_RESOURCE_ID may exist as None.
-    if ctx.source.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID):
+    if EXTERNAL_RESOURCE_ID in ctx.source.instance.runtime_properties:
         raise NonRecoverableError(
-            "The '%s' runtime property must not be pre-defined as a "
-            "runtime property for the default route table" %
-            EXTERNAL_RESOURCE_ID
+            "The 'aws_resource_id' must not be pre-defined as a "
+            "runtime property for the default route table"
         )
 
-    # 'resource_id' may exist as an empty string
-    if ctx.source.node.properties.get('resource_id'):
+    if 'resource_id' in ctx.source.node.properties:
         raise NonRecoverableError(
             "'resource_id' must not be set for the default route table"
         )
