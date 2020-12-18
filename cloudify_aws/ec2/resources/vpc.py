@@ -87,6 +87,20 @@ class EC2Vpc(EC2Base):
         self.logger.debug('Response: {0}'.format(res))
         return res
 
+    def populate_resource(self, ctx):
+        route_tables = self.client.describe_route_tables(
+            Filters=[{
+                "Name": "vpc-id",
+                "Values": [self.resource_id]
+            }])['RouteTables']
+        main_route_table_id = None
+        for route_table in route_tables:
+            for association in route_table.get('Associations', []):
+                if association.get('Main'):
+                    main_route_table_id = route_table['RouteTableId']
+        ctx.instance.runtime_properties['main_route_table_id'] = \
+            main_route_table_id
+
 
 @decorators.aws_resource(EC2Vpc, resource_type=RESOURCE_TYPE)
 def prepare(ctx, iface, resource_config, **_):
