@@ -191,43 +191,28 @@ def detach(ctx, iface, resource_config, **_):
 
 
 def attach_as_main(ctx, **_):
-    if not ctx.source.node.properties['use_external_resource']:
-        raise NonRecoverableError(
-            "'use_external_resource' must be set to 'true' for the default "
-            "route table")
-
-    if EXTERNAL_RESOURCE_ID in ctx.source.instance.runtime_properties:
-        raise NonRecoverableError(
-            "The 'aws_resource_id' must not be pre-defined as a "
-            "runtime property for the default route table"
-        )
-
-    if 'resource_id' in ctx.source.node.properties:
-        raise NonRecoverableError(
-            "'resource_id' must not be set for the default route table"
-        )
-
-    targets = utils.find_rels_by_node_type(ctx.source.instance, VPC_TYPE)
-    if not targets:
-        raise NonRecoverableError(
-            "Asked to attach routing table to VPC as a main route table, "
-            "however no relationship exists to a VPC node template")
-    # len(targets) > 1 is impossible as this relationship is contained_in.
-    vpc_id = targets[0].target.instance.runtime_properties[
-        EXTERNAL_RESOURCE_ID]
-    client = Boto3Connection(ctx.source.node).client('ec2')
-    route_tables = client.describe_route_tables(
-        Filters=[{
-            "Name": "vpc-id",
-            "Values": [vpc_id]
-        }])['RouteTables']
-    main_route_table_id = None
-    for route_table in route_tables:
-        for association in route_table.get('Associations', []):
-            if association.get('Main'):
-                main_route_table_id = route_table['RouteTableId']
-    if not main_route_table_id:
-        raise NonRecoverableError(
-            "VPC '%s' does not have a main routing table" % vpc_id)
-    ctx.source.instance.runtime_properties[EXTERNAL_RESOURCE_ID] = \
-        main_route_table_id
+    if ctx.source.node.properties['use_external_resource']:
+        targets = utils.find_rels_by_node_type(ctx.source.instance, VPC_TYPE)
+        if not targets:
+            raise NonRecoverableError(
+                "Asked to attach routing table to VPC as a main route table, "
+                "however no relationship exists to a VPC node template")
+        # len(targets) > 1 is impossible as this relationship is contained_in.
+        vpc_id = targets[0].target.instance.runtime_properties[
+            EXTERNAL_RESOURCE_ID]
+        client = Boto3Connection(ctx.source.node).client('ec2')
+        route_tables = client.describe_route_tables(
+            Filters=[{
+                "Name": "vpc-id",
+                "Values": [vpc_id]
+            }])['RouteTables']
+        main_route_table_id = None
+        for route_table in route_tables:
+            for association in route_table.get('Associations', []):
+                if association.get('Main'):
+                    main_route_table_id = route_table['RouteTableId']
+        if not main_route_table_id:
+            raise NonRecoverableError(
+                "VPC '%s' does not have a main routing table" % vpc_id)
+        ctx.source.instance.runtime_properties[EXTERNAL_RESOURCE_ID] = \
+            main_route_table_id
