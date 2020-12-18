@@ -3720,7 +3720,7 @@ relationships:
         establish: { implementation: aws.cloudify_aws.ec2.resources.ebs.attach_using_relationship }
         unlink: { implementation: aws.cloudify_aws.ec2.resources.ebs.detach_using_relationship }
 
-  cloudify.relationships.aws.route_table.main_contained_in_vpc:
+  cloudify.relationships.aws.route_table.contained_in:
     derived_from: cloudify.relationships.contained_in
     source_interfaces:
       cloudify.interfaces.relationship_lifecycle:
