@@ -116,3 +116,21 @@ class AWSResourceBase(object):
         if not getattr(self, 'properties', {}):
             return False
         return True
+
+    def populate_resource(self, ctx):
+        """
+        Provides means for resource classes to populate runtime properties
+        with auxiliary information about the resource:
+
+        For new resources (use_external_resource=False), this function is
+        called right after the 'cloudify.interfaces.lifecycle.configure'
+        operation, when the AWS resource ID is already known.
+
+        For existing resources (use_external_resource=True), this function is
+        called after the resource is validated to exist (as the AWS resource
+        ID is already known at that point).
+
+        :param ctx: Cloudify context
+        :return: None
+        """
+        pass

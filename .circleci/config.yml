@@ -431,7 +431,6 @@ jobs:
       TEST_NAME: cloudformation
     steps:
       - checkout
-      
       - run_integration_tests_510
 
   eks_integration_tests_510:
@@ -442,7 +441,6 @@ jobs:
       TEST_NAME: eks
     steps:
       - checkout
-      
       - run_integration_tests_510
 
   hw_integration_tests_510:
@@ -453,7 +451,6 @@ jobs:
       TEST_NAME: hello-world
     steps:
       - checkout
-      
       - run_integration_tests_510
 
   release:

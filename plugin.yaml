@@ -2,9 +2,9 @@ plugins:
 
   aws:
     executor: central_deployment_agent
-    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/2.5.3.zip
+    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/2.5.4.zip
     package_name: cloudify-aws-plugin
-    package_version: '2.5.3'
+    package_version: '2.5.4'
 
 data_types:
 
@@ -3719,10 +3719,3 @@ relationships:
       cloudify.interfaces.relationship_lifecycle:
         establish: { implementation: aws.cloudify_aws.ec2.resources.ebs.attach_using_relationship }
         unlink: { implementation: aws.cloudify_aws.ec2.resources.ebs.detach_using_relationship }
-
-  cloudify.relationships.aws.route_table.main_contained_in_vpc:
-    derived_from: cloudify.relationships.contained_in
-    source_interfaces:
-      cloudify.interfaces.relationship_lifecycle:
-        preconfigure:
-          implementation: aws.cloudify_aws.ec2.resources.routetable.attach_as_main
