@@ -103,3 +103,4 @@
     - Better implementation of RD-815 (main route table).
 2.5.5:
     - Cloudformation stacks' outputs are now also returned as a dictionary via a runtime property.
+    - Fixed bug causing problems when using an existing internet gateway.
