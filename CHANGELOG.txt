@@ -101,3 +101,5 @@
     - Added ability to have a RouteTable node, representing a VPC's main route table.
 2.5.4:
     - Better implementation of RD-815 (main route table).
+2.5.5:
+    - Cloudformation stacks' outputs are now also returned as a dictionary via a runtime property.
