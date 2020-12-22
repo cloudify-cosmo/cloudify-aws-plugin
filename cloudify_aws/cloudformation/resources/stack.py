@@ -150,10 +150,10 @@ def start(ctx, iface, **_):
     # use them via intrinsic functions. So, create a dictionary out
     # of them.
     if 'Outputs' in props:
-        outputs_as_dict = {}
+        outputs_items = {}
         for output in props['Outputs']:
-            outputs_as_dict[output['OutputKey']] = output['OutputValue']
-        ctx.instance.runtime_properties['outputs_as_dict'] = outputs_as_dict
+            outputs_items[output['OutputKey']] = output['OutputValue']
+        ctx.instance.runtime_properties['outputs_items'] = outputs_items
 
 
 @decorators.aws_resource(CloudFormationStack, RESOURCE_TYPE,
