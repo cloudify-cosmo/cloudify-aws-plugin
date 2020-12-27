@@ -25,7 +25,10 @@ from cloudify.exceptions import OperationRetry
 from cloudify_aws.common._compat import text_type
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.ec2 import EC2Base
-from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
+from cloudify_aws.common.constants import (
+    EXTERNAL_RESOURCE_ID,
+    TAG_SPECIFICATIONS_KWARG
+)
 
 RESOURCE_TYPE = 'EC2 Elastic IP'
 ADDRESSES = 'Addresses'
@@ -247,11 +250,9 @@ def attach(ctx, iface, resource_config, **_):
             else:
                 return
 
-    # Make sure that Domain is not sent to attach call.
-    try:
-        del params['Domain']
-    except KeyError:
-        pass
+    # Make sure that Domain and TagSpecifications are not sent to attach call.
+    for arg_name in ['Domain', TAG_SPECIFICATIONS_KWARG]:
+        params.pop(arg_name, None)
 
     # Actually attach the resources
     association_id = iface.attach(params)
@@ -281,5 +282,6 @@ def detach(ctx, iface, resource_config, **_):
         del params[ELASTICIP_ID]
 
     params['AssociationId'] = association_id
+    params.pop(TAG_SPECIFICATIONS_KWARG, None)
 
     iface.detach(params)

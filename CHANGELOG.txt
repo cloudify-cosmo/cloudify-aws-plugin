@@ -104,3 +104,5 @@
 2.5.5:
     - Cloudformation stacks' outputs are now also returned as a dictionary via a runtime property.
     - Fixed bug causing problems when using an existing internet gateway.
+2.5.6:
+    - Fixed bug causing failure when Tag Specifications are passed to an Elastic IP.
