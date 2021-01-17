@@ -2,8 +2,9 @@ plugins:
 
   aws:
     executor: central_deployment_agent
+    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/2.5.7.zip
     package_name: cloudify-aws-plugin
-    package_version: '2.4.5'
+    package_version: '2.5.7'
 
 data_types:
 
@@ -581,7 +582,7 @@ data_types:
     properties:
       LocationConstraint:
         type: string
-        required: true
+        required: false
         description: Specifies the region where the bucket will be created. If you don't specify a region, the bucket will be created in US Standard.
 
   cloudify.datatypes.aws.s3.Bucket.config:
@@ -1071,6 +1072,12 @@ data_types:
     properties:
       kwargs:
         description: http://boto3.readthedocs.io/en/latest/reference/services/eks.html#EKS.Client.create_nodegroup
+        default: {}
+
+  cloudify.datatypes.aws.codepipeline.Pipeline.config:
+    properties:
+      kwargs:
+        description: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/codepipeline.html#CodePipeline.Client.create_pipeline
         default: {}
 
 dsl_definitions:
@@ -3373,6 +3380,35 @@ node_types:
           inputs: *operation_inputs
         delete:
           implementation: aws.cloudify_aws.eks.resources.node_group.delete
+          inputs: *operation_inputs
+
+
+  cloudify.nodes.aws.codepipeline.Pipeline:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.codepipeline.Pipeline.config
+#        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.cloudify_aws.codepipeline.resources.pipeline.prepare
+          inputs: *operation_inputs
+        configure:
+          implementation: aws.cloudify_aws.codepipeline.resources.pipeline.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.codepipeline.resources.pipeline.delete
+          inputs: *operation_inputs
+      aws.codepipeline.pipeline:
+        start_pipeline_execution:
+          implementation: aws.cloudify_aws.codepipeline.resources.pipeline.execute
           inputs: *operation_inputs
 
 relationships:

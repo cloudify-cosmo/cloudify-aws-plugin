@@ -415,6 +415,15 @@ class TestBase(unittest.TestCase):
         )
         fake_client.delete_option_group = self._get_unknowservice(client_type)
 
+    def _fake_codepipeline(self, fake_client, client_type):
+        fake_client.create_pipeline = self._get_unknowservice(client_type)
+
+        fake_client.get_pipeline_state = self._gen_client_error(
+            "get_pipeline_state"
+        )
+
+        fake_client.delete_pipeline = self._get_unknowservice(client_type)
+
     def make_client_function(self, fun_name,
                              return_value=None,
                              side_effect=None,
@@ -466,6 +475,8 @@ class TestBase(unittest.TestCase):
             self._fake_elb(fake_client, client_type)
         elif client_type == "elbv2":
             self._fake_elbv2(fake_client, client_type)
+        elif client_type == "codepipeline":
+            self._fake_codepipeline(fake_client, client_type)
 
         return MagicMock(return_value=fake_client), fake_client
 

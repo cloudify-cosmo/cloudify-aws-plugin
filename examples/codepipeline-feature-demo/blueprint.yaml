@@ -1,0 +1,83 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+description: >
+  Example blueprint showing AWS Codepipeline functionality.
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/5.0.5/types.yaml
+  - plugin:cloudify-aws-plugin
+
+
+inputs:
+
+  aws_region_name:
+    type: string
+    default: 'eu-west-1'
+
+  pipeline_name:
+    type: string
+    default: 'Demopipeline'
+
+  code_pipeline_service_role:
+    type: string
+
+  artifact_store_bucket_name:
+    type: string
+
+  source_code_bucket:
+    type: string
+
+  deployment_bucket_name:
+   type: string
+
+dsl_definitions:
+  client_config: &client_config
+    aws_access_key_id: { get_secret: aws_access_key_id }
+    aws_secret_access_key: { get_secret: aws_secret_access_key }
+    region_name: { get_input: aws_region_name }
+
+node_templates:
+
+  codepipeline:
+    type: cloudify.nodes.aws.codepipeline.Pipeline
+    properties:
+      client_config: *client_config
+      resource_config:
+        kwargs:
+          pipeline:
+            name: { get_input: pipeline_name }
+            roleArn: { get_input: code_pipeline_service_role }
+            artifactStore:
+              type: 'S3'
+              location: { get_input: artifact_store_bucket_name }
+            stages:
+              - name: 'Source-stage'
+                actions:
+                  - name: 'source-action'
+                    actionTypeId:
+                      category: 'Source'
+                      owner: 'AWS'
+                      provider: 'S3'
+                      version: '1'
+                    outputArtifacts:
+                      - name: 'My-source'
+                    configuration:
+                      S3Bucket: { get_input: source_code_bucket }
+                      S3ObjectKey: test-app.zip
+                      PollForSourceChanges: 'false'
+                    region: { get_input: aws_region_name }
+              - name: 'Deploy-stage'
+                actions:
+                  - name: 'deploy-action'
+                    actionTypeId:
+                      category: 'Deploy'
+                      owner: 'AWS'
+                      provider: 'S3'
+                      version: '1'
+                    inputArtifacts:
+                      - name: 'My-source'
+                    configuration:
+                      "BucketName": { get_input: deployment_bucket_name }
+                      "Extract": "true"
+                    region: { get_input: aws_region_name }
+            version: 1

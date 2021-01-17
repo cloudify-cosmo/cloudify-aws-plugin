@@ -89,3 +89,20 @@
     - Correct build system bug.
 2.4.4:
     - Handle non string tags.
+2.5.0:
+    - Added AWS codepipeline support.
+2.5.1:
+    - Fix bug that mandated providing S3 LocationConstraint.
+2.5.2:
+    - Fix bug causing API error messages to not print properly.
+2.5.3:
+    - Fix bug causing routing tables with no associations to fail on deletion.
+    - Fix bug causing internet gateways created with tag to fail on attachments.
+    - Added ability to have a RouteTable node, representing a VPC's main route table.
+2.5.4:
+    - Better implementation of RD-815 (main route table).
+2.5.5:
+    - Cloudformation stacks' outputs are now also returned as a dictionary via a runtime property.
+    - Fixed bug causing problems when using an existing internet gateway.
+2.5.6:
+    - Fixed bug causing failure when Tag Specifications are passed to an Elastic IP.

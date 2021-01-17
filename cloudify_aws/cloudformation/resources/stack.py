@@ -145,6 +145,16 @@ def start(ctx, iface, **_):
         tested_value = test(value)
         ctx.instance.runtime_properties[key] = tested_value
 
+    # Special handling for outputs: they're provided by the stack
+    # as a list of key-value pairs, which makes it impossible to
+    # use them via intrinsic functions. So, create a dictionary out
+    # of them.
+    if 'Outputs' in props:
+        outputs_items = {}
+        for output in props['Outputs']:
+            outputs_items[output['OutputKey']] = output['OutputValue']
+        ctx.instance.runtime_properties['outputs_items'] = outputs_items
+
 
 @decorators.aws_resource(CloudFormationStack, RESOURCE_TYPE,
                          ignore_properties=True)

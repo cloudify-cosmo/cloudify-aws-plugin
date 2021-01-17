@@ -207,13 +207,13 @@ commands:
             pip install -r test-requirements.txt
       - run:
           name: download manager docker image
-          command: wget http://repository.cloudifysource.org/cloudify/5.0.0/ga-release/cloudify-docker-manager-5.0.0.tar
+          command: wget http://repository.cloudifysource.org/cloudify/5.0.5/ga-release/cloudify-docker-manager-5.0.5.tar
       - run:
           name: load docker image
-          command: docker load -i cloudify-docker-manager-5.0.0.tar
+          command: docker load -i cloudify-docker-manager-5.0.5.tar
       - run:
           name: retain space by dumping the tar
-          command: rm cloudify-docker-manager-5.0.0.tar
+          command: rm cloudify-docker-manager-5.0.5.tar
       - run:
           name: show images
           command: docker images
@@ -242,19 +242,16 @@ commands:
             pip install -r test-requirements.txt
       - run:
           name: download manager docker image
-          command:  wget https://cloudify-release-eu.s3-eu-west-1.amazonaws.com/cloudify/5.1.0/.dev1-release/cloudify-manager-aio-docker-5.1.0.dev1.tar
-      - run:
-          name: load docker image
-          command: docker load -i cloudify-manager-aio-docker-5.1.0.dev1.tar
-      - run:
-          name: retain space by dumping the tar
-          command: rm cloudify-manager-aio-docker-5.1.0.dev1.tar
+          command:  docker pull cloudifyplatform/premium-cloudify-manager-aio:latest
       - run:
           name: show images
           command: docker images
       - run:
           name: start docker container
-          command: docker run --name cfy_manager -d --restart unless-stopped -v /sys/fs/cgroup:/sys/fs/cgroup:ro --tmpfs /run --tmpfs /run/lock --security-opt seccomp:unconfined --cap-add SYS_ADMIN --network host cloudify-manager-aio:latest
+          command: docker run --name cfy_manager -d --restart unless-stopped -v /sys/fs/cgroup:/sys/fs/cgroup:ro --tmpfs /run --tmpfs /run/lock --security-opt seccomp:unconfined --cap-add SYS_ADMIN --network host cloudifyplatform/premium-cloudify-manager-aio
+      - run:
+          name: wait for starter
+          command: docker exec -it cfy_manager cfy_manager wait-for-starter
       - run:
           name: install local project
           command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/latest.zip
@@ -267,6 +264,16 @@ commands:
           command: |
             git submodule init
             git submodule update --remote --recursive
+      - run:
+          name: Set Python
+          command: |
+            if ! pyenv -v COMMAND &> /dev/null
+            then
+                echo "pyenv could not be found"
+                exit
+            else
+                pyenv global 3.6.5
+            fi
       - run:
           name: Download pip
           command: curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
@@ -303,6 +310,16 @@ commands:
           command: |
             git submodule init
             git submodule update --remote --recursive
+      - run:
+          name: Set Python
+          command: |
+            if ! pyenv -v COMMAND &> /dev/null
+            then
+                echo "pyenv could not be found"
+                exit
+            else
+                pyenv global 3.6.5
+            fi
       - run:
           name: Download pip
           command: curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
@@ -341,19 +358,19 @@ jobs:
       - run_unittest
 
   py3_compat:
-    executor: py27
+    executor: py36
     steps:
       - checkout
       - check_py3_compat
 
   validate_version:
-    executor: py27
+    executor: py36
     steps:
       - checkout
       - validate_version
 
   validate_documentation:
-    executor: py27
+    executor: py36
     steps:
       - checkout
       - validate_documentation
@@ -371,7 +388,7 @@ jobs:
       - generate_rhel_py27py36_wagon
 
   build_bundle:
-    executor: wagon_generator
+    executor: py36
     steps:
       - checkout
       - build_archive
@@ -437,13 +454,13 @@ jobs:
       - run_integration_tests_510
 
   release:
-    executor: py27
+    executor: py36
     steps:
       - checkout
       - release_plugin
 
   merge_docs:
-    executor: py27
+    executor: py36
     steps:
       - checkout
       - merge_docs

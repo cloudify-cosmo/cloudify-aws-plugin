@@ -96,10 +96,10 @@ class AWSResourceBase(object):
                 res = client_method_args()
         except fatal_handled_exceptions as error:
             _, _, tb = sys.exc_info()
-            message = error.message
-            if isinstance(error, ClientError):
-                if hasattr(error, 'message'):
-                    message = error.message + NTP_NOTE
+            if isinstance(error, ClientError) and hasattr(error, 'message'):
+                message = error.message + NTP_NOTE
+            else:
+                message = 'API error encountered: {}'.format(error)
             raise NonRecoverableError(
                 text_type(message),
                 causes=[exception_to_error_cause(error, tb)])
@@ -116,3 +116,21 @@ class AWSResourceBase(object):
         if not getattr(self, 'properties', {}):
             return False
         return True
+
+    def populate_resource(self, ctx):
+        """
+        Provides means for resource classes to populate runtime properties
+        with auxiliary information about the resource:
+
+        For new resources (use_external_resource=False), this function is
+        called right after the 'cloudify.interfaces.lifecycle.configure'
+        operation, when the AWS resource ID is already known.
+
+        For existing resources (use_external_resource=True), this function is
+        called after the resource is validated to exist (as the AWS resource
+        ID is already known at that point).
+
+        :param ctx: Cloudify context
+        :return: None
+        """
+        pass

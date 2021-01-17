@@ -25,7 +25,10 @@ from cloudify.exceptions import OperationRetry
 from cloudify_aws.common._compat import text_type
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.ec2 import EC2Base
-from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
+from cloudify_aws.common.constants import (
+    EXTERNAL_RESOURCE_ID,
+    TAG_SPECIFICATIONS_KWARG
+)
 
 RESOURCE_TYPE = 'EC2 Elastic IP'
 ADDRESSES = 'Addresses'
@@ -46,6 +49,7 @@ class EC2ElasticIP(EC2Base):
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
+        self.allocation_id = None
 
     def list(self, params=None):
         try:
@@ -56,6 +60,13 @@ class EC2ElasticIP(EC2Base):
         except ClientError:
             return []
         return resources.get(ADDRESSES, [])
+
+    def update_allocation_id(self, allocation_id):
+        self.allocation_id = allocation_id
+
+    def tag(self, params):
+        params['Resources'] = [self.allocation_id]
+        super(EC2ElasticIP, self).tag(params)
 
     @property
     def properties(self):
@@ -125,6 +136,7 @@ def prepare(ctx, resource_config, **_):
 
 
 @decorators.aws_resource(EC2ElasticIP, RESOURCE_TYPE)
+@decorators.tag_resources
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS EC2 ElasticIP"""
 
@@ -146,8 +158,9 @@ def create(ctx, iface, resource_config, **_):
     elasticip_id = create_response.get(ELASTICIP_ID, '')
     iface.update_resource_id(elasticip_id)
     utils.update_resource_id(ctx.instance, elasticip_id)
-    ctx.instance.runtime_properties['allocation_id'] = \
-        create_response.get(ALLOCATION_ID)
+    allocation_id = create_response.get(ALLOCATION_ID)
+    iface.update_allocation_id(allocation_id)
+    ctx.instance.runtime_properties['allocation_id'] = allocation_id
 
 
 @decorators.aws_resource(EC2ElasticIP, RESOURCE_TYPE,
@@ -247,11 +260,9 @@ def attach(ctx, iface, resource_config, **_):
             else:
                 return
 
-    # Make sure that Domain is not sent to attach call.
-    try:
-        del params['Domain']
-    except KeyError:
-        pass
+    # Make sure that Domain and TagSpecifications are not sent to attach call.
+    for arg_name in ['Domain', TAG_SPECIFICATIONS_KWARG]:
+        params.pop(arg_name, None)
 
     # Actually attach the resources
     association_id = iface.attach(params)
@@ -281,5 +292,6 @@ def detach(ctx, iface, resource_config, **_):
         del params[ELASTICIP_ID]
 
     params['AssociationId'] = association_id
+    params.pop(TAG_SPECIFICATIONS_KWARG, None)
 
     iface.detach(params)

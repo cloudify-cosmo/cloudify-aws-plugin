@@ -299,10 +299,13 @@ def aws_resource(class_decl=None,
                             '{1} not found.'.format(
                                 kwargs['resource_type'],
                                 kwargs['iface'].resource_id))
+                    kwargs['iface'].populate_resource(ctx)
                     return
                 ctx.logger.warn('%s ID# "%s" has force_operation set.'
                                 % (resource_type, resource_id))
             result = function(**kwargs)
+            if ctx.operation.name == 'cloudify.interfaces.lifecycle.configure':
+                kwargs['iface'].populate_resource(ctx)
             if ctx.operation.name == 'cloudify.interfaces.lifecycle.delete':
                 # cleanup runtime after delete
                 keys = list(ctx.instance.runtime_properties.keys())
