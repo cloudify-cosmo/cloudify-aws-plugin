@@ -128,7 +128,7 @@ def get_already_allocated_ip(address_list):
             return create_response
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(EC2ElasticIP, resource_type=RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     """Prepares an AWS EC2 ElasticIP"""
     # Save the parameters

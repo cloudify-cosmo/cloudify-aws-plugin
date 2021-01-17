@@ -79,7 +79,7 @@ class EC2NetworkAclEntry(EC2Base):
         return res
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(EC2NetworkAclEntry, resource_type=RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     """Prepares an AWS EC2 NetworkAcl Entry"""
     # Save the parameters
