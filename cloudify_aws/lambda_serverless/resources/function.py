@@ -16,16 +16,18 @@
     ~~~~~~~~~~~~~~~~~~~
     AWS Lambda Function interface
 '''
-import json
 
-from contextlib import contextmanager
+import json
 from os import remove as os_remove
 from os.path import exists as path_exists
+from contextlib import contextmanager
+
+# Boto
+from botocore.exceptions import ClientError
+
 # Cloudify
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.lambda_serverless import LambdaBase
-# Boto
-from botocore.exceptions import ClientError
 
 RESOURCE_ID = 'FunctionName'
 RESOURCE_TYPE = 'Lambda Function'
@@ -106,7 +108,7 @@ class LambdaFunction(LambdaBase):
     @contextmanager
     def _encode_payload(self, payload):
         if isinstance(payload, str):
-            with file(payload, 'r') as payload_file:
+            with open(payload, 'r') as payload_file:
                 yield payload_file
         elif isinstance(payload, dict):
             yield json.dumps(payload).encode(self.resource_encoding)
