@@ -16,8 +16,8 @@
     ~~~~~~~~~~~~~~~~~~~
     AWS Lambda Function interface
 '''
-
 import json
+
 from os import remove as os_remove
 from os.path import exists as path_exists
 from contextlib import contextmanager
@@ -111,12 +111,14 @@ class LambdaFunction(LambdaBase):
             with open(payload, 'r') as payload_file:
                 yield payload_file
         elif isinstance(payload, dict):
-            yield json.dumps(payload).encode(self.resource_encoding)
+            yield json.dumps(payload)
         else:
             yield payload
 
     def _decode_payload(self, payload_stream):
-        payload = payload_stream.read().decode(self.resource_encoding)
+        payload = payload_stream.read()
+        if isinstance(payload, bytes):
+            payload = payload.decode(self.resource_encoding)
         try:
             payload = json.loads(payload)
             if payload.get('body'):
