@@ -153,7 +153,7 @@ class TestLambdaFunction(TestBase):
             fun.resource_id = 'test_function'
             fake_client = self.make_client_function(
                 'invoke',
-                return_value={'Payload': StringIO(u"text")})
+                return_value={'Payload': StringIO(u'text')})
             fun.client = fake_client
             result = fun.invoke({'param': 'params'})
             self.assertEqual(result, {'Payload': u'text'})
@@ -164,6 +164,45 @@ class TestLambdaFunction(TestBase):
             fun.client = fake_client
             result = fun.invoke({'param': 'params'})
             self.assertEqual(result, '')
+
+            fake_client = self.make_client_function(
+                'invoke',
+                return_value={'Payload': StringIO(u'{"text": "test"}')})
+            fun.client = fake_client
+            result = fun.invoke({'param': 'params'})
+            self.assertEqual(result, {'Payload': {"text": "test"}})
+
+    def test_class_invoke_payload(self):
+        ctx = self._get_ctx()
+        with patch(PATCH_PREFIX + 'LambdaBase'):
+            fun = function.LambdaFunction(ctx)
+            fun.logger = MagicMock()
+            fun.resource_id = 'test_function'
+            fake_client = self.make_client_function(
+                'invoke',
+                side_effect=lambda FunctionName, Payload: self.assertEqual(
+                    Payload, 0))
+            fun.client = fake_client
+            result = fun.invoke({'Payload': 0})
+            self.assertEqual(result, None)
+
+            fake_client = self.make_client_function(
+                'invoke',
+                side_effect=lambda FunctionName, Payload: self.assertEqual(
+                    Payload, u'{"key": "value"}'))
+
+            fun.client = fake_client
+            result = fun.invoke({'Payload': {"key": "value"}})
+            self.assertEqual(result, None)
+
+            self._mock_function_file()
+            fake_client = self.make_client_function(
+                'invoke',
+                side_effect=lambda FunctionName, Payload:
+                    self.assertEqual(Payload.read(), 'test'))
+            fun.client = fake_client
+            result = fun.invoke({'Payload': '/tmp/mock_function.txt'})
+            self.assertEqual(result, None)
 
     @patch(u'{0}{1}'.format(PATCH_PREFIX, '_get_iam_role_to_attach'))
     @patch(u'{0}{1}'.format(PATCH_PREFIX, '_get_security_groups_to_attach'))

@@ -105,7 +105,7 @@ def prepare_describe_node_group_filter(params, iface):
     return iface
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(EKSNodeGroup, resource_type=RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     """Prepares an AWS EKS Node Group"""
     # Save the parameters

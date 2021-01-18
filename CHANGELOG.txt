@@ -106,3 +106,6 @@
     - Fixed bug causing problems when using an existing internet gateway.
 2.5.6:
     - Fixed bug causing failure when Tag Specifications are passed to an Elastic IP.
+2.5.7:
+    - Store Lambda payload as valid JSON
+

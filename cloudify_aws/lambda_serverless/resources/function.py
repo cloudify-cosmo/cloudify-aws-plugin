@@ -16,13 +16,18 @@
     ~~~~~~~~~~~~~~~~~~~
     AWS Lambda Function interface
 '''
+import json
+
 from os import remove as os_remove
 from os.path import exists as path_exists
+from contextlib import contextmanager
+
+# Boto
+from botocore.exceptions import ClientError
+
 # Cloudify
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.lambda_serverless import LambdaBase
-# Boto
-from botocore.exceptions import ClientError
 
 RESOURCE_ID = 'FunctionName'
 RESOURCE_TYPE = 'Lambda Function'
@@ -36,9 +41,15 @@ class LambdaFunction(LambdaBase):
     '''
         AWS Lambda Function interface
     '''
-    def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
+    def __init__(self,
+                 ctx_node,
+                 resource_id=None,
+                 client=None,
+                 logger=None,
+                 resource_encoding='utf-8'):
         LambdaBase.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
+        self.resource_encoding = resource_encoding
 
     @property
     def properties(self):
@@ -79,15 +90,45 @@ class LambdaFunction(LambdaBase):
         '''
             Invokes an AWS Lambda Function.
         '''
-        params = params or dict()
-        params.update(dict(FunctionName=self.resource_id))
-        self.logger.debug('Invoking %s with parameters: %s'
-                          % (self.type_name, params))
-        res = self.client.invoke(**params)
+        invoke_params = dict()
+        invoke_params.update(params)
+        invoke_params.update(dict(FunctionName=self.resource_id))
+        with self._encode_payload(invoke_params.get('Payload')) as \
+                encoded_payload:
+            if encoded_payload is not None:
+                invoke_params['Payload'] = encoded_payload
+            self.logger.debug('Invoking %s with parameters: %s'
+                              % (self.type_name, invoke_params))
+            res = self.client.invoke(**invoke_params)
         if res and res.get('Payload'):
-            res['Payload'] = res['Payload'].read()
+            res['Payload'] = self._decode_payload(res['Payload'])
         self.logger.debug('Response: %s' % res)
         return res
+
+    @contextmanager
+    def _encode_payload(self, payload):
+        if isinstance(payload, str):
+            with open(payload, 'r') as payload_file:
+                yield payload_file
+        elif isinstance(payload, dict):
+            yield json.dumps(payload)
+        else:
+            yield payload
+
+    def _decode_payload(self, payload_stream):
+        payload = payload_stream.read()
+        if isinstance(payload, bytes):
+            payload = payload.decode(self.resource_encoding)
+        try:
+            payload = json.loads(payload)
+            if payload.get('body'):
+                try:
+                    payload['body'] = json.loads(payload['body'])
+                except ValueError:
+                    pass
+        except (ValueError, UnicodeDecodeError):
+            pass
+        return payload
 
 
 def _get_subnets_to_attach(ctx, vpc_config):

@@ -205,7 +205,7 @@ def _delete_attachment(ctx, iface):
     _detach_ebs(iface, resource_id)
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE_VOLUME)
+@decorators.aws_resource(EC2Volume, resource_type=RESOURCE_TYPE_VOLUME)
 def prepare(ctx, resource_config, **_):
     """
     Prepares an AWS EC2 EBS Volume
