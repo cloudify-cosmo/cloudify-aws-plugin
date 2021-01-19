@@ -2,9 +2,9 @@ plugins:
 
   aws:
     executor: central_deployment_agent
-    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/2.5.7.zip
+    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/2.5.8.zip
     package_name: cloudify-aws-plugin
-    package_version: '2.5.7'
+    package_version: '2.5.8'
 
 data_types:
 
@@ -2470,6 +2470,9 @@ node_types:
           Sometimes an IP has already been allocated,
           but is not assigned to a NIC.
           In order to work with limited quota, set this to true.
+        default: false
+      attach_existing_address:
+        description: If use_external_resource is true, and we do not want to try to attach the resource.
         default: false
     interfaces:
       cloudify.interfaces.lifecycle:
