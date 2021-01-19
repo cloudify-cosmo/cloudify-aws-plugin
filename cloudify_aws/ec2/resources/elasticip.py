@@ -264,6 +264,8 @@ def attach(ctx, iface, resource_config, **_):
     for arg_name in ['Domain', TAG_SPECIFICATIONS_KWARG]:
         params.pop(arg_name, None)
 
+    if not ctx.node.properties.get('attach_existing_address', False):
+        return
     # Actually attach the resources
     association_id = iface.attach(params)
     ctx.instance.runtime_properties['association_id'] = \
@@ -294,4 +296,6 @@ def detach(ctx, iface, resource_config, **_):
     params['AssociationId'] = association_id
     params.pop(TAG_SPECIFICATIONS_KWARG, None)
 
+    if not ctx.node.properties.get('attach_existing_address', False):
+        return
     iface.detach(params)

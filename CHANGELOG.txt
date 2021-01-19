@@ -108,4 +108,5 @@
     - Fixed bug causing failure when Tag Specifications are passed to an Elastic IP.
 2.5.7:
     - Store Lambda payload as valid JSON
-
+2.5.8:
+    - Permit skip attach on existing address
