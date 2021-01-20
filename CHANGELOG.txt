@@ -110,3 +110,6 @@
     - Store Lambda payload as valid JSON
 2.5.8:
     - Permit skip attach on existing address
+2.5.9:
+    - Allow resources with null state to retry before fatal error in order to compensate for async lag.
+
