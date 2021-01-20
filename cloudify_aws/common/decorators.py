@@ -20,6 +20,7 @@
 
 # Standard Imports
 import sys
+from time import sleep
 
 # Third party imports
 from botocore.exceptions import ClientError
@@ -83,6 +84,9 @@ def _wait_for_status(kwargs,
                 utils.JsonCleanuper(iface.properties).to_dict()
 
     elif not status and fail_on_missing:
+        sleep(.5)
+        if iface.status:
+            return
         raise NonRecoverableError(
             '%s ID# "%s" no longer exists but "fail_on_missing" set'
             % (resource_type, iface.resource_id))
