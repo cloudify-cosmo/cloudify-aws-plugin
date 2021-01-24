@@ -200,7 +200,7 @@ commands:
           at: workspace
       - run:
           name: update pip
-          command: pip install -U pip
+          command: pip install -U pip===20.3.3
       - run:
           name: install cloudify
           command: |
@@ -235,7 +235,7 @@ commands:
           at: workspace
       - run:
           name: update pip
-          command: pip install -U pip
+          command: pip install -U pip===20.3.3
       - run:
           name: install cloudify
           command: |
@@ -280,6 +280,9 @@ commands:
       - run:
           name: Install pip
           command: sudo python get-pip.py
+      - run:
+          name: update pip
+          command: pip install -U pip===20.3.3
       - run:
           name: Install virtualenv
           command: pip install --user virtualenv
