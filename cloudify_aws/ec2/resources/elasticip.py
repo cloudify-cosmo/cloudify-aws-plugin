@@ -267,7 +267,7 @@ def attach(ctx, iface, resource_config, **_):
     skip_attach = ctx.node.properties.get('use_external_resource', False) and \
         not ctx.node.properties.get('attach_existing_address', False)
 
-    if not skip_attach:
+    if skip_attach:
         return
     # Actually attach the resources
     association_id = iface.attach(params)
@@ -302,6 +302,6 @@ def detach(ctx, iface, resource_config, **_):
     skip_attach = ctx.node.properties.get('use_external_resource', False) and \
         not ctx.node.properties.get('attach_existing_address', False)
 
-    if not skip_attach:
+    if skip_attach:
         return
     iface.detach(params)
