@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Cloudify plugin package config"""
-
 import os
 from setuptools import setup
 from setuptools import find_packages
