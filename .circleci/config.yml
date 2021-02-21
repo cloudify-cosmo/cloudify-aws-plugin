@@ -222,7 +222,7 @@ commands:
           command: docker run --name cfy_manager -d --restart unless-stopped -v /sys/fs/cgroup:/sys/fs/cgroup:ro --tmpfs /run --tmpfs /run/lock --security-opt seccomp:unconfined --cap-add SYS_ADMIN --network host cloudifyplatform/premium-cloudify-manager-aio
       - run:
           name: install local project
-          command: pip install git+https://github.com/cloudify-incubator/cloudify-ecosystem-test.git@RD-890-ecosystem-tests-cli
+          command: pip install git+https://github.com/cloudify-incubator/cloudify-ecosystem-test.git@migrating-aws-to-new-tool
 #      - run: pytest -s .circleci/test_examples.py
 
   run_integration_tests_510:
@@ -254,18 +254,12 @@ commands:
           command: docker exec -it cfy_manager cfy_manager wait-for-starter
       - run:
           name: install local project
-          command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/latest.zip
-      - run:
-          name: create test file
-          command: touch adar_exp_test_file.txt
+          command: pip install git+https://github.com/cloudify-incubator/cloudify-ecosystem-test.git@migrating-aws-to-new-tool
 #      - run: pytest -s .circleci/test_examples.py
 
   prepare_test_manager:
     steps:
-      - attach_workspace:
-         at: workspace
-      - run: ls adar_exp_test_file.txt
-      - run: ecosystem-test prepare-test-manager -l $TEST_LICENSE -es aws_access_key_id=$aws_access_key_id -es aws_secret_access_key=$aws_secret_access_key --bundle-path workspace/cloudify-plugins-bundle.tgz
+      - run: ecosystem-test prepare-test-manager -l $TEST_LICENSE -es aws_access_key_id=$aws_access_key_id -es aws_secret_access_key=$aws_secret_access_key --bundle-path workspace/build/cloudify-plugins-bundle.tgz
 
   run_hello_world_test:
     steps:
@@ -468,7 +462,7 @@ jobs:
       - checkout
       - run_integration_tests_510
       - prepare_test_manager
-#      -  will add run test
+      - run_hello_world_test
 
   release:
     executor: py36
