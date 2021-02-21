@@ -531,16 +531,20 @@ workflows:
 #              only: /RD-1463-use-ecosystem-tests-cli/
       - cf_integration_tests_510:
           requires:
-            - cf_integration_tests_505
+#            - cf_integration_tests_505
+            - build_bundle
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
+#              only: /([0-9\.]*\-build|master|dev)/
+              only: /RD-1463-use-ecosystem-tests-cli/
       - eks_integration_tests_510:
           requires:
-            - eks_integration_tests_505
+#            - eks_integration_tests_505
+            - build_bundle
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
+#              only: /([0-9\.]*\-build|master|dev)/
+              only: /RD-1463-use-ecosystem-tests-cli/
       - hw_integration_tests_510:
           requires:
 #            - hw_integration_tests_505
