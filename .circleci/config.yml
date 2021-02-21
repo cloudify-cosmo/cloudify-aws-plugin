@@ -223,7 +223,7 @@ commands:
       - run:
           name: install local project
           command: pip install git+https://github.com/cloudify-incubator/cloudify-ecosystem-test.git@migrating-aws-to-new-tool
-#      - run: pytest -s .circleci/test_examples.py
+      - run: docker exec -it cfy_manager yum install -y python-netaddr
 
   create_manager_container_510:
     steps:
@@ -263,7 +263,7 @@ commands:
 
   run_hello_world_test:
     steps:
-      - run: ecosystem-test local-blueprint-test  -b examples/blueprint-examples/hello-world-example/aws.yaml --test-id=hello-world-example -i aws_region_name=us-east-1 --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test  -b examples/blueprint-examples/hello-world-example/aws.yaml --test-id=hello-world-example -i aws_region_name=us-east-1 --on-failure=uninstall-force --timeout=1800
 
   run_cf_test:
     steps:
