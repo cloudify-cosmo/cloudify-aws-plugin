@@ -223,7 +223,7 @@ commands:
       - run:
           name: install local project
           command: pip install git+https://github.com/cloudify-incubator/cloudify-ecosystem-test.git@migrating-aws-to-new-tool
-      - run: docker exec -it cfy_manager yum install -y python-netaddr
+      - run: docker exec -it cfy_manager yum install -y python-netaddr git
 
   create_manager_container_510:
     steps:
