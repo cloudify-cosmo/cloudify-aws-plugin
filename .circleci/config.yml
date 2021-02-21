@@ -522,12 +522,12 @@ workflows:
 #          filters:
 #            branches:
 #              only: /([0-9\.]*\-build|master|dev)/
-      - hw_integration_tests_505:
-          requires:
-            - build_bundle
-          filters:
-            branches:
-              only: /([0-9\.]*\-build|master|dev)/
+#      - hw_integration_tests_505:
+#          requires:
+#            - build_bundle
+#          filters:
+#            branches:
+#              only: /([0-9\.]*\-build|master|dev)/
 #      - cf_integration_tests_510:
 #          requires:
 #            - cf_integration_tests_505
@@ -542,7 +542,8 @@ workflows:
 #              only: /([0-9\.]*\-build|master|dev)/
       - hw_integration_tests_510:
           requires:
-            - hw_integration_tests_505
+#            - hw_integration_tests_505
+            - build_bundle
           filters:
             branches:
 #              only: /([0-9\.]*\-build|master|dev)/
@@ -560,7 +561,7 @@ workflows:
             - validate_documentation
 #            - cf_integration_tests_505
 #            - eks_integration_tests_505
-            - hw_integration_tests_505
+#            - hw_integration_tests_505
 #            - cf_integration_tests_510
 #            - eks_integration_tests_510
             - hw_integration_tests_510
