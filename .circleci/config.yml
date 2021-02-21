@@ -414,8 +414,6 @@ jobs:
     executor: cloudify-machine
     environment:
       CLOUDIFY_SSL_TRUST_ALL: true
-      IAAS: aws
-      TEST_NAME: virtual-machine
     steps:
       - checkout
       - run_integration_tests_505
@@ -426,8 +424,6 @@ jobs:
     executor: cloudify-machine
     environment:
       CLOUDIFY_SSL_TRUST_ALL: true
-      IAAS: aws
-      TEST_NAME: eks
     steps:
       - checkout
       - run_integration_tests_505
@@ -438,8 +434,6 @@ jobs:
     executor: cloudify-machine
     environment:
       CLOUDIFY_SSL_TRUST_ALL: true
-      IAAS: aws
-      TEST_NAME: hello-world
     steps:
       - checkout
       - run_integration_tests_505
@@ -450,8 +444,6 @@ jobs:
     executor: cloudify-machine-510
     environment:
       CLOUDIFY_SSL_TRUST_ALL: true
-      IAAS: aws
-      TEST_NAME: cloudformation
     steps:
       - checkout
       - create_manager_container_510
@@ -462,8 +454,6 @@ jobs:
     executor: cloudify-machine-510
     environment:
       CLOUDIFY_SSL_TRUST_ALL: true
-      IAAS: aws
-      TEST_NAME: eks
     steps:
       - checkout
       - create_manager_container_510
@@ -474,8 +464,6 @@ jobs:
     executor: cloudify-machine-510
     environment:
       CLOUDIFY_SSL_TRUST_ALL: true
-      IAAS: aws
-      TEST_NAME: hello-world
     steps:
       - checkout
       - create_manager_container_510
@@ -522,37 +510,37 @@ workflows:
           requires:
             - wagon
             - rhel_wagon
-#      - cf_integration_tests_505:
-#          requires:
-#            - build_bundle
-#          filters:
-#            branches:
-#              only: /([0-9\.]*\-build|master|dev)/
-#      - eks_integration_tests_505:
-#          requires:
-#            - build_bundle
-#          filters:
-#            branches:
-#              only: /([0-9\.]*\-build|master|dev)/
-#      - hw_integration_tests_505:
-#          requires:
-#            - build_bundle
-#          filters:
-#            branches:
-##              only: /([0-9\.]*\-build|master|dev)/
+      - cf_integration_tests_505:
+          requires:
+            - build_bundle
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+      - eks_integration_tests_505:
+          requires:
+            - build_bundle
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+      - hw_integration_tests_505:
+          requires:
+            - build_bundle
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
 #              only: /RD-1463-use-ecosystem-tests-cli/
-#      - cf_integration_tests_510:
-#          requires:
-#            - cf_integration_tests_505
-#          filters:
-#            branches:
-#              only: /([0-9\.]*\-build|master|dev)/
-#      - eks_integration_tests_510:
-#          requires:
-#            - eks_integration_tests_505
-#          filters:
-#            branches:
-#              only: /([0-9\.]*\-build|master|dev)/
+      - cf_integration_tests_510:
+          requires:
+            - cf_integration_tests_505
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+      - eks_integration_tests_510:
+          requires:
+            - eks_integration_tests_505
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - hw_integration_tests_510:
           requires:
 #            - hw_integration_tests_505
