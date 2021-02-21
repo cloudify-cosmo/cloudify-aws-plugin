@@ -225,7 +225,7 @@ commands:
           command: pip install git+https://github.com/cloudify-incubator/cloudify-ecosystem-test.git@migrating-aws-to-new-tool
 #      - run: pytest -s .circleci/test_examples.py
 
-  run_integration_tests_510:
+  create_manager_container_510:
     steps:
       - run:
           name: "Pull Submodules"
@@ -268,6 +268,10 @@ commands:
   run_cf_test:
     steps:
       - run: ecosystem-test local-blueprint-test  -b examples/blueprint-examples/virtual-machine/aws-cloudformation.yaml --test-id=virtual-machine -i aws_region_name=us-east-1 -i resource_suffix=$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000
+
+  run_eks_test:
+    steps:
+      - run: ecosystem-test local-blueprint-test  -b examples/blueprint-examples/kubernetes/aws-eks/blueprint.yaml --test-id=aws-eks -i aws_region_name=us-east-1 -i resource_suffix=$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000
 
   release_plugin:
     steps:
@@ -415,6 +419,8 @@ jobs:
     steps:
       - checkout
       - run_integration_tests_505
+      - prepare_test_manager
+      - run_cf_test
 
   eks_integration_tests_505:
     executor: cloudify-machine
@@ -425,6 +431,8 @@ jobs:
     steps:
       - checkout
       - run_integration_tests_505
+      - prepare_test_manager
+      - run_eks_test
 
   hw_integration_tests_505:
     executor: cloudify-machine
@@ -446,7 +454,9 @@ jobs:
       TEST_NAME: cloudformation
     steps:
       - checkout
-      - run_integration_tests_510
+      - create_manager_container_510
+      - prepare_test_manager
+      - run_cf_test
 
   eks_integration_tests_510:
     executor: cloudify-machine-510
@@ -456,7 +466,9 @@ jobs:
       TEST_NAME: eks
     steps:
       - checkout
-      - run_integration_tests_510
+      - create_manager_container_510
+      - prepare_test_manager
+      - run_eks_test
 
   hw_integration_tests_510:
     executor: cloudify-machine-510
@@ -466,7 +478,7 @@ jobs:
       TEST_NAME: hello-world
     steps:
       - checkout
-      - run_integration_tests_510
+      - create_manager_container_510
       - prepare_test_manager
       - run_hello_world_test
 
