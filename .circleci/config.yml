@@ -265,6 +265,10 @@ commands:
     steps:
       - run: ecosystem-test local-blueprint-test  -b examples/blueprint-examples/hello-world-example/aws.yaml --test-id=hello-world-example -i aws_region_name=us-east-1 -i resource_suffix=$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000
 
+  run_cf_test:
+    steps:
+      - run: ecosystem-test local-blueprint-test  -b examples/blueprint-examples/virtual-machine/aws-cloudformation.yaml --test-id=virtual-machine -i aws_region_name=us-east-1 -i resource_suffix=$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000
+
   release_plugin:
     steps:
       - run:
@@ -431,6 +435,8 @@ jobs:
     steps:
       - checkout
       - run_integration_tests_505
+      - prepare_test_manager
+      - run_hello_world_test
 
   cf_integration_tests_510:
     executor: cloudify-machine-510
@@ -516,12 +522,13 @@ workflows:
 #          filters:
 #            branches:
 #              only: /([0-9\.]*\-build|master|dev)/
-#      - hw_integration_tests_505:
-#          requires:
-#            - build_bundle
-#          filters:
-#            branches:
+      - hw_integration_tests_505:
+          requires:
+            - build_bundle
+          filters:
+            branches:
 #              only: /([0-9\.]*\-build|master|dev)/
+              only: /RD-1463-use-ecosystem-tests-cli/
 #      - cf_integration_tests_510:
 #          requires:
 #            - cf_integration_tests_505
@@ -536,8 +543,7 @@ workflows:
 #              only: /([0-9\.]*\-build|master|dev)/
       - hw_integration_tests_510:
           requires:
-#            - hw_integration_tests_505
-            - build_bundle
+            - hw_integration_tests_505
           filters:
             branches:
 #              only: /([0-9\.]*\-build|master|dev)/
@@ -555,7 +561,7 @@ workflows:
             - validate_documentation
 #            - cf_integration_tests_505
 #            - eks_integration_tests_505
-#            - hw_integration_tests_505
+            - hw_integration_tests_505
 #            - cf_integration_tests_510
 #            - eks_integration_tests_510
             - hw_integration_tests_510
