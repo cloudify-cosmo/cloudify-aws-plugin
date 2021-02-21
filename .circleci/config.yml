@@ -190,7 +190,7 @@ commands:
           paths:
             - build/*
 
-  run_integration_tests_505:
+  create_manager_container_505:
     steps:
       - run:
           name: "Pull Submodules"
@@ -416,7 +416,7 @@ jobs:
       CLOUDIFY_SSL_TRUST_ALL: true
     steps:
       - checkout
-      - run_integration_tests_505
+      - create_manager_container_505
       - prepare_test_manager
       - run_cf_test
 
@@ -426,7 +426,7 @@ jobs:
       CLOUDIFY_SSL_TRUST_ALL: true
     steps:
       - checkout
-      - run_integration_tests_505
+      - create_manager_container_505
       - prepare_test_manager
       - run_eks_test
 
@@ -436,7 +436,7 @@ jobs:
       CLOUDIFY_SSL_TRUST_ALL: true
     steps:
       - checkout
-      - run_integration_tests_505
+      - create_manager_container_505
       - prepare_test_manager
       - run_hello_world_test
 
@@ -515,44 +515,43 @@ workflows:
             - build_bundle
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
+#              only: /([0-9\.]*\-build|master|dev)/
+              only: /RD-1463-use-ecosystem-tests-cli/
       - eks_integration_tests_505:
           requires:
             - build_bundle
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
+#              only: /([0-9\.]*\-build|master|dev)/
+              only: /RD-1463-use-ecosystem-tests-cli/
       - hw_integration_tests_505:
           requires:
             - build_bundle
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
-#              only: /RD-1463-use-ecosystem-tests-cli/
+#              only: /([0-9\.]*\-build|master|dev)/
+              only: /RD-1463-use-ecosystem-tests-cli/
       - cf_integration_tests_510:
           requires:
-#            - cf_integration_tests_505
-            - build_bundle
+            - cf_integration_tests_505
           filters:
             branches:
-#              only: /([0-9\.]*\-build|master|dev)/
-              only: /RD-1463-use-ecosystem-tests-cli/
+              only: /([0-9\.]*\-build|master|dev)/
+#              only: /RD-1463-use-ecosystem-tests-cli/
       - eks_integration_tests_510:
           requires:
-#            - eks_integration_tests_505
-            - build_bundle
+            - eks_integration_tests_505
           filters:
             branches:
-#              only: /([0-9\.]*\-build|master|dev)/
-              only: /RD-1463-use-ecosystem-tests-cli/
+              only: /([0-9\.]*\-build|master|dev)/
+#              only: /RD-1463-use-ecosystem-tests-cli/
       - hw_integration_tests_510:
           requires:
-#            - hw_integration_tests_505
-            - build_bundle
+            - hw_integration_tests_505
           filters:
             branches:
-#              only: /([0-9\.]*\-build|master|dev)/
-              only: /RD-1463-use-ecosystem-tests-cli/
+              only: /([0-9\.]*\-build|master|dev)/
+#              only: /RD-1463-use-ecosystem-tests-cli/
       - release:
           filters:
             branches:
