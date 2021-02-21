@@ -242,7 +242,7 @@ commands:
             pip install -r test-requirements.txt
       - run:
           name: download manager docker image
-          command:  docker pull cloudifyplatform/premium-cloudify-manager-aio:5.1.1
+          command:  docker pull cloudifyplatform/premium-cloudify-manager-aio:latest
       - run:
           name: show images
           command: docker images
