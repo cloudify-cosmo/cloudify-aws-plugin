@@ -222,8 +222,8 @@ commands:
           command: docker run --name cfy_manager -d --restart unless-stopped -v /sys/fs/cgroup:/sys/fs/cgroup:ro --tmpfs /run --tmpfs /run/lock --security-opt seccomp:unconfined --cap-add SYS_ADMIN --network host cloudifyplatform/premium-cloudify-manager-aio
       - run:
           name: install local project
-          command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/latest.zip
-      - run: pytest -s .circleci/test_examples.py
+          command: pip install git+https://github.com/cloudify-incubator/cloudify-ecosystem-test.git@RD-890-ecosystem-tests-cli
+#      - run: pytest -s .circleci/test_examples.py
 
   run_integration_tests_510:
     steps:
@@ -255,7 +255,21 @@ commands:
       - run:
           name: install local project
           command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/latest.zip
-      - run: pytest -s .circleci/test_examples.py
+      - run:
+          name: create test file
+          command: touch adar_exp_test_file.txt
+#      - run: pytest -s .circleci/test_examples.py
+
+  prepare_test_manager:
+    steps:
+      - attach_workspace:
+         at: workspace
+      - run: ls adar_exp_test_file.txt
+      - run: ecosystem-test prepare-test-manager -l $TEST_LICENSE -es aws_access_key_id=$aws_access_key_id -es aws_secret_access_key=$aws_secret_access_key --bundle-path workspace/cloudify-plugins-bundle.tgz
+
+  run_hello_world_test:
+    steps:
+      - run: ecosystem-test local-blueprint-test  -b examples/blueprint-examples/hello-world-example/aws.yaml --test-id=hello-world-example -i aws_region_name=us-east-1 -i resource_suffix=$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000
 
   release_plugin:
     steps:
@@ -301,8 +315,6 @@ commands:
       - attach_workspace:
           at: workspace
       - run: python .circleci/package_release.py
-
-
 
   merge_docs:
     steps:
@@ -455,6 +467,8 @@ jobs:
     steps:
       - checkout
       - run_integration_tests_510
+      - prepare_test_manager
+#      -  will add run test
 
   release:
     executor: py36
@@ -481,54 +495,58 @@ workflows:
       - rhel_wagon:
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
+#              only: /([0-9\.]*\-build|master|dev)/
+              only: /RD-1463-use-ecosystem-tests-cli/
       - wagon:
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
+#              only: /([0-9\.]*\-build|master|dev)/
+              only: /RD-1463-use-ecosystem-tests-cli/
       - build_bundle:
           filters:
             branches:
-              only: /master/
+#              only: /master/
+              only: /RD-1463-use-ecosystem-tests-cli/
           requires:
             - wagon
             - rhel_wagon
-      - cf_integration_tests_505:
-          requires:
-            - build_bundle
-          filters:
-            branches:
-              only: /([0-9\.]*\-build|master|dev)/
-      - eks_integration_tests_505:
-          requires:
-            - build_bundle
-          filters:
-            branches:
-              only: /([0-9\.]*\-build|master|dev)/
+#      - cf_integration_tests_505:
+#          requires:
+#            - build_bundle
+#          filters:
+#            branches:
+#              only: /([0-9\.]*\-build|master|dev)/
+#      - eks_integration_tests_505:
+#          requires:
+#            - build_bundle
+#          filters:
+#            branches:
+#              only: /([0-9\.]*\-build|master|dev)/
       - hw_integration_tests_505:
           requires:
             - build_bundle
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-      - cf_integration_tests_510:
-          requires:
-            - cf_integration_tests_505
-          filters:
-            branches:
-              only: /([0-9\.]*\-build|master|dev)/
-      - eks_integration_tests_510:
-          requires:
-            - eks_integration_tests_505
-          filters:
-            branches:
-              only: /([0-9\.]*\-build|master|dev)/
+#      - cf_integration_tests_510:
+#          requires:
+#            - cf_integration_tests_505
+#          filters:
+#            branches:
+#              only: /([0-9\.]*\-build|master|dev)/
+#      - eks_integration_tests_510:
+#          requires:
+#            - eks_integration_tests_505
+#          filters:
+#            branches:
+#              only: /([0-9\.]*\-build|master|dev)/
       - hw_integration_tests_510:
           requires:
             - hw_integration_tests_505
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
+#              only: /([0-9\.]*\-build|master|dev)/
+              only: /RD-1463-use-ecosystem-tests-cli/
       - release:
           filters:
             branches:
@@ -540,11 +558,11 @@ workflows:
             - wagon
             - validate_version
             - validate_documentation
-            - cf_integration_tests_505
-            - eks_integration_tests_505
+#            - cf_integration_tests_505
+#            - eks_integration_tests_505
             - hw_integration_tests_505
-            - cf_integration_tests_510
-            - eks_integration_tests_510
+#            - cf_integration_tests_510
+#            - eks_integration_tests_510
             - hw_integration_tests_510
       - merge_docs:
           filters:
