@@ -580,53 +580,54 @@ workflows:
       - unittests_py27
       - unittests_py36
       - validate_version
-      - wagon:
-          filters:
-            branches:
-              only: /([0-9\.]*\-build|master|dev)/
       - rhel_wagon:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
+      - wagon:
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+      - build_bundle:
+          filters:
+            branches:
+              only: /master/
+          requires:
+            - wagon
+            - rhel_wagon
       - cf_integration_tests_505:
           requires:
-            - rhel_wagon
-            - wagon
+            - build_bundle
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - eks_integration_tests_505:
           requires:
-            - rhel_wagon
-            - wagon
+            - build_bundle
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - hw_integration_tests_505:
           requires:
-            - rhel_wagon
-            - wagon
+            - build_bundle
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - cf_integration_tests_py3:
           requires:
-            - rhel_wagon
-            - wagon
+            - cf_integration_tests_505
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - eks_integration_tests_py3:
           requires:
-            - rhel_wagon
-            - wagon
+            - eks_integration_tests_505
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-      - hw_integration_tests_505:
+      - hw_integration_tests_py3:
           requires:
-            - rhel_wagon
-            - wagon
+            - hw_integration_tests_505
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
