@@ -494,18 +494,15 @@ workflows:
       - rhel_wagon:
           filters:
             branches:
-#              only: /([0-9\.]*\-build|master|dev)/
-              only: /RD-1463-use-ecosystem-tests-cli/
+              only: /([0-9\.]*\-build|master|dev)/
       - wagon:
           filters:
             branches:
-#              only: /([0-9\.]*\-build|master|dev)/
-              only: /RD-1463-use-ecosystem-tests-cli/
+              only: /([0-9\.]*\-build|master|dev)/
       - build_bundle:
           filters:
             branches:
-#              only: /master/
-              only: /RD-1463-use-ecosystem-tests-cli/
+              only: /master/
           requires:
             - wagon
             - rhel_wagon
@@ -514,43 +511,37 @@ workflows:
             - build_bundle
           filters:
             branches:
-#              only: /([0-9\.]*\-build|master|dev)/
-              only: /RD-1463-use-ecosystem-tests-cli/
+              only: /([0-9\.]*\-build|master|dev)/
       - eks_integration_tests_505:
           requires:
             - build_bundle
           filters:
             branches:
-#              only: /([0-9\.]*\-build|master|dev)/
-              only: /RD-1463-use-ecosystem-tests-cli/
+              only: /([0-9\.]*\-build|master|dev)/
       - hw_integration_tests_505:
           requires:
             - build_bundle
           filters:
             branches:
-#              only: /([0-9\.]*\-build|master|dev)/
-              only: /RD-1463-use-ecosystem-tests-cli/
+              only: /([0-9\.]*\-build|master|dev)/
       - cf_integration_tests_510:
           requires:
             - cf_integration_tests_505
           filters:
             branches:
-#              only: /([0-9\.]*\-build|master|dev)/
-              only: /RD-1463-use-ecosystem-tests-cli/
+              only: /([0-9\.]*\-build|master|dev)/
       - eks_integration_tests_510:
           requires:
             - eks_integration_tests_505
           filters:
             branches:
-#              only: /([0-9\.]*\-build|master|dev)/
-              only: /RD-1463-use-ecosystem-tests-cli/
+              only: /([0-9\.]*\-build|master|dev)/
       - hw_integration_tests_510:
           requires:
             - hw_integration_tests_505
           filters:
             branches:
-#              only: /([0-9\.]*\-build|master|dev)/
-              only: /RD-1463-use-ecosystem-tests-cli/
+              only: /([0-9\.]*\-build|master|dev)/
       - release:
           filters:
             branches:
