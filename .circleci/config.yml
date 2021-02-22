@@ -171,7 +171,6 @@ commands:
           paths:
             - build/*
 
-
   build_archive:
     steps:
       - attach_workspace:
@@ -222,7 +221,7 @@ commands:
           command: docker run --name cfy_manager -d --restart unless-stopped -v /sys/fs/cgroup:/sys/fs/cgroup:ro --tmpfs /run --tmpfs /run/lock --security-opt seccomp:unconfined --cap-add SYS_ADMIN --network host cloudifyplatform/premium-cloudify-manager-aio
       - run:
           name: install local project
-          command: pip install git+https://github.com/cloudify-incubator/cloudify-ecosystem-test.git@migrating-aws-to-new-tool
+          command:  pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/latest.zip
 
 
   create_manager_container_py3:
@@ -254,7 +253,7 @@ commands:
           command: docker exec -it cfy_manager cfy_manager wait-for-starter
       - run:
           name: install local project
-          command: pip install git+https://github.com/cloudify-incubator/cloudify-ecosystem-test.git@migrating-aws-to-new-tool
+          command:  pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/latest.zip
 
   prepare_test_manager:
     steps:
