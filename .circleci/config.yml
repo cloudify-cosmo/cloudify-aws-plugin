@@ -225,7 +225,7 @@ commands:
           command: pip install git+https://github.com/cloudify-incubator/cloudify-ecosystem-test.git@migrating-aws-to-new-tool
 
 
-  create_manager_container_510:
+  create_manager_container_latest:
     steps:
       - run:
           name: "Pull Submodules"
@@ -445,7 +445,7 @@ jobs:
       CLOUDIFY_SSL_TRUST_ALL: true
     steps:
       - checkout
-      - create_manager_container_510
+      - create_manager_container_latest
       - prepare_test_manager
       - run_cf_test
 
@@ -455,7 +455,7 @@ jobs:
       CLOUDIFY_SSL_TRUST_ALL: true
     steps:
       - checkout
-      - create_manager_container_510
+      - create_manager_container_latest
       - prepare_test_manager
       - run_eks_test
 
@@ -465,7 +465,7 @@ jobs:
       CLOUDIFY_SSL_TRUST_ALL: true
     steps:
       - checkout
-      - create_manager_container_510
+      - create_manager_container_latest
       - prepare_test_manager
       - run_hello_world_test
 
