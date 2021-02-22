@@ -223,7 +223,7 @@ commands:
       - run:
           name: install local project
           command: pip install git+https://github.com/cloudify-incubator/cloudify-ecosystem-test.git@migrating-aws-to-new-tool
-      - run: docker exec -it cfy_manager yum install -y python-netaddr git
+
 
   create_manager_container_510:
     steps:
@@ -255,11 +255,10 @@ commands:
       - run:
           name: install local project
           command: pip install git+https://github.com/cloudify-incubator/cloudify-ecosystem-test.git@migrating-aws-to-new-tool
-#      - run: pytest -s .circleci/test_examples.py
 
   prepare_test_manager:
     steps:
-      - run: ecosystem-test prepare-test-manager -l $TEST_LICENSE -es aws_access_key_id=$aws_access_key_id -es aws_secret_access_key=$aws_secret_access_key --bundle-path workspace/build/cloudify-plugins-bundle.tgz
+      - run: ecosystem-test prepare-test-manager -l $TEST_LICENSE -es aws_access_key_id=$aws_access_key_id -es aws_secret_access_key=$aws_secret_access_key --bundle-path workspace/build/cloudify-plugins-bundle.tgz --yum-package python-netaddr --yum-package git
 
   run_hello_world_test:
     steps:
@@ -536,22 +535,22 @@ workflows:
             - cf_integration_tests_505
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
-#              only: /RD-1463-use-ecosystem-tests-cli/
+#              only: /([0-9\.]*\-build|master|dev)/
+              only: /RD-1463-use-ecosystem-tests-cli/
       - eks_integration_tests_510:
           requires:
             - eks_integration_tests_505
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
-#              only: /RD-1463-use-ecosystem-tests-cli/
+#              only: /([0-9\.]*\-build|master|dev)/
+              only: /RD-1463-use-ecosystem-tests-cli/
       - hw_integration_tests_510:
           requires:
             - hw_integration_tests_505
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
-#              only: /RD-1463-use-ecosystem-tests-cli/
+#              only: /([0-9\.]*\-build|master|dev)/
+              only: /RD-1463-use-ecosystem-tests-cli/
       - release:
           filters:
             branches:
@@ -563,11 +562,11 @@ workflows:
             - wagon
             - validate_version
             - validate_documentation
-#            - cf_integration_tests_505
-#            - eks_integration_tests_505
-#            - hw_integration_tests_505
-#            - cf_integration_tests_510
-#            - eks_integration_tests_510
+            - cf_integration_tests_505
+            - eks_integration_tests_505
+            - hw_integration_tests_505
+            - cf_integration_tests_510
+            - eks_integration_tests_510
             - hw_integration_tests_510
       - merge_docs:
           filters:
