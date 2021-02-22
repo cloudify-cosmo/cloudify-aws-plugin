@@ -24,15 +24,15 @@ from cloudify_aws.ec2.resources import eni
 RESOURCE_TYPE = 'Lambda Function Invocation'
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(LambdaFunction, RESOURCE_TYPE)
 def configure(ctx, resource_config, **_):
     '''Configures an AWS Lambda Invoke'''
     # Save the parameters
     ctx.instance.runtime_properties['resource_config'] = resource_config
 
 
-@decorators.aws_relationship(resource_type=RESOURCE_TYPE)
-def attach_to(ctx, resource_config, **_):
+@decorators.aws_relationship(LambdaFunction, RESOURCE_TYPE)
+def attach_to(ctx, iface, resource_config, **_):
     '''Attaches an Lambda Invoke to something else'''
     rtprops = ctx.source.instance.runtime_properties
     resource_encoding = \
@@ -40,18 +40,20 @@ def attach_to(ctx, resource_config, **_):
         ctx.source.node.properties.get('resource_encoding')
     if utils.is_node_type(ctx.target.node,
                           'cloudify.nodes.aws.lambda.Function'):
-        ctx.source.instance.runtime_properties['output'] = LambdaFunction(
+        lambda_fn = iface(
             ctx.target.node, logger=ctx.logger,
             resource_encoding=resource_encoding,
             resource_id=utils.get_resource_id(
                 node=ctx.target.node,
                 instance=ctx.target.instance,
-                raise_on_missing=True)).invoke(
-                    resource_config or rtprops.get('resource_config'))
+                raise_on_missing=True))
+        result = lambda_fn.invoke(resource_config or \
+            rtprops.get('resource_config'))
+        ctx.source.instance.runtime_properties['output'] = result
 
 
-@decorators.aws_relationship(resource_type=RESOURCE_TYPE)
-def detach_from(ctx, resource_config, **_):
+@decorators.aws_relationship(LambdaFunction, RESOURCE_TYPE)
+def detach_from(ctx, **_):
     '''Detaches an Lambda Invoke from something else'''
     props = ctx.target.instance.runtime_properties
     function_name = props.get('aws_resource_id')

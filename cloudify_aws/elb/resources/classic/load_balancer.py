@@ -190,7 +190,7 @@ def start(ctx, iface, resource_config, **_):
 @decorators.aws_resource(ELBClassicLoadBalancer,
                          RESOURCE_TYPE,
                          ignore_properties=True)
-def delete(iface, resource_config, **_):
+def delete(ctx, iface, resource_config, **_):
     """Deletes an AWS ELB classic load balancer"""
 
     # Create a copy of the resource config for clean manipulation.
@@ -204,7 +204,7 @@ def delete(iface, resource_config, **_):
     iface.delete(params)
 
 
-@decorators.aws_relationship(None, RESOURCE_TYPE)
+@decorators.aws_relationship(ELBClassicLoadBalancer, RESOURCE_TYPE)
 def assoc(ctx, **_):
     """associate instance with ELB classic LB"""
     instance_id = \
@@ -230,7 +230,7 @@ def assoc(ctx, **_):
                 instance_id, lb))
 
 
-@decorators.aws_relationship(None, RESOURCE_TYPE)
+@decorators.aws_relationship(ELBClassicLoadBalancer, RESOURCE_TYPE)
 def disassoc(ctx, **_):
     """disassociate instance with ELB classic LB"""
     instance_id = \
