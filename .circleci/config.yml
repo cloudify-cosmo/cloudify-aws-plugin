@@ -27,7 +27,7 @@ executors:
     machine:
       image: ubuntu-1604:201903-01
 
-  cloudify-machine-510:
+  cloudify-machine-py3:
     machine:
       image: ubuntu-1604:201903-01
 
@@ -225,7 +225,7 @@ commands:
           command: pip install git+https://github.com/cloudify-incubator/cloudify-ecosystem-test.git@migrating-aws-to-new-tool
 
 
-  create_manager_container_latest:
+  create_manager_container_py3:
     steps:
       - run:
           name: "Pull Submodules"
@@ -439,33 +439,33 @@ jobs:
       - prepare_test_manager
       - run_hello_world_test
 
-  cf_integration_tests_510:
-    executor: cloudify-machine-510
+  cf_integration_tests_py3:
+    executor: cloudify-machine-py3
     environment:
       CLOUDIFY_SSL_TRUST_ALL: true
     steps:
       - checkout
-      - create_manager_container_latest
+      - create_manager_container_py3
       - prepare_test_manager
       - run_cf_test
 
-  eks_integration_tests_510:
-    executor: cloudify-machine-510
+  eks_integration_tests_py3:
+    executor: cloudify-machine-py3
     environment:
       CLOUDIFY_SSL_TRUST_ALL: true
     steps:
       - checkout
-      - create_manager_container_latest
+      - create_manager_container_py3
       - prepare_test_manager
       - run_eks_test
 
-  hw_integration_tests_510:
-    executor: cloudify-machine-510
+  hw_integration_tests_py3:
+    executor: cloudify-machine-py3
     environment:
       CLOUDIFY_SSL_TRUST_ALL: true
     steps:
       - checkout
-      - create_manager_container_latest
+      - create_manager_container_py3
       - prepare_test_manager
       - run_hello_world_test
 
@@ -524,19 +524,19 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-      - cf_integration_tests_510:
+      - cf_integration_tests_py3:
           requires:
             - cf_integration_tests_505
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-      - eks_integration_tests_510:
+      - eks_integration_tests_py3:
           requires:
             - eks_integration_tests_505
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-      - hw_integration_tests_510:
+      - hw_integration_tests_py3:
           requires:
             - hw_integration_tests_505
           filters:
@@ -556,9 +556,9 @@ workflows:
             - cf_integration_tests_505
             - eks_integration_tests_505
             - hw_integration_tests_505
-            - cf_integration_tests_510
-            - eks_integration_tests_510
-            - hw_integration_tests_510
+            - cf_integration_tests_py3
+            - eks_integration_tests_py3
+            - hw_integration_tests_py3
       - merge_docs:
           filters:
             branches:
@@ -609,14 +609,14 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-      - cf_integration_tests_510:
+      - cf_integration_tests_py3:
           requires:
             - rhel_wagon
             - wagon
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-      - eks_integration_tests_510:
+      - eks_integration_tests_py3:
           requires:
             - rhel_wagon
             - wagon
