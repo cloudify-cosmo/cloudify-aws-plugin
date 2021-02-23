@@ -32,13 +32,13 @@ def configure(ctx, resource_config, **_):
 
 
 @decorators.aws_relationship(IAMUser, RESOURCE_TYPE)
-def attach_to(ctx, iface, resource_config, **_):
+def attach_to(ctx, resource_config, **_):
     '''Attaches an IAM Login Profile to something else'''
     rtprops = ctx.source.instance.runtime_properties
     params = resource_config or rtprops.get('resource_config') or dict()
     if utils.is_node_type(ctx.target.node,
                           'cloudify.nodes.aws.iam.User'):
-        iface(
+        IAMUser(
             ctx.target.node, logger=ctx.logger,
             resource_id=utils.get_resource_id(
                 node=ctx.target.node,
@@ -47,11 +47,11 @@ def attach_to(ctx, iface, resource_config, **_):
 
 
 @decorators.aws_relationship(IAMUser, RESOURCE_TYPE)
-def detach_from(ctx, iface, resource_config, **_):
+def detach_from(ctx, resource_config, **_):
     '''Detaches an IAM Login Profile from something else'''
     if utils.is_node_type(ctx.target.node,
                           'cloudify.nodes.aws.iam.User'):
-        iface(
+        IAMUser(
             ctx.target.node, logger=ctx.logger,
             resource_id=utils.get_resource_id(
                 node=ctx.target.node,

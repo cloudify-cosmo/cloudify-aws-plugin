@@ -73,7 +73,6 @@ class TestIAMAccessKey(TestBase):
                 'SecretAccessKey': 'aws_secret_access_key'
             }
         })
-
         access_key.attach_to(
             ctx=_ctx, resource_config=None, iface=None
         )

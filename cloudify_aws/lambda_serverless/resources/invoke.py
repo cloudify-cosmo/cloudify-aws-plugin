@@ -32,7 +32,7 @@ def configure(ctx, resource_config, **_):
 
 
 @decorators.aws_relationship(LambdaFunction, RESOURCE_TYPE)
-def attach_to(ctx, iface, resource_config, **_):
+def attach_to(ctx, resource_config, **_):
     '''Attaches an Lambda Invoke to something else'''
     rtprops = ctx.source.instance.runtime_properties
     resource_encoding = \
@@ -40,7 +40,7 @@ def attach_to(ctx, iface, resource_config, **_):
         ctx.source.node.properties.get('resource_encoding')
     if utils.is_node_type(ctx.target.node,
                           'cloudify.nodes.aws.lambda.Function'):
-        lambda_fn = iface(
+        lambda_fn = LambdaFunction(
             ctx.target.node, logger=ctx.logger,
             resource_encoding=resource_encoding,
             resource_id=utils.get_resource_id(

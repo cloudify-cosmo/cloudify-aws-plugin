@@ -103,9 +103,9 @@ class TestEC2Subnet(TestBase):
     def test_prepare(self):
         ctx = self.get_mock_ctx("Subnet")
         config = {SUBNET_ID: 'subnet', CIDR_BLOCK: 'cidr_block'}
-        iface = MagicMock()
-        iface.create = self.mock_return(config)
-        subnet.prepare(ctx, iface, config)
+        # iface = MagicMock()
+        # iface.create = self.mock_return(config)
+        subnet.prepare(ctx, config)
         self.assertEqual(ctx.instance.runtime_properties['resource_config'],
                          config)
 

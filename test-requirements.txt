@@ -8,4 +8,4 @@ pylint==1.9.5
 # for integration and platform tests
 # awscli==1.18.51
 pytest==4.6.3
-pyyaml
+pyyaml>=4.2b4

@@ -32,12 +32,12 @@ def configure(ctx, resource_config, **_):
 
 
 @decorators.aws_relationship(IAMUser, RESOURCE_TYPE)
-def attach_to(ctx, iface, resource_config, **_):
+def attach_to(ctx, resource_config, **_):
     '''Attaches an IAM Access Key to something else'''
     rtprops = ctx.source.instance.runtime_properties
     if utils.is_node_type(ctx.target.node,
                           'cloudify.nodes.aws.iam.User'):
-        resp = iface(
+        resp = IAMUser(
             ctx.target.node, logger=ctx.logger,
             resource_id=utils.get_resource_id(
                 node=ctx.target.node,
@@ -50,7 +50,7 @@ def attach_to(ctx, iface, resource_config, **_):
 
 
 @decorators.aws_relationship(IAMUser, RESOURCE_TYPE)
-def detach_from(ctx, iface, resource_config, **_):
+def detach_from(ctx, resource_config, **_):
     '''Detaches an IAM Access Key from something else'''
     if utils.is_node_type(ctx.target.node,
                           'cloudify.nodes.aws.iam.User'):
@@ -58,9 +58,9 @@ def detach_from(ctx, iface, resource_config, **_):
             node=ctx.source.node,
             instance=ctx.source.instance,
             raise_on_missing=True)
-        iface(ctx.target.node,
-              logger=ctx.logger,
-              resource_id=utils.get_resource_id(
-                  node=ctx.target.node,
-                  instance=ctx.target.instance,
-                  raise_on_missing=True)).delete_access_key(resource_config)
+        IAMUser(ctx.target.node,
+                logger=ctx.logger,
+                resource_id=utils.get_resource_id(
+                    node=ctx.target.node,
+                    instance=ctx.target.instance,
+                    raise_on_missing=True)).delete_access_key(resource_config)

@@ -87,7 +87,8 @@ class TestLambdaInvoke(TestBase):
         relation_ctx = self._get_relationship_context(SUBNET_GROUP_F)
         with patch(LAMBDA_PATH) as mock, patch(INVOKE_PATH + 'utils') as utils:
             utils.is_node_type = MagicMock(return_value=True)
-            invoke.attach_to(ctx=relation_ctx, resource_config=True)
+            invoke.attach_to(
+                ctx=relation_ctx, resource_config=True)
             self.assertTrue(mock.called)
             output = relation_ctx.source.instance.runtime_properties['output']
             self.assertIsInstance(output, MagicMock)
