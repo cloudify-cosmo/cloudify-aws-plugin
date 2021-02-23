@@ -96,7 +96,7 @@ class EC2Subnet(EC2Base):
 
 
 @decorators.aws_resource(EC2Subnet, resource_type=RESOURCE_TYPE)
-def prepare(ctx, iface, resource_config, **_):
+def prepare(ctx, resource_config, **_):
     '''Prepares an AWS EC2 Subnet'''
     # Save the parameters
     ctx.instance.runtime_properties['resource_config'] = resource_config

@@ -154,7 +154,7 @@ def aws_params(resource_name, params_priority=True):
         '''Outer function'''
         def wrapper_inner(*argc, **kwargs):
             ctx = kwargs.get('ctx')
-            iface = kwargs.get('iface')
+            iface = kwargs['iface']
             resource_config = kwargs.get('resource_config')
 
             # Create a copy of the resource config for clean manipulation.

@@ -59,7 +59,7 @@ class TestIAMLoginProfile(TestBase):
             type_name='iam',
             type_class=login_profile)
 
-    def test_attach_to_User(self):
+    def test_attach_to_user(self):
         _source_ctx, _target_ctx, _ctx = self._create_common_relationships(
             'test_attach_to',
             LOGIN_PROFILE_TH,
@@ -86,7 +86,7 @@ class TestIAMLoginProfile(TestBase):
             }
         )
 
-    def test_detach_from_User(self):
+    def test_detach_from_user(self):
         _source_ctx, _target_ctx, _ctx = self._create_common_relationships(
             'test_detach_from',
             LOGIN_PROFILE_TH,

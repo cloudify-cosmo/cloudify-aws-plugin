@@ -144,8 +144,7 @@ def delete(iface, resource_config, **_):
     iface.delete(resource_config)
 
 
-@decorators.aws_resource(ELBTargetGroup,
-                         RESOURCE_TYPE)
+@decorators.aws_resource(ELBTargetGroup, RESOURCE_TYPE)
 def modify(ctx, iface, resource_config, **_):
     '''modify an AWS ELB target group attributes'''
     # Build API params

@@ -23,7 +23,7 @@ from cloudify_aws.iam.resources.user import IAMUser
 RESOURCE_TYPE = 'IAM User Access Key'
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(IAMUser, RESOURCE_TYPE)
 def configure(ctx, resource_config, **_):
     '''Configures an AWS IAM Access Key'''
     # Save the parameters
@@ -31,7 +31,7 @@ def configure(ctx, resource_config, **_):
         utils.clean_params(resource_config)
 
 
-@decorators.aws_relationship(resource_type=RESOURCE_TYPE)
+@decorators.aws_relationship(IAMUser, RESOURCE_TYPE)
 def attach_to(ctx, resource_config, **_):
     '''Attaches an IAM Access Key to something else'''
     rtprops = ctx.source.instance.runtime_properties
@@ -49,7 +49,7 @@ def attach_to(ctx, resource_config, **_):
             resp['SecretAccessKey']
 
 
-@decorators.aws_relationship(resource_type=RESOURCE_TYPE)
+@decorators.aws_relationship(IAMUser, RESOURCE_TYPE)
 def detach_from(ctx, resource_config, **_):
     '''Detaches an IAM Access Key from something else'''
     if utils.is_node_type(ctx.target.node,
@@ -58,7 +58,8 @@ def detach_from(ctx, resource_config, **_):
             node=ctx.source.node,
             instance=ctx.source.instance,
             raise_on_missing=True)
-        IAMUser(ctx.target.node, logger=ctx.logger,
+        IAMUser(ctx.target.node,
+                logger=ctx.logger,
                 resource_id=utils.get_resource_id(
                     node=ctx.target.node,
                     instance=ctx.target.instance,
