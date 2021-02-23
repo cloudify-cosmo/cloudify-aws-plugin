@@ -47,8 +47,8 @@ def attach_to(ctx, iface, resource_config, **_):
                 node=ctx.target.node,
                 instance=ctx.target.instance,
                 raise_on_missing=True))
-        result = lambda_fn.invoke(resource_config or \
-            rtprops.get('resource_config'))
+        result = lambda_fn.invoke(resource_config or rtprops.get(
+            'resource_config'))
         ctx.source.instance.runtime_properties['output'] = result
 
 

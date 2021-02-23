@@ -58,8 +58,9 @@ def detach_from(ctx, iface, resource_config, **_):
             node=ctx.source.node,
             instance=ctx.source.instance,
             raise_on_missing=True)
-        iface(ctx.target.node, logger=ctx.logger,
-                resource_id=utils.get_resource_id(
-                    node=ctx.target.node,
-                    instance=ctx.target.instance,
-                    raise_on_missing=True)).delete_access_key(resource_config)
+        iface(ctx.target.node,
+              logger=ctx.logger,
+              resource_id=utils.get_resource_id(
+                  node=ctx.target.node,
+                  instance=ctx.target.instance,
+                  raise_on_missing=True)).delete_access_key(resource_config)
