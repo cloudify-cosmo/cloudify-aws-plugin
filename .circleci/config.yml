@@ -27,7 +27,7 @@ executors:
     machine:
       image: ubuntu-1604:201903-01
 
-  cloudify-machine-510:
+  cloudify-machine-py3:
     machine:
       image: ubuntu-1604:201903-01
 
@@ -171,7 +171,6 @@ commands:
           paths:
             - build/*
 
-
   build_archive:
     steps:
       - attach_workspace:
@@ -190,7 +189,7 @@ commands:
           paths:
             - build/*
 
-  run_integration_tests_505:
+  create_manager_container_505:
     steps:
       - run:
           name: "Pull Submodules"
@@ -222,10 +221,10 @@ commands:
           command: docker run --name cfy_manager -d --restart unless-stopped -v /sys/fs/cgroup:/sys/fs/cgroup:ro --tmpfs /run --tmpfs /run/lock --security-opt seccomp:unconfined --cap-add SYS_ADMIN --network host cloudifyplatform/premium-cloudify-manager-aio
       - run:
           name: install local project
-          command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/latest.zip
-      - run: pytest -s .circleci/test_examples.py
+          command:  pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/latest.zip
 
-  run_integration_tests_510:
+
+  create_manager_container_py3:
     steps:
       - run:
           name: "Pull Submodules"
@@ -254,8 +253,23 @@ commands:
           command: docker exec -it cfy_manager cfy_manager wait-for-starter
       - run:
           name: install local project
-          command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/latest.zip
-      - run: pytest -s .circleci/test_examples.py
+          command:  pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/latest.zip
+
+  prepare_test_manager:
+    steps:
+      - run: ecosystem-test prepare-test-manager -l $TEST_LICENSE -es aws_access_key_id=$aws_access_key_id -es aws_secret_access_key=$aws_secret_access_key --bundle-path workspace/build/cloudify-plugins-bundle.tgz --yum-package python-netaddr --yum-package git
+
+  run_hello_world_test:
+    steps:
+      - run: ecosystem-test local-blueprint-test  -b examples/blueprint-examples/hello-world-example/aws.yaml --test-id=hello-world-example -i aws_region_name=us-east-1 --on-failure=uninstall-force --timeout=1800
+
+  run_cf_test:
+    steps:
+      - run: ecosystem-test local-blueprint-test  -b examples/blueprint-examples/virtual-machine/aws-cloudformation.yaml --test-id=virtual-machine -i aws_region_name=us-east-1 -i resource_suffix=$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000
+
+  run_eks_test:
+    steps:
+      - run: ecosystem-test local-blueprint-test  -b examples/blueprint-examples/kubernetes/aws-eks/blueprint.yaml --test-id=aws-eks -i aws_region_name=us-east-1 -i resource_suffix=$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000
 
   release_plugin:
     steps:
@@ -301,8 +315,6 @@ commands:
       - attach_workspace:
           at: workspace
       - run: python .circleci/package_release.py
-
-
 
   merge_docs:
     steps:
@@ -400,61 +412,61 @@ jobs:
     executor: cloudify-machine
     environment:
       CLOUDIFY_SSL_TRUST_ALL: true
-      IAAS: aws
-      TEST_NAME: virtual-machine
     steps:
       - checkout
-      - run_integration_tests_505
+      - create_manager_container_505
+      - prepare_test_manager
+      - run_cf_test
 
   eks_integration_tests_505:
     executor: cloudify-machine
     environment:
       CLOUDIFY_SSL_TRUST_ALL: true
-      IAAS: aws
-      TEST_NAME: eks
     steps:
       - checkout
-      - run_integration_tests_505
+      - create_manager_container_505
+      - prepare_test_manager
+      - run_eks_test
 
   hw_integration_tests_505:
     executor: cloudify-machine
     environment:
       CLOUDIFY_SSL_TRUST_ALL: true
-      IAAS: aws
-      TEST_NAME: hello-world
     steps:
       - checkout
-      - run_integration_tests_505
+      - create_manager_container_505
+      - prepare_test_manager
+      - run_hello_world_test
 
-  cf_integration_tests_510:
-    executor: cloudify-machine-510
+  cf_integration_tests_py3:
+    executor: cloudify-machine-py3
     environment:
       CLOUDIFY_SSL_TRUST_ALL: true
-      IAAS: aws
-      TEST_NAME: cloudformation
     steps:
       - checkout
-      - run_integration_tests_510
+      - create_manager_container_py3
+      - prepare_test_manager
+      - run_cf_test
 
-  eks_integration_tests_510:
-    executor: cloudify-machine-510
+  eks_integration_tests_py3:
+    executor: cloudify-machine-py3
     environment:
       CLOUDIFY_SSL_TRUST_ALL: true
-      IAAS: aws
-      TEST_NAME: eks
     steps:
       - checkout
-      - run_integration_tests_510
+      - create_manager_container_py3
+      - prepare_test_manager
+      - run_eks_test
 
-  hw_integration_tests_510:
-    executor: cloudify-machine-510
+  hw_integration_tests_py3:
+    executor: cloudify-machine-py3
     environment:
       CLOUDIFY_SSL_TRUST_ALL: true
-      IAAS: aws
-      TEST_NAME: hello-world
     steps:
       - checkout
-      - run_integration_tests_510
+      - create_manager_container_py3
+      - prepare_test_manager
+      - run_hello_world_test
 
   release:
     executor: py36
@@ -511,19 +523,19 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-      - cf_integration_tests_510:
+      - cf_integration_tests_py3:
           requires:
             - cf_integration_tests_505
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-      - eks_integration_tests_510:
+      - eks_integration_tests_py3:
           requires:
             - eks_integration_tests_505
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-      - hw_integration_tests_510:
+      - hw_integration_tests_py3:
           requires:
             - hw_integration_tests_505
           filters:
@@ -543,9 +555,9 @@ workflows:
             - cf_integration_tests_505
             - eks_integration_tests_505
             - hw_integration_tests_505
-            - cf_integration_tests_510
-            - eks_integration_tests_510
-            - hw_integration_tests_510
+            - cf_integration_tests_py3
+            - eks_integration_tests_py3
+            - hw_integration_tests_py3
       - merge_docs:
           filters:
             branches:
@@ -567,53 +579,54 @@ workflows:
       - unittests_py27
       - unittests_py36
       - validate_version
-      - wagon:
-          filters:
-            branches:
-              only: /([0-9\.]*\-build|master|dev)/
       - rhel_wagon:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
+      - wagon:
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+      - build_bundle:
+          filters:
+            branches:
+              only: /master/
+          requires:
+            - wagon
+            - rhel_wagon
       - cf_integration_tests_505:
           requires:
-            - rhel_wagon
-            - wagon
+            - build_bundle
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - eks_integration_tests_505:
           requires:
-            - rhel_wagon
-            - wagon
+            - build_bundle
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - hw_integration_tests_505:
           requires:
-            - rhel_wagon
-            - wagon
+            - build_bundle
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-      - cf_integration_tests_510:
+      - cf_integration_tests_py3:
           requires:
-            - rhel_wagon
-            - wagon
+            - cf_integration_tests_505
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-      - eks_integration_tests_510:
+      - eks_integration_tests_py3:
           requires:
-            - rhel_wagon
-            - wagon
+            - eks_integration_tests_505
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-      - hw_integration_tests_505:
+      - hw_integration_tests_py3:
           requires:
-            - rhel_wagon
-            - wagon
+            - hw_integration_tests_505
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
