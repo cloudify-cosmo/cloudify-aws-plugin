@@ -210,7 +210,7 @@ def create(ctx, iface, resource_config, **_):
     nics_from_rels = []
     relationships = utils.find_rels_by_node_type(
         ctx.instance, NETWORK_INTERFACE_TYPE)
-    for relationship in relationships:
+    for counter, relationship in enumerate(relationships):
         target = relationship
         if target is not None:
             rel_nic_id = \
@@ -220,7 +220,7 @@ def create(ctx, iface, resource_config, **_):
                 'device_index')
             rel_nic = {
                 NIC_ID: rel_nic_id,
-                DEVICE_INDEX: rel_device_index
+                DEVICE_INDEX: rel_device_index or counter
             }
             nics_from_rels.append(rel_nic)
         del target, rel_nic_id, rel_device_index, rel_nic
