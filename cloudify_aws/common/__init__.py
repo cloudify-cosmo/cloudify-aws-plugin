@@ -17,9 +17,10 @@
     AWS common interfaces
 '''
 import sys
-from logging import NullHandler
+from logging import NullHandler, DEBUG
 
 # Boto
+from boto3 import set_stream_logger
 from botocore.exceptions import ClientError, ParamValidationError
 
 # Cloudify
@@ -40,6 +41,8 @@ class AWSResourceBase(object):
     '''
 
     def __init__(self, client, resource_id=None, logger=None):
+        # Botocore logs for debugging.
+        set_stream_logger('botocore.parsers', level=DEBUG)
         self.logger = logger or init_cloudify_logger(NullHandler(),
                                                      'AWSResourceBase')
         self.client = client

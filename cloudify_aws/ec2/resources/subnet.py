@@ -54,11 +54,7 @@ class EC2Subnet(EC2Base):
         try:
             resources = \
                 self.client.describe_subnets(**params)
-            self.logger.info(
-                "Describe subnets response: {resp}".format(resp=resources))
-        except ClientError as e:
-            self.logger.info(
-                "Got client error on subnet properties: {err}".format(err=e))
+        except ClientError:
             pass
         else:
             return None if not resources else resources.get(SUBNETS)[0]
@@ -75,9 +71,7 @@ class EC2Subnet(EC2Base):
         '''
             Create a new AWS EC2 Subnet.
         '''
-        res = self.make_client_call('create_subnet', params)
-        self.logger.info("Subnet create response: {}".format(res))
-        return res
+        return self.make_client_call('create_subnet', params)
 
     def delete(self, params=None):
         '''
