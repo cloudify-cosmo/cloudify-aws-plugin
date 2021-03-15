@@ -1,6 +1,6 @@
 from os import path, pardir
-from ecosystem_tests.dorkl import replace_plugin_package_on_manager
 from ecosystem_cicd_tools.validations import validate_plugin_version
+from ecosystem_tests.dorkl.commands import replace_plugin_package_on_manager
 
 abs_path = path.join(
     path.abspath(path.join(path.dirname(__file__), pardir)))

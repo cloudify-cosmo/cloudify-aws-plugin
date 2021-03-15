@@ -336,6 +336,29 @@ class TestEC2Instances(TestBase):
         self.assertIn(expected_userdata,
                       handle_userdata_output)
 
+    def test_sort_devices(self):
+        test_devices = [
+            {
+                'NetworkInterfaceId': '1',
+                'DeviceIndex': 1
+            },
+            {
+                'NetworkInterfaceId': '3',
+                'DeviceIndex': 3,
+            },
+            {
+                'NetworkInterfaceId': '0',
+                'DeviceIndex': None
+            },
+            {
+                'NetworkInterfaceId': '2',
+                'DeviceIndex': 2
+            }
+        ]
+        sorted_devices = [dev['NetworkInterfaceId'] for dev in
+                          instances.sort_devices(test_devices)]
+        self.assertEqual(['0', '1', '2', '3'], sorted_devices)
+
 
 if __name__ == '__main__':
     unittest.main()

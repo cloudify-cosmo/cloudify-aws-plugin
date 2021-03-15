@@ -235,13 +235,7 @@ def create(ctx, iface, resource_config, **_):
         for i in nic:
             nics[i[NIC_ID]].update(i)
             merged_nics = list(nics.values())
-    del nic, nics
-    for counter, nic in enumerate(
-            sorted(merged_nics,
-                   key=lambda k: k.get(DEVICE_INDEX))):
-        if not nic[DEVICE_INDEX]:
-            nic[DEVICE_INDEX] = counter
-    params[NETWORK_INTERFACES] = merged_nics
+    params[NETWORK_INTERFACES] = sort_devices(merged_nics)
 
     create_response = iface.create(params)
     ctx.instance.runtime_properties['create_response'] = \
@@ -510,3 +504,57 @@ def _handle_password(iface):
     ctx.instance.runtime_properties['password'] = \
         password
     return True
+
+
+def sort_devices(devices):
+    """Sort network interfaces according to index and assign indices to
+    those with missing value `DeviceIndex` key.
+
+    :param devices: A list of dicts,
+        e.g. [{NetworkInterfaceId: 'foo', 'DeviceIndex': None}]
+    :return:
+    """
+    # Get a list of those devices that have an index.
+    indexed = [dev for dev in devices if isinstance(dev[DEVICE_INDEX], int)]
+    # Sort by index
+    indexed = sorted(indexed, key=lambda lb: lb.get(DEVICE_INDEX))
+    # Get a list of those devices that have a None value for index.
+    # Also provide default value based in dict index in list.
+    unindexed = [{NIC_ID: dev[NIC_ID], DEVICE_INDEX: i} for i, dev in
+                 enumerate(devices) if dev[DEVICE_INDEX] is None]
+
+    def insert_from_unindexed(index):
+        # This is how we remove unindexed devices and intersperse
+        # them among indexed devices.
+        dev = unindexed.pop(0)
+        if index == 0:
+            dev[DEVICE_INDEX] = index
+            indexed.insert(index, dev)
+        else:
+            dev[DEVICE_INDEX] = indexed[index][DEVICE_INDEX] + 1
+            try:
+                indexed[index + 1] = dev
+            except IndexError:
+                indexed.append(dev)
+
+    # If there are no devices in the indexed list, return the unindexed list.
+    if not indexed:
+        return unindexed
+    # Make sure that we have a primary device if one is not specified.
+    elif 0 not in [value[DEVICE_INDEX] for value in indexed]:
+        insert_from_unindexed(0)
+    # Go through all of the indexed devices and if there are indices between
+    # assigned indices, fill them with unindexed devices and provide new index.
+    for n in range(0, len(indexed + unindexed)):
+        try:
+            spare = indexed[n + 1][DEVICE_INDEX] - \
+                indexed[n][DEVICE_INDEX] > 1
+        except (IndexError, TypeError):
+            if unindexed:
+                insert_from_unindexed(n)
+                continue
+            spare = False
+        if spare:
+            insert_from_unindexed(n)
+
+    return indexed
