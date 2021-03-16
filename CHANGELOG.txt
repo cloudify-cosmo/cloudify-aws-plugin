@@ -121,4 +121,5 @@
     - Add iface to lambda invoke.
 2.5.13:
     - Fix Device index for case when using device index per relationship order.
-
+2.5.14:
+    - Add debug logs - botocore responses, for RD-810.
