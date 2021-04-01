@@ -123,3 +123,5 @@
     - Fix Device index for case when using device index per relationship order.
 2.5.14:
     - Add debug logs - botocore responses, for RD-810.
+2.6.10:
+    - Add support for Transit Gateway create, delete, vpc attach.

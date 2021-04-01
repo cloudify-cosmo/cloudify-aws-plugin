@@ -106,12 +106,18 @@ def aws_relationship(class_decl=None,
             ctx = kwargs['ctx']
             # Add new operation arguments
             kwargs['resource_type'] = resource_type
-            kwargs['iface'] = class_decl(
-                ctx.source.node, logger=ctx.logger,
-                resource_id=utils.get_resource_id(
-                    node=ctx.source.node,
-                    instance=ctx.source.instance,
-                    raise_on_missing=True)) if class_decl else None
+            iface = kwargs.get('iface')
+            if not iface and class_decl:
+                kwargs['iface'] = class_decl(
+                    ctx.source.node, logger=ctx.logger,
+                    resource_id=utils.get_resource_id(
+                        node=ctx.source.node,
+                        instance=ctx.source.instance,
+                        raise_on_missing=True))
+            elif iface:
+                kwargs['iface'] = iface
+            else:
+                kwargs['iface'] = None
             kwargs['resource_config'] = kwargs.get('resource_config') or dict()
             # Check if using external
             if ctx.source.node.properties.get('use_external_resource', False):
