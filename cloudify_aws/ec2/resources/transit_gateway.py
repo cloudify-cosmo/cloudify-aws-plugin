@@ -63,11 +63,9 @@ class EC2TransitGateway(EC2Base):
             resources = \
                 self.client.describe_transit_gateways(**params)
         except ClientError:
-            pass
-        else:
-            return None if not resources else resources.get(
-                TGS, [None])[0]
-        return None
+            resources = None
+        return resources if not resources else resources.get(
+            TGS, [None])[0]
 
     @property
     def status(self):

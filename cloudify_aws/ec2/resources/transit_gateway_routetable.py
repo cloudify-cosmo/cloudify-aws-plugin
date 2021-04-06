@@ -53,12 +53,8 @@ class EC2TransitGatewayRouteTable(EC2Base):
     def properties(self):
         '''Gets the properties of an external resource'''
         params = {ROUTETABLE_IDS: [self.resource_id]}
-        try:
-            resources = self.describe(params)
-        except (NonRecoverableError, ClientError):
-            pass
-        else:
-            return None if not resources else resources.get(ROUTETABLES)[0]
+        resources = self.describe(params)
+        return None if not resources else resources.get(ROUTETABLES)[0]
 
     @property
     def status(self):
@@ -69,8 +65,11 @@ class EC2TransitGatewayRouteTable(EC2Base):
         return props['State']
 
     def describe(self, params):
-        return self.make_client_call(
-            'describe_transit_gateway_route_tables', params)
+        try:
+            return self.make_client_call(
+                'describe_transit_gateway_route_tables', params)
+        except NonRecoverableError:
+            return {}
 
     def create(self, params):
         '''

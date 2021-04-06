@@ -55,7 +55,7 @@ class TestEC2TransitGateway(TestBase):
         self.transit_gateway.client = self.make_client_function(
             'describe_transit_gateways', return_value=value)
         res = self.transit_gateway.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, value)
 
         value = {mod.TGS: [{mod.TG_ID: 'test_name'}]}
         self.transit_gateway.client = self.make_client_function(
