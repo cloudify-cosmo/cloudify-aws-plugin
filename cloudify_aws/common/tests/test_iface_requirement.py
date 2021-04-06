@@ -151,7 +151,9 @@ class testIfaceRequirement(TestBase):
         try:
             operation_callable(*args, **kwargs)
         except NonRecoverableError as e:
-            if 'unexpected status' in str(e):
+            if 'must provide a relationship' in str(e):
+                return
+            elif 'unexpected status' in str(e):
                 return
             elif 'Found no AMIs matching provided filters' in str(e):
                 return

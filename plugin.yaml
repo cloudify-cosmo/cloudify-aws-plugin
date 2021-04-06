@@ -824,6 +824,18 @@ data_types:
         description: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.html#EC2.Client.create_transit_gateway_vpc_attachment
         default: {}
 
+  cloudify.datatypes.aws.ec2.TransitGatewayRouteTable.config:
+    properties:
+      kwargs:
+        description: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.html#EC2.Client.create_transit_gateway_route_table
+        default: {}
+
+  cloudify.datatypes.aws.ec2.TransitGatewayRoute.config:
+    properties:
+      kwargs:
+        description: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.html#EC2.Client.create_transit_gateway_route
+        default: {}
+
   cloudify.datatypes.aws.ec2.RouteTable.config:
     properties:
       kwargs:
@@ -2704,6 +2716,12 @@ node_types:
         configure:
           implementation: aws.cloudify_aws.ec2.resources.internet_gateway.create
           inputs: *operation_inputs
+        start:
+          implementation: aws.cloudify_aws.ec2.resources.internet_gateway.attach
+          inputs: *operation_inputs
+        stop:
+          implementation: aws.cloudify_aws.ec2.resources.internet_gateway.detach
+          inputs: *operation_inputs
         delete:
           implementation: aws.cloudify_aws.ec2.resources.internet_gateway.delete
           inputs: *operation_inputs
@@ -2727,6 +2745,57 @@ node_types:
           inputs: *operation_inputs
         delete:
           implementation: aws.cloudify_aws.ec2.resources.transit_gateway.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.ec2.TransitGatewayRouteTable:
+    derived_from: cloudify.nodes.aws.ec2.BaseType
+    properties:
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ec2.TransitGatewayRouteTable.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.cloudify_aws.ec2.resources.transit_gateway_routetable.prepare
+          inputs: *operation_inputs
+        configure:
+          implementation: aws.cloudify_aws.ec2.resources.transit_gateway_routetable.create
+          inputs: *operation_inputs
+        start:
+          implementation: aws.cloudify_aws.ec2.resources.transit_gateway_routetable.attach
+          inputs: *operation_inputs
+        stop:
+          implementation: aws.cloudify_aws.ec2.resources.transit_gateway_routetable.detach
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.ec2.resources.transit_gateway_routetable.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.ec2.TransitGatewayRoute:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ec2.TransitGatewayRoute.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.cloudify_aws.ec2.resources.transit_gateway_route.prepare
+          inputs: *operation_inputs
+        configure:
+          implementation: aws.cloudify_aws.ec2.resources.transit_gateway_route.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.ec2.resources.transit_gateway_route.delete
           inputs: *operation_inputs
 
   cloudify.nodes.aws.ec2.RouteTable:
@@ -3760,6 +3829,15 @@ relationships:
         establish: { implementation: aws.cloudify_aws.ec2.resources.ebs.attach_using_relationship }
         unlink: { implementation: aws.cloudify_aws.ec2.resources.ebs.detach_using_relationship }
 
+  cloudify.relationships.aws.ec2.subnet_connected_to_vpc:
+    derived_from: cloudify.relationships.aws.connected_to
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish:
+          implementation: aws.cloudify_aws.ec2.resources.subnet.set_subnet
+        unlink:
+          implementation: aws.cloudify_aws.ec2.resources.subnet.unset_subnet
+
   cloudify.relationships.aws.ec2.attach_transit_gateway_to_vpc:
     derived_from: cloudify.relationships.aws.connected_to
     target_interfaces:
@@ -3775,7 +3853,11 @@ relationships:
             vpc_id:
               type: string
               description: The VPC ID. See documentation. The value can be provided as an input, but if the value is not provided, then the plugin will perform the same default lookup as indicated byt the get attribute intrinsic function.
-              default: { get_attribute: [ TARGET, aws_resource_id ] }
+              default: { get_attribute: [ TARGET, create_response, vpc_id ] }
+            SubnetIds:
+              type: list
+              description: A list of Subnet IDs.
+              default: [ { get_attribute: [ TARGET, aws_resource_id ] } ]
             Options:
               type: dict
               description: See documentation.
@@ -3786,14 +3868,6 @@ relationships:
               default: []
     source_interfaces:
       cloudify.interfaces.relationship_lifecycle:
-        establish:
-          implementation: aws.cloudify_aws.ec2.resources.transit_gateway.accept_vpc_attachment
-          inputs:
-            transit_gateway_attachment_id:
-              # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.html#EC2.Client.accept_transit_gateway_vpc_attachment
-              type: string
-              description: The Gateway Attachment ID that is created in request_vpc_attachment. The value can be provided as an input, but if the value is not provided, then the plugin will perform the same default lookup as indicated byt the get attribute intrinsic function.
-              default: { get_attribute: [ SOURCE, TransitGatewayVpcAttachments, { get_attribute: [ TARGET, aws_resource_id ] }, TransitGatewayAttachmentId] }
         unlink:
           implementation: aws.cloudify_aws.ec2.resources.transit_gateway.delete_vpc_attachment
           inputs:
@@ -3801,4 +3875,4 @@ relationships:
               # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.html#EC2.Client.accept_transit_gateway_vpc_attachment
               type: string
               description: The Gateway Attachment ID that is created in request_vpc_attachment. The value can be provided as an input, but if the value is not provided, then the plugin will perform the same default lookup as indicated byt the get attribute intrinsic function.
-              default: { get_attribute: [ SOURCE, TransitGatewayVpcAttachments, { get_attribute: [ TARGET, aws_resource_id ] }, TransitGatewayAttachmentId] }
+              default: { get_attribute: [ SOURCE, TransitGatewayVpcAttachments, { get_attribute: [ TARGET, aws_resource_id ] }, TransitGatewayVpcAttachment, TransitGatewayAttachmentId] }

@@ -215,3 +215,25 @@ def modify_subnet_attribute(ctx, iface, resource_config, **_):
             SUBNET_ID, iface.resource_id)
     params[SUBNET_ID] = instance_id
     iface.modify_subnet_attribute(params)
+
+
+@decorators.aws_relationship(EC2Subnet, RESOURCE_TYPE)
+def set_subnet(ctx, iface, resource_config, **_):
+    subnet_id = \
+        ctx.source.instance.runtime_properties.get(
+            EXTERNAL_RESOURCE_ID, iface.resource_id)
+    if 'subnets' not in ctx.target.instance.runtime_properties:
+        ctx.target.instance.runtime_properties['subnets'] = []
+    ctx.target.instance.runtime_properties['subnets'].append(
+        subnet_id)
+
+
+@decorators.aws_relationship(EC2Subnet, RESOURCE_TYPE)
+def unset_subnet(ctx, iface, resource_config, **_):
+    subnet_id = \
+        ctx.source.instance.runtime_properties.get(
+            EXTERNAL_RESOURCE_ID, iface.resource_id)
+    if 'subnets' not in ctx.target.instance.runtime_properties:
+        ctx.target.instance.runtime_properties['subnets'] = []
+    if subnet_id in ctx.target.instance.runtime_properties['subnets']:
+        ctx.target.instance.runtime_properties['subnets'].remove(subnet_id)

@@ -57,16 +57,16 @@ class TestEC2TransitGateway(TestBase):
         res = self.transit_gateway.properties
         self.assertIsNone(res)
 
-        value = {mod.TRANSIT_GATEWAYS: [{mod.TRANSIT_GATEWAY_ID: 'test_name'}]}
+        value = {mod.TGS: [{mod.TG_ID: 'test_name'}]}
         self.transit_gateway.client = self.make_client_function(
             'describe_transit_gateways', return_value=value)
         res = self.transit_gateway.properties
-        self.assertEqual(res[mod.TRANSIT_GATEWAY_ID], 'test_name')
+        self.assertEqual(res[mod.TG_ID], 'test_name')
 
     def test_class_status(self):
         value = {
-            mod.TRANSIT_GATEWAYS: [
-                {mod.TRANSIT_GATEWAY_ID: 'test_name', 'State': None}]
+            mod.TGS: [
+                {mod.TG_ID: 'test_name', 'State': None}]
         }
         self.transit_gateway.client = self.make_client_function(
             'describe_transit_gateways', return_value=value)
@@ -74,8 +74,8 @@ class TestEC2TransitGateway(TestBase):
         self.assertIsNone(res)
 
         value = {
-            mod.TRANSIT_GATEWAYS: [
-                {mod.TRANSIT_GATEWAY_ID: 'test_name', 'State': 'available'}]
+            mod.TGS: [
+                {mod.TG_ID: 'test_name', 'State': 'available'}]
         }
         self.transit_gateway.client = self.make_client_function(
             'describe_transit_gateways', return_value=value)
@@ -83,11 +83,11 @@ class TestEC2TransitGateway(TestBase):
         self.assertEqual(res, 'available')
 
     def test_class_create(self):
-        value = {mod.TRANSIT_GATEWAY: 'test'}
+        value = {mod.TG: 'test'}
         self.transit_gateway.client = self.make_client_function(
             'create_transit_gateway', return_value=value)
         res = self.transit_gateway.create(value)
-        self.assertEqual(res[mod.TRANSIT_GATEWAY], value[mod.TRANSIT_GATEWAY])
+        self.assertEqual(res[mod.TG], value[mod.TG])
 
     def test_class_delete(self):
         params = {}
@@ -96,28 +96,28 @@ class TestEC2TransitGateway(TestBase):
         self.transit_gateway.delete(params)
         self.assertTrue(
             self.transit_gateway.client.delete_transit_gateway.called)
-        params = {mod.TRANSIT_GATEWAY: 'transit gateway'}
+        params = {mod.TG: 'transit gateway'}
         self.transit_gateway.delete(params)
-        self.assertEqual(params[mod.TRANSIT_GATEWAY], 'transit gateway')
+        self.assertEqual(params[mod.TG], 'transit gateway')
 
     def test_prepare(self):
-        ctx = self.get_mock_ctx(mod.TRANSIT_GATEWAY)
-        config = {mod.TRANSIT_GATEWAY_ID: 'transit gateway'}
+        ctx = self.get_mock_ctx(mod.TG)
+        config = {mod.TG_ID: 'transit gateway'}
         mod.prepare(ctx, mod.EC2TransitGateway, config)
         self.assertEqual(ctx.instance.runtime_properties['resource_config'],
                          config)
 
     def test_create(self):
-        ctx = self.get_mock_ctx(mod.TRANSIT_GATEWAY)
-        config = {mod.TRANSIT_GATEWAY_ID: 'transit gateway'}
-        self.transit_gateway.resource_id = config[mod.TRANSIT_GATEWAY_ID]
+        ctx = self.get_mock_ctx(mod.TG)
+        config = {mod.TG_ID: 'transit gateway'}
+        self.transit_gateway.resource_id = config[mod.TG_ID]
         iface = MagicMock()
-        iface.create = self.mock_return({mod.TRANSIT_GATEWAY: config})
+        iface.create = self.mock_return({mod.TG: config})
         mod.create(ctx=ctx, iface=iface, resource_config=config)
         self.assertEqual(self.transit_gateway.resource_id, 'transit gateway')
 
     def test_delete(self):
-        ctx = self.get_mock_ctx(mod.TRANSIT_GATEWAY)
+        ctx = self.get_mock_ctx(mod.TG)
         iface = MagicMock()
         mod.delete(ctx=ctx, iface=iface, resource_config={})
         self.assertTrue(iface.delete.called)
@@ -154,13 +154,13 @@ class TestEC2TransitGatewayAttachment(TestBase):
         self.assertIsNone(res)
 
         value = {
-            mod.TRANSIT_GATEWAY_ATTACHMENTS: [
-                {mod.TRANSIT_GATEWAY_ATTACHMENT_ID: 'test_name'}]
+            mod.TG_ATTACHMENTS: [
+                {mod.TG_ATTACHMENT_ID: 'test_name'}]
         }
         self.transit_gateway_attachment.client = self.make_client_function(
             'describe_transit_gateway_vpc_attachments', return_value=value)
         res = self.transit_gateway_attachment.properties
-        self.assertEqual(res[mod.TRANSIT_GATEWAY_ATTACHMENT_ID], 'test_name')
+        self.assertEqual(res[mod.TG_ATTACHMENT_ID], 'test_name')
 
     def test_class_status(self):
         value = {}
@@ -170,9 +170,9 @@ class TestEC2TransitGatewayAttachment(TestBase):
         self.assertIsNone(res)
 
         value = {
-            mod.TRANSIT_GATEWAY_ATTACHMENTS: [
+            mod.TG_ATTACHMENTS: [
                 {
-                    mod.TRANSIT_GATEWAY_ATTACHMENT_ID: 'test_name',
+                    mod.TG_ATTACHMENT_ID: 'test_name',
                     'State': 'available'
                 }
             ]
@@ -183,20 +183,20 @@ class TestEC2TransitGatewayAttachment(TestBase):
         self.assertEqual(res, 'available')
 
     def test_class_create(self):
-        value = {mod.TRANSIT_GATEWAY_ATTACHMENT: 'test'}
+        value = {mod.TG_ATTACHMENT: 'test'}
         self.transit_gateway_attachment.client = self.make_client_function(
             'create_transit_gateway_vpc_attachment', return_value=value)
         res = self.transit_gateway_attachment.create(value)
-        self.assertEqual(res[mod.TRANSIT_GATEWAY_ATTACHMENT],
-                         value[mod.TRANSIT_GATEWAY_ATTACHMENT])
+        self.assertEqual(res[mod.TG_ATTACHMENT],
+                         value[mod.TG_ATTACHMENT])
 
     def test_class_accept(self):
-        value = {mod.TRANSIT_GATEWAY_ATTACHMENT: 'test'}
+        value = {mod.TG_ATTACHMENT: 'test'}
         self.transit_gateway_attachment.client = self.make_client_function(
             'accept_transit_gateway_vpc_attachment', return_value=value)
         res = self.transit_gateway_attachment.accept(value)
-        self.assertEqual(res[mod.TRANSIT_GATEWAY_ATTACHMENT],
-                         value[mod.TRANSIT_GATEWAY_ATTACHMENT])
+        self.assertEqual(res[mod.TG_ATTACHMENT],
+                         value[mod.TG_ATTACHMENT])
 
     def test_class_delete(self):
         params = {}
@@ -205,49 +205,38 @@ class TestEC2TransitGatewayAttachment(TestBase):
         self.transit_gateway_attachment.delete(params)
         self.assertTrue(self.transit_gateway_attachment.
                         client.delete_transit_gateway_vpc_attachment.called)
-        params = {mod.TRANSIT_GATEWAY_ATTACHMENT_ID: 'transit gateway'}
+        params = {mod.TG_ATTACHMENT_ID: 'transit gateway'}
         self.transit_gateway_attachment.delete(params)
-        self.assertEqual(params[mod.TRANSIT_GATEWAY_ATTACHMENT_ID],
+        self.assertEqual(params[mod.TG_ATTACHMENT_ID],
                          'transit gateway')
 
     def test_create(self):
-        source_ctx = self.get_mock_ctx(mod.TRANSIT_GATEWAY)
-        target_ctx = self.get_mock_ctx(mod.TRANSIT_GATEWAY)
+        source_ctx = self.get_mock_ctx(mod.TG)
+        target_ctx = self.get_mock_ctx(mod.TG)
         ctx = self.get_mock_relationship_ctx(
-            mod.TRANSIT_GATEWAY_ATTACHMENT, test_source=source_ctx,
+            mod.TG_ATTACHMENT, test_source=source_ctx,
             test_target=target_ctx)
-        config = {mod.TRANSIT_GATEWAY_ATTACHMENT_ID: 'transit gateway'}
+        config = {mod.TG_ATTACHMENT_ID: 'transit gateway'}
         self.transit_gateway_attachment.resource_id = \
-            config[mod.TRANSIT_GATEWAY_ATTACHMENT_ID]
+            config[mod.TG_ATTACHMENT_ID]
         iface = MagicMock()
-        iface.create = self.mock_return({mod.TRANSIT_GATEWAY: config})
+        iface.create = self.mock_return({mod.TG: config})
         mod.request_vpc_attachment(
             ctx=ctx,
             iface=iface,
             transit_gateway_id='transit gateway',
-            vpc_id='vpc')
-        self.assertIn(mod.TRANSIT_GATEWAY_ATTACHMENTS,
+            vpc_id='vpc',
+            subnet_ids=['subnet'])
+        self.assertIn(mod.TG_ATTACHMENTS,
                       source_ctx.instance.runtime_properties)
-
-    def test_accept(self):
-        source_ctx = self.get_mock_ctx(mod.TRANSIT_GATEWAY)
-        ctx = self.get_mock_relationship_ctx(
-            mod.TRANSIT_GATEWAY_ATTACHMENT, test_source=source_ctx)
-        iface = MagicMock()
-        with self.assertRaises(OperationRetry):
-            mod.accept_vpc_attachment(
-                ctx=ctx,
-                iface=iface,
-                transit_gateway_attachment_id='transit gateway')
-            self.assertTrue(iface.accept.called)
 
     def test_delete(self):
         source_ctx = self.get_mock_ctx(
-            mod.TRANSIT_GATEWAY,
+            mod.TG,
             test_runtime_properties={'aws_resource_id': 'transit gateway'})
         ctx = self.get_mock_relationship_ctx(
-            mod.TRANSIT_GATEWAY_ATTACHMENT, test_source=source_ctx)
-        iface = MagicMock()
+            mod.TG_ATTACHMENT, test_source=source_ctx)
+        iface = MagicMock(client=MagicMock())
         with self.assertRaises(OperationRetry):
             mod.delete_vpc_attachment(
                 ctx=ctx,

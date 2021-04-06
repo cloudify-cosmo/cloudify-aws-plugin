@@ -1,0 +1,207 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/4.5/types.yaml
+  - plugin:cloudify-aws-plugin
+
+inputs:
+
+  aws_access_key_id:
+    description: YOUR AWS ACCESS KEY ID
+    default: { get_secret: aws_access_key_id }
+
+  aws_secret_access_key:
+    description: YOUR AWS SECRET ACCESS KEY
+    default: { get_secret: aws_secret_access_key }
+
+  aws_region_name_a:
+      type: string
+      default: 'us-east-1'
+
+  aws_region_name_b:
+      type: string
+      default: 'us-east-1'
+
+  vpc_a_cidr:
+    type: string
+    default: 10.10.0.0/16
+
+  vpc_b_cidr:
+    type: string
+    default: 10.11.0.0/16
+
+dsl_definitions:
+
+  client_config: &client_config
+    aws_access_key_id: { get_input: aws_access_key_id }
+    aws_secret_access_key: { get_input: aws_secret_access_key }
+
+node_templates:
+
+  transit_gateway_route_b:
+    type: cloudify.nodes.aws.ec2.TransitGatewayRoute
+    properties:
+      client_config:
+        region_name: { get_input: aws_region_name_a }
+        <<: *client_config
+      resource_config:
+        kwargs:
+          DestinationCidrBlock: '10.11.0.0/16'
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: transit_gateway_routetable
+      - type: cloudify.relationships.depends_on
+        target: vpc_b
+
+  transit_gateway_route:
+    type: cloudify.nodes.aws.ec2.TransitGatewayRoute
+    properties:
+      client_config:
+        region_name: { get_input: aws_region_name_a }
+        <<: *client_config
+      resource_config:
+        kwargs:
+          DestinationCidrBlock: '10.10.0.0/16'
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: transit_gateway_routetable
+      - type: cloudify.relationships.depends_on
+        target: vpc_a
+
+  transit_gateway_routetable:
+    type: cloudify.nodes.aws.ec2.TransitGatewayRouteTable
+    properties:
+      client_config:
+        region_name: { get_input: aws_region_name_a }
+        <<: *client_config
+      resource_config:
+        kwargs:
+          TagSpecifications:
+            - ResourceType: 'transit-gateway-route-table'
+              Tags:
+              - Key: Made By
+                Value: Cloudify
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: transit_gateway
+      - type: cloudify.relationships.depends_on
+        target: vpc_a
+
+  transit_gateway:
+    type: cloudify.nodes.aws.ec2.TransitGateway
+    properties:
+      client_config:
+        region_name: { get_input: aws_region_name_a }
+        <<: *client_config
+      resource_config:
+        kwargs:
+          Description: Test Transit Gateway
+          Options:
+            DefaultRouteTableAssociation: enable
+            DefaultRouteTablePropagation: enable
+            TransitGatewayCidrBlocks:
+              - { get_input: vpc_a_cidr }
+              - { get_input: vpc_b_cidr }
+          TagSpecifications:
+            - ResourceType: 'transit-gateway'
+              Tags:
+              - Key: Made By
+                Value: Cloudify
+    relationships:
+      - type: cloudify.relationships.aws.ec2.attach_transit_gateway_to_vpc
+        target: vpc_a
+      - type: cloudify.relationships.aws.ec2.attach_transit_gateway_to_vpc
+        target: vpc_b
+      - type: cloudify.relationships.depends_on
+        target: route_public_subnet_internet_gateway
+      - type: cloudify.relationships.depends_on
+        target: subnet_a
+      - type: cloudify.relationships.depends_on
+        target: subnet_b
+
+  route_public_subnet_internet_gateway:
+    type: cloudify.nodes.aws.ec2.Route
+    properties:
+      client_config:
+        region_name: { get_input: aws_region_name_a }
+        <<: *client_config
+      resource_config:
+        kwargs:
+          DestinationCidrBlock: '0.0.0.0/0'
+    relationships:
+    - type: cloudify.relationships.contained_in
+      target: routetable
+    - type: cloudify.relationships.connected_to
+      target: internet_gateway
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        stop: {}
+
+  routetable:
+    type: cloudify.nodes.aws.ec2.RouteTable
+    properties:
+      client_config:
+        region_name: { get_input: aws_region_name_a }
+        <<: *client_config
+    relationships:
+    - type: cloudify.relationships.contained_in
+      target: vpc_a
+    - type: cloudify.relationships.connected_to
+      target: subnet_a
+    - type: cloudify.relationships.depends_on
+      target: internet_gateway
+
+  subnet_a:
+    type: cloudify.nodes.aws.ec2.Subnet
+    properties:
+      client_config:
+        region_name: { get_input: aws_region_name_a }
+        <<: *client_config
+      resource_config:
+        CidrBlock: 10.10.4.0/24
+        AvailabilityZone: { concat: [ { get_input: aws_region_name_a }, 'a' ] }
+    relationships:
+    - type: cloudify.relationships.aws.ec2.subnet_connected_to_vpc
+      target: vpc_a
+
+  internet_gateway:
+    type: cloudify.nodes.aws.ec2.InternetGateway
+    properties:
+      client_config:
+        region_name: { get_input: aws_region_name_a }
+        <<: *client_config
+    relationships:
+    # Use of this relationship is required for Transit Gateway.
+    - type: cloudify.relationships.depends_on
+      target: vpc_a
+
+  vpc_a:
+    type: cloudify.nodes.aws.ec2.Vpc
+    properties:
+      client_config:
+        region_name: { get_input: aws_region_name_a }
+        <<: *client_config
+      resource_config:
+        CidrBlock: { get_input: vpc_a_cidr }
+
+  subnet_b:
+    type: cloudify.nodes.aws.ec2.Subnet
+    properties:
+      client_config:
+        region_name: { get_input: aws_region_name_b }
+        <<: *client_config
+      resource_config:
+        CidrBlock: 10.11.4.0/24
+        AvailabilityZone: { concat: [ { get_input: aws_region_name_b }, 'b' ] }
+    relationships:
+    - type: cloudify.relationships.aws.ec2.subnet_connected_to_vpc
+      target: vpc_b
+
+  vpc_b:
+    type: cloudify.nodes.aws.ec2.Vpc
+    properties:
+      client_config:
+        region_name: { get_input: aws_region_name_b }
+        <<: *client_config
+      resource_config:
+        CidrBlock: { get_input: vpc_b_cidr }

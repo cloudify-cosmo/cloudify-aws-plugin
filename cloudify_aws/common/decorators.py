@@ -114,10 +114,8 @@ def aws_relationship(class_decl=None,
                         node=ctx.source.node,
                         instance=ctx.source.instance,
                         raise_on_missing=True))
-            elif iface:
-                kwargs['iface'] = iface
             else:
-                kwargs['iface'] = None
+                kwargs['iface'] = iface
             kwargs['resource_config'] = kwargs.get('resource_config') or dict()
             # Check if using external
             if ctx.source.node.properties.get('use_external_resource', False):
