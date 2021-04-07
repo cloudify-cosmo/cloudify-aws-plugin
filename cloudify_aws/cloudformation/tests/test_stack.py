@@ -401,16 +401,12 @@ class TestCloudFormationStack(TestBase):
                   'Description': 'IP Address of Server'
                   }
              ]
-             # stack.SAVED_PROPERTIES: ['StackName',
-             #                          'StackId',
-             #                          'Outputs',
-             #                          'outputs_items']
              })
         expected_saved_properties = ['StackName',
                                      'StackId',
                                      'Outputs',
                                      'outputs_items']
-        # pop the list of saved properties and compare them separately due
+        # Pop the list of saved properties and compare them separately due
         # to ordering issues
         actual_saved_properties = _ctx.instance.runtime_properties.pop(
             stack.SAVED_PROPERTIES)
