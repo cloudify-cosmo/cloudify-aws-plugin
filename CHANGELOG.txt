@@ -125,5 +125,5 @@
     - Add debug logs - botocore responses, for RD-810.
 2.6.0:
     - Add support for Transit Gateway create, delete, vpc attach.
-2.6.1:
+2.7.0:
     - Add pull operation for cloudformation.

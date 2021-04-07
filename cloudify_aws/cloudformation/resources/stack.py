@@ -43,6 +43,10 @@ DRIFT_STATUS_FILTERS = 'StackResourceDriftStatusFilters'
 STACK_RESOURCES_RUNTIME_PROP = 'state'
 STACK_DETECTION_STATUS = 'DetectionStatus'
 SAVED_PROPERTIES = 'saved_properties_keys'
+IS_DRIFTED = 'is_drifted'
+DRIFTED_STATUS = 'DRIFTED'
+DRIFT_INFO = 'DriftInformation'
+STACK_DRIFT_STATUS = 'StackDriftStatus'
 
 
 class CloudFormationStack(AWSCloudFormationBase):
@@ -80,9 +84,7 @@ class CloudFormationStack(AWSCloudFormationBase):
         """
             Check if Stack exists.
         """
-
-        props = self.properties
-        return True if props else False
+        return True if self.properties else False
 
     def create(self, params):
         """
@@ -242,9 +244,12 @@ def _pull(ctx, iface):
     if not iface.exists:
         ctx.instance.runtime_properties[STACK_RESOURCES_RUNTIME_PROP] = []
         delete_stack_info_runtime_properties(ctx)
+        # If the stack was deleted so it drifted.
+        ctx.instance.runtime_properties[IS_DRIFTED] = True
         return
     ctx.logger.debug(
-        "Detecting stack {id} drifts.".format(id=iface.resource_id))
+        "Detecting stack {stack_id} drifts.".format(
+            stack_id=iface.resource_id))
     iface.detect_stack_drifts()
     update_runtime_properties_with_stack_info(ctx, iface)
     resources = iface.resources_list()
@@ -283,6 +288,7 @@ def update_runtime_properties_with_stack_info(ctx, iface):
         ctx.instance.runtime_properties[key] = tested_value
         saved_keys.append(key)
 
+    set_is_drifted_runtime_property(ctx, props)
     # Special handling for outputs: they're provided by the stack
     # as a list of key-value pairs, which makes it impossible to
     # use them via intrinsic functions. So, create a dictionary out
@@ -294,3 +300,10 @@ def update_runtime_properties_with_stack_info(ctx, iface):
         ctx.instance.runtime_properties['outputs_items'] = outputs_items
         saved_keys.append('outputs_items')
     ctx.instance.runtime_properties[SAVED_PROPERTIES] = saved_keys
+
+
+def set_is_drifted_runtime_property(ctx, props):
+    if props.get(DRIFT_INFO, {}).get(STACK_DRIFT_STATUS) == DRIFTED_STATUS:
+        ctx.instance.runtime_properties[IS_DRIFTED] = True
+    else:
+        ctx.instance.runtime_properties[IS_DRIFTED] = False
