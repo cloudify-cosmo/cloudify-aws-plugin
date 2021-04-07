@@ -184,6 +184,7 @@ class TestCloudFormationStack(TestBase):
         expected_runtime_properties = dict(RUNTIMEPROP_AFTER_START)
         expected_runtime_properties.update(
             {'StackId': '2',
+             'is_drifted': False,
              stack.STACK_RESOURCES_DRIFTS: [],
              stack.STACK_RESOURCES_RUNTIME_PROP: []})
 
@@ -400,7 +401,8 @@ class TestCloudFormationStack(TestBase):
                   'OutputValue': '10.0.0.0',
                   'Description': 'IP Address of Server'
                   }
-             ]
+             ],
+             'is_drifted': False
              })
         expected_saved_properties = ['StackName',
                                      'StackId',
