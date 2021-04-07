@@ -189,8 +189,8 @@ class TestCloudFormationStack(TestBase):
 
         expected_runtime_properties[stack.SAVED_PROPERTIES].append(
             stack.STACK_RESOURCES_DRIFTS)
-        self.assertEqual(_ctx.instance.runtime_properties,
-                         expected_runtime_properties)
+        self.assertDictEqual(_ctx.instance.runtime_properties,
+                             expected_runtime_properties)
 
     def test_CloudFormationStackClass_properties(self):
         self.fake_client.describe_stacks = MagicMock(return_value={
