@@ -424,6 +424,15 @@ class TestBase(unittest.TestCase):
 
         fake_client.delete_pipeline = self._get_unknowservice(client_type)
 
+    def _fake_cloudformation(self, fake_client, client_type):
+
+        fake_client.list_stack_resources = self._gen_client_error(
+            "list_stack_resources"
+        )
+        fake_client.describe_stack_resource_drifts = self._gen_client_error(
+            "describe_stack_resource_drifts"
+        )
+
     def make_client_function(self, fun_name,
                              return_value=None,
                              side_effect=None,
@@ -477,6 +486,8 @@ class TestBase(unittest.TestCase):
             self._fake_elbv2(fake_client, client_type)
         elif client_type == "codepipeline":
             self._fake_codepipeline(fake_client, client_type)
+        elif client_type == "cloudformation":
+            self._fake_cloudformation(fake_client, client_type)
 
         return MagicMock(return_value=fake_client), fake_client
 

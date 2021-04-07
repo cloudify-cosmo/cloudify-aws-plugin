@@ -23,9 +23,9 @@ from cloudify.state import current_ctx
 
 # Local imports
 from cloudify_aws.cloudformation.resources import stack
-from cloudify_aws.common.tests.test_base import TestBase, CLIENT_CONFIG
-from cloudify_aws.common.tests.test_base import DELETE_RESPONSE
-
+from cloudify_aws.common.tests.test_base import (TestBase,
+                                                 CLIENT_CONFIG,
+                                                 DELETE_RESPONSE)
 
 # Constants
 STACK_TH = ['cloudify.nodes.Root',
@@ -49,9 +49,17 @@ RUNTIME_PROPERTIES = {
     'resource_config': {}
 }
 
-RUNTIMEPROP_AFTER_CREATE = {
+RUNTIMEPROPS_AFTER_CREATE = {
     'aws_resource_id': 'test-cloudformation1',
     'resource_config': {}
+}
+
+RUNTIMEPROPS_AFTER_START = {
+    'aws_resource_id': 'test-cloudformation1',
+    'resource_config': {},
+    'StackId': '1',
+    'StackName': 'test-cloudformation1',
+    stack.SAVED_PROPERTIES: ['StackId', 'StackName']
 }
 
 
@@ -113,7 +121,7 @@ class TestCloudFormationStack(TestBase):
             except AssertionError as e:
                 raise e
 
-        updated_runtime_prop = copy.deepcopy(RUNTIMEPROP_AFTER_CREATE)
+        updated_runtime_prop = copy.deepcopy(RUNTIMEPROPS_AFTER_CREATE)
         updated_runtime_prop['create_response'] = {
             'StackName': 'Stack',
             'StackStatus': 'CREATE_COMPLETE'
@@ -123,10 +131,11 @@ class TestCloudFormationStack(TestBase):
 
     def test_delete(self):
         _ctx = \
-            self.get_mock_ctx('test_delete',
-                              test_properties=NODE_PROPERTIES,
-                              test_runtime_properties=RUNTIMEPROP_AFTER_CREATE,
-                              type_hierarchy=STACK_TH)
+            self.get_mock_ctx(
+                'test_delete',
+                test_properties=NODE_PROPERTIES,
+                test_runtime_properties=RUNTIMEPROPS_AFTER_CREATE,
+                type_hierarchy=STACK_TH)
 
         current_ctx.set(_ctx)
         self.fake_client.describe_stacks = MagicMock(return_value={
@@ -140,11 +149,48 @@ class TestCloudFormationStack(TestBase):
 
         self.fake_boto.assert_called_with('cloudformation', **CLIENT_CONFIG)
 
-        self.fake_client.delete_stack.\
+        self.fake_client.delete_stack. \
             assert_called_with(StackName='test-cloudformation1')
 
         self.assertEqual(_ctx.instance.runtime_properties,
                          {'__deleted': True})
+
+    def test_pull(self):
+        _ctx = \
+            self.get_mock_ctx('test_pull',
+                              test_properties=NODE_PROPERTIES,
+                              test_runtime_properties=RUNTIMEPROPS_AFTER_START,
+                              type_hierarchy=STACK_TH)
+        current_ctx.set(_ctx)
+
+        # Change StackId
+        self.fake_client.describe_stacks = MagicMock(return_value={
+            'Stacks': [
+                {'StackId': '2',
+                 'StackName': 'test-cloudformation1'
+                 }
+            ]
+        })
+        self.fake_client.detect_stack_drift = MagicMock(
+            return_value={'StackDriftDetectionId': 'fake-detection-id'})
+
+        self.fake_client.describe_stack_drift_detection_status = MagicMock(
+            return_value={'DetectionStatus': 'DETECTION_COMPLETE'})
+        self.fake_client.list_stack_resources = MagicMock(
+            return_value={})
+        self.fake_client.describe_stack_resource_drifts = MagicMock(
+            return_value={})
+        stack.pull(ctx=_ctx)
+        expected_runtime_properties = dict(RUNTIMEPROPS_AFTER_START)
+        expected_runtime_properties.update(
+            {'StackId': '2',
+             stack.STACK_RESOURCES_DRIFTS: [],
+             stack.STACK_RESOURCES_RUNTIME_PROP: []})
+
+        expected_runtime_properties[stack.SAVED_PROPERTIES].append(
+            stack.STACK_RESOURCES_DRIFTS)
+        self.assertEqual(_ctx.instance.runtime_properties,
+                         expected_runtime_properties)
 
     def test_CloudFormationStackClass_properties(self):
         self.fake_client.describe_stacks = MagicMock(return_value={
@@ -202,6 +248,158 @@ class TestCloudFormationStack(TestBase):
         self.assertEqual(test_instance.status, None)
 
         self.fake_client.describe_stacks.assert_called_with(StackName='Stack')
+
+    def test_CloudFormationStackClass_resources_list(self):
+        fake_return_value = {
+            'StackResourceSummaries': [
+                {
+                    'LogicalResourceId': 'VPC',
+                    'PhysicalResourceId': 'vpc-11223344',
+                    'ResourceStatus': 'CREATE_COMPLETE'
+                }
+            ]
+        }
+
+        self.fake_client.list_stack_resources = MagicMock(
+            return_value=fake_return_value)
+
+        test_instance = stack.CloudFormationStack('ctx_node',
+                                                  resource_id='Stack',
+                                                  client=self.fake_client,
+                                                  logger=None)
+
+        self.assertEqual(test_instance.resources_list(),
+                         fake_return_value[stack.STACK_RESOURCES])
+
+        self.fake_client.list_stack_resources.assert_called_with(
+            StackName='Stack')
+
+    def test_CloudFormationStackClass_resources_list_error(self):
+        test_instance = stack.CloudFormationStack('ctx_node',
+                                                  resource_id='Stack',
+                                                  client=self.fake_client,
+                                                  logger=None)
+
+        self.assertEqual(test_instance.resources_list(), [])
+
+    def test_CloudFormationStackClass_detect_stack_drifts(self):
+
+        self.fake_client.detect_stack_drift = MagicMock(
+            return_value={'StackDriftDetectionId': 'fake-detection-id'})
+
+        self.fake_client.describe_stack_drift_detection_status = MagicMock(
+            return_value={'DetectionStatus': 'DETECTION_COMPLETE'})
+        test_instance = stack.CloudFormationStack("ctx_node",
+                                                  resource_id='Stack',
+                                                  client=self.fake_client,
+                                                  logger=None)
+
+        self.assertEqual(test_instance.detect_stack_drifts(),
+                         'DETECTION_COMPLETE')
+
+        self.fake_client.detect_stack_drift.assert_called_with(
+            StackName='Stack')
+        self.fake_client.describe_stack_drift_detection_status \
+            .assert_called_with(StackDriftDetectionId='fake-detection-id')
+
+    def test_CloudFormationStackClass_resources_drifts(self):
+        fake_return_value = {'StackResourceDrifts': [
+            {
+                'StackId': '1234',
+                'LogicalResourceId': 'vpc',
+                'PhysicalResourceId': 'vpc-1234',
+                'PropertyDifferences': [],
+            },
+        ],
+        }
+
+        self.fake_client.describe_stack_resource_drifts = MagicMock(
+            return_value=fake_return_value)
+
+        test_instance = stack.CloudFormationStack('ctx_node',
+                                                  resource_id='Stack',
+                                                  client=self.fake_client,
+                                                  logger=None)
+
+        self.assertEqual(test_instance.resources_drifts(),
+                         fake_return_value[stack.STACK_RESOURCES_DRIFTS])
+
+        self.fake_client.describe_stack_resource_drifts.assert_called_with(
+            StackName='Stack',
+            StackResourceDriftStatusFilters=['DELETED', 'MODIFIED'])
+
+    def test_CloudFormationStackClass_resources_drifts_error(self):
+        test_instance = stack.CloudFormationStack('ctx_node',
+                                                  resource_id='Stack',
+                                                  client=self.fake_client,
+                                                  logger=None)
+
+        self.assertEqual(test_instance.resources_drifts(), [])
+
+        self.fake_client.describe_stack_resource_drifts.assert_called_with(
+            StackName='Stack',
+            StackResourceDriftStatusFilters=['DELETED', 'MODIFIED'])
+
+    def test_delete_stack_info_runtime_properties(self):
+        _ctx = self.get_mock_ctx(
+            'test_delete_stack_info_runtime_properties',
+            test_properties=NODE_PROPERTIES,
+            test_runtime_properties=RUNTIMEPROPS_AFTER_START,
+            type_hierarchy=STACK_TH)
+
+        current_ctx.set(_ctx)
+
+        stack.delete_stack_info_runtime_properties(_ctx)
+        runtime_properties_after_deletion = dict(RUNTIMEPROPS_AFTER_CREATE)
+        runtime_properties_after_deletion.update({stack.SAVED_PROPERTIES: []})
+        self.assertEqual(_ctx.instance.runtime_properties,
+                         runtime_properties_after_deletion)
+
+    def test_update_runtime_properties_with_stack_info(self):
+        _ctx = self.get_mock_ctx(
+            'test_update_runtime_properties_with_stack_info',
+            test_properties=NODE_PROPERTIES,
+            test_runtime_properties=RUNTIMEPROPS_AFTER_CREATE,
+            type_hierarchy=STACK_TH)
+
+        current_ctx.set(_ctx)
+        test_instance = stack.CloudFormationStack(
+            "ctx_node",
+            resource_id='test-cloudformation1',
+            client=self.fake_client,
+            logger=None)
+
+        self.fake_client.describe_stacks = MagicMock(return_value={
+            'Stacks': [
+                {'StackName': 'test-cloudformation1',
+                 'StackId': '1',
+                 'Outputs': [
+                     {"OutputKey": "URL",
+                      "OutputValue": "10.0.0.0",
+                      "Description": "IP Address of Server"
+                      }
+                 ]
+                 }
+            ]
+        })
+        stack.update_runtime_properties_with_stack_info(_ctx, test_instance)
+        expected_runtime_properties = dict(RUNTIMEPROPS_AFTER_START)
+        expected_runtime_properties.update(
+            {'outputs_items': {'URL': '10.0.0.0'},
+             'Outputs': [
+                 {'OutputKey': 'URL',
+                  'OutputValue': '10.0.0.0',
+                  'Description': 'IP Address of Server'
+                  }
+             ],
+             stack.SAVED_PROPERTIES: ['StackName',
+                                      'StackId',
+                                      'Outputs',
+                                      'outputs_items']
+             })
+
+        self.assertEqual(_ctx.instance.runtime_properties,
+                         expected_runtime_properties)
 
 
 if __name__ == '__main__':
