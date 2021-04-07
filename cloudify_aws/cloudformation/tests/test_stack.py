@@ -258,7 +258,7 @@ class TestCloudFormationStack(TestBase):
 
         self.fake_client.describe_stacks.assert_called_with(StackName='Stack')
 
-    def test_CloudFormationStackClass_resources_list(self):
+    def test_CloudFormationStackClass_list_resources(self):
         fake_return_value = {
             'StackResourceSummaries': [
                 {
@@ -277,19 +277,19 @@ class TestCloudFormationStack(TestBase):
                                                   client=self.fake_client,
                                                   logger=None)
 
-        self.assertEqual(test_instance.resources_list(),
+        self.assertEqual(test_instance.list_resources(),
                          fake_return_value[stack.STACK_RESOURCES])
 
         self.fake_client.list_stack_resources.assert_called_with(
             StackName='Stack')
 
-    def test_CloudFormationStackClass_resources_list_error(self):
+    def test_CloudFormationStackClass_list_resources_error(self):
         test_instance = stack.CloudFormationStack('ctx_node',
                                                   resource_id='Stack',
                                                   client=self.fake_client,
                                                   logger=None)
 
-        self.assertEqual(test_instance.resources_list(), [])
+        self.assertEqual(test_instance.list_resources(), [])
 
     def test_CloudFormationStackClass_detect_stack_drifts(self):
 

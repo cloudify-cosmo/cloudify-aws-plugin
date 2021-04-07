@@ -102,7 +102,7 @@ class CloudFormationStack(AWSCloudFormationBase):
         self.logger.debug('Response: %s' % res)
         return res
 
-    def resources_list(self):
+    def list_resources(self):
         """
             List resources of AWS CloudFormation Stack.
         """
@@ -252,7 +252,7 @@ def _pull(ctx, iface):
             stack_id=iface.resource_id))
     iface.detect_stack_drifts()
     update_runtime_properties_with_stack_info(ctx, iface)
-    resources = iface.resources_list()
+    resources = iface.list_resources()
     ctx.logger.debug("Updating stack resources state.")
     ctx.instance.runtime_properties[STACK_RESOURCES_RUNTIME_PROP] = test(
         resources)
