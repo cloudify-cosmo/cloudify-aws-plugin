@@ -19,10 +19,8 @@
 # Boto
 from botocore.exceptions import ClientError
 
-from cloudify.exceptions import OperationRetry
-
 # Cloudify
-from cloudify_aws.common import decorators, utils, _compat
+from cloudify_aws.common import decorators, utils
 from cloudify_aws.ec2 import EC2Base
 from cloudify_aws.common.constants import (
     EXTERNAL_RESOURCE_ID,
@@ -193,9 +191,7 @@ def detach(ctx, iface, resource_config, **_):
             vpc_id or \
             targ.target.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
 
-    try:
-        iface.detach(params)
-    except ClientError as e:
-        if hasattr(e, 'message'):
-            raise OperationRetry(e.message)
-        raise OperationRetry(_compat.text_type(e))
+    return utils.exit_on_substring(iface,
+                                   'detach',
+                                   params,
+                                   'InvalidInternetGatewayID.NotFound')

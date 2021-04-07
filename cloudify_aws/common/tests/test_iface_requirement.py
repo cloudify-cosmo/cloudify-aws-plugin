@@ -151,7 +151,9 @@ class testIfaceRequirement(TestBase):
         try:
             operation_callable(*args, **kwargs)
         except NonRecoverableError as e:
-            if 'unexpected status' in str(e):
+            if 'must provide a relationship' in str(e):
+                return
+            elif 'unexpected status' in str(e):
                 return
             elif 'Found no AMIs matching provided filters' in str(e):
                 return
@@ -162,6 +164,8 @@ class testIfaceRequirement(TestBase):
             elif 'Updating Autoscaling Group' in str(e):
                 return
             elif 'Waiting for Instance' in str(e):
+                return
+            elif 'Sent the TransitGatewayVpcAttachment' in str(e):
                 return
             raise
         except AttributeError as e:

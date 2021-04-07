@@ -25,14 +25,15 @@ import uuid
 # Third party imports
 import requests
 from requests import exceptions
+from botocore.exceptions import ClientError
 
 from cloudify import ctx
-from cloudify.exceptions import NonRecoverableError
+from cloudify.exceptions import OperationRetry, NonRecoverableError
 from cloudify.utils import exception_to_error_cause
 from cloudify_aws.common._compat import urljoin, text_type
 
 # Local imports
-from cloudify_aws.common import constants
+from cloudify_aws.common import constants, _compat
 
 
 def generate_traceback_exception():
@@ -513,3 +514,41 @@ def cleanup_tags(tags):
 
 def dedup_tags(tags):
     return [dict(y) for y in set(tuple(t.items()) for t in tags)]
+
+
+def exit_on_substring(iface,
+                      method,
+                      request,
+                      substring,
+                      raisable=OperationRetry):
+
+    callable = getattr(iface, method)
+    try:
+        return callable(request)
+    except (NonRecoverableError, ClientError) as e:
+        if hasattr(e, 'message'):
+            message = e.message
+        else:
+            message = _compat.text_type(e)
+        if substring in message:
+            return {}
+        raise raisable(message)
+
+
+def raise_on_substring(iface,
+                       method,
+                       request,
+                       substring,
+                       raisable=OperationRetry):
+
+    callable = getattr(iface, method)
+    try:
+        return callable(request)
+    except (NonRecoverableError, ClientError) as e:
+        if hasattr(e, 'message'):
+            message = e.message
+        else:
+            message = _compat.text_type(e)
+        if substring in message:
+            raise raisable(message)
+        return {}
