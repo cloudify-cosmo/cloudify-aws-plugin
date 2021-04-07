@@ -24,6 +24,7 @@ from botocore.exceptions import ClientError
 from cloudify.mocks import MockCloudifyContext
 from cloudify.state import current_ctx
 from cloudify.manager import DirtyTrackingDict
+from cloudify.constants import RELATIONSHIP_INSTANCE
 
 from cloudify_aws.common._compat import text_type
 from cloudify_aws.common import AWSResourceBase
@@ -70,6 +71,13 @@ def mock_decorator(*args, **kwargs):
     return decorator
 
 
+class MockRelationshipContext(MockCloudifyContext):
+
+    @property
+    def type(self):
+        return RELATIONSHIP_INSTANCE
+
+
 class TestBase(unittest.TestCase):
 
     sleep_mock = None
@@ -109,7 +117,11 @@ class TestBase(unittest.TestCase):
         } if not ctx_operation_name else {
             'retry_number': 0, 'name': ctx_operation_name
         }
-        test_properties = test_properties or {}
+        test_properties = test_properties or {
+            'client_config': {
+                'region_name': 'us-foobar-1'
+            }
+        }
         test_runtime_properties = test_runtime_properties or {}
 
         ctx = MockCloudifyContext(
@@ -135,7 +147,7 @@ class TestBase(unittest.TestCase):
                                   test_source=None,
                                   test_target=None):
 
-        ctx = MockCloudifyContext(
+        ctx = MockRelationshipContext(
             deployment_id=deployment_name,
             properties=copy.deepcopy(test_properties),
             source=test_source,

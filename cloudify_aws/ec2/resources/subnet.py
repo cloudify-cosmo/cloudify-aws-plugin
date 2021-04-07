@@ -29,6 +29,7 @@ from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
 RESOURCE_TYPE = 'EC2 Subnet'
 SUBNET = 'Subnet'
 SUBNETS = 'Subnets'
+_SUBNETS = 'subnets'
 SUBNET_ID = 'SubnetId'
 SUBNET_IDS = 'SubnetIds'
 CIDR_BLOCK = 'CidrBlock'
@@ -215,3 +216,25 @@ def modify_subnet_attribute(ctx, iface, resource_config, **_):
             SUBNET_ID, iface.resource_id)
     params[SUBNET_ID] = instance_id
     iface.modify_subnet_attribute(params)
+
+
+@decorators.aws_relationship(EC2Subnet, RESOURCE_TYPE)
+def set_subnet(ctx, iface, resource_config, **_):
+    subnet_id = \
+        ctx.source.instance.runtime_properties.get(
+            EXTERNAL_RESOURCE_ID, iface.resource_id)
+    if _SUBNETS not in ctx.target.instance.runtime_properties:
+        ctx.target.instance.runtime_properties[_SUBNETS] = []
+    ctx.target.instance.runtime_properties[_SUBNETS].append(
+        subnet_id)
+
+
+@decorators.aws_relationship(EC2Subnet, RESOURCE_TYPE)
+def unset_subnet(ctx, iface, resource_config, **_):
+    subnet_id = \
+        ctx.source.instance.runtime_properties.get(
+            EXTERNAL_RESOURCE_ID, iface.resource_id)
+    if _SUBNETS not in ctx.target.instance.runtime_properties:
+        ctx.target.instance.runtime_properties[_SUBNETS] = []
+    if subnet_id in ctx.target.instance.runtime_properties[_SUBNETS]:
+        ctx.target.instance.runtime_properties[_SUBNETS].remove(subnet_id)
