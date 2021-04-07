@@ -3240,6 +3240,8 @@ node_types:
         delete:
           implementation: aws.cloudify_aws.cloudformation.resources.stack.delete
           inputs: *operation_inputs
+        pull:
+          implementation: aws.cloudify_aws.cloudformation.resources.stack.pull
 
   cloudify.nodes.aws.ecs.Cluster:
     derived_from: cloudify.nodes.Root
