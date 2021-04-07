@@ -398,8 +398,8 @@ class TestCloudFormationStack(TestBase):
                                       'outputs_items']
              })
 
-        self.assertEqual(_ctx.instance.runtime_properties,
-                         expected_runtime_properties)
+        self.assertDictEqual(_ctx.instance.runtime_properties,
+                             expected_runtime_properties)
 
 
 if __name__ == '__main__':
