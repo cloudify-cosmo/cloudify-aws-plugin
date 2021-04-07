@@ -17,6 +17,7 @@
     AWS CloudFormation Stack interface
 """
 # Standard imports
+import time
 import json
 from datetime import datetime
 
@@ -35,12 +36,24 @@ RESOURCE_NAMES = 'StackNames'
 STACKS = 'Stacks'
 TEMPLATEBODY = 'TemplateBody'
 STATUS = 'StackStatus'
+STACK_RESOURCES = 'StackResourceSummaries'
+STACK_RESOURCES_DRIFTS = 'StackResourceDrifts'
+STACK_DRIFT_DETECTION_ID = 'StackDriftDetectionId'
+DRIFT_STATUS_FILTERS = 'StackResourceDriftStatusFilters'
+STACK_RESOURCES_RUNTIME_PROP = 'state'
+STACK_DETECTION_STATUS = 'DetectionStatus'
+SAVED_PROPERTIES = 'saved_properties_keys'
+IS_DRIFTED = 'is_drifted'
+DRIFTED_STATUS = 'DRIFTED'
+DRIFT_INFO = 'DriftInformation'
+STACK_DRIFT_STATUS = 'StackDriftStatus'
 
 
 class CloudFormationStack(AWSCloudFormationBase):
     """
         AWS CloudFormation Stack interface
     """
+
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         AWSCloudFormationBase.__init__(self, ctx_node, resource_id, client,
                                        logger)
@@ -66,6 +79,13 @@ class CloudFormationStack(AWSCloudFormationBase):
             return None
         return props.get(STATUS)
 
+    @property
+    def exists(self):
+        """
+            Check if Stack exists.
+        """
+        return True if self.properties else False
+
     def create(self, params):
         """
             Create a new AWS CloudFormation Stack.
@@ -81,6 +101,60 @@ class CloudFormationStack(AWSCloudFormationBase):
         res = self.client.delete_stack(**params)
         self.logger.debug('Response: %s' % res)
         return res
+
+    def list_resources(self):
+        """
+            List resources of AWS CloudFormation Stack.
+        """
+        params = {RESOURCE_NAME: self.resource_id}
+        try:
+            resources = \
+                self.client.list_stack_resources(**params)
+        except ClientError:
+            return []
+        else:
+            return resources.get(STACK_RESOURCES, [])
+
+    def detect_stack_drifts(self):
+        """
+            Invoke Drifts detection of AWS CloudFormation Stack.
+        """
+        params = {RESOURCE_NAME: self.resource_id}
+        try:
+            stack_drift_detection_id = \
+                self.client.detect_stack_drift(**params).get(
+                    STACK_DRIFT_DETECTION_ID)
+            detection_status_response = \
+                self.client.describe_stack_drift_detection_status(
+                    StackDriftDetectionId=stack_drift_detection_id)
+            # Wait for drift detections to end.
+            while detection_status_response[STACK_DETECTION_STATUS] == \
+                    'DETECTION_IN_PROGRESS':
+                time.sleep(1)
+                detection_status_response = \
+                    self.client.describe_stack_drift_detection_status(
+                        StackDriftDetectionId=stack_drift_detection_id)
+        except ClientError:
+            pass
+        else:
+            return detection_status_response[STACK_DETECTION_STATUS]
+
+    def resources_drifts(self):
+        """
+        Returns drift information for the resources that have been checked for
+        drift in the stack.
+        Will return only resources with drift status MODIFIED, DELETED.
+        """
+        params = {RESOURCE_NAME: self.resource_id,
+                  DRIFT_STATUS_FILTERS: ['DELETED', 'MODIFIED']
+                  }
+        try:
+            resources = \
+                self.client.describe_stack_resource_drifts(**params)
+        except ClientError:
+            return []
+        else:
+            return resources.get(STACK_RESOURCES_DRIFTS, [])
 
 
 @decorators.aws_resource(resource_type=RESOURCE_TYPE)
@@ -117,43 +191,32 @@ def create(ctx, iface, resource_config, **_):
     iface.create(params)
 
 
+def test(_value):
+    if isinstance(_value, datetime):
+        return text_type(_value)
+    elif isinstance(_value, list):
+        for _value_item in _value:
+            i = _value.index(_value_item)
+            _value[i] = test(_value_item)
+        return _value
+    elif isinstance(_value, dict):
+        for _value_key, _value_item in _value.items():
+            _value[_value_key] = test(_value_item)
+        return _value
+    else:
+        return _value
+
+
 @decorators.aws_resource(CloudFormationStack, RESOURCE_TYPE)
 def start(ctx, iface, **_):
     """Update Runtime Properties an AWS CloudFormation Stack"""
-
-    def test(_value):
-        if isinstance(_value, datetime):
-            return text_type(_value)
-        elif isinstance(_value, list):
-            for _value_item in _value:
-                i = _value.index(_value_item)
-                _value[i] = test(_value_item)
-            return _value
-        elif isinstance(_value, dict):
-            for _value_key, _value_item in _value.items():
-                _value[_value_key] = test(_value_item)
-            return _value
-        else:
-            return _value
 
     if not iface.resource_id:
         iface.update_resource_id(
             ctx.instance.runtime_properties[EXTERNAL_RESOURCE_ID])
 
-    props = iface.properties
-    for key, value in props.items():
-        tested_value = test(value)
-        ctx.instance.runtime_properties[key] = tested_value
-
-    # Special handling for outputs: they're provided by the stack
-    # as a list of key-value pairs, which makes it impossible to
-    # use them via intrinsic functions. So, create a dictionary out
-    # of them.
-    if 'Outputs' in props:
-        outputs_items = {}
-        for output in props['Outputs']:
-            outputs_items[output['OutputKey']] = output['OutputValue']
-        ctx.instance.runtime_properties['outputs_items'] = outputs_items
+    # Pull stack details and store in runtime properties.
+    _pull(ctx, iface)
 
 
 @decorators.aws_resource(CloudFormationStack, RESOURCE_TYPE,
@@ -170,3 +233,77 @@ def delete(iface, resource_config, **_):
     if not name:
         name = iface.resource_id
     iface.delete({RESOURCE_NAME: name})
+
+
+@decorators.aws_resource(CloudFormationStack, RESOURCE_TYPE)
+def pull(ctx, iface, **_):
+    _pull(ctx, iface)
+
+
+def _pull(ctx, iface):
+    if not iface.exists:
+        ctx.instance.runtime_properties[STACK_RESOURCES_RUNTIME_PROP] = []
+        delete_stack_info_runtime_properties(ctx)
+        # If the stack was deleted so it drifted.
+        ctx.instance.runtime_properties[IS_DRIFTED] = True
+        return
+    ctx.logger.debug(
+        "Detecting stack {stack_id} drifts.".format(
+            stack_id=iface.resource_id))
+    iface.detect_stack_drifts()
+    update_runtime_properties_with_stack_info(ctx, iface)
+    resources = iface.list_resources()
+    ctx.logger.debug("Updating stack resources state.")
+    ctx.instance.runtime_properties[STACK_RESOURCES_RUNTIME_PROP] = test(
+        resources)
+    drifts = iface.resources_drifts()
+    ctx.instance.runtime_properties[STACK_RESOURCES_DRIFTS] = test(
+        drifts)
+    ctx.logger.debug("Updating stack resources drifts.")
+    ctx.instance.runtime_properties.get(
+        SAVED_PROPERTIES).append(STACK_RESOURCES_DRIFTS)
+
+
+def delete_stack_info_runtime_properties(ctx):
+    # delete runtime properties
+    for runtime_property in ctx.instance.runtime_properties.get(
+            SAVED_PROPERTIES, []):
+        try:
+            del ctx.instance.runtime_properties[runtime_property]
+        except KeyError:
+            pass
+    ctx.instance.runtime_properties[SAVED_PROPERTIES] = []
+
+
+def update_runtime_properties_with_stack_info(ctx, iface):
+    props = iface.properties or {}
+    # store saved runtime properties keys for deleting/updating
+    # them during pull workflow.
+    saved_keys = []
+    ctx.logger.info(
+        "Updating runtime properties with stack {id} details.".format(
+            id=iface.resource_id))
+    for key, value in props.items():
+        tested_value = test(value)
+        ctx.instance.runtime_properties[key] = tested_value
+        saved_keys.append(key)
+
+    set_is_drifted_runtime_property(ctx, props)
+    # Special handling for outputs: they're provided by the stack
+    # as a list of key-value pairs, which makes it impossible to
+    # use them via intrinsic functions. So, create a dictionary out
+    # of them.
+    if 'Outputs' in props:
+        outputs_items = {}
+        for output in props['Outputs']:
+            outputs_items[output['OutputKey']] = output['OutputValue']
+        ctx.instance.runtime_properties['outputs_items'] = outputs_items
+        saved_keys.append('outputs_items')
+    ctx.instance.runtime_properties[SAVED_PROPERTIES] = saved_keys
+
+
+def set_is_drifted_runtime_property(ctx, props):
+    if props.get(DRIFT_INFO, {}).get(STACK_DRIFT_STATUS) == DRIFTED_STATUS:
+        ctx.instance.runtime_properties[IS_DRIFTED] = True
+    else:
+        ctx.instance.runtime_properties[IS_DRIFTED] = False
