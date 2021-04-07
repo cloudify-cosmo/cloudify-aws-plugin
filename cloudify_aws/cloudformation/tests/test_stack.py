@@ -189,8 +189,16 @@ class TestCloudFormationStack(TestBase):
 
         expected_runtime_properties[stack.SAVED_PROPERTIES].append(
             stack.STACK_RESOURCES_DRIFTS)
+        # pop the list of saved properties and compare them separately due
+        # to ordering issues
+        expected_saved_properties = expected_runtime_properties.pop(
+            stack.SAVED_PROPERTIES)
+        actual_saved_properties = _ctx.instance.runtime_properties.pop(
+            stack.SAVED_PROPERTIES)
         self.assertDictEqual(_ctx.instance.runtime_properties,
                              expected_runtime_properties)
+        self.assertSetEqual(set(actual_saved_properties),
+                            set(expected_saved_properties))
 
     def test_CloudFormationStackClass_properties(self):
         self.fake_client.describe_stacks = MagicMock(return_value={
@@ -384,6 +392,7 @@ class TestCloudFormationStack(TestBase):
         })
         stack.update_runtime_properties_with_stack_info(_ctx, test_instance)
         expected_runtime_properties = dict(RUNTIMEPROPS_AFTER_START)
+        expected_runtime_properties.pop(stack.SAVED_PROPERTIES)
         expected_runtime_properties.update(
             {'outputs_items': {'URL': '10.0.0.0'},
              'Outputs': [
@@ -391,15 +400,24 @@ class TestCloudFormationStack(TestBase):
                   'OutputValue': '10.0.0.0',
                   'Description': 'IP Address of Server'
                   }
-             ],
-             stack.SAVED_PROPERTIES: ['StackName',
-                                      'StackId',
-                                      'Outputs',
-                                      'outputs_items']
+             ]
+             # stack.SAVED_PROPERTIES: ['StackName',
+             #                          'StackId',
+             #                          'Outputs',
+             #                          'outputs_items']
              })
-
+        expected_saved_properties = ['StackName',
+                                     'StackId',
+                                     'Outputs',
+                                     'outputs_items']
+        # pop the list of saved properties and compare them separately due
+        # to ordering issues
+        actual_saved_properties = _ctx.instance.runtime_properties.pop(
+            stack.SAVED_PROPERTIES)
         self.assertDictEqual(_ctx.instance.runtime_properties,
                              expected_runtime_properties)
+        self.assertSetEqual(set(actual_saved_properties),
+                            set(expected_saved_properties))
 
 
 if __name__ == '__main__':
