@@ -49,12 +49,12 @@ RUNTIME_PROPERTIES = {
     'resource_config': {}
 }
 
-RUNTIMEPROPS_AFTER_CREATE = {
+RUNTIMEPROP_AFTER_CREATE = {
     'aws_resource_id': 'test-cloudformation1',
     'resource_config': {}
 }
 
-RUNTIMEPROPS_AFTER_START = {
+RUNTIMEPROP_AFTER_START = {
     'aws_resource_id': 'test-cloudformation1',
     'resource_config': {},
     'StackId': '1',
@@ -121,7 +121,7 @@ class TestCloudFormationStack(TestBase):
             except AssertionError as e:
                 raise e
 
-        updated_runtime_prop = copy.deepcopy(RUNTIMEPROPS_AFTER_CREATE)
+        updated_runtime_prop = copy.deepcopy(RUNTIMEPROP_AFTER_CREATE)
         updated_runtime_prop['create_response'] = {
             'StackName': 'Stack',
             'StackStatus': 'CREATE_COMPLETE'
@@ -134,7 +134,7 @@ class TestCloudFormationStack(TestBase):
             self.get_mock_ctx(
                 'test_delete',
                 test_properties=NODE_PROPERTIES,
-                test_runtime_properties=RUNTIMEPROPS_AFTER_CREATE,
+                test_runtime_properties=RUNTIMEPROP_AFTER_CREATE,
                 type_hierarchy=STACK_TH)
 
         current_ctx.set(_ctx)
@@ -159,7 +159,7 @@ class TestCloudFormationStack(TestBase):
         _ctx = \
             self.get_mock_ctx('test_pull',
                               test_properties=NODE_PROPERTIES,
-                              test_runtime_properties=RUNTIMEPROPS_AFTER_START,
+                              test_runtime_properties=RUNTIMEPROP_AFTER_START,
                               type_hierarchy=STACK_TH)
         current_ctx.set(_ctx)
 
@@ -181,7 +181,7 @@ class TestCloudFormationStack(TestBase):
         self.fake_client.describe_stack_resource_drifts = MagicMock(
             return_value={})
         stack.pull(ctx=_ctx)
-        expected_runtime_properties = dict(RUNTIMEPROPS_AFTER_START)
+        expected_runtime_properties = dict(RUNTIMEPROP_AFTER_START)
         expected_runtime_properties.update(
             {'StackId': '2',
              stack.STACK_RESOURCES_DRIFTS: [],
@@ -189,8 +189,8 @@ class TestCloudFormationStack(TestBase):
 
         expected_runtime_properties[stack.SAVED_PROPERTIES].append(
             stack.STACK_RESOURCES_DRIFTS)
-        # pop the list of saved properties and compare them separately due
-        # to ordering issues
+        # Pop the list of saved properties and compare them separately due
+        # to ordering issues.
         expected_saved_properties = expected_runtime_properties.pop(
             stack.SAVED_PROPERTIES)
         actual_saved_properties = _ctx.instance.runtime_properties.pop(
@@ -352,13 +352,13 @@ class TestCloudFormationStack(TestBase):
         _ctx = self.get_mock_ctx(
             'test_delete_stack_info_runtime_properties',
             test_properties=NODE_PROPERTIES,
-            test_runtime_properties=RUNTIMEPROPS_AFTER_START,
+            test_runtime_properties=RUNTIMEPROP_AFTER_START,
             type_hierarchy=STACK_TH)
 
         current_ctx.set(_ctx)
 
         stack.delete_stack_info_runtime_properties(_ctx)
-        runtime_properties_after_deletion = dict(RUNTIMEPROPS_AFTER_CREATE)
+        runtime_properties_after_deletion = dict(RUNTIMEPROP_AFTER_CREATE)
         runtime_properties_after_deletion.update({stack.SAVED_PROPERTIES: []})
         self.assertEqual(_ctx.instance.runtime_properties,
                          runtime_properties_after_deletion)
@@ -367,7 +367,7 @@ class TestCloudFormationStack(TestBase):
         _ctx = self.get_mock_ctx(
             'test_update_runtime_properties_with_stack_info',
             test_properties=NODE_PROPERTIES,
-            test_runtime_properties=RUNTIMEPROPS_AFTER_CREATE,
+            test_runtime_properties=RUNTIMEPROP_AFTER_CREATE,
             type_hierarchy=STACK_TH)
 
         current_ctx.set(_ctx)
@@ -391,7 +391,7 @@ class TestCloudFormationStack(TestBase):
             ]
         })
         stack.update_runtime_properties_with_stack_info(_ctx, test_instance)
-        expected_runtime_properties = dict(RUNTIMEPROPS_AFTER_START)
+        expected_runtime_properties = dict(RUNTIMEPROP_AFTER_START)
         expected_runtime_properties.pop(stack.SAVED_PROPERTIES)
         expected_runtime_properties.update(
             {'outputs_items': {'URL': '10.0.0.0'},
@@ -407,7 +407,7 @@ class TestCloudFormationStack(TestBase):
                                      'Outputs',
                                      'outputs_items']
         # Pop the list of saved properties and compare them separately due
-        # to ordering issues
+        # to ordering issues.
         actual_saved_properties = _ctx.instance.runtime_properties.pop(
             stack.SAVED_PROPERTIES)
         self.assertDictEqual(_ctx.instance.runtime_properties,
