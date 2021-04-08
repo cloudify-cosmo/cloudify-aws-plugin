@@ -23,43 +23,44 @@ import os
 from collections import defaultdict
 
 # Third Party imports
-from botocore.exceptions import ClientError
 from Crypto.PublicKey import RSA
+from botocore.exceptions import ClientError
 
 # Cloudify
-from cloudify import compute
 from cloudify import ctx
+from cloudify import compute
 from cloudify.exceptions import NonRecoverableError, OperationRetry
 
 # local imports
+from cloudify_aws.ec2 import EC2Base
 from cloudify_aws.common._compat import text_type
 from cloudify_aws.common import decorators, utils
-from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
-from cloudify_aws.ec2 import EC2Base
 from cloudify_aws.ec2.decrypt import decrypt_password
+from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
 
-RESOURCE_TYPE = 'EC2 Instances'
-RESERVATIONS = 'Reservations'
-INSTANCES = 'Instances'
 PENDING = 0
 RUNNING = 16
-SHUTTING_DOWN = 32
-TERMINATED = 48
-STOPPING = 64
 STOPPED = 80
+STOPPING = 64
+TERMINATED = 48
+SHUTTING_DOWN = 32
+USERDATA = 'UserData'
+SUBNET_ID = 'SubnetId'
+INSTANCES = 'Instances'
 PS_OPEN = '<powershell>'
 PS_CLOSE = '</powershell>'
-GROUP_TYPE = 'cloudify.nodes.aws.ec2.SecurityGroup'
-NETWORK_INTERFACE_TYPE = 'cloudify.nodes.aws.ec2.Interface'
-SUBNET_TYPE = 'cloudify.nodes.aws.ec2.Subnet'
-KEY_TYPE = 'cloudify.nodes.aws.ec2.Keypair'
-GROUPIDS = 'SecurityGroupIds'
-NETWORK_INTERFACES = 'NetworkInterfaces'
-SUBNET_ID = 'SubnetId'
 INSTANCE_ID = 'InstanceId'
 INSTANCE_IDS = 'InstanceIds'
 DEVICE_INDEX = 'DeviceIndex'
 NIC_ID = 'NetworkInterfaceId'
+RESERVATIONS = 'Reservations'
+GROUPIDS = 'SecurityGroupIds'
+RESOURCE_TYPE = 'EC2 Instances'
+NETWORK_INTERFACES = 'NetworkInterfaces'
+KEY_TYPE = 'cloudify.nodes.aws.ec2.Keypair'
+SUBNET_TYPE = 'cloudify.nodes.aws.ec2.Subnet'
+GROUP_TYPE = 'cloudify.nodes.aws.ec2.SecurityGroup'
+NETWORK_INTERFACE_TYPE = 'cloudify.nodes.aws.ec2.Interface'
 
 
 class EC2Instances(EC2Base):
@@ -70,13 +71,20 @@ class EC2Instances(EC2Base):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
 
+    def prepare_instance_ids_request(self, params=None):
+        params = params or {}
+        return {INSTANCE_IDS: params.get(INSTANCE_IDS, [self.resource_id])}
+
+    @property
+    def instance_ids_request(self):
+        return self.prepare_instance_ids_request()
+
     @property
     def properties(self):
         '''Gets the properties of an external resource'''
-        params = {INSTANCE_IDS: [self.resource_id]}
         try:
             resources = \
-                self.client.describe_instances(**params)
+                self.client.describe_instances(**self.instance_ids_request)
         except ClientError:
             pass
         else:
@@ -107,56 +115,31 @@ class EC2Instances(EC2Base):
         '''
             Start Instances.
         '''
-        self.logger.debug(
-            'Starting {0} with parameters: {1}'.format(
-                self.type_name, params))
-        res = self.client.start_instances(**params)
-        self.logger.debug('Response: {0}'.format(res))
-        return res
+        return self.make_client_call('start_instances', params)
 
     def stop(self, params):
         '''
             Stop AWS EC2 Instances.
         '''
-        self.logger.debug(
-            'Stopping {0} with parameters: {1}'.format(
-                self.type_name, params))
-        res = self.client.stop_instances(**params)
-        self.logger.debug('Response: {0}'.format(res))
-        return res
+        return self.make_client_call('stop_instances', params)
 
     def delete(self, params):
         '''
             Delete AWS EC2 Instances.
         '''
-        self.logger.debug(
-            'Deleting {0} with parameters: {1}'.format(
-                self.type_name, params))
-        res = self.client.terminate_instances(**params)
-        self.logger.debug('Response: {0}'.format(res))
-        return res
+        return self.make_client_call('terminate_instances', params)
 
     def modify_instance_attribute(self, params):
         '''
             Modify attribute of AWS EC2 Instances.
         '''
-        self.logger.debug(
-            'Modifying {0} attribute with parameters: {1}'.format(
-                self.type_name, params))
-        res = self.client.modify_instance_attribute(**params)
-        self.logger.debug('Response: {0}'.format(res))
-        return res
+        return self.make_client_call('modify_instance_attribute', params)
 
     def get_password(self, params):
         '''
             Modify attribute of AWS EC2 Instances.
         '''
-        self.logger.debug(
-            'Getting {0} password with parameters: {1}'.format(
-                self.type_name, params))
-        res = self.client.get_password_data(**params)
-        self.logger.debug('Response: {0}'.format(res))
-        return res
+        return self.make_client_call('get_password_data', params)
 
 
 @decorators.aws_resource(EC2Instances, resource_type=RESOURCE_TYPE)
@@ -171,71 +154,15 @@ def prepare(ctx, iface, resource_config, **_):
     status_good=[RUNNING, PENDING],
     fail_on_missing=False)
 @decorators.tag_resources
-def create(ctx, iface, resource_config, **_):
+def create(ctx, iface, resource_config, **kwargs):
     '''Creates AWS EC2 Instances'''
 
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
-    params['UserData'] = _handle_userdata(params.get('UserData', ''))
-
-    # Add subnet from relationship if provided.
-    subnet_id = params.get(SUBNET_ID)
-    if not subnet_id:
-        relationship = utils.find_rel_by_node_type(ctx.instance, SUBNET_TYPE)
-        if relationship:
-            target = relationship
-            if target:
-                params[SUBNET_ID] = \
-                    target.target.instance.runtime_properties.get(
-                        EXTERNAL_RESOURCE_ID)
-            del subnet_id, target, relationship
-
-    # Add security groups from relationships if provided.
-    group_ids = params.get(GROUPIDS, [])
-    relationships = utils.find_rels_by_node_type(ctx.instance, GROUP_TYPE)
-    for relationship in relationships:
-        target = relationship
-        if target is not None:
-            group_id = \
-                target.target.instance.runtime_properties.get(
-                    EXTERNAL_RESOURCE_ID)
-            if group_id not in group_ids:
-                group_ids.append(group_id)
-            del group_id
-        del target, relationship
-    params[GROUPIDS] = group_ids
-
-    # Get all nics from relationships.
-    nics_from_rels = []
-    relationships = utils.find_rels_by_node_type(
-        ctx.instance, NETWORK_INTERFACE_TYPE)
-    for relationship in relationships:
-        target = relationship
-        if target is not None:
-            rel_nic_id = \
-                target.target.instance.runtime_properties.get(
-                    EXTERNAL_RESOURCE_ID)
-            rel_device_index = target.target.instance.runtime_properties.get(
-                'device_index')
-            rel_nic = {
-                NIC_ID: rel_nic_id,
-                DEVICE_INDEX: rel_device_index
-            }
-            nics_from_rels.append(rel_nic)
-        del target, rel_nic_id, rel_device_index, rel_nic
-
-    # Get all nics from the resource_config dict.
-    nics_from_params = params.get(NETWORK_INTERFACES, [])
-
-    # Merge the two lists.
-    merged_nics = []
-    nics = defaultdict(dict)
-    for nic in (nics_from_rels, nics_from_params):
-        for i in nic:
-            nics[i[NIC_ID]].update(i)
-            merged_nics = list(nics.values())
-    params[NETWORK_INTERFACES] = sort_devices(merged_nics)
+    params = utils.clean_params(
+        dict() if not resource_config else resource_config.copy())
+    _handle_userdata(params)
+    assign_subnet_param(params)
+    assign_groups_param(params)
+    assign_nics_param(params)
 
     create_response = iface.create(params)
     ctx.instance.runtime_properties['create_response'] = \
@@ -249,74 +176,15 @@ def create(ctx, iface, resource_config, **_):
     instance_id = instance.get(INSTANCE_ID, '')
     iface.update_resource_id(instance_id)
     utils.update_resource_id(ctx.instance, instance_id)
-
-    modify_instance_attribute_args = \
-        _.get('modify_instance_attribute_args')
-    if modify_instance_attribute_args:
-        modify_instance_attribute_args[INSTANCE_ID] = \
-            instance_id
-        iface.modify_instance_attribute(
-            modify_instance_attribute_args)
-
-
-def assign_ip_properties(_ctx, current_properties):
-
-    nics = current_properties.get('NetworkInterfaces', [])
-    ipv4_addresses = \
-        _ctx.instance.runtime_properties.get('ipv4_addresses', [])
-    ipv6_addresses = \
-        _ctx.instance.runtime_properties.get('ipv6_addresses', [])
-
-    for nic in nics:
-        nic_ipv4 = nic.get('PrivateIpAddresses', [])
-        for _nic_ipv4 in nic_ipv4:
-            _private_ip = _nic_ipv4.get('PrivateIpAddress')
-            if _nic_ipv4.get('Primary', False):
-                _ctx.instance.runtime_properties['ipv4_address'] = _private_ip
-                _ctx.instance.runtime_properties['private_ip_address'] = \
-                    _private_ip
-            if _private_ip not in ipv4_addresses:
-                ipv4_addresses.append(_private_ip)
-        nic_ipv6 = nic.get('Ipv6Addresses', [])
-        for _nic_ipv6 in nic_ipv6:
-            if _nic_ipv6 not in ipv6_addresses:
-                ipv6_addresses.append(_nic_ipv6)
-
-    _ctx.instance.runtime_properties['ipv4_addresses'] = ipv4_addresses
-    ipv6_addr_list = []
-    for ipv6_addr in ipv6_addresses:
-        if isinstance(ipv6_addr, dict) and ipv6_addr.get('Ipv6Address'):
-            ipv6_addr_list.append(ipv6_addr['Ipv6Address'])
-    _ctx.instance.runtime_properties['ipv6_addresses'] = ipv6_addr_list
-    ipv6_addresses = ipv6_addr_list
-
-    if len(ipv4_addresses) > 0 and \
-            not _ctx.instance.runtime_properties.get('ipv4_address'):
-        _ctx.instance.runtime_properties['ipv4_address'] = ipv4_addresses[0]
-
-    if len(ipv6_addresses) > 0 and \
-            not _ctx.instance.runtime_properties.get('ipv6_address'):
-        _ctx.instance.runtime_properties['ipv6_address'] = ipv6_addresses[0]
-
-    pip = current_properties.get('PublicIpAddress')
-    ip = current_properties.get('PrivateIpAddress')
-
-    if ctx.node.properties['use_public_ip']:
-        _ctx.instance.runtime_properties['ip'] = pip
-        _ctx.instance.runtime_properties['public_ip_address'] = pip
-    elif ctx.node.properties.get('use_ipv6_ip', False) and ipv6_addresses:
-        _ctx.instance.runtime_properties['ip'] = ipv6_addresses[0]
-        _ctx.instance.runtime_properties['public_ip_address'] = pip
-    else:
-        _ctx.instance.runtime_properties['ip'] = ip
-        _ctx.instance.runtime_properties['public_ip_address'] = pip
-
-    _ctx.instance.runtime_properties['private_ip_address'] = ip
+    do_modify_instance_attribute(
+        iface, kwargs.get('modify_instance_attribute_args'))
 
 
 @decorators.aws_resource(EC2Instances, RESOURCE_TYPE)
 def start(ctx, iface, resource_config, **_):
     '''Starts AWS EC2 Instances'''
+    params = utils.clean_params(
+        dict() if not resource_config else resource_config.copy())
 
     if iface.status in [RUNNING] and ctx.operation.retry_number > 0:
         assign_ip_properties(ctx, iface.properties)
@@ -325,13 +193,8 @@ def start(ctx, iface, resource_config, **_):
                 'Waiting for {0} ID# {1} password.'.format(
                     iface.type_name, iface.resource_id))
         return
-
     elif ctx.operation.retry_number == 0:
-        params = \
-            dict() if not resource_config else resource_config.copy()
-        iface.start(
-            {INSTANCE_IDS: params.get(
-                INSTANCE_IDS, [iface.resource_id])})
+        iface.start(iface.prepare_instance_ids_request(params))
 
     raise OperationRetry(
         '{0} ID# {1} is still in a pending state.'.format(
@@ -345,9 +208,9 @@ def start(ctx, iface, resource_config, **_):
 def stop(ctx, iface, resource_config, **_):
     '''Stops AWS EC2 Instances'''
 
-    params = \
-        dict() if not resource_config else resource_config.copy()
-    iface.stop({INSTANCE_IDS: params.get(INSTANCE_IDS, [iface.resource_id])})
+    params = utils.clean_params(
+        dict() if not resource_config else resource_config.copy())
+    iface.stop(iface.prepare_instance_ids_request(params))
 
 
 @decorators.aws_resource(EC2Instances, RESOURCE_TYPE)
@@ -360,18 +223,14 @@ def delete(iface, resource_config, **_):
 
     params = \
         dict() if not resource_config else resource_config.copy()
-    iface.delete({INSTANCE_IDS: params.get(INSTANCE_IDS, [iface.resource_id])})
+    iface.delete(iface.prepare_instance_ids_request(params))
 
 
 @decorators.aws_resource(EC2Instances, RESOURCE_TYPE)
 def modify_instance_attribute(ctx, iface, resource_config, **_):
-    params = \
-        dict() if not resource_config else resource_config.copy()
-    instance_id = \
-        ctx.instance.runtime_properties.get(
-            INSTANCE_ID, iface.resource_id)
-    params[INSTANCE_ID] = instance_id
-    iface.modify_instance_attribute(params)
+    params = utils.clean_params(
+        dict() if not resource_config else resource_config.copy())
+    do_modify_instance_attribute(iface, params)
 
 
 def extract_powershell_content(string_with_powershell):
@@ -405,8 +264,8 @@ def extract_powershell_content(string_with_powershell):
     return '\n'.join(split_string[script_start + 1:script_end])
 
 
-def _handle_userdata(existing_userdata):
-
+def _handle_userdata(params):
+    existing_userdata = params.get(USERDATA, '')
     if existing_userdata is None:
         existing_userdata = ''
     elif isinstance(existing_userdata, dict) or \
@@ -463,7 +322,7 @@ def _handle_userdata(existing_userdata):
         final_userdata = compute.create_multi_mimetype_userdata(
             [existing_userdata, install_agent_userdata])
 
-    return final_userdata
+    params[USERDATA] = final_userdata
 
 
 def _handle_password(iface):
@@ -558,3 +417,129 @@ def sort_devices(devices):
             insert_from_unindexed(n)
 
     return indexed
+
+
+def assign_subnet_param(params):
+    subnet_id = params.get(SUBNET_ID)
+    if not subnet_id:
+        relationship = utils.find_rel_by_node_type(ctx.instance,
+                                                   SUBNET_TYPE)
+        if relationship:
+            target = relationship
+            if target:
+                subnet_id = \
+                    target.target.instance.runtime_properties.get(
+                        EXTERNAL_RESOURCE_ID)
+    params[SUBNET_ID] = subnet_id
+
+
+def assign_groups_param(params):
+    # Add security groups from relationships if provided.
+    group_ids = params.get(GROUPIDS, [])
+    relationships = utils.find_rels_by_node_type(ctx.instance, GROUP_TYPE)
+    for relationship in relationships:
+        target = relationship
+        if target is not None:
+            group_id = \
+                target.target.instance.runtime_properties.get(
+                    EXTERNAL_RESOURCE_ID)
+            if group_id not in group_ids:
+                group_ids.append(group_id)
+            del group_id
+        del target, relationship
+    params[GROUPIDS] = group_ids
+
+
+def assign_nics_param(params):
+    # Get all nics from relationships.
+    nics_from_rels = []
+    relationships = utils.find_rels_by_node_type(
+        ctx.instance, NETWORK_INTERFACE_TYPE)
+    for relationship in relationships:
+        target = relationship
+        if target is not None:
+            rel_nic_id = \
+                target.target.instance.runtime_properties.get(
+                    EXTERNAL_RESOURCE_ID)
+            rel_device_index = target.target.instance.runtime_properties.get(
+                'device_index')
+            rel_nic = {
+                NIC_ID: rel_nic_id,
+                DEVICE_INDEX: rel_device_index
+            }
+            nics_from_rels.append(rel_nic)
+        del target, rel_nic_id, rel_device_index, rel_nic
+
+    # Get all nics from the resource_config dict.
+    nics_from_params = params.get(NETWORK_INTERFACES, [])
+
+    # Merge the two lists.
+    merged_nics = []
+    nics = defaultdict(dict)
+    for nic in (nics_from_rels, nics_from_params):
+        for i in nic:
+            nics[i[NIC_ID]].update(i)
+            merged_nics = list(nics.values())
+    params[NETWORK_INTERFACES] = sort_devices(merged_nics)
+
+
+def do_modify_instance_attribute(iface,
+                                 modify_instance_attribute_args=None):
+    if modify_instance_attribute_args:
+        modify_instance_attribute_args[INSTANCE_ID] = iface.resource_id
+        iface.modify_instance_attribute(modify_instance_attribute_args)
+
+
+def assign_ip_properties(_ctx, current_properties):
+
+    nics = current_properties.get('NetworkInterfaces', [])
+    ipv4_addresses = \
+        _ctx.instance.runtime_properties.get('ipv4_addresses', [])
+    ipv6_addresses = \
+        _ctx.instance.runtime_properties.get('ipv6_addresses', [])
+
+    for nic in nics:
+        nic_ipv4 = nic.get('PrivateIpAddresses', [])
+        for _nic_ipv4 in nic_ipv4:
+            _private_ip = _nic_ipv4.get('PrivateIpAddress')
+            if _nic_ipv4.get('Primary', False):
+                _ctx.instance.runtime_properties['ipv4_address'] = _private_ip
+                _ctx.instance.runtime_properties['private_ip_address'] = \
+                    _private_ip
+            if _private_ip not in ipv4_addresses:
+                ipv4_addresses.append(_private_ip)
+        nic_ipv6 = nic.get('Ipv6Addresses', [])
+        for _nic_ipv6 in nic_ipv6:
+            if _nic_ipv6 not in ipv6_addresses:
+                ipv6_addresses.append(_nic_ipv6)
+
+    _ctx.instance.runtime_properties['ipv4_addresses'] = ipv4_addresses
+    ipv6_addr_list = []
+    for ipv6_addr in ipv6_addresses:
+        if isinstance(ipv6_addr, dict) and ipv6_addr.get('Ipv6Address'):
+            ipv6_addr_list.append(ipv6_addr['Ipv6Address'])
+    _ctx.instance.runtime_properties['ipv6_addresses'] = ipv6_addr_list
+    ipv6_addresses = ipv6_addr_list
+
+    if len(ipv4_addresses) > 0 and \
+            not _ctx.instance.runtime_properties.get('ipv4_address'):
+        _ctx.instance.runtime_properties['ipv4_address'] = ipv4_addresses[0]
+
+    if len(ipv6_addresses) > 0 and \
+            not _ctx.instance.runtime_properties.get('ipv6_address'):
+        _ctx.instance.runtime_properties['ipv6_address'] = ipv6_addresses[0]
+
+    pip = current_properties.get('PublicIpAddress')
+    ip = current_properties.get('PrivateIpAddress')
+
+    if ctx.node.properties['use_public_ip']:
+        _ctx.instance.runtime_properties['ip'] = pip
+        _ctx.instance.runtime_properties['public_ip_address'] = pip
+    elif ctx.node.properties.get('use_ipv6_ip', False) and ipv6_addresses:
+        _ctx.instance.runtime_properties['ip'] = ipv6_addresses[0]
+        _ctx.instance.runtime_properties['public_ip_address'] = pip
+    else:
+        _ctx.instance.runtime_properties['ip'] = ip
+        _ctx.instance.runtime_properties['public_ip_address'] = pip
+
+    _ctx.instance.runtime_properties['private_ip_address'] = ip

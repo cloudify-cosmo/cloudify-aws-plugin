@@ -127,3 +127,5 @@
     - Add support for Transit Gateway create, delete, vpc attach.
 2.7.0:
     - Add pull operation for cloudformation.
+2.8.0:
+    - RD-1802 Support Spot Instances

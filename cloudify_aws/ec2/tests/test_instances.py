@@ -330,11 +330,9 @@ class TestEC2Instances(TestBase):
                 'InstanceType': 'test type',
                 'UserData': ''
             }
-        handle_userdata_output = \
-            instances._handle_userdata(params['UserData'])
+        instances._handle_userdata(params)
         expected_userdata = 'SCRIPT'
-        self.assertIn(expected_userdata,
-                      handle_userdata_output)
+        self.assertIn(expected_userdata, params['UserData'])
 
     def test_sort_devices(self):
         test_devices = [
