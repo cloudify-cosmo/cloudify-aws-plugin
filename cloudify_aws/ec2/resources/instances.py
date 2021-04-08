@@ -430,7 +430,8 @@ def assign_subnet_param(params):
                 subnet_id = \
                     target.target.instance.runtime_properties.get(
                         EXTERNAL_RESOURCE_ID)
-    params[SUBNET_ID] = subnet_id
+    if subnet_id:
+        params[SUBNET_ID] = subnet_id
 
 
 def assign_groups_param(params):
@@ -447,7 +448,8 @@ def assign_groups_param(params):
                 group_ids.append(group_id)
             del group_id
         del target, relationship
-    params[GROUPIDS] = group_ids
+    if group_ids:
+        params[GROUPIDS] = group_ids
 
 
 def assign_nics_param(params):
@@ -480,7 +482,9 @@ def assign_nics_param(params):
         for i in nic:
             nics[i[NIC_ID]].update(i)
             merged_nics = list(nics.values())
-    params[NETWORK_INTERFACES] = sort_devices(merged_nics)
+    sorted_devices = sort_devices(merged_nics)
+    if sorted_devices:
+        params[NETWORK_INTERFACES] = sorted_devices
 
 
 def do_modify_instance_attribute(iface,
