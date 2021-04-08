@@ -18,13 +18,13 @@
 '''
 
 # Standard Imports
-import json
 import os
+import json
+from base64 import b64encode
 from collections import defaultdict
 
 # Third Party imports
 from Crypto.PublicKey import RSA
-from botocore.exceptions import ClientError
 
 # Cloudify
 from cloudify import ctx
@@ -82,20 +82,18 @@ class EC2Instances(EC2Base):
     @property
     def properties(self):
         '''Gets the properties of an external resource'''
-        try:
-            resources = \
-                self.client.describe_instances(**self.instance_ids_request)
-        except ClientError:
-            pass
-        else:
-            reservations = resources.get(RESERVATIONS, [])
-            instances = []
-            for r in reservations:
-                for i in r.get(INSTANCES, []):
-                    instances.append(i)
-            if len(instances) == 1:
-                return instances[0]
-        return None
+        return self.get_instances(self.instance_ids_request)
+
+    def get_instances(self, request):
+        resources = self.describe(request)
+        reservations = resources.get(RESERVATIONS, [])
+        instances = []
+        for r in reservations:
+            for i in r.get(INSTANCES, []):
+                instances.append(i)
+        if len(instances) == 1:
+            return instances[0]
+        return []
 
     @property
     def status(self):
@@ -104,6 +102,12 @@ class EC2Instances(EC2Base):
         if not props:
             return None
         return props['State']['Code']
+
+    def describe(self, params):
+        try:
+            return self.make_client_call('describe_instances', params)
+        except NonRecoverableError:
+            return {}
 
     def create(self, params):
         '''
@@ -159,7 +163,7 @@ def create(ctx, iface, resource_config, **kwargs):
 
     params = utils.clean_params(
         dict() if not resource_config else resource_config.copy())
-    _handle_userdata(params)
+    handle_userdata(params)
     assign_subnet_param(params)
     assign_groups_param(params)
     assign_nics_param(params)
@@ -264,7 +268,7 @@ def extract_powershell_content(string_with_powershell):
     return '\n'.join(split_string[script_start + 1:script_end])
 
 
-def _handle_userdata(params):
+def handle_userdata(params, encode=False):
     existing_userdata = params.get(USERDATA, '')
     if existing_userdata is None:
         existing_userdata = ''
@@ -321,6 +325,9 @@ def _handle_userdata(params):
     else:
         final_userdata = compute.create_multi_mimetype_userdata(
             [existing_userdata, install_agent_userdata])
+
+    if encode:
+        final_userdata = b64encode(final_userdata.encode()).decode("ascii")
 
     params[USERDATA] = final_userdata
 

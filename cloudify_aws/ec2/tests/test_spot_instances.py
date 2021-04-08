@@ -33,7 +33,7 @@ class TestEC2SpotInstances(TestBase):
     def setUp(self):
         self.spot_instances = mod.EC2SpotInstances(
             "ctx_node",
-            resource_id=True,
+            resource_id='spot instance',
             client=True,
             logger=None)
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',
@@ -58,6 +58,7 @@ class TestEC2SpotInstances(TestBase):
         self.assertIsNone(res)
 
         value = {mod.REQUESTS: [{mod.REQUEST_ID: 'test_name'}]}
+        self.spot_instances.resource_id = 'test_name'
         self.spot_instances.client = self.make_client_function(
             'describe_spot_instance_requests', return_value=value)
         res = self.spot_instances.properties
@@ -68,6 +69,7 @@ class TestEC2SpotInstances(TestBase):
             mod.REQUESTS: [
                 {mod.REQUEST_ID: 'test_name', 'State': None}]
         }
+        self.spot_instances.resource_id = 'test_name'
         self.spot_instances.client = self.make_client_function(
             'describe_spot_instance_requests', return_value=value)
         res = self.spot_instances.status
@@ -77,6 +79,7 @@ class TestEC2SpotInstances(TestBase):
             mod.REQUESTS: [
                 {mod.REQUEST_ID: 'test_name', 'State': 'open'}]
         }
+        self.spot_instances.resource_id = 'test_name'
         self.spot_instances.client = self.make_client_function(
             'describe_spot_instance_requests', return_value=value)
         res = self.spot_instances.status
@@ -108,12 +111,23 @@ class TestEC2SpotInstances(TestBase):
                          config)
 
     def test_create(self):
+        _tp = \
+            {
+                'os_family': 'windows',
+                'agent_config': {'install_method': 'init_script'}
+            }
         ctx = self.get_mock_ctx(mod.REQUESTS)
+        ctx = self.get_mock_ctx(
+            mod.REQUESTS,
+            test_properties=_tp,
+            type_hierarchy=['cloudify.nodes.Root', 'cloudify.nodes.Compute'])
+        ctx.agent.init_script = lambda: 'SCRIPT'
+        ctx.node.properties['agent_config']['install_method'] = 'init_script'
         current_ctx.set(ctx)
         config = {mod.REQUEST_ID: 'spot instances'}
         self.spot_instances.resource_id = config[mod.REQUEST_ID]
         iface = MagicMock()
-        iface.create = self.mock_return({mod.REQUESTS: config})
+        iface.create = self.mock_return({mod.REQUESTS: [config]})
         mod.create(ctx=ctx, iface=iface, resource_config=config)
         self.assertEqual(self.spot_instances.resource_id, 'spot instances')
 

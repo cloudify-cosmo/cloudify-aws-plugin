@@ -96,7 +96,7 @@ class AWSResourceBase(object):
             elif isinstance(client_method_args, list):
                 res = client_method(*client_method_args)
             else:
-                res = client_method_args()
+                res = client_method()
         except fatal_handled_exceptions as error:
             _, _, tb = sys.exc_info()
             if isinstance(error, ClientError) and hasattr(error, 'message'):
