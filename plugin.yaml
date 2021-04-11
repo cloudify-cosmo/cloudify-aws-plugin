@@ -2465,6 +2465,9 @@ node_types:
         configure:
           implementation: aws.cloudify_aws.ec2.resources.spot_instances.configure
           inputs: *operation_inputs
+        stop:
+          implementation: aws.cloudify_aws.ec2.resources.spot_instances.stop
+          inputs: *operation_inputs
         delete:
           implementation: aws.cloudify_aws.ec2.resources.spot_instances.delete
           inputs: *operation_inputs

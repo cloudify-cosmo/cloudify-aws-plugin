@@ -160,12 +160,18 @@ def configure(ctx, iface, resource_config, **_):
 
 @decorators.aws_resource(EC2SpotInstances, RESOURCE_TYPE)
 @decorators.tag_resources
+def stop(ctx, iface, resource_config, **_):
+    '''Deletes an AWS EC2 Spot Instance Request'''
+    ctx.logger.info('Deleting instances created by spot instance request...')
+    iface.delete_instances()
+
+
+@decorators.aws_resource(EC2SpotInstances, RESOURCE_TYPE)
+@decorators.tag_resources
 def delete(ctx, iface, resource_config, **_):
     '''Deletes an AWS EC2 Spot Instance Request'''
     params = utils.clean_params(
         dict() if not resource_config else resource_config.copy())
-    ctx.logger.info('Deleting spot instances...')
-    iface.delete_instances()
     ctx.logger.info('Deleting spot instance request...')
     iface.delete(iface.prepare_request_id_param(params))
 
