@@ -181,7 +181,10 @@ def delete(ctx, iface, resource_config, **_):
     if not group_id:
         group_id = iface.resource_id
 
-    iface.delete({GROUPID: group_id})
+    utils.exit_on_substring(iface,
+                            'delete',
+                            {GROUPID: group_id},
+                            'InvalidGroup.NotFound')
 
 
 @decorators.aws_resource(EC2SecurityGroup, RESOURCE_TYPE)
@@ -241,7 +244,11 @@ def revoke_ingress_rules(ctx, iface, resource_config, **_):
                 EXTERNAL_RESOURCE_ID, iface.resource_id)
         params[GROUPID] = group_id
 
-    iface.revoke_ingress(params)
+    utils.exit_on_substring(iface,
+                            'revoke_ingress',
+                            params,
+                            ['InvalidPermission.NotFound',
+                             'InvalidGroup.NotFound'])
 
 
 @decorators.aws_resource(EC2SecurityGroup, RESOURCE_TYPE)
@@ -261,4 +268,8 @@ def revoke_egress_rules(ctx, iface, resource_config, **_):
                 EXTERNAL_RESOURCE_ID, iface.resource_id)
         params[GROUPID] = group_id
 
-    iface.revoke_egress(params)
+    utils.exit_on_substring(iface,
+                            'revoke_egress',
+                            params,
+                            ['InvalidPermission.NotFound',
+                             'InvalidGroup.NotFound'])

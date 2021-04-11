@@ -43,7 +43,7 @@ from cloudify_aws.ec2.resources.instances import (
 class TestEC2Instances(TestBase):
 
     def setUp(self):
-        self.instances = EC2Instances("ctx_node", resource_id=True,
+        self.instances = EC2Instances("ctx_node", resource_id='ec2 instance',
                                       client=True, logger=None)
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',
                       mock_decorator)
@@ -59,19 +59,18 @@ class TestEC2Instances(TestBase):
             self.make_client_function('describe_instances',
                                       side_effect=effect)
         res = self.instances.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, [])
 
         value = {}
         self.instances.client = \
             self.make_client_function('describe_instances',
                                       return_value=value)
         res = self.instances.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, [])
 
         value = {RESERVATIONS: [{INSTANCES: [{INSTANCE_ID: 'test_name'}]}]}
-        self.instances.client = \
-            self.make_client_function('describe_instances',
-                                      return_value=value)
+        self.instances.client = self.make_client_function(
+            'describe_instances', return_value=value)
         res = self.instances.properties
         self.assertEqual(res[INSTANCE_ID], 'test_name')
 
@@ -172,6 +171,7 @@ class TestEC2Instances(TestBase):
             type_hierarchy=['cloudify.nodes.Root', 'cloudify.nodes.Compute'])
         current_ctx.set(ctx=ctx)
         iface = MagicMock()
+        iface.status = 48
         instances.delete(ctx=ctx, iface=iface, resource_config={})
         self.assertTrue(iface.delete.called)
         for prop in ['ip',
@@ -330,11 +330,9 @@ class TestEC2Instances(TestBase):
                 'InstanceType': 'test type',
                 'UserData': ''
             }
-        handle_userdata_output = \
-            instances._handle_userdata(params['UserData'])
+        instances.handle_userdata(params)
         expected_userdata = 'SCRIPT'
-        self.assertIn(expected_userdata,
-                      handle_userdata_output)
+        self.assertIn(expected_userdata, params['UserData'])
 
     def test_sort_devices(self):
         test_devices = [

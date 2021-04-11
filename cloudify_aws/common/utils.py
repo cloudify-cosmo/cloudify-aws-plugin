@@ -18,8 +18,8 @@
 '''
 
 # Standard imports
-import sys
 import re
+import sys
 import uuid
 
 # Third party imports
@@ -518,37 +518,59 @@ def dedup_tags(tags):
 
 def exit_on_substring(iface,
                       method,
-                      request,
-                      substring,
+                      request=None,
+                      substrings=None,
                       raisable=OperationRetry):
+    """This method is useful for deleting something that may have already been
+    deleted. We really want to make sure that the resource no longer exists.
+
+    :param iface: Resource interface derived from EC2Base.
+    :param method: The method on the Resource interface object.
+    :param request: The parameters to method.
+    :param substrings: Substrings to look for in the exception.
+    :param raisable: The exception to raise if substrings are not found.
+    :return:
+    """
+
+    if isinstance(substrings, text_type):
+        substrings = [substrings]
 
     callable = getattr(iface, method)
     try:
-        return callable(request)
+        if request:
+            return callable(request)
+        else:
+            return callable()
     except (NonRecoverableError, ClientError) as e:
         if hasattr(e, 'message'):
             message = e.message
         else:
             message = _compat.text_type(e)
-        if substring in message:
+        if any(substring in message for substring in substrings):
             return {}
         raise raisable(message)
 
 
 def raise_on_substring(iface,
                        method,
-                       request,
-                       substring,
+                       request=None,
+                       substrings=None,
                        raisable=OperationRetry):
+
+    if isinstance(substrings, text_type):
+        substrings = [substrings]
 
     callable = getattr(iface, method)
     try:
-        return callable(request)
+        if request:
+            return callable(request)
+        else:
+            return callable()
     except (NonRecoverableError, ClientError) as e:
         if hasattr(e, 'message'):
             message = e.message
         else:
             message = _compat.text_type(e)
-        if substring in message:
+        if any(substring in message for substring in substrings):
             raise raisable(message)
         return {}

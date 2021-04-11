@@ -2,9 +2,9 @@ plugins:
 
   aws:
     executor: central_deployment_agent
-    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/2.7.0.zip
+    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/2.8.0.zip
     package_name: cloudify-aws-plugin
-    package_version: '2.7.0'
+    package_version: '2.8.0'
 
 data_types:
 
@@ -741,6 +741,12 @@ data_types:
         required: false
       kwargs:
         description: http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.run_instances
+        default: {}
+
+  cloudify.datatypes.aws.ec2.SpotInstances.config:
+    properties:
+      kwargs:
+        description: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.html#EC2.Client.request_spot_instances
         default: {}
 
   cloudify.datatypes.aws.ec2.Keypair.config:
@@ -2433,6 +2439,37 @@ node_types:
           inputs: *operation_inputs
         modify_instance_attribute:
           implementation: aws.cloudify_aws.ec2.resources.instances.modify_instance_attribute
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.ec2.SpotInstances:
+    derived_from: cloudify.nodes.Compute
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      <<: *tags_property
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ec2.SpotInstances.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.ec2.resources.spot_instances.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.ec2.resources.spot_instances.create
+          inputs: *operation_inputs
+        configure:
+          implementation: aws.cloudify_aws.ec2.resources.spot_instances.configure
+          inputs: *operation_inputs
+        stop:
+          implementation: aws.cloudify_aws.ec2.resources.spot_instances.stop
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.ec2.resources.spot_instances.delete
           inputs: *operation_inputs
 
   cloudify.nodes.aws.ec2.Keypair:

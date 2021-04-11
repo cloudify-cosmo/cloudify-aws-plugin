@@ -194,4 +194,5 @@ def detach(ctx, iface, resource_config, **_):
     return utils.exit_on_substring(iface,
                                    'detach',
                                    params,
-                                   'InvalidInternetGatewayID.NotFound')
+                                   ['Gateway.NotAttached',
+                                    'InvalidInternetGatewayID.NotFound'])
