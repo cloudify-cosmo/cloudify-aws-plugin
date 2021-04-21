@@ -437,14 +437,20 @@ workflows:
             - wagon
             - rhel_wagon
       - cf_integration_tests_py3:
+          requires:
+            - build_bundle
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - eks_integration_tests_py3:
+          requires:
+            - build_bundle
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - hw_integration_tests_py3:
+          requires:
+            - build_bundle
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
@@ -499,14 +505,20 @@ workflows:
             - wagon
             - rhel_wagon
       - cf_integration_tests_py3:
+          requires:
+            - build_bundle
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - eks_integration_tests_py3:
+          requires:
+            - build_bundle
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - hw_integration_tests_py3:
+          requires:
+            - build_bundle
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
