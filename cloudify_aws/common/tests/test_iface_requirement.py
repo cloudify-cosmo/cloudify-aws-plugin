@@ -123,6 +123,7 @@ class testIfaceRequirement(TestBase):
             'foo'
         _ctx.instance.runtime_properties['KeyId'] = 'foo'
         _ctx.instance.runtime_properties['instances'] = ['foo']
+        _ctx.instance.runtime_properties['resources'] = {}
         _ctx.instance.runtime_properties['resource_config'] = {
             'HostedZoneId': 'foo',
             'ChangeBatch': {

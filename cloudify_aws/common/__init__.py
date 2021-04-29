@@ -46,11 +46,11 @@ class AWSResourceBase(object):
         self.logger = logger or init_cloudify_logger(NullHandler(),
                                                      'AWSResourceBase')
         self.client = client
-        self.resource_id = text_type(resource_id) if resource_id else None
+        self._resource_id = text_type(resource_id) if resource_id else None
 
     def update_resource_id(self, resource_id):
         '''Updates the resource_id value'''
-        self.resource_id = resource_id
+        self._resource_id = resource_id
 
     @property
     def properties(self):
@@ -61,6 +61,14 @@ class AWSResourceBase(object):
     def status(self):
         '''Gets the status of an external resource'''
         raise NotImplementedError()
+
+    @property
+    def resource_id(self):
+        return self._resource_id
+
+    @resource_id.setter
+    def resource_id(self, value):
+        self._resource_id = value
 
     def create(self, params):
         '''Creates a resource'''

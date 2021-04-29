@@ -129,10 +129,10 @@ class TestEKSCluster(TestBase):
 
     def test_prepare(self):
         ctx = self.get_mock_ctx("Cluster")
-        cluster.prepare(ctx, 'config')
+        cluster.prepare(ctx, MagicMock(), {})
         self.assertEqual(
             ctx.instance.runtime_properties['resource_config'],
-            'config')
+            {})
 
     def test_create(self):
         ctx = self.get_mock_ctx("Cluster")

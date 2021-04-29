@@ -92,8 +92,8 @@ class Route53HostedZone(Route53Base):
         return res['ResourceRecordSets']
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
-def prepare(ctx, resource_config, **_):
+@decorators.aws_resource(Route53HostedZone, RESOURCE_TYPE)
+def prepare(ctx, resource_config, iface, **_):
     '''Prepares an AWS Route53 Hosted Zone'''
     # Save the parameters
     ctx.instance.runtime_properties['resource_config'] = resource_config

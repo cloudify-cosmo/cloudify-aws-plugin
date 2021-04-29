@@ -149,7 +149,7 @@ class TestHostedZone(TestBase):
 
     def test_prepare(self):
         ctx = self._get_ctx()
-        hosted_zone.prepare(ctx, 'config')
+        hosted_zone.prepare(ctx, 'config', MagicMock())
         self.assertEqual(ctx.instance.runtime_properties['resource_config'],
                          'config')
 

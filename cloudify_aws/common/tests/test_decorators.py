@@ -189,7 +189,8 @@ class TestDecorators(TestBase):
         _ctx = self.get_mock_ctx(
             'test_aws_params',
             test_properties={"resource_id": "property"},
-            test_runtime_properties={"aws_resource_id": "runtime"}
+            test_runtime_properties={"aws_resource_id": "runtime"},
+            ctx_operation_name='foo.foo.foo.create'
         )
         current_ctx.set(_ctx)
         _iface.resource_id = 'interface'
@@ -309,7 +310,8 @@ class TestDecorators(TestBase):
         _ctx = self.get_mock_ctx(
             'test_aws_params',
             test_properties={"resource_id": "property"},
-            test_runtime_properties={"aws_resource_id": "runtime"}
+            test_runtime_properties={"aws_resource_id": "runtime"},
+            ctx_operation_name='foo.foo.foo.precreate'
         )
         current_ctx.set(_ctx)
         _iface.resource_id = 'interface'

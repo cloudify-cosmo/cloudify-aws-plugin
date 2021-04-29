@@ -2,9 +2,9 @@ plugins:
 
   aws:
     executor: central_deployment_agent
-    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/2.8.0.zip
+    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/2.9.0.zip
     package_name: cloudify-aws-plugin
-    package_version: '2.8.0'
+    package_version: '2.9.0'
 
 data_types:
 
@@ -1191,6 +1191,34 @@ dsl_definitions:
       default: ''
 
 node_types:
+
+  cloudify.nodes.resources.AmazonWebServices:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *client_config
+      resource_config:
+        description: >
+          A dictionary containing the key resource_types, which is a list of node types to discover.
+        type: dict
+        default:
+          resource_types:
+            - AWS::EKS::CLUSTER
+      regions:
+        type: list
+        description: A list of Amazon regions to discover resources in.
+        default:
+          - { get_property: [ SELF, client_config, region_name ] }
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.cloudify_aws.workflows.resources.initialize
+          inputs:
+            resource_config:
+              default: { get_property: [ SELF, resource_config ] }
+            regions:
+              default: { get_property: [ SELF, regions ] }
+        delete:
+          implementation: aws.cloudify_aws.workflows.resources.deinitialize
 
   cloudify.nodes.aws.dynamodb.Table:
     derived_from: cloudify.nodes.Root
@@ -3486,11 +3514,14 @@ node_types:
           use later to interact with the cluster
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.eks.resources.cluster.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.eks.resources.cluster.create
+          inputs: *operation_inputs
+        poststart:
+          implementation: aws.cloudify_aws.eks.resources.cluster.poststart
           inputs: *operation_inputs
         delete:
           implementation: aws.cloudify_aws.eks.resources.cluster.delete
@@ -3915,3 +3946,30 @@ relationships:
               type: string
               description: The Gateway Attachment ID that is created in request_vpc_attachment. The value can be provided as an input, but if the value is not provided, then the plugin will perform the same default lookup as indicated byt the get attribute intrinsic function.
               default: { get_attribute: [ SOURCE, TransitGatewayVpcAttachments, { get_attribute: [ TARGET, aws_resource_id ] }, TransitGatewayVpcAttachment, TransitGatewayAttachmentId] }
+
+workflows:
+
+  discover_and_deploy:
+#    description: >
+#      Using provided credentials, list all discoverable resources of specified resource type.
+#      (Default is cloudify.nodes.aws.eks.Cluster).
+#      This is restricted to provided credentials and region.
+#      Install new deployments for them.
+    mapping: aws.cloudify_aws.workflows.discover.discover_and_deploy
+    parameters:
+      node_id:
+        type: string
+        description: >
+          The node_id. Not required.
+        default: ''
+      resource_types:
+        description: >
+            The name of the resource to discover.
+            Default is [AWS::EKS::CLUSTER], as that is the only currently supported resource.
+        type: list
+        default:
+          - AWS::EKS::CLUSTER
+      blueprint_id:
+        description: The ID of the blueprint that should be used to deploy the new resources. Default is current blueprint.
+        type: string
+        default: 'existing-eks-cluster'
