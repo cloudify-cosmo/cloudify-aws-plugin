@@ -23,13 +23,14 @@ import json
 # Boto
 import boto3
 from botocore.exceptions import ClientError
+from cloudify.exceptions import NonRecoverableError
+from cloudify_rest_client.exceptions import CloudifyClientError
 
 # Local imports
 from cloudify_aws.eks import EKSBase
-from cloudify_aws.ec2.resources.subnet import EC2Subnet
 from cloudify_aws.common import decorators, utils
-from cloudify.exceptions import NonRecoverableError
 from cloudify_aws.common._compat import text_type
+from cloudify_aws.ec2.resources.subnet import EC2Subnet
 
 RESOURCE_TYPE = 'EKS Cluster'
 CLUSTER_TYPE = 'cloudify.nodes.aws.eks.Cluster'
@@ -119,11 +120,13 @@ class EKSCluster(EKSBase):
         """
         return self.make_client_call('create_cluster', params)
 
-    def is_fargate(self):
+    @property
+    def fargate_profiles(self):
         return self.client.list_fargate_profiles(
             clusterName=self.resource_id)['fargateProfileNames']
 
-    def is_nodegroup(self):
+    @property
+    def nodegroups(self):
         return self.client.list_nodegroups(
             clusterName=self.resource_id)['nodegroups']
 
@@ -266,8 +269,8 @@ def poststart(ctx, iface, resource_config, **_):
                 'kubeconf not json serializable {0}'.format(text_type(error)))
     region_name = ctx.node.properties['client_config']['region_name']
     aws_resource_arn = ctx.instance.runtime_properties['aws_resource_arn']
-    fargate = iface.is_fargate()
-    node_group = iface.is_nodegroup()
+    fargate = iface.fargate_profiles
+    node_group = iface.nodegroups
     if fargate and node_group:
         node_type = 'fargate-nodegroup'
     elif fargate:
@@ -277,15 +280,21 @@ def poststart(ctx, iface, resource_config, **_):
     zones = get_zones(
         ctx,
         resource_config['resourcesVpcConfig']['subnetIds'])
-    utils.add_new_labels(
-        {
-            'csys-env-type': 'eks',
-            'aws-region': region_name,
-            'external-id': aws_resource_arn,
-            'eks-node-type': node_type,
-            'location': ', '.join(zones)
-        },
-        ctx.deployment.id)
+    ctx.logger.info('ARN {}'.format(type(aws_resource_arn)))
+    try:
+        utils.add_new_labels(
+            {
+                'csys-env-type': 'eks',
+                'aws-region': region_name,
+                'external-id': aws_resource_arn,
+                'eks-node-type': node_type,
+                'location': ', '.join(zones)
+            },
+            ctx.deployment.id)
+    except CloudifyClientError:
+        ctx.logger.warn(
+            'Skipping assignment of labels due to '
+            'incompatible Cloudify version.')
 
 
 @decorators.aws_resource(EKSCluster, RESOURCE_TYPE)
@@ -301,7 +310,6 @@ def delete(ctx, iface, resource_config, **_):
 
 def discover_clusters(ctx=None,  client_config=None, **_):
     client_config = client_config or {}
-    ctx.logger.info('Ping Pong')
     clusters = {}
     clusters.update(client_config)
     return clusters

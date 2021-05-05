@@ -585,7 +585,7 @@ def raise_on_substring(iface,
 
 def with_rest_client(func):
     """
-    :param func: This is a class for the starlingx resource need to be
+    :param func: This is a class for the aws resource need to be
     invoked
     :return: a wrapper object encapsulating the invoked function
     """
