@@ -129,6 +129,8 @@
     - Add pull operation for cloudformation.
 2.8.0:
     - RD-1802 Support Spot Instances
+2.8.1:
+    - RD-2188 Add  connected_to_eks_cluster relationship.
 2.9.0:
     - RD-2115 Discover and Deploy workflow for EKS cluster.
     - CYBL-1151 Update Route53 resources to follow requirement of specifying class definition.
