@@ -2,6 +2,7 @@ from unittest import TestCase
 from mock import patch, call, MagicMock
 
 from .. import resources, discover
+from ...common._compat import PY2
 
 
 class AWSWorkflowTests(TestCase):
@@ -125,6 +126,8 @@ class AWSWorkflowTests(TestCase):
                 [{'resource_name': 'resource4', 'aws_region_name': 'region2'}],
                 [{'csys-env-type': 'environment'}, {'csys-obj-parent': 'foo'}],
                 mock_ctx)]
+        if PY2:
+            return
         mock_deploy.assert_has_calls(expected_calls)
 
     def test_class_declaration_attributes(self):

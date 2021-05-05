@@ -63,7 +63,7 @@ def get_resources(node, regions, resource_types, logger):
     logger.info('Checking for these resource types: {t}.'.format(
         t=resource_types))
     resources = {}
-    regions = get_regions(node)
+    regions = regions or get_regions(node)
     # The structure goes resources.region.resource_type.resource, so we start
     # with region.
     for region in regions:

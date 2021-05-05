@@ -109,6 +109,7 @@ class testIfaceRequirement(TestBase):
         _ctx = self.get_mock_ctx(
             operation, test_relationships=[mock_group])
         _ctx.instance.runtime_properties['aws_resource_id'] = 'foo'
+        _ctx.instance.runtime_properties['aws_resource_arn'] = 'foo'
         _ctx.instance.runtime_properties['LoadBalancerName'] = 'foo'
         _ctx.instance.runtime_properties['PolicyName'] = 'foo'
         _ctx.instance.runtime_properties['rule_number'] = 'foo'
@@ -129,6 +130,7 @@ class testIfaceRequirement(TestBase):
             'ChangeBatch': {
                 'Changes': [{'ResourceRecordSet': 'foo'}]
             },
+            'resourcesVpcConfig': {'subnetIds': []},
             'Endpoint': 'arn:aws:foo',
             'Key': 'foo',
             'GroupName': 'foo',
@@ -180,12 +182,14 @@ class testIfaceRequirement(TestBase):
                 test_target=self.get_op_ctx(operation_callable))
             self.perform_operation(operation_callable, args, kwargs)
 
+    @patch('cloudify_aws.common.utils.get_rest_client')
     @patch('cloudify_aws.common.connection.Boto3Connection')
     @patch('cloudify_aws.common.decorators._wait_for_status')
     @patch('cloudify_aws.common.AWSResourceBase.make_client_call')
     @patch('cloudify_aws.common.connection.Boto3Connection.client')
+    @patch('cloudify_aws.common.connection.Boto3Connection.client')
     @patch('cloudify.context.CloudifyContext._verify_in_relationship_context')
-    def test_iface_requirement(self, _, __, ___, ____, _____):
+    def test_iface_requirement(self, *_):
         plugin_yaml = self.get_plugin_yaml()
         operations = self.get_node_type_operations(plugin_yaml) + \
             self.get_relationships_operations(plugin_yaml)
