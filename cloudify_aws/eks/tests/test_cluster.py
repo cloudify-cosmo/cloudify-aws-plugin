@@ -193,8 +193,10 @@ class TestEKSCluster(TestBase):
                 'cloudify_aws.eks.resources.cluster'
                 '._store_kubeconfig_in_runtime_properties') as \
                 store_kube_conf_mock:
-            cluster.refresh_kubeconfig(_ctx)
-            store_kube_conf_mock.assert_called()
+            with patch('cloudify_aws.eks.resources.cluster'
+                       '.EKSCluster', return_value=self.cluster):
+                cluster.refresh_kubeconfig(_ctx)
+                store_kube_conf_mock.assert_called()
 
 
 if __name__ == '__main__':
