@@ -26,6 +26,7 @@ from botocore.exceptions import ClientError
 
 # Local imports
 from cloudify_aws.eks import EKSBase
+from cloudify_aws.ec2.resources.subnet import EC2Subnet
 from cloudify_aws.common import decorators, utils
 from cloudify.exceptions import NonRecoverableError
 from cloudify_aws.common._compat import text_type
@@ -117,6 +118,14 @@ class EKSCluster(EKSBase):
             Create a new AWS EKS cluster.
         """
         return self.make_client_call('create_cluster', params)
+
+    def is_fargate(self):
+        return self.client.list_fargate_profiles(
+            clusterName=self.resource_id)['fargateProfileNames']
+
+    def is_nodegroup(self):
+        return self.client.list_nodegroups(
+            clusterName=self.resource_id)['nodegroups']
 
     def wait_for_cluster(self, params, status):
         """
@@ -256,16 +265,27 @@ def poststart(ctx, iface, resource_config, **_):
             raise NonRecoverableError(
                 'kubeconf not json serializable {0}'.format(text_type(error)))
     region_name = ctx.node.properties['client_config']['region_name']
-    utils.update_deployment_labels(
-        ctx.deployment.id,
+    aws_resource_arn = ctx.instance.runtime_properties['aws_resource_arn']
+    fargate = iface.is_fargate()
+    node_group = iface.is_nodegroup()
+    if fargate and node_group:
+        node_type = 'fargate-nodegroup'
+    elif fargate:
+        node_type = 'fargate'
+    else:
+        node_type = 'nodegroup'
+    zones = get_zones(
+        ctx,
+        resource_config['resourcesVpcConfig']['subnetIds'])
+    utils.add_new_labels(
         {
             'csys-env-type': 'eks',
             'aws-region': region_name,
-            'external-id': name,
-            'eks-node-type': 'None',
-            'Location': 'None'
-        }
-    )
+            'external-id': aws_resource_arn,
+            'eks-node-type': node_type,
+            'location': ', '.join(zones)
+        },
+        ctx.deployment.id)
 
 
 @decorators.aws_resource(EKSCluster, RESOURCE_TYPE)
@@ -285,3 +305,12 @@ def discover_clusters(ctx=None,  client_config=None, **_):
     clusters = {}
     clusters.update(client_config)
     return clusters
+
+
+def get_zones(ctx, subnets):
+    zones = []
+    for subnet in subnets:
+        subnet_iface = EC2Subnet(ctx.node, subnet, logger=ctx.logger)
+        availability_zone = subnet_iface.properties['AvailabilityZone']
+        zones.append(availability_zone)
+    return zones

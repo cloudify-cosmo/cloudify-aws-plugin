@@ -26,9 +26,6 @@ def initialize(resource_config=None, regions=None, ctx=None, **_):
 
     ctx = ctx or _ctx
     ctx.logger.info('Initializing AWS Account Info')
-    # We permit from node properties, because it makes calling this easier.
-    # However the power user can override.
-    regions = regions if regions else ctx.node.properties.get('regions', [])
     ctx.logger.info('Checking for these regions: {r}.'.format(r=regions))
     resource_types = resource_config.get('resource_types', [])
     ctx.logger.info('Checking for these resource types: {t}.'.format(
@@ -66,6 +63,7 @@ def get_resources(node, regions, resource_types, logger):
     logger.info('Checking for these resource types: {t}.'.format(
         t=resource_types))
     resources = {}
+    regions = get_regions(node)
     # The structure goes resources.region.resource_type.resource, so we start
     # with region.
     for region in regions:
@@ -125,3 +123,17 @@ def class_declaration_attributes(node, service, region=None, logger=None):
         'logger': logger
     }
     return attributes
+
+
+def get_regions(node):
+    connection = Boto3Connection(node)
+    client = connection.client('ec2')
+    response = client.describe_regions()
+    return [r['RegionName'] for r in response['Regions']]
+
+
+def get_availability_zones(node):
+    connection = Boto3Connection(node)
+    client = connection.client('ec2')
+    response = client.describe_availability_zones()
+    return [r['ZoneName'] for r in response['AvailabilityZones']]

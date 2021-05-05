@@ -705,6 +705,13 @@ def get_regions(node, deployment_id):
     return regions
 
 
+def add_new_labels(new_labels, deployment_id):
+    labels = get_deployment_labels(deployment_id)
+    for k, v in new_labels.items():
+        labels[k] = v
+    update_deployment_labels(deployment_id, labels)
+
+
 def add_new_label(key, value, deployment_id):
     labels = get_deployment_labels(deployment_id)
     labels[key] = value

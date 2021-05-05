@@ -1206,8 +1206,7 @@ node_types:
       regions:
         type: list
         description: A list of Amazon regions to discover resources in.
-        default:
-          - { get_property: [ SELF, client_config, region_name ] }
+        default: []
     interfaces:
       cloudify.interfaces.lifecycle:
         create:

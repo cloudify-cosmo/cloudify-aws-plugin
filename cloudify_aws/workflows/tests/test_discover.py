@@ -1,10 +1,6 @@
 from unittest import TestCase
 from mock import patch, call, MagicMock
 
-from cloudify import ctx
-from cloudify.workflows import ctx as wtx
-from cloudify.state import current_ctx
-
 from .. import resources, discover
 
 
