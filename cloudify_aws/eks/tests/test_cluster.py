@@ -161,7 +161,10 @@ class TestEKSCluster(TestBase):
         cluster.delete(ctx, iface, {})
         self.assertTrue(iface.delete.called)
 
-    def test_refresh_kubeconfig_wrong_type_hierarchy(self):
+    @patch('cloudify_aws.eks.resources.cluster'
+           '._store_kubeconfig_in_runtime_properties')
+    def test_refresh_kubeconfig_wrong_type_hierarchy(self,
+                                                     store_kube_conf_mock):
         wrong_th = ['cloudify.nodes.Root']
         _ctx = self.get_mock_relationship_ctx(
             "ClusterRel",
@@ -169,14 +172,14 @@ class TestEKSCluster(TestBase):
                                           test_properties={},
                                           test_runtime_properties={},
                                           type_hierarchy=wrong_th))
-        with patch(
-                'cloudify_aws.eks.resources.cluster'
-                '._store_kubeconfig_in_runtime_properties') as \
-                store_kube_conf_mock:
-            cluster.refresh_kubeconfig(_ctx)
-            store_kube_conf_mock.assert_not_called()
 
-    def test_refresh_kubeconfig(self):
+        cluster.refresh_kubeconfig(_ctx)
+        store_kube_conf_mock.assert_not_called()
+
+    @patch('cloudify_aws.eks.resources.cluster.EKSCluster')
+    @patch('cloudify_aws.eks.resources.cluster'
+           '._store_kubeconfig_in_runtime_properties')
+    def test_refresh_kubeconfig(self, store_kube_conf_mock, *_):
         pass
         _ctx = self.get_mock_relationship_ctx(
             "ClusterRel",
@@ -189,12 +192,9 @@ class TestEKSCluster(TestBase):
                 type_hierarchy=[
                     'cloudify.nodes.Root',
                     cluster.CLUSTER_TYPE]))
-        with patch(
-                'cloudify_aws.eks.resources.cluster'
-                '._store_kubeconfig_in_runtime_properties') as \
-                store_kube_conf_mock:
-            cluster.refresh_kubeconfig(_ctx)
-            store_kube_conf_mock.assert_called()
+
+        cluster.refresh_kubeconfig(_ctx)
+        store_kube_conf_mock.assert_called()
 
 
 if __name__ == '__main__':
