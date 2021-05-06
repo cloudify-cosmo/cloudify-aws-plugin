@@ -1192,33 +1192,6 @@ dsl_definitions:
 
 node_types:
 
-  cloudify.nodes.resources.AmazonWebServices:
-    derived_from: cloudify.nodes.Root
-    properties:
-      <<: *client_config
-      resource_config:
-        description: >
-          A dictionary containing the key resource_types, which is a list of node types to discover.
-        type: dict
-        default:
-          resource_types:
-            - AWS::EKS::CLUSTER
-      regions:
-        type: list
-        description: A list of Amazon regions to discover resources in.
-        default: []
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        create:
-          implementation: aws.cloudify_aws.workflows.resources.initialize
-          inputs:
-            resource_config:
-              default: { get_property: [ SELF, resource_config ] }
-            regions:
-              default: { get_property: [ SELF, regions ] }
-        delete:
-          implementation: aws.cloudify_aws.workflows.resources.deinitialize
-
   cloudify.nodes.aws.dynamodb.Table:
     derived_from: cloudify.nodes.Root
     properties:
@@ -3513,14 +3486,11 @@ node_types:
           use later to interact with the cluster
     interfaces:
       cloudify.interfaces.lifecycle:
-        precreate:
+        create:
           implementation: aws.cloudify_aws.eks.resources.cluster.prepare
           inputs: *operation_inputs
-        create:
+        configure:
           implementation: aws.cloudify_aws.eks.resources.cluster.create
-          inputs: *operation_inputs
-        poststart:
-          implementation: aws.cloudify_aws.eks.resources.cluster.poststart
           inputs: *operation_inputs
         delete:
           implementation: aws.cloudify_aws.eks.resources.cluster.delete
@@ -3898,6 +3868,7 @@ relationships:
         establish: { implementation: aws.cloudify_aws.ec2.resources.ebs.attach_using_relationship }
         unlink: { implementation: aws.cloudify_aws.ec2.resources.ebs.detach_using_relationship }
 
+
   cloudify.relationships.aws.ec2.subnet_connected_to_vpc:
     derived_from: cloudify.relationships.aws.connected_to
     source_interfaces:
@@ -3945,6 +3916,18 @@ relationships:
               type: string
               description: The Gateway Attachment ID that is created in request_vpc_attachment. The value can be provided as an input, but if the value is not provided, then the plugin will perform the same default lookup as indicated byt the get attribute intrinsic function.
               default: { get_attribute: [ SOURCE, TransitGatewayVpcAttachments, { get_attribute: [ TARGET, aws_resource_id ] }, TransitGatewayVpcAttachment, TransitGatewayAttachmentId] }
+
+  ##
+  # Refresh kubeconfig for EKS cluster in runtime properties. Use this relationship on kubernetes
+  # resources that use EKS cluster kubeconfig as authentication method.
+  ##
+
+  cloudify.relationships.aws.eks.connected_to_eks_cluster:
+    derived_from: cloudify.relationships.aws.connected_to
+    target_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish: { implementation: aws.cloudify_aws.eks.resources.cluster.refresh_kubeconfig}
+        unlink: { implementation: aws.cloudify_aws.eks.resources.cluster.refresh_kubeconfig }
 
 workflows:
 

@@ -161,6 +161,41 @@ class TestEKSCluster(TestBase):
         cluster.delete(ctx, iface, {})
         self.assertTrue(iface.delete.called)
 
+    def test_refresh_kubeconfig_wrong_type_hierarchy(self):
+        wrong_th = ['cloudify.nodes.Root']
+        _ctx = self.get_mock_relationship_ctx(
+            "ClusterRel",
+            test_target=self.get_mock_ctx("Cluster",
+                                          test_properties={},
+                                          test_runtime_properties={},
+                                          type_hierarchy=wrong_th))
+        with patch(
+                'cloudify_aws.eks.resources.cluster'
+                '._store_kubeconfig_in_runtime_properties') as \
+                store_kube_conf_mock:
+            cluster.refresh_kubeconfig(_ctx)
+            store_kube_conf_mock.assert_not_called()
+
+    def test_refresh_kubeconfig(self):
+        pass
+        _ctx = self.get_mock_relationship_ctx(
+            "ClusterRel",
+            test_target=self.get_mock_ctx(
+                "Cluster",
+                test_properties={'store_kube_config_in_runtime': True},
+                test_runtime_properties={
+                    constants.EXTERNAL_RESOURCE_ID: 'ext_id',
+                    'instances': ['ext_id']},
+                type_hierarchy=[
+                    'cloudify.nodes.Root',
+                    cluster.CLUSTER_TYPE]))
+        with patch(
+                'cloudify_aws.eks.resources.cluster'
+                '._store_kubeconfig_in_runtime_properties') as \
+                store_kube_conf_mock:
+            cluster.refresh_kubeconfig(_ctx)
+            store_kube_conf_mock.assert_called()
+
 
 if __name__ == '__main__':
     unittest.main()

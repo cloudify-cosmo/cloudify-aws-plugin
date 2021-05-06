@@ -23,8 +23,11 @@ import json
 # Boto
 import boto3
 from botocore.exceptions import ClientError
+
+from cloudify.decorators import operation
 from cloudify.exceptions import NonRecoverableError
 from cloudify_rest_client.exceptions import CloudifyClientError
+
 
 # Local imports
 from cloudify_aws.eks import EKSBase
@@ -214,6 +217,18 @@ def prepare_describe_cluster_filter(params, iface):
     return iface
 
 
+def _store_kubeconfig_in_runtime_properties(node, instance, iface, params):
+    try:
+        client_config = node.properties['client_config']
+        kubeconf = iface.get_kubeconf(client_config, params)
+        # check if kubeconf is json serializable or not
+        json.dumps(kubeconf)
+        instance.runtime_properties['kubeconf'] = kubeconf
+    except TypeError as error:
+        raise NonRecoverableError(
+            'kubeconf not json serializable {0}'.format(text_type(error)))
+
+
 @decorators.aws_resource(EKSCluster, RESOURCE_TYPE)
 def prepare(ctx, iface, resource_config, **_):
     """Prepares an AWS EKS Cluster"""
@@ -258,15 +273,10 @@ def poststart(ctx, iface, resource_config, **_):
     store_kube_config_in_runtime = \
         ctx.node.properties['store_kube_config_in_runtime']
     if store_kube_config_in_runtime:
-        try:
-            client_config = ctx.node.properties['client_config']
-            kubeconf = iface.get_kubeconf(client_config, params)
-            # check if kubeconf is json serializable or not
-            json.dumps(kubeconf)
-            ctx.instance.runtime_properties['kubeconf'] = kubeconf
-        except TypeError as error:
-            raise NonRecoverableError(
-                'kubeconf not json serializable {0}'.format(text_type(error)))
+        _store_kubeconfig_in_runtime_properties(ctx.node,
+                                                ctx.instance,
+                                                iface,
+                                                params)
     region_name = ctx.node.properties['client_config']['region_name']
     aws_resource_arn = ctx.instance.runtime_properties['aws_resource_arn']
     fargate = iface.fargate_profiles
@@ -306,6 +316,32 @@ def delete(ctx, iface, resource_config, **_):
     # wait for cluster to be deleted
     ctx.logger.info("Waiting for Cluster to be deleted")
     iface.wait_for_cluster(params, 'cluster_deleted')
+
+
+@operation
+def refresh_kubeconfig(ctx,
+                       **_):
+    """
+    Refresh access token in kubeconfig for cloudify.nodes.aws.eks.Cluster
+    target node type.
+    """
+    if utils.is_node_type(ctx.target.node,
+                          CLUSTER_TYPE):
+        resource_config = ctx.target.instance.runtime_properties.get(
+            'resource_config',
+            {})
+        iface = EKSCluster(ctx.target.node,
+                           logger=ctx.logger,
+                           resource_id=utils.get_resource_id(
+                               node=ctx.target.node,
+                               instance=ctx.target.instance,
+                               raise_on_missing=True))
+        if ctx.target.node.properties['store_kube_config_in_runtime']:
+            _store_kubeconfig_in_runtime_properties(
+                node=ctx.target.node,
+                instance=ctx.target.instance,
+                iface=iface,
+                params=resource_config)
 
 
 def discover_clusters(ctx=None,  client_config=None, **_):
