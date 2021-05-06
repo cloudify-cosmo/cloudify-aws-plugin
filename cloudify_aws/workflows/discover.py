@@ -74,7 +74,6 @@ def deploy_resources(group_id,
         'with these inputs: {inp} and with these labels: {lab}'.format(
             dep=deployment_ids, blu=blueprint_id, inp=inputs, lab=labels))
     create_deployments(group_id, blueprint_id, deployment_ids, inputs, labels)
-    install_deployments(group_id)
 
 
 @workflow
@@ -136,6 +135,7 @@ def discover_and_deploy(node_id=None,
                 del label_list[-1]
             deployment_ids_list = []
             inputs_list = []
+    install_deployments(ctx.deployment.id)
 
 
 def get_aws_account_node_id(nodes):
