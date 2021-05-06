@@ -290,7 +290,6 @@ def poststart(ctx, iface, resource_config, **_):
     zones = get_zones(
         ctx,
         resource_config['resourcesVpcConfig']['subnetIds'])
-    ctx.logger.info('ARN {}'.format(type(aws_resource_arn)))
     try:
         utils.add_new_labels(
             {
