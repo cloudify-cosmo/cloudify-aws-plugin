@@ -278,7 +278,8 @@ def poststart(ctx, iface, resource_config, **_):
                                                 iface,
                                                 params)
     region_name = ctx.node.properties['client_config']['region_name']
-    aws_resource_arn = ctx.instance.runtime_properties['aws_resource_arn']
+    aws_resource_arn = ctx.instance.runtime_properties.get(
+        'aws_resource_arn', iface.properties['arn'])
     fargate = iface.fargate_profiles
     node_group = iface.nodegroups
     if fargate and node_group:
@@ -289,7 +290,9 @@ def poststart(ctx, iface, resource_config, **_):
         node_type = 'nodegroup'
     zones = get_zones(
         ctx,
-        resource_config['resourcesVpcConfig']['subnetIds'])
+        resource_config.get(
+            'resourcesVpcConfig',
+            iface.properties['resourcesVpcConfig'])['subnetIds'])
     try:
         utils.add_new_labels(
             {

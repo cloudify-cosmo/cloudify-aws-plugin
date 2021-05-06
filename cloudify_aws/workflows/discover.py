@@ -38,7 +38,8 @@ def discover_resources(node_id=None,
     node_id = node_id or get_aws_account_node_id(ctx.nodes)
     node = ctx.get_node(node_id)
     for node_instance in node.instances:
-        regions = regions or get_regions(node, ctx.deployment.id)
+        if not isinstance(regions, list) and not regions:
+            regions = get_regions(node, ctx.deployment.id)
         resources = get_resources(node, regions, resource_types, ctx.logger)
         discovered_resources.update(resources)
         node_instance._node_instance.runtime_properties['resources'] = \
@@ -66,7 +67,8 @@ def deploy_resources(group_id,
     :param _:
     :return:
     """
-
+    if not deployment_ids:
+        return
     ctx.logger.info(
         'Creating deployments {dep} with blueprint {blu} '
         'with these inputs: {inp} and with these labels: {lab}'.format(
@@ -123,17 +125,17 @@ def discover_and_deploy(node_id=None,
                     generate_deployment_ids(ctx.deployment.id, resource_name)
                 )
 
-        # Deploy.
-        if not deployment_ids_list and inputs_list:
-            continue
-        label_list.append({'csys-env-type': resource_type})
-        deploy_resources(ctx.deployment.id,
-                         blueprint_id,
-                         deployment_ids_list,
-                         inputs_list,
-                         label_list,
-                         ctx)
-        del label_list[-1]
+            if deployment_ids_list:
+                label_list.append({'csys-env-type': resource_type})
+                deploy_resources(ctx.deployment.id,
+                                 blueprint_id,
+                                 deployment_ids_list,
+                                 inputs_list,
+                                 label_list,
+                                 ctx)
+                del label_list[-1]
+            deployment_ids_list = []
+            inputs_list = []
 
 
 def get_aws_account_node_id(nodes):
