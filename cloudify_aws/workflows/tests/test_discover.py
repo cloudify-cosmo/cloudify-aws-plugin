@@ -110,23 +110,25 @@ class AWSWorkflowTests(TestCase):
         discover.discover_and_deploy(**params)
         self.assertEqual(mock_deploy.call_count, 3)
         expected_calls = [
-            call('foo',
-                 'foo',
-                 ['foo-resource1', 'foo-resource2'],
-                 [{'resource_name': 'resource1', 'aws_region_name': 'region1'},
-                  {'resource_name': 'resource2', 'aws_region_name': 'region1'},
-                  {'resource_name': 'resource3',
+            call('foo', 'foo', ['foo-resource1', 'foo-resource2'],
+                 [{'resource_name': 'resource1',
+                   'aws_region_name': 'region1'},
+                  {'resource_name': 'resource2',
                    'aws_region_name': 'region1'}],
                  [{'csys-env-type': 'environment'},
                   {'csys-obj-parent': 'foo'}],
                  mock_ctx),
-            call(
-                'foo',
-                'foo',
-                ['foo-resource4'],
-                [{'resource_name': 'resource4', 'aws_region_name': 'region2'}],
-                [{'csys-env-type': 'environment'}, {'csys-obj-parent': 'foo'}],
-                mock_ctx)]
+            call('foo', 'foo', ['foo-resource3'], [
+                {'resource_name': 'resource3', 'aws_region_name': 'region1'}],
+                 [{'csys-env-type': 'environment'},
+                  {'csys-obj-parent': 'foo'}],
+                 mock_ctx),
+            call('foo', 'foo', ['foo-resource4'],
+                 [{'resource_name': 'resource4',
+                   'aws_region_name': 'region2'}],
+                 [{'csys-env-type': 'environment'},
+                  {'csys-obj-parent': 'foo'}],
+                 mock_ctx)]
         if PY2:
             return
         mock_deploy.assert_has_calls(expected_calls)
