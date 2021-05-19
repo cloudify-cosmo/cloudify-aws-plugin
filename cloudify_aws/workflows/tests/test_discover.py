@@ -108,15 +108,14 @@ class AWSWorkflowTests(TestCase):
             }
         }
         discover.discover_and_deploy(**params)
-        self.assertEqual(mock_deploy.call_count, 3)
+        self.assertEqual(mock_deploy.call_count, 2)
         expected_calls = [
             call('foo',
                  'foo',
-                 ['foo-resource1', 'foo-resource2', 'foo-resource3'],
+                 ['foo-resource1', 'foo-resource2'],
                  [{'resource_name': 'resource1', 'aws_region_name': 'region1'},
                   {'resource_name': 'resource2', 'aws_region_name': 'region1'},
-                  {'resource_name': 'resource3',
-                   'aws_region_name': 'region1'}],
+                 ],
                  [{'csys-env-type': 'environment'},
                   {'csys-obj-parent': 'foo'}],
                  mock_ctx),
