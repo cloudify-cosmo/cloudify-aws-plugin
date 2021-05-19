@@ -25,9 +25,13 @@ class EKSBase(AWSResourceBase):
     """
         AWS EKS base interface
     """
+
+    service_name = 'eks'
+
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
+        service = self.service_name
         AWSResourceBase.__init__(
-            self, client or Boto3Connection(ctx_node).client('eks'),
+            self, client or Boto3Connection(ctx_node).client(service),
             resource_id=resource_id, logger=logger)
 
     @property

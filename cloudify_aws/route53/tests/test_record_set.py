@@ -40,7 +40,8 @@ class TestRecordSet(TestBase):
         _test_runtime_properties = {'resource_config': False}
         return self.get_mock_ctx(_test_name, _test_node_properties,
                                  _test_runtime_properties,
-                                 None)
+                                 None,
+                                 ctx_operation_name='foo.foo.foo.configure')
 
     def _get_relationship_context(self):
         _test_name = 'test_recordset'
@@ -72,7 +73,7 @@ class TestRecordSet(TestBase):
 
     def test_prepare(self):
         ctx = self._get_ctx()
-        record_set.prepare(ctx, 'resource_config')
+        record_set.prepare(ctx, MagicMock(), 'resource_config')
         self.assertEqual(ctx.instance.runtime_properties['resource_config'],
                          {'ChangeBatch': {'Changes': ['resource_config']}})
 
@@ -80,15 +81,15 @@ class TestRecordSet(TestBase):
         ctx = self._get_ctx()
         with patch(PATCH_PREFIX + 'utils'), \
                 patch(PATCH_PREFIX + 'Route53HostedZone') as zone:
-            record_set.create(ctx, {})
-            self.assertTrue(zone.called)
+            record_set.create(ctx, zone, {})
+            self.assertTrue(zone.change_resource_record_sets.called)
 
     def test_delete(self):
         ctx = self._get_ctx()
         with patch(PATCH_PREFIX + 'utils'), \
                 patch(PATCH_PREFIX + 'Route53HostedZone'):
             with self.assertRaises(NonRecoverableError):
-                record_set.delete(ctx, {}, 'res_type')
+                record_set.delete(ctx, MagicMock(), 'res_type', 'foo')
 
         ctx = self._get_ctx()
         with patch(PATCH_PREFIX + 'utils'), \
@@ -98,8 +99,8 @@ class TestRecordSet(TestBase):
                                       [{'ResourceRecordSet': 'rec_set',
                                         'Action': 'delete'}]}}
             ctx.instance.runtime_properties['resource_config'] = params
-            record_set.delete(ctx, {}, 'res_type')
-            self.assertFalse(zone.called)
+            record_set.delete(ctx, MagicMock(), {}, 'res_type')
+            self.assertFalse(zone.change_resource_record_sets.called)
 
         ctx = self._get_ctx()
         with patch(PATCH_PREFIX + 'utils'), \
@@ -109,8 +110,8 @@ class TestRecordSet(TestBase):
                                       [{'ResourceRecordSet': 'rec_set',
                                         'Action': 'create'}]}}
             ctx.instance.runtime_properties['resource_config'] = params
-            record_set.delete(ctx, {}, 'res_type')
-            self.assertTrue(zone.called)
+            record_set.delete(ctx, zone, {}, 'res_type')
+            self.assertTrue(zone.change_resource_record_sets.called)
 
     def test_prepare_assoc(self):
         ctx = self._get_relationship_context()
@@ -120,7 +121,7 @@ class TestRecordSet(TestBase):
         with patch(PATCH_PREFIX + 'utils') as utils:
             utils.is_node_type = self.mock_return(True)
             utils.get_resource_id = self.mock_return('res_id')
-            record_set.prepare_assoc(ctx)
+            record_set.prepare_assoc(ctx, MagicMock())
             rprop = ctx.source.instance.runtime_properties['resource_config']
             self.assertEqual(
                 rprop['HostedZoneId'],

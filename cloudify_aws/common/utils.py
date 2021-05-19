@@ -21,6 +21,8 @@
 import re
 import sys
 import uuid
+from time import sleep
+from copy import deepcopy
 
 # Third party imports
 import requests
@@ -28,12 +30,17 @@ from requests import exceptions
 from botocore.exceptions import ClientError
 
 from cloudify import ctx
-from cloudify.exceptions import OperationRetry, NonRecoverableError
+from cloudify.workflows import ctx as wtx
+from cloudify.manager import get_rest_client
 from cloudify.utils import exception_to_error_cause
-from cloudify_aws.common._compat import urljoin, text_type
+from cloudify.exceptions import OperationRetry, NonRecoverableError
+from cloudify_rest_client.exceptions import (
+    CloudifyClientError,
+    DeploymentEnvironmentCreationPendingError)
 
 # Local imports
 from cloudify_aws.common import constants, _compat
+from cloudify_aws.common._compat import urljoin, text_type
 
 
 def generate_traceback_exception():
@@ -574,3 +581,175 @@ def raise_on_substring(iface,
         if any(substring in message for substring in substrings):
             raise raisable(message)
         return {}
+
+
+def with_rest_client(func):
+    """
+    :param func: This is a class for the aws resource need to be
+    invoked
+    :return: a wrapper object encapsulating the invoked function
+    """
+
+    def wrapper_inner(*args, **kwargs):
+        kwargs['rest_client'] = get_rest_client()
+        return func(*args, **kwargs)
+    return wrapper_inner
+
+
+@with_rest_client
+def create_deployments(group_id,
+                       blueprint_id,
+                       deployment_ids,
+                       inputs,
+                       labels,
+                       rest_client):
+    """Create a deployment group and create deployments in it.
+
+    :param group_id:
+    :param blueprint_id:
+    :param deployment_ids:
+    :param inputs:
+    :param labels:
+    :param rest_client:
+    :return:
+    """
+
+    rest_client.deployment_groups.put(
+        group_id=group_id,
+        blueprint_id=blueprint_id,
+        labels=labels)
+    rest_client.deployment_groups.add_deployments(
+        group_id,
+        new_deployments=[
+            {
+                'display_name': deployment_id,
+                'inputs': inputs[n]
+            } for n, deployment_id in enumerate(deployment_ids)]
+    )
+
+
+@with_rest_client
+def install_deployments(group_id, rest_client):
+    attempts = 0
+    while True:
+        try:
+            return rest_client.execution_groups.start(group_id, 'install')
+        except DeploymentEnvironmentCreationPendingError as e:
+            attempts += 1
+            if attempts > 15:
+                raise NonRecoverableError(
+                    'Maximum attempts waiting '
+                    'for deployment group {group}" {e}.'.format(
+                        group=group_id, e=e))
+            sleep(5)
+            continue
+
+
+def generate_deployment_ids(deployment_id, resources):
+    # TODO: This is not the final design.
+    return '{}-{}'.format(deployment_id, resources)
+
+
+def desecretize_client_config(config):
+    for key, value in config.items():
+        config[key] = resolve_intrinsic_functions(value)
+    return config
+
+
+def resolve_intrinsic_functions(prop, dep_id=None):
+    if isinstance(prop, dict):
+        if 'get_secret' in prop:
+            prop = prop.get('get_secret')
+            if isinstance(prop, dict):
+                prop = resolve_intrinsic_functions(prop, dep_id)
+            return get_secret(prop)
+        if 'get_input' in prop:
+            prop = prop.get('get_input')
+            if isinstance(prop, dict):
+                prop = resolve_intrinsic_functions(prop, dep_id)
+            return get_input(prop)
+        if 'get_attribute' in prop:
+            prop = prop.get('get_attribute')
+            if isinstance(prop, dict):
+                prop = resolve_intrinsic_functions(prop, dep_id)
+            node_id = prop[0]
+            runtime_property = prop[1]
+            return get_attribute(node_id, runtime_property, dep_id)
+    return prop
+
+
+@with_rest_client
+def get_secret(secret_name, rest_client):
+    secret = rest_client.secrets.get(secret_name)
+    return secret.value
+
+
+@with_rest_client
+def get_input(input_name, rest_client):
+    deployment = rest_client.deployments.get(wtx.deployment.id)
+    return deployment.inputs.get(input_name)
+
+
+@with_rest_client
+def get_attribute(node_id, runtime_property, deployment_id, rest_client):
+    for node_instance in rest_client.node_instances.list(node_id=node_id):
+        if node_instance.deployment_id != deployment_id:
+            continue
+        return node_instance.runtime_properties.get(runtime_property)
+
+
+def get_regions(node, deployment_id):
+    regions = []
+    for region in node.properties['regions']:
+        regions.append(resolve_intrinsic_functions(region, deployment_id))
+    return regions
+
+
+def add_new_labels(new_labels, deployment_id):
+    labels = get_deployment_labels(deployment_id)
+    for k, v in new_labels.items():
+        labels[k] = v
+    update_deployment_labels(deployment_id, labels)
+
+
+def add_new_label(key, value, deployment_id):
+    labels = get_deployment_labels(deployment_id)
+    labels[key] = value
+    update_deployment_labels(deployment_id, labels)
+
+
+def get_deployment_labels(deployment_id):
+    deployment = get_deployment(deployment_id)
+    return convert_list_to_dict(deepcopy(deployment.labels))
+
+
+@with_rest_client
+def update_deployment_labels(deployment_id, labels, rest_client):
+    labels = convert_dict_to_list(labels)
+    rest_client.deployments.update_labels(
+        deployment_id,
+        labels=labels)
+
+
+def convert_list_to_dict(labels):
+    labels = deepcopy(labels)
+    target_dict = {}
+    for label in labels:
+        target_dict[label['key']] = label['value']
+    return target_dict
+
+
+def convert_dict_to_list(labels):
+    labels = deepcopy(labels)
+    target_list = []
+    for key, value in labels.items():
+        target_list.append({key: value})
+    return target_list
+
+
+@with_rest_client
+def get_deployment(deployment_id, rest_client):
+    try:
+        return rest_client.deployments.get(deployment_id=deployment_id)
+    except CloudifyClientError:
+        return

@@ -24,27 +24,23 @@ from cloudify_aws.route53.resources.hosted_zone import Route53HostedZone
 RESOURCE_TYPE = 'Route53 Resource Record Set'
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
-def prepare(ctx, resource_config, **_):
+@decorators.aws_resource(Route53HostedZone, RESOURCE_TYPE)
+def prepare(ctx, iface, resource_config, **_):
     '''Prepares an AWS Route53 Resource Record Set'''
     # Save the parameters
     ctx.instance.runtime_properties['resource_config'] = dict(
         ChangeBatch=dict(Changes=[resource_config]))
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
-def create(ctx, resource_config, **_):
+@decorators.aws_resource(Route53HostedZone, RESOURCE_TYPE)
+def create(ctx, iface, resource_config, **_):
     '''Creates an AWS Route53 Resource Record Set'''
-    Route53HostedZone(
-        ctx.node,
-        resource_id=utils.get_resource_id(raise_on_missing=True),
-        logger=ctx.logger
-    ).change_resource_record_sets(
+    iface.change_resource_record_sets(
         ctx.instance.runtime_properties['resource_config'] or dict())
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
-def delete(ctx, resource_config, resource_type, **_):
+@decorators.aws_resource(Route53HostedZone, RESOURCE_TYPE)
+def delete(ctx, iface, resource_config, resource_type, **_):
     '''Deletes an AWS Route53 Resource Record Set'''
     params = ctx.instance.runtime_properties['resource_config'] or dict()
     if not params.get('HostedZoneId') or \
@@ -59,11 +55,7 @@ def delete(ctx, resource_config, resource_type, **_):
         ctx.logger.warn('%s was initially set to by deleted. Skipping...'
                         % resource_type)
         return
-    Route53HostedZone(
-        ctx.node,
-        resource_id=utils.get_resource_id(raise_on_missing=True),
-        logger=ctx.logger
-    ).change_resource_record_sets(dict(
+    iface.change_resource_record_sets(dict(
         HostedZoneId=params['HostedZoneId'],
         ChangeBatch=dict(
             Changes=[dict(
@@ -71,8 +63,8 @@ def delete(ctx, resource_config, resource_type, **_):
                 ResourceRecordSet=change['ResourceRecordSet'])])))
 
 
-@decorators.aws_relationship(resource_type=RESOURCE_TYPE)
-def prepare_assoc(ctx, **_):
+@decorators.aws_relationship(Route53HostedZone, RESOURCE_TYPE)
+def prepare_assoc(ctx, iface, **_):
     '''Prepares to associate an Route53 Resource Record Set to something'''
     if utils.is_node_type(ctx.target.node,
                           'cloudify.nodes.aws.route53.HostedZone'):

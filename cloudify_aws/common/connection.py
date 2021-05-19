@@ -20,8 +20,8 @@
 import boto3
 
 # Local imports
+from .utils import desecretize_client_config
 from cloudify_aws.common.constants import AWS_CONFIG_PROPERTY
-
 # pylint: disable=R0903
 
 
@@ -35,7 +35,8 @@ class Boto3Connection(object):
     def __init__(self, node, aws_config=None):
         aws_config_whitelist = [
             'aws_access_key_id', 'aws_secret_access_key', 'region_name']
-        self.aws_config = node.properties.get(AWS_CONFIG_PROPERTY, dict())
+        self.aws_config = desecretize_client_config(
+            node.properties.get(AWS_CONFIG_PROPERTY, dict()))
         # Merge user-provided AWS config with generated config
         if aws_config:
             self.aws_config.update(aws_config)

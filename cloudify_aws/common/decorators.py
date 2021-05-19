@@ -292,7 +292,8 @@ def aws_resource(class_decl=None,
             if ctx.node.properties.get('use_external_resource', False):
                 ctx.logger.info('%s ID# "%s" is user-provided.'
                                 % (resource_type, resource_id))
-                if not kwargs.get('force_operation', False):
+                if not kwargs.get('force_operation', False) and \
+                        operation_name not in ['precreate', 'poststart']:
                     # If "force_operation" is not set then we need to make
                     # sure that runtime properties for node instance are
                     # setting correctly
