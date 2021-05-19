@@ -108,7 +108,7 @@ class AWSWorkflowTests(TestCase):
             }
         }
         discover.discover_and_deploy(**params)
-        self.assertEqual(mock_deploy.call_count, 2)
+        self.assertEqual(mock_deploy.call_count, 3)
         expected_calls = [
             call('foo',
                  'foo',
