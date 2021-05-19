@@ -77,9 +77,10 @@ class AWSWorkflowTests(TestCase):
         self.assertTrue(
             mock_rest_client.deployment_groups.add_deployments.called)
 
+    @patch('cloudify_aws.common.utils.get_rest_client')
     @patch('cloudify_aws.workflows.discover.deploy_resources')
     @patch('cloudify_aws.workflows.discover.discover_resources')
-    def test_discover_and_deploy(self, mock_discover, mock_deploy):
+    def test_discover_and_deploy(self, mock_discover, mock_deploy, *_):
         mock_ctx = MagicMock()
         mock_ctx.deployment = MagicMock(id='foo')
         mock_ctx.blueprint = MagicMock(id='bar')
