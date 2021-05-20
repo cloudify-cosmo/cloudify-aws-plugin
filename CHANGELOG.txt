@@ -129,8 +129,8 @@
     - Add pull operation for cloudformation.
 2.8.0:
     - RD-1802 Support Spot Instances
-# 2.9.0:
-#     - RD-2115 Discover and Deploy workflow for EKS cluster.
-#     - CYBL-1151 Update Route53 resources to follow requirement of specifying class definition.
-#     - RD-2124 Refactor cloudify.nodes.aws.eks.Cluster to expose existing clusters connection information.
-#     - RD-2127 Provide external cluster blueprint.
+2.9.0:
+    - RD-2115 Discover and Deploy workflow for EKS cluster.
+    - CYBL-1151 Update Route53 resources to follow requirement of specifying class definition.
+    - RD-2124 Refactor cloudify.nodes.aws.eks.Cluster to expose existing clusters connection information.
+    - RD-2127 Provide external cluster blueprint.
