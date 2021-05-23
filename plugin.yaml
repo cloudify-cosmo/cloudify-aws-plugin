@@ -3486,11 +3486,14 @@ node_types:
           use later to interact with the cluster
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.eks.resources.cluster.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.eks.resources.cluster.create
+          inputs: *operation_inputs
+        poststart:
+          implementation: aws.cloudify_aws.eks.resources.cluster.poststart
           inputs: *operation_inputs
         delete:
           implementation: aws.cloudify_aws.eks.resources.cluster.delete
