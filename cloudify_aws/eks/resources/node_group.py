@@ -24,6 +24,8 @@ from __future__ import unicode_literals
 
 from botocore.exceptions import ClientError
 
+from cloudify.exceptions import OperationRetry
+
 # Cloudify
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.eks import EKSBase
@@ -126,7 +128,11 @@ def create(ctx, iface, resource_config, **_):
 
     utils.update_resource_id(ctx.instance, resource_id)
     iface = prepare_describe_node_group_filter(resource_config.copy(), iface)
-    response = iface.create(params)
+    try:
+        response = iface.create(params)
+    except ClientError as e:
+        raise OperationRetry(
+            'Waiting for cluster to be ready...{e}'.format(e=e))
     if response and response.get(NODEGROUP):
         resource_arn = response.get(NODEGROUP).get(NODEGROUP_ARN)
         utils.update_resource_arn(ctx.instance, resource_arn)

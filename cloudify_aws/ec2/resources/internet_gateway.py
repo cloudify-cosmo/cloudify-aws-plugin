@@ -59,10 +59,10 @@ class EC2InternetGateway(EC2Base):
     @property
     def status(self):
         '''Gets the status of an external resource'''
-        props = self.properties
-        if not props:
+        try:
+            return self.properties['Attachments'][0]['State']
+        except (IndexError, KeyError, TypeError):
             return None
-        return props['Attachments'][0]['State']
 
     def create(self, params):
         '''
