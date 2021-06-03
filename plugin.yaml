@@ -2,9 +2,9 @@ plugins:
 
   aws:
     executor: central_deployment_agent
-    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/2.9.1.zip
+    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/2.9.2.zip
     package_name: cloudify-aws-plugin
-    package_version: '2.9.1'
+    package_version: '2.9.2'
 
 data_types:
 
@@ -3551,6 +3551,32 @@ node_types:
         start_pipeline_execution:
           implementation: aws.cloudify_aws.codepipeline.resources.pipeline.execute
           inputs: *operation_inputs
+
+  cloudify.nodes.resources.AmazonWebServices:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *client_config
+      regions:
+        type: list
+        default: []
+      resource_config:
+        type: dict
+        default:
+          resource_types:
+            - AWS::EKS::CLUSTER
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.cloudify_aws.workflows.resources.initialize
+          inputs:
+            resource_config:
+              default: { get_property: [ SELF, resource_config ] }
+            regions:
+              default: { get_property: [ SELF, regions ] }
+        delete:
+          implementation: aws.cloudify_aws.workflows.resources.deinitialize
+          inputs: *operation_inputs
+
 
 relationships:
 

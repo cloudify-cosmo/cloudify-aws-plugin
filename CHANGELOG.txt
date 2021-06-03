@@ -136,3 +136,5 @@
     - RD-2127 Provide external cluster blueprint.
 2.9.1:
     - Fix issue in Node Group start up.
+2.9.2:
+    - Add back AWS Account that was overwritten.

@@ -307,6 +307,8 @@ def poststart(ctx, iface, resource_config, **_):
         ctx.logger.warn(
             'Skipping assignment of labels due to '
             'incompatible Cloudify version.')
+    ctx.instance.runtime_properties['resource'] = utils.JsonCleanuper(
+        iface.properties).to_dict()
 
 
 @decorators.aws_resource(EKSCluster, RESOURCE_TYPE)
