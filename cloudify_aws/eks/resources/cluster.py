@@ -31,7 +31,7 @@ from cloudify_rest_client.exceptions import CloudifyClientError
 
 # Local imports
 from cloudify_aws.eks import EKSBase
-from cloudify_aws.common import decorators, utils
+from cloudify_aws.common import constants, decorators, utils
 from cloudify_aws.common._compat import text_type
 from cloudify_aws.ec2.resources.subnet import EC2Subnet
 
@@ -307,6 +307,18 @@ def poststart(ctx, iface, resource_config, **_):
         ctx.logger.warn(
             'Skipping assignment of labels due to '
             'incompatible Cloudify version.')
+
+    try:
+        location = constants.LOCATIONS.get(region_name)
+        if location:
+            utils.assign_site(
+                ctx.deployment.id,
+                location['coordinates'],
+                name
+            )
+    except ClientError:
+        ctx.logger.warn('Skipping assignment of site due to '
+                        'incompatible Cloudify version.')
     ctx.instance.runtime_properties['resource'] = utils.JsonCleanuper(
         iface.properties).to_dict()
 

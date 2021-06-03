@@ -753,3 +753,46 @@ def get_deployment(deployment_id, rest_client):
         return rest_client.deployments.get(deployment_id=deployment_id)
     except CloudifyClientError:
         return
+
+
+def format_location_name(location_name):
+    return re.sub('\\-+', '-', re.sub('[^0-9a-zA-Z]', '-', str(location_name)))
+
+
+def assign_site(deployment_id, location, location_name):
+    site = get_site(location_name)
+    if not site:
+        create_site(location_name, location)
+    elif not site.get('location'):
+        update_site(location_name, location)
+    update_deployment_site(deployment_id, location_name)
+
+
+@with_rest_client
+def create_site(site_name, location, rest_client):
+    return rest_client.sites.create(site_name, location)
+
+
+@with_rest_client
+def update_site(site_name, location, rest_client):
+    return rest_client.sites.update(site_name, location)
+
+
+@with_rest_client
+def get_site(site_name, rest_client):
+    try:
+        return rest_client.sites.get(site_name)
+    except CloudifyClientError:
+        return
+
+
+@with_rest_client
+def update_deployment_site(deployment_id, site_name, rest_client):
+    deployment = get_deployment(deployment_id)
+    if deployment.site_name == site_name:
+        return deployment
+    elif deployment.site_name:
+        return rest_client.deployments.set_site(
+            deployment_id, detach_site=True)
+    return rest_client.deployments.set_site(
+        deployment_id, site_name)

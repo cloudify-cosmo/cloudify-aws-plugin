@@ -36,3 +36,74 @@ SWIFT_ERROR_TOKEN_CODE = 'SignatureDoesNotMatch'
 
 
 MAX_AWS_NAME = 255
+
+LOCATIONS = {
+    'ap-northeast-1': {
+        'coordinates': '35.6828387, 139.7594549',
+        'town': 'Tokyo'
+    },
+    'ap-northeast-2': {
+        'coordinates': '37.5666791, 126.9782914',
+        'town': 'Seoul'
+    },
+    'ap-northeast-3': {
+        'coordinates': '34.6198813, 135.490357',
+        'town': 'Osaka'
+    },
+    'ap-south-1': {
+        'coordinates': '19.0759899, 72.8773928',
+        'town': 'Mumbai'
+    },
+    'ap-southeast-1': {
+        'coordinates': '1.357107, 103.8194992',
+        'town': 'Singapore'
+    },
+    'ap-southeast-2': {
+        'coordinates': '-33.8548157, 151.2164539',
+        'town': 'Sydney'
+    },
+    'ca-central-1': {
+        'coordinates': '45.4972159, -73.6103642',
+        'town': 'Montreal'
+    },
+    'eu-central-1': {
+        'coordinates': '50.1106444, 8.6820917',
+        'town': 'Frankfurt'
+    },
+    'eu-north-1': {
+        'coordinates': '59.3251172, 18.0710935',
+        'town': 'Stockholm'
+    },
+    'eu-west-1': {
+        'coordinates': '52.865196, -7.9794599',
+        'town': 'Ireland'
+    },
+    'eu-west-2': {
+        'coordinates': '51.5073219, -0.1276474',
+        'town': 'London'
+    },
+    'eu-west-3': {
+        'coordinates': '48.8566969, 2.3514616',
+        'town': 'Paris'
+    },
+    'sa-east-1': {
+        'coordinates': '-23.5506507, -46.6333824',
+        'town': 'Sao Paulo'
+    },
+    'us-east-1': {
+        'coordinates': '39.0438, -77.4874',
+        'town': 'Ashburn, VA'
+    },
+    'us-east-2': {
+        'coordinates': '40.1536742, -82.6851699',
+        'town': 'Johnstown, OH'
+    },
+    'us-west-1': {
+        'coordinates': '37.0065078, -121.5631723',
+        'town': 'Gilroy, CA'
+    },
+    'us-west-2': {
+        'coordinates': '45.839855, -119.7005834',
+        'town': 'Boardman, OR'
+    }
+}
