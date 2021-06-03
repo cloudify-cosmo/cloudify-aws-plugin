@@ -138,3 +138,5 @@
     - Fix issue in Node Group start up.
 2.9.2:
     - Add back AWS Account that was overwritten.
+2.10.0:
+    - Add site assignment to EKS cluster.
