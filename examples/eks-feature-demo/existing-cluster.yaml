@@ -42,6 +42,14 @@ node_templates:
 
 capabilities:
 
+  # Remove this.
   kubernetes_configuration:
     description: The EKS cluster Kube Config.
     value: { get_attribute: [ eks_cluster, kubeconf ] }
+
+  endpoint:
+    value: { get_attribute: [ eks_cluster, kubeconf, clusters, 0, cluster, server ] }
+
+  connection_details:
+    value:
+      file_content: { get_attribute: [ eks_cluster, kubeconf ] }
