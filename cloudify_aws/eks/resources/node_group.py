@@ -175,7 +175,7 @@ def start(ctx, iface, resource_config, **_):
         resource_arn = response.get(NODEGROUP).get(NODEGROUP_ARN)
         utils.update_resource_arn(ctx.instance, resource_arn)
     # wait for nodegroup to be active
-    ctx.logger.info("Waiting for NodeGroup to become Active")
+    ctx.logger.info("Waiting for NodeGroup to become \"Active\".")
     iface.wait_for_nodegroup(params, 'nodegroup_active')
 
 
