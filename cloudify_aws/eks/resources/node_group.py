@@ -91,13 +91,7 @@ class EKSNodeGroup(EKSBase):
         """
             Updates the AWS EKS Node Group.
         """
-        valid_keys = [
-            "clusterName", "nodegroupName", "labels", "taints",
-            "scalingConfig", "updateConfig", "clientRequestToken"
-        ]
-        valid_params = {x: params.get(x) for x in valid_keys
-                        if params.get(x) is not None}
-        return self.make_client_call('update_nodegroup_config', valid_params)
+        return self.make_client_call('update_nodegroup_config', params)
 
     def delete(self, params=None):
         """
@@ -166,8 +160,14 @@ def start(ctx, iface, resource_config, **_):
         )
     utils.update_resource_id(ctx.instance, resource_id)
     iface = prepare_describe_node_group_filter(resource_config.copy(), iface)
+    valid_keys = [
+        "clusterName", "nodegroupName", "labels", "taints",
+        "scalingConfig", "updateConfig", "clientRequestToken"
+    ]
+    valid_params = {x: params.get(x) for x in valid_keys
+                    if params.get(x) is not None}
     try:
-        response = iface.start(params)
+        response = iface.start(valid_params)
     except ClientError as e:
         raise OperationRetry(
             'Waiting for cluster to be ready...{e}'.format(e=e))
