@@ -87,6 +87,18 @@ class EKSNodeGroup(EKSBase):
             }
         )
 
+    def start(self, params):
+        """
+            Updates the AWS EKS Node Group.
+        """
+        valid_keys = [
+            "clusterName", "nodegroupName", "labels", "taints",
+            "scalingConfig", "updateConfig", "clientRequestToken"
+        ]
+        valid_params = {x: params.get(x) for x in valid_keys
+                        if params.get(x) is not None}
+        return self.make_client_call('update_nodegroup_config', valid_params)
+
     def delete(self, params=None):
         """
             Deletes an existing AWS EKS Node Group.
@@ -130,6 +142,32 @@ def create(ctx, iface, resource_config, **_):
     iface = prepare_describe_node_group_filter(resource_config.copy(), iface)
     try:
         response = iface.create(params)
+    except ClientError as e:
+        raise OperationRetry(
+            'Waiting for cluster to be ready...{e}'.format(e=e))
+    if response and response.get(NODEGROUP):
+        resource_arn = response.get(NODEGROUP).get(NODEGROUP_ARN)
+        utils.update_resource_arn(ctx.instance, resource_arn)
+    # wait for nodegroup to be active
+    ctx.logger.info("Waiting for NodeGroup to become Active")
+    iface.wait_for_nodegroup(params, 'nodegroup_active')
+
+
+@decorators.aws_resource(EKSNodeGroup, RESOURCE_TYPE)
+def start(ctx, iface, resource_config, **_):
+    """Updates an AWS EKS Node Group"""
+    params = dict() if not resource_config else resource_config.copy()
+    resource_id = \
+        utils.get_resource_id(
+            ctx.node,
+            ctx.instance,
+            params.get(NODEGROUP_NAME),
+            use_instance_id=True
+        )
+    utils.update_resource_id(ctx.instance, resource_id)
+    iface = prepare_describe_node_group_filter(resource_config.copy(), iface)
+    try:
+        response = iface.start(params)
     except ClientError as e:
         raise OperationRetry(
             'Waiting for cluster to be ready...{e}'.format(e=e))

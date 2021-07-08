@@ -3516,6 +3516,9 @@ node_types:
         create:
           implementation: aws.cloudify_aws.eks.resources.node_group.prepare
           inputs: *operation_inputs
+        start:
+          implementation: aws.cloudify_aws.eks.resources.node_group.start
+          inputs: *operation_inputs
         configure:
           implementation: aws.cloudify_aws.eks.resources.node_group.create
           inputs: *operation_inputs
