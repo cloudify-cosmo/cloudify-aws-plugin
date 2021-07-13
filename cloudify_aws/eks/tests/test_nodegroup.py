@@ -145,7 +145,6 @@ class TestEKSNodeGroup(TestBase):
 
         self.assertEqual(self.node_group.start(params), response)
 
-
     def test_class_delete(self):
         params = {
             node_group.CLUSTER_NAME: 'test_cluster_name',
@@ -206,7 +205,8 @@ class TestEKSNodeGroup(TestBase):
                "maxSize": 2
             }
         }
-        extended_config = {"diskSize": 20, **valid_config}
+        extended_config = {"diskSize": 20}
+        extended_config.update(**valid_config)
         iface = MagicMock()
         response = \
             {
