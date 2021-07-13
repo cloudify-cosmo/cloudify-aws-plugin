@@ -2,9 +2,9 @@ plugins:
 
   aws:
     executor: central_deployment_agent
-    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/2.10.0.zip
+    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/2.11.0.zip
     package_name: cloudify-aws-plugin
-    package_version: '2.10.0'
+    package_version: '2.11.0'
 
 data_types:
 
@@ -3515,6 +3515,9 @@ node_types:
       cloudify.interfaces.lifecycle:
         create:
           implementation: aws.cloudify_aws.eks.resources.node_group.prepare
+          inputs: *operation_inputs
+        start:
+          implementation: aws.cloudify_aws.eks.resources.node_group.start
           inputs: *operation_inputs
         configure:
           implementation: aws.cloudify_aws.eks.resources.node_group.create

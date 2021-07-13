@@ -125,6 +125,26 @@ class TestEKSNodeGroup(TestBase):
             self.node_group.create(params)[node_group.NODEGROUP],
             response.get(node_group.NODEGROUP))
 
+    def test_class_start(self):
+        params = {
+            node_group.CLUSTER_NAME: 'test_cluster_name',
+            node_group.NODEGROUP_NAME: 'test_node_group_name'
+        }
+        response = \
+            {
+                node_group.NODEGROUP: {
+                    'nodegroupArn': 'test_node_group_arn',
+                    'nodegroupName': 'test_node_group_name',
+                    'clusterName': 'test_cluster_name',
+                    'status': 'test_status',
+                },
+            }
+
+        self.node_group.client = self.make_client_function(
+            'update_nodegroup_config', return_value=response)
+
+        self.assertEqual(self.node_group.start(params), response)
+
     def test_class_delete(self):
         params = {
             node_group.CLUSTER_NAME: 'test_cluster_name',
@@ -171,6 +191,36 @@ class TestEKSNodeGroup(TestBase):
 
         iface.create = self.mock_return(response)
         node_group.create(ctx, iface, config)
+        self.assertEqual(
+            ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID],
+            'test_node_group_name'
+        )
+
+    def test_start(self):
+        ctx = self.get_mock_ctx("NodeGroup")
+        valid_config = {
+            node_group.CLUSTER_NAME: 'test_cluster_name',
+            node_group.NODEGROUP_NAME: 'test_node_group_name',
+            "scalingConfig": {
+               "maxSize": 2
+            }
+        }
+        extended_config = {"diskSize": 20}
+        extended_config.update(**valid_config)
+        iface = MagicMock()
+        response = \
+            {
+                node_group.NODEGROUP: {
+                    'nodegroupArn': 'test_node_group_arn',
+                    'nodegroupName': 'test_node_group_name',
+                    'clusterName': 'test_cluster_name',
+                    'status': 'test_status',
+                },
+            }
+
+        iface.start = self.mock_return(response)
+        node_group.start(ctx, iface, extended_config)
+        iface.start.assert_called_with(valid_config)
         self.assertEqual(
             ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID],
             'test_node_group_name'
