@@ -16,6 +16,8 @@
     ~~~~~~~~~~~~~~
     AWS EC2 Route interface
 '''
+from cloudify.exceptions import NonRecoverableError
+
 # Cloudify
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.ec2 import EC2Base
@@ -33,6 +35,7 @@ INTERNETGATEWAY_TYPE_DEPRECATED = 'cloudify.aws.nodes.InternetGateway'
 VPNGATEWAY_TYPE = 'cloudify.nodes.aws.ec2.VPNGateway'
 VPNGATEWAY_TYPE_DEPRECATED = 'cloudify.aws.nodes.VPNGateway'
 DESTINATION_CIDR_BLOCK = 'DestinationCidrBlock'
+DESTINATION_IPV6_CIDR_BLOCK = 'DestinationIpv6CidrBlock'
 
 
 class EC2Route(EC2Base):
@@ -91,8 +94,19 @@ def create(ctx, iface, resource_config, **_):
             targ.target.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
 
     ctx.instance.runtime_properties['routetable_id'] = params[ROUTETABLE_ID]
-    ctx.instance.runtime_properties['destination_cidr_block'] = \
-        params[DESTINATION_CIDR_BLOCK]
+
+    if DESTINATION_CIDR_BLOCK in params:
+        ctx.instance.runtime_properties['destination_cidr_block'] = \
+            params[DESTINATION_CIDR_BLOCK]
+    elif DESTINATION_IPV6_CIDR_BLOCK in params:
+        ctx.instance.runtime_properties['destination_cidr_block'] = \
+            params[DESTINATION_IPV6_CIDR_BLOCK]
+    else:
+        raise NonRecoverableError(
+            'One of the following keyword arguments must be provided for '
+            'route: {0} or {1}'.format(
+                DESTINATION_CIDR_BLOCK,
+                DESTINATION_IPV6_CIDR_BLOCK))
 
     # If this value is missing,
     # it must be filled from a connected Route Table.
@@ -137,7 +151,12 @@ def delete(ctx, iface, resource_config, **_):
         dict() if not resource_config else resource_config.copy()
 
     routetable_id = params.get(ROUTETABLE_ID)
-    destination_cidr_block = params.get(DESTINATION_CIDR_BLOCK)
+    if DESTINATION_CIDR_BLOCK in ctx.instance.runtime_properties:
+        params[DESTINATION_CIDR_BLOCK] = \
+            ctx.instance.runtime_properties[DESTINATION_CIDR_BLOCK]
+    elif DESTINATION_IPV6_CIDR_BLOCK in ctx.instance.runtime_properties:
+        params[DESTINATION_IPV6_CIDR_BLOCK] = \
+            ctx.instance.runtime_properties[DESTINATION_IPV6_CIDR_BLOCK]
 
     if not routetable_id:
         targ = \
@@ -150,9 +169,5 @@ def delete(ctx, iface, resource_config, **_):
         params[ROUTETABLE_ID] = \
             routetable_id or \
             targ.target.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
-
-    params[DESTINATION_CIDR_BLOCK] = \
-        destination_cidr_block or \
-        ctx.instance.runtime_properties['destination_cidr_block']
 
     iface.delete(params)
