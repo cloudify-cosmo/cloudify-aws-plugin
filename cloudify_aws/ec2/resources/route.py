@@ -96,10 +96,10 @@ def create(ctx, iface, resource_config, **_):
     ctx.instance.runtime_properties['routetable_id'] = params[ROUTETABLE_ID]
 
     if DESTINATION_CIDR_BLOCK in params:
-        ctx.instance.runtime_properties['destination_cidr_block'] = \
+        ctx.instance.runtime_properties[DESTINATION_CIDR_BLOCK] = \
             params[DESTINATION_CIDR_BLOCK]
     elif DESTINATION_IPV6_CIDR_BLOCK in params:
-        ctx.instance.runtime_properties['destination_cidr_block'] = \
+        ctx.instance.runtime_properties[DESTINATION_IPV6_CIDR_BLOCK] = \
             params[DESTINATION_IPV6_CIDR_BLOCK]
     else:
         raise NonRecoverableError(
