@@ -18,6 +18,8 @@ import unittest
 # Third party imports
 from mock import patch, MagicMock
 
+from cloudify.exceptions import OperationRetry
+
 # Local imports
 from cloudify_aws.common._compat import reload_module
 from cloudify_aws.ec2.resources import spot_fleet_request
@@ -66,7 +68,9 @@ class TestEC2SpotFleetRequest(TestBase):
         self.spot_fleet_request.client = self.make_client_function(
             'describe_spot_fleet_requests', return_value=value)
         res = self.spot_fleet_request.properties
-        self.assertEqual(res[SpotFleetRequestId], 'foo')
+        self.assertEqual(
+            res['SpotFleetRequestConfig'][SpotFleetRequestId],
+            'foo')
 
     def test_class_status(self):
         value = {}
@@ -127,8 +131,9 @@ class TestEC2SpotFleetRequest(TestBase):
     def test_delete(self):
         ctx = self.get_mock_ctx(SpotFleetRequest)
         iface = MagicMock()
-        spot_fleet_request.delete(ctx=ctx, iface=iface, resource_config={})
-        self.assertTrue(iface.delete.called)
+        with self.assertRaises(OperationRetry):
+            spot_fleet_request.delete(
+                ctx=ctx, iface=iface, resource_config={})
 
 
 if __name__ == '__main__':

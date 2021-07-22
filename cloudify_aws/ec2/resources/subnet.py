@@ -22,6 +22,7 @@ from botocore.exceptions import CapacityNotAvailableError
 
 # Cloudify
 from cloudify.exceptions import NonRecoverableError
+
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.ec2 import EC2Base
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
@@ -204,7 +205,10 @@ def delete(ctx, iface, resource_config, **_):
             iface.resource_id or \
             ctx.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
 
-    iface.delete(params)
+    utils.exit_on_substring(iface,
+                            'delete',
+                            params,
+                            'DependencyViolation')
 
 
 @decorators.aws_resource(EC2Subnet, RESOURCE_TYPE)

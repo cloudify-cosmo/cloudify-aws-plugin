@@ -19,6 +19,8 @@
 # Third Party imports
 from botocore.exceptions import ClientError
 
+from cloudify.exceptions import OperationRetry
+
 # Local imports
 from cloudify_aws.ec2 import EC2Base
 from cloudify_aws.common import decorators, utils
@@ -28,6 +30,7 @@ SpotFleetRequest = 'SpotFleetRequest'
 SpotFleetRequests = 'SpotFleetRequests'
 SpotFleetRequestId = 'SpotFleetRequestId'
 SpotFleetRequestIds = 'SpotFleetRequestIds'
+SpotFleetRequestConfig = 'SpotFleetRequestConfig'
 SpotFleetRequestConfigs = 'SpotFleetRequestConfigs'
 
 
@@ -59,15 +62,23 @@ class EC2SpotFleetRequest(EC2Base):
         if not self._properties:
             resources = self.get()
             if len(resources):
-                props = resources[SpotFleetRequestConfigs][0]
-                self._properties = props['SpotFleetRequestConfig']
+                self._properties = resources[SpotFleetRequestConfigs][0]
         return self._properties
 
     @property
     def status(self):
         '''Gets the status of an external resource'''
         if self.properties:
-            return self.properties['SpotFleetRequestState']
+            config = self.properties[SpotFleetRequestConfig]
+            return config['SpotFleetRequestState']
+
+    @property
+    def active_instances(self):
+        instances = self.list_spot_fleet_instances(
+            {'SpotFleetRequestId': self.resource_id})
+        active_instances = instances.get('ActiveInstances')
+        if active_instances:
+            return instances['ActiveInstances']
 
     def create(self, params):
         '''
@@ -80,6 +91,12 @@ class EC2SpotFleetRequest(EC2Base):
             Deletes an existing AWS EC2 Spot Fleet Request.
         '''
         return self.make_client_call('cancel_spot_fleet_requests', params)
+
+    def list_spot_fleet_instances(self, params):
+        '''
+            Checks current instances of AWS EC2 Spot Fleet Request.
+        '''
+        return self.make_client_call('describe_spot_fleet_instances', params)
 
 
 @decorators.aws_resource(EC2SpotFleetRequest, resource_type=RESOURCE_TYPE)
@@ -116,4 +133,11 @@ def delete(iface, resource_config, terminate_instances=False, **_):
     params = dict()
     params.update({SpotFleetRequestIds: [iface.resource_id]})
     params.update({'TerminateInstances': terminate_instances})
-    iface.delete(params)
+    try:
+        iface.delete(params)
+    except ClientError:
+        pass
+    finally:
+        if iface.active_instances:
+            raise OperationRetry(
+                'Waiting while all spot fleet instances are terminated.')
