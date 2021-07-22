@@ -42,6 +42,9 @@ inputs:
     type: string
     default: agent_key
 
+  key_name:
+    type: string
+
 dsl_definitions:
 
   client_config: &client_config
@@ -56,19 +59,20 @@ node_templates:
     properties:
       client_config: *client_config
       resource_config:
-        IamFleetRole: { get_attribute: [ cfy_fleet_role, aws_resource_arn ] }
-        LaunchSpecifications:
-          IamInstanceProfile:
-            IamInstanceProfile: { get_attribute: [ cfy_fleet_profile, aws_resource_arn ] }
-            ImageId: { get_attribute: [ ami, aws_resource_id ] }
-            InstanceType: { get_input: instance_type }
-            KeyName: { get_input: key_name }
-            Placement:
-              AvailabilityZone: { get_input: availability_zone }
-            SecurityGroups:
-              GroupId: { get_attribute: [ security_group, aws_resource_id ] }
-        SpotPrice: '0.04'
-        TargetCapacity: 4
+        kwargs:
+          IamFleetRole: { get_attribute: [ cfy_fleet_role, aws_resource_arn ] }
+          LaunchSpecifications:
+            IamInstanceProfile:
+              IamInstanceProfile: { get_attribute: [ cfy_fleet_profile, aws_resource_arn ] }
+              ImageId: { get_attribute: [ ami, aws_resource_id ] }
+              InstanceType: { get_input: instance_type }
+              KeyName: { get_input: key_name }
+              Placement:
+                AvailabilityZone: { get_input: availability_zone }
+              SecurityGroups:
+                GroupId: { get_attribute: [ security_group, aws_resource_id ] }
+          SpotPrice: '0.04'
+          TargetCapacity: 4
     relationships:
     - type: cloudify.relationships.depends_on
       target: ami
@@ -242,35 +246,6 @@ node_templates:
       resource_config:
         CidrBlock: 10.10.0.0/16
 
-  cloud_init:
-    type: cloudify.nodes.CloudInit.CloudConfig
-    properties:
-      resource_config:
-        users:
-        - name: { get_input: agent_user }
-          shell: /bin/bash
-          sudo: ['ALL=(ALL) NOPASSWD:ALL']
-          ssh-authorized-keys:
-          - { get_attribute: [agent_key, public_key_export] }
-    relationships:
-      - type: cloudify.relationships.depends_on
-        target: agent_key
-
-  agent_key:
-    type: cloudify.keys.nodes.RSAKey
-    properties:
-      resource_config:
-        key_name: { get_input: agent_key_name }
-        openssh_format: true
-      use_secret_store: true
-      use_secrets_if_exist: true
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        create:
-          implementation: keys.cloudify_ssh_key.operations.create
-          inputs:
-            store_private_key_material: true
-
 capabilities:
 
   endpoint:
@@ -280,7 +255,3 @@ capabilities:
   user:
     description: user ID.
     value: { get_input: agent_user }
-
-  key_content:
-    description: Private agent key
-    value: { get_attribute: [agent_key, private_key_export] }
