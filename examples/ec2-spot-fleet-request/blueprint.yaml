@@ -107,19 +107,28 @@ node_templates:
         RoleName: { concat: [ 'cfyfleetrole', { get_input: suffix } ] }
         Path: { concat: [ '/cfyfleetrole', { get_input: suffix }, '/' ] }
         AssumeRolePolicyDocument:
-          Version: !!str 2012-10-17
+          Version: '2012-10-17'
           Statement:
           - Effect: Allow
-            Principal:
-              Service: ec2.amazonaws.com
             Action:
-              - 'sts:AssumeRole'
+            - ec2:RunInstances
+            - ec2:CreateTags
+            - ec2:RequestSpotFleet
+            - ec2:ModifySpotFleetRequest
+            - ec2:CancelSpotFleetRequests
+            - ec2:DescribeSpotFleetRequests
+            - ec2:DescribeSpotFleetInstances
+            - ec2:DescribeSpotFleetRequestHistory
+            Resource: "*"
           - Effect: Allow
-            Principal:
-              Service: spotfleet.amazonaws.com
+            Action: iam:PassRole
+            Resource: arn:aws:iam::*:role/aws-ec2-spot-fleet-tagging-role
+          - Effect: Allow
             Action:
-              - sts:AssumeRole
-
+            - iam:CreateServiceLinkedRole
+            - iam:ListRoles
+            - iam:ListInstanceProfiles
+            Resource: "*"
   ami:
     type: cloudify.nodes.aws.ec2.Image
     properties:
