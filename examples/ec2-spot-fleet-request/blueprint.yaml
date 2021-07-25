@@ -110,9 +110,13 @@ node_templates:
           Version: !!str 2012-10-17
           Statement:
           - Effect: Allow
+            Action:
+              - ec2:DescribeSubnet
+          - Effect: Allow
             Principal:
-              Service: !!str spotfleet.amazonaws.com
-            Action: !!str sts:AssumeRole
+              Service: spotfleet.amazonaws.com
+            Action:
+              - sts:AssumeRole
 
   ami:
     type: cloudify.nodes.aws.ec2.Image
