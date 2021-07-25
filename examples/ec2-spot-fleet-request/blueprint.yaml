@@ -110,6 +110,8 @@ node_templates:
           Version: !!str 2012-10-17
           Statement:
           - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
             Action:
               - ec2:DescribeSubnet
           - Effect: Allow
