@@ -107,6 +107,23 @@ node_templates:
         RoleName: { concat: [ 'cfyfleetrole', { get_input: suffix } ] }
         Path: { concat: [ '/cfyfleetrole', { get_input: suffix }, '/' ] }
         AssumeRolePolicyDocument:
+          Version: !!str 2012-10-17
+          Statement:
+          - Effect: Allow
+            Principal:
+              Service: !!str spotfleet.amazonaws.com
+            Action: !!str sts:AssumeRole
+    relationships:
+      type: cloudify.relationships.aws.iam.role.connected_to
+      target: cfy_fleet_role_policy
+
+  cfy_fleet_role_policy:
+    type: cloudify.nodes.aws.iam.RolePolicy
+    properties:
+      client_config: *client_config
+      resource_config:
+        PolicyName: { concat: [ 'cfyfleetrolepolicy', { get_input: suffix } ] }
+        PolicyDocument:
           Version: '2012-10-17'
           Statement:
           - Effect: Allow
@@ -129,25 +146,6 @@ node_templates:
             - iam:ListRoles
             - iam:ListInstanceProfiles
             Resource: "*"
-  #   relationships:
-  #     - type: cloudify.relationships.depends_on
-  #       target: cfy_fleet_role_tagging
-
-  # cfy_fleet_role_tagging:
-  #   type: cloudify.nodes.aws.iam.Role
-  #   properties:
-  #     client_config: *client_config
-  #     resource_config:
-  #       RoleName: { concat: [ 'cfyfleetroletagging', { get_input: suffix } ] }
-  #       Path: { concat: [ '/cfyfleetroletagging', { get_input: suffix }, '/' ] }
-  #       AssumeRolePolicyDocument:
-  #       AssumeRolePolicyDocument:
-  #         Version: !!str 2012-10-17
-  #         Statement:
-  #         - Effect: Allow
-  #           Principal:
-  #             Service: !!str spotfleet.amazonaws.com
-  #           Action: !!str sts:AssumeRole
 
   ami:
     type: cloudify.nodes.aws.ec2.Image
