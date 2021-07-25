@@ -114,8 +114,8 @@ node_templates:
               Service: !!str spotfleet.amazonaws.com
             Action: !!str sts:AssumeRole
     relationships:
-      type: cloudify.relationships.aws.iam.role.connected_to
-      target: cfy_fleet_role_policy
+      - type: cloudify.relationships.aws.iam.role.connected_to
+        target: cfy_fleet_role_policy
 
   cfy_fleet_role_policy:
     type: cloudify.nodes.aws.iam.RolePolicy
