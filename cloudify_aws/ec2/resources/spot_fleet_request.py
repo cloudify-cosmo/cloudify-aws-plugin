@@ -68,6 +68,13 @@ class EC2SpotFleetRequest(EC2Base):
         if self.properties:
             return self.properties['SpotFleetRequestState']
 
+    @property
+    def active_instances(self):
+        instances = self.list_spot_fleet_instances(
+            {'SpotFleetRequestId': self.resource_id})
+        if len(instances.get('ActiveInstances', [])):
+            return instances['ActiveInstances']
+
     def create(self, params):
         '''
             Create a new AWS EC2 Spot Fleet Request.
@@ -80,6 +87,11 @@ class EC2SpotFleetRequest(EC2Base):
         '''
         return self.make_client_call('cancel_spot_fleet_requests', params)
 
+    def list_spot_fleet_instances(self, params):
+        '''
+            Checks current instances of AWS EC2 Spot Fleet Request.
+        '''
+        return self.make_client_call('describe_spot_fleet_instances', params)
 
 @decorators.aws_resource(EC2SpotFleetRequest, resource_type=RESOURCE_TYPE)
 def prepare(ctx, iface, resource_config, **_):
@@ -115,4 +127,11 @@ def delete(iface, resource_config, terminate_instances=False, **_):
     params = dict()
     params.update({SpotFleetRequestIds: [iface.resource_id]})
     params.update({'TerminateInstances': terminate_instances})
-    iface.delete(params)
+    try:
+        iface.delete(params)
+    except ClientError:
+        pass
+    finally:
+        if iface.active_instances:
+            raise OperationRetry(
+                'Waiting while all spot fleet instances are terminated.')

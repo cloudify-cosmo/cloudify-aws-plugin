@@ -85,6 +85,8 @@ node_templates:
     - type: cloudify.relationships.depends_on
       target: security_group
     - type: cloudify.relationships.depends_on
+      target: route_public_subnet_internet_gateway
+    - type: cloudify.relationships.depends_on
       target: cfy_fleet_profile
 
   cfy_fleet_profile:
