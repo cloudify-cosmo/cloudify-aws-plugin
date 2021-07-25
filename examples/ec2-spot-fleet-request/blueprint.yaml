@@ -74,6 +74,7 @@ node_templates:
                 KeyName: { get_input: key_name }
                 Placement:
                   AvailabilityZone: { get_input: availability_zone }
+                SubnetId: { get_attribute: [ subnet, aws_resource_id ] }
                 SecurityGroups:
                   - GroupId: { get_attribute: [ security_group, aws_resource_id ] }
             SpotPrice: '0.04'
@@ -83,8 +84,6 @@ node_templates:
       target: ami
     - type: cloudify.relationships.depends_on
       target: security_group
-    - type: cloudify.relationships.depends_on
-      target: nic
     - type: cloudify.relationships.depends_on
       target: cfy_fleet_profile
 
@@ -103,12 +102,22 @@ node_templates:
     type: cloudify.nodes.aws.iam.Role
     properties:
       client_config: *client_config
-      use_external_resource: true
-      resource_id: AmazonEC2SpotFleetTaggingRole
       resource_config:
-        RoleName: AmazonEC2SpotFleetTaggingRole
-        Path: service-role
-        AssumeRolePolicyDocument: {}
+        RoleName: { concat: [ 'cfyfleetrole', { get_input: suffix } ] }
+        Path: { concat: [ '/cfyfleetrole', { get_input: suffix }, '/' ] }
+        AssumeRolePolicyDocument:
+          Version: !!str 2012-10-17
+          Statement:
+          - Effect: Allow
+            Principal:
+              Service: !!str spotfleet.amazonaws.com
+            Action: !!str sts:AssumeRole
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          inputs:
+            modify_role_attribute_args:
+              PolicyArn: arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetTaggingRole
 
   ami:
     type: cloudify.nodes.aws.ec2.Image
@@ -123,30 +132,6 @@ node_templates:
             Values:
             - { get_input: ami_owner_filter }
       client_config: *client_config
-
-  ip:
-    type: cloudify.nodes.aws.ec2.ElasticIP
-    properties:
-      client_config: *client_config
-    relationships:
-    - type: cloudify.relationships.depends_on
-      target: nic
-
-  nic:
-    type: cloudify.nodes.aws.ec2.Interface
-    properties:
-      client_config: *client_config
-      resource_config:
-        kwargs:
-          Description: Created by cloudify-getting-started-example.
-          SubnetId: { get_attribute: [ subnet, aws_resource_id ] }
-          Groups:
-          - { get_attribute: [ security_group, aws_resource_id ] }
-    relationships:
-    - type: cloudify.relationships.depends_on
-      target: security_group
-    - type: cloudify.relationships.depends_on
-      target: subnet
 
   security_group_rules:
     type: cloudify.nodes.aws.ec2.SecurityGroupRuleIngress
