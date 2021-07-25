@@ -47,7 +47,7 @@ inputs:
 
   suffix:
     type: string
-    default: '-1'
+    default: '1'
 
 dsl_definitions:
 
@@ -93,7 +93,7 @@ node_templates:
       client_config: *client_config
       resource_config:
         InstanceProfileName: cfyfleetprofile
-        Path: { concat: [ '/cfyfleetprofile/', { get_input: suffix } ] }
+        Path: { concat: [ '/cfyfleetprofile', { get_input: suffix }, '/' ] }
     relationships:
       - type: cloudify.relationships.depends_on
         target: cfy_fleet_role
