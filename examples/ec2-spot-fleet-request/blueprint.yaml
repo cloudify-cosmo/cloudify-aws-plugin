@@ -231,13 +231,3 @@ node_templates:
       client_config: *client_config
       resource_config:
         CidrBlock: 10.10.0.0/16
-
-capabilities:
-
-  endpoint:
-    description: The external endpoint of the application.
-    value: { get_attribute: [ ip, aws_resource_id ] }
-
-  user:
-    description: user ID.
-    value: { get_input: agent_user }
