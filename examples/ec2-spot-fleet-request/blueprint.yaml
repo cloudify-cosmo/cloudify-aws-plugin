@@ -113,7 +113,7 @@ node_templates:
             Principal:
               Service: ec2.amazonaws.com
             Action:
-              - 'ec2:*'
+              - 'sts:AssumeRole'
           # - Effect: Allow
           #   Principal:
           #     Service: spotfleet.amazonaws.com
