@@ -92,7 +92,7 @@ node_templates:
     properties:
       client_config: *client_config
       resource_config:
-        InstanceProfileName: cfyfleetprofile
+        InstanceProfileName: { concat: [ 'cfyfleetprofile', { get_input: suffix } ] }
         Path: { concat: [ '/cfyfleetprofile', { get_input: suffix }, '/' ] }
     relationships:
       - type: cloudify.relationships.depends_on
