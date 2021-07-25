@@ -93,7 +93,7 @@ node_templates:
       client_config: *client_config
       resource_config:
         InstanceProfileName: cfy_fleet_profile
-        Path: { concat: [ '/cfy_fleet_profile/', { get_input: suffix } ] }
+        Path: { concat: [ '/cfyfleetprofile/', { get_input: suffix } ] }
     relationships:
       - type: cloudify.relationships.depends_on
         target: cfy_fleet_role
@@ -103,8 +103,8 @@ node_templates:
     properties:
       client_config: *client_config
       resource_config:
-        RoleName: { concat: [ '/cfy_fleet_role/', { get_input: suffix } ] }
-        Path: { concat: [ '/cfy_fleet_role/', { get_input: suffix } ] }
+        RoleName: { concat: [ '/cfyfleetrole', { get_input: suffix }, '/' ] }
+        Path: { concat: [ '/cfyfleetrole', { get_input: suffix }, '/' ] }
         AssumeRolePolicyDocument:
           Version: !!str 2012-10-17
           Statement:
