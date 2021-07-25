@@ -117,7 +117,7 @@ node_templates:
         create:
           inputs:
             modify_role_attribute_args:
-              PolicyArn: arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetTaggingRole
+              - PolicyArn: arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetTaggingRole
 
   ami:
     type: cloudify.nodes.aws.ec2.Image
