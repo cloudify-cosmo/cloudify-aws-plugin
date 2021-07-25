@@ -67,14 +67,15 @@ node_templates:
           SpotFleetRequestConfig:
             IamFleetRole: { get_attribute: [ cfy_fleet_role, aws_resource_arn ] }
             LaunchSpecifications:
-              - IamInstanceProfile: { get_attribute: [ cfy_fleet_profile, aws_resource_arn ] }
+              - IamInstanceProfile:
+                  Arn: { get_attribute: [ cfy_fleet_profile, aws_resource_arn ] }
                 ImageId: { get_attribute: [ ami, aws_resource_id ] }
                 InstanceType: { get_input: instance_type }
                 KeyName: { get_input: key_name }
                 Placement:
                   AvailabilityZone: { get_input: availability_zone }
                 SecurityGroups:
-                  GroupId: { get_attribute: [ security_group, aws_resource_id ] }
+                  - GroupId: { get_attribute: [ security_group, aws_resource_id ] }
             SpotPrice: '0.04'
             TargetCapacity: 4
     relationships:
