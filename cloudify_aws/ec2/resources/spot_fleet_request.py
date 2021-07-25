@@ -59,8 +59,7 @@ class EC2SpotFleetRequest(EC2Base):
         if not self._properties:
             resources = self.get()
             if len(resources):
-                props = resources[SpotFleetRequestConfigs][0]
-                self._properties = props['SpotFleetRequestConfig']
+                self._properties = resources[SpotFleetRequestConfigs][0]
         return self._properties
 
     @property
