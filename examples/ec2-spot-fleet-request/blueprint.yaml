@@ -146,6 +146,24 @@ node_templates:
             - iam:ListRoles
             - iam:ListInstanceProfiles
             Resource: "*"
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: cfy_fleet_tagging
+
+  cfy_fleet_tagging:
+    type: cloudify.nodes.aws.iam.Role
+    properties:
+      client_config: *client_config
+      resource_config:
+        RoleName: { concat: [ 'cfyfleetrole2', { get_input: suffix } ] }
+        Path: { concat: [ '/cfyfleetrole2', { get_input: suffix }, '/' ] }
+        AssumeRolePolicyDocument:
+          Version: !!str 2012-10-17
+          Statement:
+          - Effect: Allow
+            Principal:
+              Service: !!str spotfleet.amazonaws.com
+            Action: !!str sts:AssumeRole
 
   ami:
     type: cloudify.nodes.aws.ec2.Image
