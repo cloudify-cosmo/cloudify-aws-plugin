@@ -111,9 +111,14 @@ node_templates:
           Statement:
           - Effect: Allow
             Principal:
-              Service: spotfleet.amazonaws.com
+              Service: ec2.amazonaws.com
             Action:
-              - sts:AssumeRole
+              - 'ec2:*'
+          # - Effect: Allow
+          #   Principal:
+          #     Service: spotfleet.amazonaws.com
+          #   Action:
+          #     - sts:AssumeRole
 
   ami:
     type: cloudify.nodes.aws.ec2.Image
