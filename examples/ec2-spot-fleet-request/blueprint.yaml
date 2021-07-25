@@ -45,6 +45,10 @@ inputs:
   key_name:
     type: string
 
+  suffix:
+    type: string
+    default: '-1'
+
 dsl_definitions:
 
   client_config: &client_config
@@ -89,7 +93,7 @@ node_templates:
       client_config: *client_config
       resource_config:
         InstanceProfileName: cfy_fleet_profile
-        Path: '/cfy_fleet_profile/'
+        Path: { concat: [ '/cfy_fleet_profile/', { get_input: suffix } ] }
     relationships:
       - type: cloudify.relationships.depends_on
         target: cfy_fleet_role
@@ -99,8 +103,8 @@ node_templates:
     properties:
       client_config: *client_config
       resource_config:
-        RoleName: cfy_fleet_role
-        Path: !!str /cfy-fleet-role/
+        RoleName: { concat: [ '/cfy_fleet_role/', { get_input: suffix } ] }
+        Path: { concat: [ '/cfy_fleet_role/', { get_input: suffix } ] }
         AssumeRolePolicyDocument:
           Version: !!str 2012-10-17
           Statement:
