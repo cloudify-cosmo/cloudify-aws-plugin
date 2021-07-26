@@ -863,7 +863,7 @@ data_types:
   cloudify.datatypes.aws.ec2.Image.config:
     properties:
       kwargs:
-        description: http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.create_image
+        description: "https://docs.cloudify.co/latest/working_with/official_plugins/infrastructure/aws/#cloudify-nodes-aws-ec2-image"
         default: {}
 
   cloudify.datatypes.aws.ec2.Tags.config:
