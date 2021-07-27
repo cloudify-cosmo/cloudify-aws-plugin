@@ -417,7 +417,6 @@ workflows:
   tests:
     jobs:
       - py3_compat
-      - unittests_py27
       - unittests_py36
       - validate_version
       - validate_documentation
@@ -459,7 +458,6 @@ workflows:
             branches:
               only: /master/
           requires:
-            - unittests_py27
             - unittests_py36
             - rhel_wagon
             - wagon
@@ -486,7 +484,6 @@ workflows:
               - master
     jobs:
       - py3_compat
-      - unittests_py27
       - unittests_py36
       - validate_version
       - rhel_wagon:

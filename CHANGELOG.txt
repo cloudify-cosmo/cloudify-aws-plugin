@@ -144,3 +144,6 @@
     - Add start op to node group for update.
 2.11.1:
     - Support IPv6 Routes.
+2.12.0:
+    - Add spot fleet requests.
+    - Correct image configuration notes.

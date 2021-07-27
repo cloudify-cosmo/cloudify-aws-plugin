@@ -44,7 +44,7 @@ setup(
     description='A Cloudify plugin for AWS',
     install_requires=[
         'cloudify-common>=4.5',
-        'boto3==1.12.13',
+        'boto3==1.18.4',
         'botocore',
         'pycryptodome==3.9.7'
     ]
