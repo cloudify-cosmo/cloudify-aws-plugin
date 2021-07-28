@@ -36,7 +36,8 @@ from cloudify.utils import exception_to_error_cause
 from cloudify.exceptions import OperationRetry, NonRecoverableError
 from cloudify_rest_client.exceptions import (
     CloudifyClientError,
-    DeploymentEnvironmentCreationPendingError)
+    DeploymentEnvironmentCreationPendingError,
+    DeploymentEnvironmentCreationInProgressError)
 
 # Local imports
 from cloudify_aws.common import constants, _compat
@@ -613,19 +614,28 @@ def create_deployments(group_id,
     :param rest_client:
     :return:
     """
-
     rest_client.deployment_groups.put(
         group_id=group_id,
         blueprint_id=blueprint_id,
         labels=labels)
-    rest_client.deployment_groups.add_deployments(
-        group_id,
-        new_deployments=[
-            {
-                'display_name': deployment_id,
-                'inputs': inputs[n]
-            } for n, deployment_id in enumerate(deployment_ids)]
-    )
+    try:
+        rest_client.deployment_groups.add_deployments(
+            group_id,
+            new_deployments=[
+                {
+                    'display_name': dep_id,
+                    'inputs': inp
+                } for dep_id, inp in zip(deployment_ids, inputs)]
+        )
+    except TypeError:
+        for dep_id, inp in zip(deployment_ids, inputs):
+            rest_client.deployments.create(
+                blueprint_id,
+                dep_id,
+                inputs=inp)
+        rest_client.deployment_groups.add_deployments(
+            group_id,
+            deployment_ids=deployment_ids)
 
 
 @with_rest_client
@@ -634,7 +644,8 @@ def install_deployments(group_id, rest_client):
     while True:
         try:
             return rest_client.execution_groups.start(group_id, 'install')
-        except DeploymentEnvironmentCreationPendingError as e:
+        except (DeploymentEnvironmentCreationPendingError,
+                DeploymentEnvironmentCreationInProgressError) as e:
             attempts += 1
             if attempts > 15:
                 raise NonRecoverableError(
