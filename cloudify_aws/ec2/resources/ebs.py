@@ -172,12 +172,16 @@ def _attach_ebs(params, iface, _ctx):
             .format(RESOURCE_TYPE_VOLUME_ATTACHMENT, iface.resource_id))
 
 
-def _detach_ebs(iface, volume_id):
+def _detach_ebs(iface, volume_id, **kwargs):
     """
     :param iface:
     :param volume_id:
     """
     deleted_params = {'VolumeId': volume_id}
+    deleted_params['Device'] = kwargs.get('Device')
+    deleted_params['Force'] = kwargs.get('Force')
+    deleted_params['InstanceId'] = kwargs.get('InstanceId')
+    deleted_params['DryRun'] = kwargs.get('DryRun')
     iface.delete(deleted_params)
 
 
@@ -195,14 +199,14 @@ def _create_attachment(ctx, iface, resource_config):
     iface.update_resource_id(esp_id)
 
 
-def _delete_attachment(ctx, iface):
+def _delete_attachment(ctx, iface, **kwargs):
     """
     :param ctx:
     :param iface:
     """
     resource_id = \
         ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
-    _detach_ebs(iface, resource_id)
+    _detach_ebs(iface, resource_id, **kwargs)
 
 
 @decorators.aws_resource(EC2Volume, resource_type=RESOURCE_TYPE_VOLUME)
@@ -375,7 +379,7 @@ def attach(ctx, iface, resource_config, **_):
                          ignore_properties=True)
 @decorators.wait_for_status(status_good=[DETACHED, AVAILABLE],
                             status_pending=[DETACHING, INUSE])
-def detach(ctx, iface, resource_config, **_):
+def detach(ctx, iface, resource_config, **kwargs):
     """
     De-attaches an AWS EC2 EBS Volume TO Instance
     :param ctx:
@@ -383,4 +387,4 @@ def detach(ctx, iface, resource_config, **_):
     :param resource_config
     :param _:
     """
-    _delete_attachment(ctx, iface)
+    _delete_attachment(ctx, iface, **kwargs)
