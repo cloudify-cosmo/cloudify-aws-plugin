@@ -623,16 +623,16 @@ def create_deployments(group_id,
             group_id,
             new_deployments=[
                 {
-                    'display_name': deployment_id,
-                    'inputs': inputs[n]
-                } for n, deployment_id in enumerate(deployment_ids)]
+                    'display_name': dep_id,
+                    'inputs': inp
+                } for dep_id, inp in zip(deployment_ids, inputs)]
         )
-    except (TypeError, CloudifyClientError):
-        for n, deployment_id in enumerate(deployment_ids):
+    except TypeError:
+        for dep_id, inp in zip(deployment_ids, inputs):
             rest_client.deployments.create(
                 blueprint_id,
-                deployment_id,
-                inputs=inputs[n])
+                dep_id,
+                inputs=inp)
         rest_client.deployment_groups.add_deployments(
             group_id,
             deployment_ids=deployment_ids)
