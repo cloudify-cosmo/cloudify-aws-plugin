@@ -149,3 +149,4 @@
     - Correct image configuration notes.
 2.12.1:
     - Support group deployment creation for 5.2.4.
+    - Support passing fn arguments to detach ebs.
