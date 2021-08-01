@@ -178,10 +178,14 @@ def _detach_ebs(iface, volume_id, **kwargs):
     :param volume_id:
     """
     deleted_params = {'VolumeId': volume_id}
-    deleted_params['Device'] = kwargs.get('Device')
-    deleted_params['Force'] = kwargs.get('Force')
-    deleted_params['InstanceId'] = kwargs.get('InstanceId')
-    deleted_params['DryRun'] = kwargs.get('DryRun')
+    if 'Device' in kwargs:
+        deleted_params['Device'] = kwargs['Device']
+    if 'Force' in kwargs:
+        deleted_params['Force'] = kwargs['Force']
+    if 'InstanceId' in kwargs:
+        deleted_params['InstanceId'] = kwargs['InstanceId']
+    if 'DryRun' in kwargs:
+        deleted_params['DryRun'] = kwargs['DryRun']
     iface.delete(deleted_params)
 
 
