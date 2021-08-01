@@ -1,5 +1,4 @@
 plugins:
-
   aws:
     executor: central_deployment_agent
     source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/2.12.2.zip
