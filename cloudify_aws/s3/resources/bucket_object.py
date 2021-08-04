@@ -17,6 +17,7 @@
     AWS S3 Bucket Object interface
 """
 # Standard Imports
+import os
 import sys
 import tempfile
 
@@ -154,13 +155,14 @@ def _download_local_file(local_path):
     :return: path
     """
     try:
-        path = ctx.download_resource(local_path)
+        return ctx.download_resource(local_path)
     except HttpException as error:
+        if os.path.exists(local_path):
+            return local_path
         _, _, tb = sys.exc_info()
         raise NonRecoverableError(
             '{} file does not exist.'.format(local_path),
             causes=[exception_to_error_cause(error, tb)])
-    return path
 
 
 @decorators.aws_resource(resource_type=RESOURCE_TYPE)
