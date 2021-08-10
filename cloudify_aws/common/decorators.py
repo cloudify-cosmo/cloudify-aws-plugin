@@ -479,6 +479,8 @@ def tag_resources(fn):
             ctx.node.properties.get('Tags'),
             ctx.instance.runtime_properties.get('Tags'),
             kwargs.get('Tags'))
+        if ctx.node.properties['cloudify_tagging'] == True:
+            get_default_tag(ctx, iface)
         if iface and tags and resource_id:
             iface.tag({
                 'Tags': tags,
@@ -504,3 +506,7 @@ def untag_resources(fn):
                 'Resources': [resource_id]})
         return fn(**kwargs)
     return wrapper
+
+def get_default_tag(ctx, iface):
+    iface.tag({'Key': 'CreatedBy', 'Value': '{}-{}-{}'.format(ctx.tenant_name, \
+                                                              ctx.deployment.id, ctx.instance.id)})
