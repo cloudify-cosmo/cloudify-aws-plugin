@@ -187,6 +187,7 @@ def create(ctx, iface, resource_config, **kwargs):
 @decorators.aws_resource(EC2Instances, RESOURCE_TYPE)
 def start(ctx, iface, resource_config, **_):
     '''Starts AWS EC2 Instances'''
+    #add_tag(ctx, iface)
     params = utils.clean_params(
         dict() if not resource_config else resource_config.copy())
 
@@ -204,6 +205,12 @@ def start(ctx, iface, resource_config, **_):
         '{0} ID# {1} is still in a pending state.'.format(
             iface.type_name, iface.resource_id))
 
+def add_tag(ctx, iface):
+    '''adds deafult tag to resource'''
+    ctx.logger.info("stat tagging log")
+    iface.tag({'Tags': [{'Key':'CreatedBy', 'Value':"{}-{}-{}".format(ctx.tenant_name,ctx.deployment.id, ctx.instance.id)}], 'Resources': [iface.resource_id]})
+    iface.tag({'Tags': [{'Key':'Name', 'Value':"aws_vm_example"}], 'Resources': [iface.resource_id]})
+    ctx.logger.info("stop tagging log")
 
 @decorators.aws_resource(EC2Instances, RESOURCE_TYPE)
 @decorators.wait_for_status(
