@@ -2,7 +2,7 @@ plugins:
 
   aws:
     executor: central_deployment_agent
-    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/2.12.3.zip
+    source: https://github.com/cloudify-cosmo/cloudify-aws-plugin/archive/2.12.4.zip
     package_name: cloudify-aws-plugin
     package_version: '2.12.4'
 
@@ -2405,7 +2405,7 @@ node_types:
       <<: *client_config
       <<: *resource_id
       <<: *tags_property
-      cloudify_tag:
+      cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
       resource_config:

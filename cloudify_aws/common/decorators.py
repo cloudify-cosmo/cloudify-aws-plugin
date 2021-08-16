@@ -475,11 +475,10 @@ def tag_resources(fn):
         resource_id = utils.get_resource_id(
             node=ctx.node,
             instance=ctx.instance)
-        try:
-            if ctx.node.properties['cloudify_tagging'] == True:
-                tags = get_default_tag(ctx, iface)
-                ctx.logger.info("added deafult cloudify_tagging")
-        except:
+        if ctx.node.properties.get('cloudify_tagging', False):
+            tags = get_default_tag(ctx)
+            ctx.logger.info("added deafult cloudify_tagging")
+        else:
             tags = {}
             ctx.logger.info("cloudify_tagging missing in node")
         tags.update(utils.get_tags_list(
@@ -488,7 +487,7 @@ def tag_resources(fn):
             kwargs.get('Tags')))    
         if iface and tags and resource_id:
             iface.tag({
-                'Tags': tags,
+                'Tags': [tags],
                 'Resources': [resource_id]})
         return result
     return wrapper
@@ -512,12 +511,9 @@ def untag_resources(fn):
         return fn(**kwargs)
     return wrapper
 
-def get_default_tag(ctx, iface):
-    dictonary = {'CreatedBy':"{}-{}-{}".format(ctx.tenant_name,ctx.deployment.id, ctx.instance.id)}
-#    ctx.logger.info("stat tagging log")
-#    iface.tag({'Tags': [{'Key':'CreatedBy', 'Value':"{}-{}-{}".format(ctx.tenant_name,ctx.deployment.id, ctx.instance.id)}], 'Resources': [iface.resource_id]})
-#    iface.tag({'Tags': [{'Key':'Name', 'Value':"aws_vm_example"}], 'Resources': [iface.resource_id]})
-#    ctx.logger.info("stop tagging log")
+def get_default_tag(ctx):
+    dictonary = {'Key': 'CreatedBy','Value':\
+        "{}-{}-{}".format(ctx.tenant_name,ctx.deployment.id, ctx.instance.id)}
     return dictonary
 
 
