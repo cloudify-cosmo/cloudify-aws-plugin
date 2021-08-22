@@ -1811,6 +1811,10 @@ node_types:
       <<: *external_resource
       <<: *client_config
       <<: *resource_id
+      cloudify_tagging:
+        description: an automatic tag to identify the ec2 instance
+        type: boolean
+        default: true
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -1838,6 +1842,10 @@ node_types:
       <<: *external_resource
       <<: *client_config
       <<: *resource_id
+      cloudify_tagging:
+        description: an automatic tag to identify the ec2 instance
+        type: boolean
+        default: true
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -1865,6 +1873,10 @@ node_types:
       <<: *external_resource
       <<: *client_config
       <<: *resource_id
+      cloudify_tagging:
+        description: an automatic tag to identify the ec2 instance
+        type: boolean
+        default: true
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -1886,6 +1898,10 @@ node_types:
       <<: *external_resource
       <<: *client_config
       <<: *resource_id
+      cloudify_tagging:
+        description: an automatic tag to identify the ec2 instance
+        type: boolean
+        default: true
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -1910,6 +1926,10 @@ node_types:
       <<: *external_resource
       <<: *client_config
       <<: *resource_id
+      cloudify_tagging:
+        description: an automatic tag to identify the ec2 instance
+        type: boolean
+        default: true
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -1934,6 +1954,10 @@ node_types:
       <<: *external_resource
       <<: *client_config
       <<: *resource_id
+      cloudify_tagging:
+        description: an automatic tag to identify the ec2 instance
+        type: boolean
+        default: true
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -1958,6 +1982,10 @@ node_types:
       <<: *external_resource
       <<: *client_config
       <<: *resource_id
+      cloudify_tagging:
+        description: an automatic tag to identify the ec2 instance
+        type: boolean
+        default: true
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -1985,6 +2013,10 @@ node_types:
       <<: *external_resource
       <<: *client_config
       <<: *resource_id
+      cloudify_tagging:
+        description: an automatic tag to identify the ec2 instance
+        type: boolean
+        default: true
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -2175,6 +2207,7 @@ node_types:
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
+        default: false
 
   cloudify.nodes.aws.ec2.Vpc:
     derived_from: cloudify.nodes.aws.ec2.BaseType
@@ -2411,6 +2444,7 @@ node_types:
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
+        default: false
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -2539,6 +2573,8 @@ node_types:
         description: >
           If "create_secret" property is true, and the secret name already exists, overwrite the secret.
         default: false
+      cloudify_tagging:
+        default: False
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
@@ -3509,6 +3545,10 @@ node_types:
       <<: *external_resource
       <<: *client_config
       <<: *resource_id
+      cloudify_tagging:
+        description: an automatic tag to identify the ec2 instance
+        type: boolean
+        default: false
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -3543,6 +3583,10 @@ node_types:
       <<: *external_resource
       <<: *client_config
       <<: *resource_id
+      cloudify_tagging:
+        description: an automatic tag to identify the ec2 instance
+        type: boolean
+        default: false
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
