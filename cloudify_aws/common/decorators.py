@@ -482,7 +482,7 @@ def tag_resources(fn):
         tags = utils.get_tags_list(
             ctx.node.properties.get('Tags'),
             ctx.instance.runtime_properties.get('Tags'),
-            kwargs.get('Tags'))    
+            kwargs.get('Tags'))
         if iface and tags and resource_id:
             iface.tag({
                 'Tags': tags,
@@ -532,7 +532,3 @@ def add_default_tag(_ctx, iface):
          'Resources': [iface.resource_id]}
     )
     ctx.logger.info("Added default cloudify_tagging.")
-
-
-
-

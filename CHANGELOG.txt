@@ -152,5 +152,7 @@
     - Support passing fn arguments to detach ebs.
 2.12.2:
     - Fix issue introduced in the detach ebs change.
+2.12.3:
+    - RD-2927: Upload local files to S3.
 2.12.4:
     - Add tagging option for nodes create in aws.
