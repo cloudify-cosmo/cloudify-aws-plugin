@@ -113,7 +113,14 @@ def create(ctx, iface, resource_config, params, **_):
 
     # attach policy role
     policies_arn = []
-    policies = _.get('modify_role_attribute_args', [])
+    if ctx.node.properties.get('policy_arn_1'):
+        policies = ctx.node.properties.get('policy_arn_1', [])
+        if ctx.node.properties.get('policy_arn_2'):
+            policies += ctx.node.properties.get('policy_arn_2', [])
+        if ctx.node.properties.get('policy_arn_3'):
+            policies += ctx.node.properties.get('policy_arn_3', [])
+    else:
+        policies = _.get('modify_role_attribute_args', [])
     for policy in policies:
         payload = dict()
         payload['RoleName'] = resource_id

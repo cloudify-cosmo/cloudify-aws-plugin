@@ -1335,6 +1335,19 @@ node_types:
       <<: *external_resource
       <<: *client_config
       <<: *resource_id
+      policy_arn_1:
+        description: ARN policies to be provided during creation. This
+        property has to be used if the ARNs are provided as properties.
+        type: string
+        requiered: false
+      policy_arn_2:
+        description: ARN policies to be provided during creation.
+        type: string
+        requiered: false
+      policy_arn_3:
+        description: ARN policies to be provided during creation.
+        type: string
+        requiered: false
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
