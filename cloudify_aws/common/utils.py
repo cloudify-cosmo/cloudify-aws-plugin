@@ -21,6 +21,7 @@
 import re
 import sys
 import uuid
+import json
 import base64
 from time import sleep
 from copy import deepcopy
@@ -825,4 +826,6 @@ def is_base64(s):
 
 
 def encode_something(something):
+    if not isinstance(something, str):
+        something = json.dumps(something)
     return base64.b64encode(something.encode()).decode("ascii")

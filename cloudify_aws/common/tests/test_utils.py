@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
+import base64
 import unittest
 from mock import MagicMock
 
@@ -330,6 +332,18 @@ class TestUtils(TestBase):
         self.assertTrue(
             all([isinstance(t['Value'], text_type) for t in out]))
         self.assertTrue(len(out) is 3)
+
+    def test_encoding_stuff(self):
+        self.assertFalse(utils.is_base64('foo'))
+        self.assertTrue(
+            utils.is_base64(utils.encode_something('foo').encode()))
+        self.assertFalse(utils.is_base64(b'foo'))
+        test_dict = {'foo': ['bar']}
+        self.assertEqual(
+            json.dumps(test_dict),
+            base64.b64decode(
+                utils.encode_something(test_dict)).decode()
+        )
 
 
 if __name__ == '__main__':
