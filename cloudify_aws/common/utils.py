@@ -21,8 +21,10 @@
 import re
 import sys
 import uuid
+import base64
 from time import sleep
 from copy import deepcopy
+from binascii import Error
 
 # Third party imports
 import requests
@@ -807,3 +809,20 @@ def update_deployment_site(deployment_id, site_name, rest_client):
             deployment_id, detach_site=True)
     return rest_client.deployments.set_site(
         deployment_id, site_name)
+
+
+def is_base64(s):
+    """ Check if the string is already encoded base64
+
+    :param s: string to check
+    :return: If it is or is not.
+    :rtype: bool
+    """
+    try:
+        return base64.b64encode(base64.b64decode(s)) == s
+    except Error:
+        return False
+
+
+def encode_something(something):
+    return base64.b64encode(something.encode()).decode("ascii")

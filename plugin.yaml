@@ -2481,6 +2481,10 @@ node_types:
   cloudify.nodes.aws.ec2.SpotFleetRequest:
     derived_from: cloudify.nodes.aws.ec2.BaseType
     properties:
+      encode_userdata:
+        type: boolean
+        description: Force base64 encoding of the userdata in "resource_config.LaunchSpecification[index].Userdata".
+        default: false
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding

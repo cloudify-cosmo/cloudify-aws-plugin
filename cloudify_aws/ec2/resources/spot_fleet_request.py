@@ -32,6 +32,8 @@ SpotFleetRequestId = 'SpotFleetRequestId'
 SpotFleetRequestIds = 'SpotFleetRequestIds'
 SpotFleetRequestConfig = 'SpotFleetRequestConfig'
 SpotFleetRequestConfigs = 'SpotFleetRequestConfigs'
+LaunchSpec = 'LaunchSpecifications'
+UserData = 'UserData'
 
 
 class EC2SpotFleetRequest(EC2Base):
@@ -115,6 +117,8 @@ def create(ctx, iface, resource_config, **_):
     params = utils.clean_params(
         dict() if not resource_config else resource_config.copy())
 
+    handle_userdata(params, ctx.node.properties.get('encode_userdata', False))
+
     # Actually create the resource
     create_response = iface.create(params)
     ctx.instance.runtime_properties['create_response'] = \
@@ -141,3 +145,22 @@ def delete(iface, resource_config, terminate_instances=False, **_):
         if iface.active_instances:
             raise OperationRetry(
                 'Waiting while all spot fleet instances are terminated.')
+
+
+def handle_userdata(params, encode_userdata=False):
+    """
+    Encode the UserData if necessary.
+    :param params: SpotFleetRequestConfig
+    :type params: dict
+    :param encode_userdata: Force encode
+    :type encode_userdata: bool
+    :return:
+    """
+
+    for count, spec in enumerate(params.get('LaunchSpec', [])):
+        userdata = spec.get(UserData)
+        if not userdata or \
+                not encode_userdata or \
+                utils.is_base64(userdata):
+            continue
+        params[LaunchSpec][count][UserData] = utils.encode_something(userdata)

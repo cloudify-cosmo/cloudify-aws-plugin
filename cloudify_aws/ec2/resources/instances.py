@@ -20,7 +20,6 @@
 # Standard Imports
 import os
 import json
-from base64 import b64encode
 from collections import defaultdict
 
 # Third Party imports
@@ -327,7 +326,7 @@ def handle_userdata(params, encode=False):
             [existing_userdata, install_agent_userdata])
 
     if encode:
-        final_userdata = b64encode(final_userdata.encode()).decode("ascii")
+        final_userdata = utils.encode_something(final_userdata)
 
     params[USERDATA] = final_userdata
 
