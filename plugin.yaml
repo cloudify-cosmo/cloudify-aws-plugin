@@ -3,7 +3,7 @@ plugins:
   aws:
     executor: central_deployment_agent
     package_name: cloudify-aws-plugin
-    package_version: '2.12.4'
+    package_version: '2.12.5'
 
 data_types:
 
@@ -61,6 +61,19 @@ data_types:
             then ``use_ssl`` is ignored.
         type: string
         required: false
+      additional_config:
+        required: false
+        description: >
+          An abstraction of the 'config' parameter accepted by boto3.client function.
+          This parameter should only be used by experienced users. Example usage:
+          vm:
+            type: cloudify.nodes.aws.ec2.Instances
+            properties:
+              client_config:
+                additional_config:
+                  retries:
+                    max_attempts: 10
+                    mode: adaptive
 
   cloudify.datatypes.aws.dynamodb.Table.config:
     properties:
