@@ -1,29 +1,30 @@
 tosca_definitions_version: cloudify_dsl_1_3
 
 imports:
-  - http://www.getcloudify.org/spec/cloudify/4.5/types.yaml
-  - plugin.yaml
-#   - plugin:cloudify-aws-plugin
+  - https://cloudify.co/spec/cloudify/5.1.0/types.yaml
+  - plugin:cloudify-aws-plugin
 
 inputs:
 
-  aws_access_key_id:
-    type: string
-    default: { get_secret: aws_access_key_id }
-
-  aws_secret_access_key:
-    type: string
-    default: { get_secret: aws_secret_access_key }
-
   aws_region_name:
     type: string
-    default: { get_secret: ec2_region_name }
+    default: 'us-east-1'
+
+  availability_zone1:
+    type: string
+    description: The availability zone in the AWS Region.
+    default: { concat: [ { get_input: aws_region_name }, 'a' ] }
+
+  availability_zone2:
+    type: string
+    description: The availability zone in the AWS Region.
+    default: { concat: [ { get_input: aws_region_name }, 'b' ] }
 
 dsl_definitions:
 
   client_config: &client_config
-    aws_access_key_id: { get_input: aws_access_key_id }
-    aws_secret_access_key: { get_input: aws_secret_access_key }
+    aws_access_key_id: { get_secret: aws_access_key_id }
+    aws_secret_access_key: { get_secret: aws_secret_access_key }
     region_name: { get_input: aws_region_name }
 
 node_templates:
@@ -209,7 +210,7 @@ node_templates:
     properties:
       resource_config:
         CidrBlock: '10.0.1.0/24'
-        AvailabilityZone: { concat: [ { get_input: aws_region_name }, 'a' ] }
+        AvailabilityZone: {  get_input: availability_zone1 }
       client_config: *client_config
       Tags:
       - Key: Name
@@ -224,7 +225,7 @@ node_templates:
       client_config: *client_config
       resource_config:
         CidrBlock: '10.0.2.0/24'
-        AvailabilityZone: { concat: [ { get_input: aws_region_name }, 'c' ] }
+        AvailabilityZone: {  get_input: availability_zone2 }
       Tags:
         - Key: Name
           Value: MySubnet2
