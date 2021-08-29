@@ -154,5 +154,3 @@
     - Fix issue introduced in the detach ebs change.
 2.12.3:
     - RD-2927: Upload local files to S3.
-2.12.4:
-    - RD-3035 Support ecosystem-test validate-plugin-version CLI
