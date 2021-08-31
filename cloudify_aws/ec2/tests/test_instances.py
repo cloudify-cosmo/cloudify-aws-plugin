@@ -26,6 +26,7 @@ from cloudify_aws.common._compat import reload_module
 from cloudify_aws.ec2.resources import instances
 from cloudify_aws.common.tests.test_base import (
     TestBase,
+    CLIENT_CONFIG,
     mock_decorator
 )
 from cloudify_aws.ec2.resources.instances import (
@@ -45,10 +46,13 @@ class TestEC2Instances(TestBase):
     def setUp(self):
         self.instances = EC2Instances("ctx_node", resource_id='ec2 instance',
                                       client=True, logger=None)
+        mock0 = patch('cloudify_aws.common.decorators.multiple_aws_resource',
+                      mock_decorator)
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',
                       mock_decorator)
         mock2 = patch('cloudify_aws.common.decorators.wait_for_status',
                       mock_decorator)
+        mock0.start()
         mock1.start()
         mock2.start()
         reload_module(instances)
@@ -168,6 +172,7 @@ class TestEC2Instances(TestBase):
         ctx = self.get_mock_ctx(
             "EC2Instances",
             test_properties={'os_family': 'linux'},
+            test_runtime_properties={'aws_resource_ids': ['foo']},
             type_hierarchy=['cloudify.nodes.Root', 'cloudify.nodes.Compute'])
         current_ctx.set(ctx=ctx)
         iface = MagicMock()
@@ -269,14 +274,16 @@ class TestEC2Instances(TestBase):
     def test_start(self):
         ctx = self.get_mock_ctx(
             "EC2Instances",
-            test_properties={'os_family': 'linux'},
+            test_properties={'os_family': 'linux',
+                             'client_config': CLIENT_CONFIG},
+            test_runtime_properties={'aws_resource_ids': ['foo']},
             type_hierarchy=['cloudify.nodes.Root', 'cloudify.nodes.Compute'])
         current_ctx.set(ctx=ctx)
         iface = MagicMock()
         iface.status = 0
         self.instances.resource_id = 'test_name'
         try:
-            instances.start(ctx, iface, {})
+            instances.start(ctx=ctx, iface=iface, resource_config={})
         except OperationRetry:
             pass
         self.assertTrue(iface.start.called)
@@ -300,11 +307,13 @@ class TestEC2Instances(TestBase):
     def test_stop(self):
         ctx = self.get_mock_ctx(
             "EC2Instances",
-            test_properties={'os_family': 'linux'},
+            test_properties={'os_family': 'linux',
+                             'client_config': CLIENT_CONFIG},
+            test_runtime_properties={'aws_resource_ids': ['foo']},
             type_hierarchy=['cloudify.nodes.Root', 'cloudify.nodes.Compute'])
         current_ctx.set(ctx=ctx)
         iface = MagicMock()
-        instances.stop(ctx, iface, {})
+        instances.stop(ctx=ctx, iface=iface, resource_config={})
         self.assertTrue(iface.stop.called)
 
     def test_with_userdata(self):

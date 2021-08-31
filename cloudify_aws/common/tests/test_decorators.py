@@ -79,6 +79,10 @@ class TestDecorators(TestBase):
 
         _ctx = self._gen_decorators_context(
             'test_wait_for_status',
+            runtime_prop={
+                'aws_resource_id': 'foo',
+                'resource_config': {}
+            },
             op_name='cloudify.interfaces.lifecycle.create')
 
         @decorators.wait_for_status(status_good=['ok'],
@@ -90,11 +94,13 @@ class TestDecorators(TestBase):
         mock_interface = MagicMock()
         mock_interface.status = 'ok'
         mock_interface.properties = {'status': 'ok'}
+        mock_interface.resource_id = 'foo'
 
         test_ok(ctx=_ctx, iface=mock_interface)
 
         self.assertEqual(_ctx.instance.runtime_properties, {
             'resource_config': {},
+            'aws_resource_id': 'foo',
             'create_response': {'status': 'ok'},
         })
 

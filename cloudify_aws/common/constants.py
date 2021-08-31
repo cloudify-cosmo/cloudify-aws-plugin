@@ -19,6 +19,7 @@
 
 AWS_CONFIG_PROPERTY = 'client_config'
 EXTERNAL_RESOURCE_ID = 'aws_resource_id'
+EXTERNAL_RESOURCE_ID_MULTIPLE = 'aws_resource_ids'
 EXTERNAL_RESOURCE_ARN = 'aws_resource_arn'
 TAG_SPECIFICATIONS_KWARG = 'TagSpecifications'
 
