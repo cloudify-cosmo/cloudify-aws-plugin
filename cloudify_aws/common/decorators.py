@@ -352,6 +352,8 @@ def multiple_aws_resource(class_decl=None,
                     kwargs_runtime_properties = {}
                 kwargs_runtime_properties.update({EXT_RES_ID: resource_id})
                 kwargs['runtime_properties'] = kwargs_runtime_properties
+                utils.update_resource_id(ctx.instance, resource_id)
+                kwargs['ctx'] = ctx
                 _aws_resource(function,
                               class_decl,
                               resource_type,
@@ -535,7 +537,7 @@ def untag_resources(fn):
     def wrapper(**kwargs):
         ctx = kwargs.get('ctx')
         iface = kwargs.get('iface')
-        if MULTI_ID in ctx.instance.runtime_properties:
+        if len(ctx.instance.runtime_properties.get(MULTI_ID, [])) > 1:
             resource_ids = ctx.instance.runtime_properties[MULTI_ID]
             iface.update_resource_id(resource_ids[0])
         else:

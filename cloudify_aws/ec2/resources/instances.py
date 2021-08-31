@@ -51,6 +51,7 @@ SUBNET_ID = 'SubnetId'
 INSTANCES = 'Instances'
 PS_OPEN = '<powershell>'
 PS_CLOSE = '</powershell>'
+TAGS = 'TagSpecifications'
 INSTANCE_ID = 'InstanceId'
 INSTANCE_IDS = 'InstanceIds'
 DEVICE_INDEX = 'DeviceIndex'
@@ -169,6 +170,7 @@ def create(ctx, iface, resource_config, **kwargs):
     assign_subnet_param(params)
     assign_groups_param(params)
     assign_nics_param(params)
+    handle_tags(params)
 
     validate_multiple_vm_per_node_instance(params)
 
@@ -177,21 +179,23 @@ def create(ctx, iface, resource_config, **kwargs):
         utils.JsonCleanuper(create_response).to_dict()
     if MULTI_ID not in ctx.instance.runtime_properties:
         ctx.instance.runtime_properties[MULTI_ID] = []
-    modify_instance_attribute_args = kwargs.get(
-        'modify_instance_attribute_args', {})
     if len(create_response[INSTANCES]) == 1:
         instance_id = create_response[INSTANCES][0].get(INSTANCE_ID, '')
         iface.update_resource_id(instance_id)
         utils.update_resource_id(ctx.instance, instance_id)
+        do_modify_instance_attribute(
+            iface,
+            kwargs.get('modify_instance_attribute_args', {}))
+        ctx.instance.runtime_properties[MULTI_ID] = [instance_id]
     else:
         for instance in create_response[INSTANCES]:
             instance_id = instance.get(INSTANCE_ID, '')
             ctx.instance.runtime_properties[MULTI_ID].append(
                 instance_id)
             iface.update_resource_id(instance_id)
-        modify_instance_attribute_args[INSTANCE_IDS] = \
-            ctx.instance.runtime_properties[MULTI_ID]
-    do_modify_instance_attribute(iface, modify_instance_attribute_args)
+            do_modify_instance_attribute(
+                iface,
+                kwargs.get('modify_instance_attribute_args', {}))
 
 
 @decorators.multiple_aws_resource(EC2Instances, RESOURCE_TYPE)
@@ -244,12 +248,10 @@ def delete(iface, resource_config, **_):
     iface.delete(iface.prepare_instance_ids_request(params))
 
 
-@decorators.aws_resource(EC2Instances, RESOURCE_TYPE)
+@decorators.multiple_aws_resource(EC2Instances, RESOURCE_TYPE)
 def modify_instance_attribute(ctx, iface, resource_config, **_):
     params = utils.clean_params(
         dict() if not resource_config else resource_config.copy())
-    if MULTI_ID in ctx.instance.runtime_properties:
-        params[INSTANCE_IDS] = ctx.instance.runtime_properties[MULTI_ID]
     do_modify_instance_attribute(iface, params)
 
 
@@ -513,8 +515,8 @@ def assign_nics_param(params):
 def do_modify_instance_attribute(iface,
                                  modify_instance_attribute_args=None):
     if modify_instance_attribute_args:
-        iface.modify_instance_attribute(
-            iface.prepare_instance_ids_request(modify_instance_attribute_args))
+        modify_instance_attribute_args[INSTANCE_ID] = iface.resource_id
+        iface.modify_instance_attribute(modify_instance_attribute_args)
 
 
 def assign_ip_properties(_ctx, current_properties):
@@ -579,7 +581,10 @@ def validate_multiple_vm_per_node_instance(params):
         ctx.logger.error(
             'The parameters MinCount and MaxCount may cause problems '
             'with Cloudify\'s implementation of EC2 Instances. '
-            'A Cloudify Agent node instance will require a one to one '
+            'For example, if you provided a relationship to a ENI or '
+            'other resource, then EC2 instance provisioning will fail '
+            'due to previously attached ENI.'
+            'Also, Cloudify Agent node instance will require a one to one '
             'relationship to a Virtual machine node instance. If '
             'multiple virtual machines are contained in a single node '
             'instance, then Cloudify Agent installation will fail. '
@@ -598,3 +603,9 @@ def validate_multiple_vm_per_node_instance(params):
             ctx.logger.warn(
                 'The node property install_agent is deprecated and may '
                 'lead to failed deployments.')
+
+
+def handle_tags(params):
+    for cnt, tags_spec in enumerate(params.get(TAGS, [])):
+        if 'ResourceType' not in tags_spec:
+            params[TAGS][cnt]['ResourceType'] = 'instance'
