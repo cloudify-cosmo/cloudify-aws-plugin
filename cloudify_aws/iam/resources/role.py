@@ -113,8 +113,16 @@ def create(ctx, iface, resource_config, params, **_):
 
     # attach policy role
     policies_arn = []
-    policies = _.get('modify_role_attribute_args', []) + \
-        ctx.node.properties.get('policy_arns', [])
+    policies = _.get('modify_role_attribute_args', [])
+    policies_property = ctx.node.properties.get('policy_arns', [])
+
+    for policy in policies_property:
+        if policy is dict:
+            policies.append(policy)
+        else:
+            ctx.logger.error("An ARN policy add in the blueprints property "
+                             "is not a dictionary")
+
     for policy in policies:
         payload = dict()
         payload['RoleName'] = resource_id
