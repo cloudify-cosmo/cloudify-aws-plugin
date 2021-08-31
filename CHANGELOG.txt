@@ -158,3 +158,5 @@
     - Add tagging option for nodes create in aws.
 2.12.5:
     - RD-3070: Handle Throttled Instances
+2.12.6:
+    - RD-3082: Handle multiple ec2 instances per node instance.
