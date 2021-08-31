@@ -36,7 +36,9 @@ from cloudify_aws.ec2 import EC2Base
 from cloudify_aws.common._compat import text_type
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.ec2.decrypt import decrypt_password
-from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
+from cloudify_aws.common.constants import (
+    EXTERNAL_RESOURCE_ID,
+    EXTERNAL_RESOURCE_ID_MULTIPLE as MULTI_ID)
 
 PENDING = 0
 RUNNING = 16
@@ -49,6 +51,7 @@ SUBNET_ID = 'SubnetId'
 INSTANCES = 'Instances'
 PS_OPEN = '<powershell>'
 PS_CLOSE = '</powershell>'
+TAGS = 'TagSpecifications'
 INSTANCE_ID = 'InstanceId'
 INSTANCE_IDS = 'InstanceIds'
 DEVICE_INDEX = 'DeviceIndex'
@@ -154,10 +157,10 @@ def prepare(ctx, iface, resource_config, **_):
 
 
 @decorators.aws_resource(EC2Instances, RESOURCE_TYPE)
+@decorators.tag_resources
 @decorators.wait_for_status(
     status_good=[RUNNING, PENDING],
     fail_on_missing=False)
-@decorators.tag_resources
 def create(ctx, iface, resource_config, **kwargs):
     '''Creates AWS EC2 Instances'''
 
@@ -167,24 +170,35 @@ def create(ctx, iface, resource_config, **kwargs):
     assign_subnet_param(params)
     assign_groups_param(params)
     assign_nics_param(params)
+    handle_tags(params)
+
+    validate_multiple_vm_per_node_instance(params)
 
     create_response = iface.create(params)
     ctx.instance.runtime_properties['create_response'] = \
         utils.JsonCleanuper(create_response).to_dict()
-    try:
-        instance = create_response[INSTANCES][0]
-    except (KeyError, IndexError) as e:
-        raise NonRecoverableError(
-            'Error {0}: create response has no instances: {1}'.format(
-                text_type(e), create_response))
-    instance_id = instance.get(INSTANCE_ID, '')
-    iface.update_resource_id(instance_id)
-    utils.update_resource_id(ctx.instance, instance_id)
-    do_modify_instance_attribute(
-        iface, kwargs.get('modify_instance_attribute_args'))
+    if MULTI_ID not in ctx.instance.runtime_properties:
+        ctx.instance.runtime_properties[MULTI_ID] = []
+    if len(create_response[INSTANCES]) == 1:
+        instance_id = create_response[INSTANCES][0].get(INSTANCE_ID, '')
+        iface.update_resource_id(instance_id)
+        utils.update_resource_id(ctx.instance, instance_id)
+        do_modify_instance_attribute(
+            iface,
+            kwargs.get('modify_instance_attribute_args', {}))
+        ctx.instance.runtime_properties[MULTI_ID] = [instance_id]
+    else:
+        for instance in create_response[INSTANCES]:
+            instance_id = instance.get(INSTANCE_ID, '')
+            ctx.instance.runtime_properties[MULTI_ID].append(
+                instance_id)
+            iface.update_resource_id(instance_id)
+            do_modify_instance_attribute(
+                iface,
+                kwargs.get('modify_instance_attribute_args', {}))
 
 
-@decorators.aws_resource(EC2Instances, RESOURCE_TYPE)
+@decorators.multiple_aws_resource(EC2Instances, RESOURCE_TYPE)
 def start(ctx, iface, resource_config, **_):
     '''Starts AWS EC2 Instances'''
     params = utils.clean_params(
@@ -201,11 +215,11 @@ def start(ctx, iface, resource_config, **_):
         iface.start(iface.prepare_instance_ids_request(params))
 
     raise OperationRetry(
-        '{0} ID# {1} is still in a pending state.'.format(
-            iface.type_name, iface.resource_id))
+        '{0} ID# {1} is still in a pending state {2}.'.format(
+            iface.type_name, iface.resource_id, iface.status))
 
 
-@decorators.aws_resource(EC2Instances, RESOURCE_TYPE)
+@decorators.multiple_aws_resource(EC2Instances, RESOURCE_TYPE)
 @decorators.wait_for_status(
     status_good=[STOPPED],
     status_pending=[PENDING, RUNNING, STOPPING, SHUTTING_DOWN])
@@ -214,23 +228,27 @@ def stop(ctx, iface, resource_config, **_):
 
     params = utils.clean_params(
         dict() if not resource_config else resource_config.copy())
+    if MULTI_ID in ctx.instance.runtime_properties:
+        params[INSTANCE_IDS] = ctx.instance.runtime_properties[MULTI_ID]
     iface.stop(iface.prepare_instance_ids_request(params))
 
 
-@decorators.aws_resource(EC2Instances, RESOURCE_TYPE)
+@decorators.multiple_aws_resource(EC2Instances, RESOURCE_TYPE)
+@decorators.untag_resources
 @decorators.wait_for_delete(
     status_deleted=[TERMINATED],
     status_pending=[PENDING, STOPPING, STOPPED, SHUTTING_DOWN])
-@decorators.untag_resources
 def delete(iface, resource_config, **_):
     '''Deletes AWS EC2 Instances'''
 
     params = \
         dict() if not resource_config else resource_config.copy()
+    if MULTI_ID in ctx.instance.runtime_properties:
+        params[INSTANCE_IDS] = ctx.instance.runtime_properties[MULTI_ID]
     iface.delete(iface.prepare_instance_ids_request(params))
 
 
-@decorators.aws_resource(EC2Instances, RESOURCE_TYPE)
+@decorators.multiple_aws_resource(EC2Instances, RESOURCE_TYPE)
 def modify_instance_attribute(ctx, iface, resource_config, **_):
     params = utils.clean_params(
         dict() if not resource_config else resource_config.copy())
@@ -554,3 +572,40 @@ def assign_ip_properties(_ctx, current_properties):
         _ctx.instance.runtime_properties['public_ip_address'] = pip
 
     _ctx.instance.runtime_properties['private_ip_address'] = ip
+
+
+def validate_multiple_vm_per_node_instance(params):
+    max_count = params.get('MaxCount', 1)
+    min_count = params.get('MinCount', 1)
+    if min_count > 1 or max_count > 1:
+        ctx.logger.error(
+            'The parameters MinCount and MaxCount may cause problems '
+            'with Cloudify\'s implementation of EC2 Instances. '
+            'For example, if you provided a relationship to a ENI or '
+            'other resource, then EC2 instance provisioning will fail '
+            'due to previously attached ENI.'
+            'Also, Cloudify Agent node instance will require a one to one '
+            'relationship to a Virtual machine node instance. If '
+            'multiple virtual machines are contained in a single node '
+            'instance, then Cloudify Agent installation will fail. '
+            'Only use MinCount and MaxCount if your deployment does '
+            'not require a Cloudify node instance. Otherwise, set both '
+            'MinCount and MaxCount to 1 and control multiple instances '
+            'with a scaling policy: https://docs.cloudify.co/latest/'
+            'developer/blueprints/spec-policies/')
+        agent_config = ctx.node.properties.get('agent_config', {})
+        if agent_config.get('install_method') == 'remote':
+            raise NonRecoverableError(
+                'Configuration not supported. '
+                'Cloudify agent_config property.install_method is '
+                '\'remote\' and MinCount or MaxCount > 1.')
+        elif ctx.node.properties.get('install_agent'):
+            ctx.logger.warn(
+                'The node property install_agent is deprecated and may '
+                'lead to failed deployments.')
+
+
+def handle_tags(params):
+    for cnt, tags_spec in enumerate(params.get(TAGS, [])):
+        if 'ResourceType' not in tags_spec:
+            params[TAGS][cnt]['ResourceType'] = 'instance'

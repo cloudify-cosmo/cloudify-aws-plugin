@@ -109,6 +109,7 @@ class testIfaceRequirement(TestBase):
         _ctx = self.get_mock_ctx(
             operation, test_relationships=[mock_group])
         _ctx.instance.runtime_properties['aws_resource_id'] = 'foo'
+        _ctx.instance.runtime_properties['aws_resource_ids'] = ['foo']
         _ctx.instance.runtime_properties['aws_resource_arn'] = 'foo'
         _ctx.instance.runtime_properties['LoadBalancerName'] = 'foo'
         _ctx.instance.runtime_properties['PolicyName'] = 'foo'

@@ -34,10 +34,12 @@ from cloudify.exceptions import OperationRetry, NonRecoverableError
 from cloudify_aws.common import utils
 from cloudify_aws.common._compat import text_type
 from cloudify_aws.common.constants import (
-    EXTERNAL_RESOURCE_ARN as EXT_RES_ARN,
-    EXTERNAL_RESOURCE_ID as EXT_RES_ID,
     SWIFT_NODE_PREFIX,
-    SWIFT_ERROR_TOKEN_CODE)
+    SWIFT_ERROR_TOKEN_CODE,
+    EXTERNAL_RESOURCE_ID as EXT_RES_ID,
+    EXTERNAL_RESOURCE_ARN as EXT_RES_ARN,
+    EXTERNAL_RESOURCE_ID_MULTIPLE as MULTI_ID
+)
 
 
 def _wait_for_status(kwargs,
@@ -62,12 +64,13 @@ def _wait_for_status(kwargs,
 
         # At first let's verify was a new AWS resource
         # really created
-        if iface.resource_id != \
-                _ctx.instance.runtime_properties.get(EXT_RES_ID):
+        if iface.resource_id != _ctx.instance.runtime_properties.get(
+                EXT_RES_ID):
             # Assuming new resource was really created,
             # so updating iface object
-            iface.resource_id = \
-                _ctx.instance.runtime_properties.get(EXT_RES_ID)
+            iface.resource_id = _ctx.instance.runtime_properties.get(
+                EXT_RES_ID)
+            utils.update_resource_id(ctx.instance, iface.resource_id)
 
     # Get a resource interface and query for the status
     status = iface.status
@@ -195,6 +198,127 @@ def aws_params(resource_name, params_priority=True):
     return wrapper_outer
 
 
+def _aws_resource(function,
+                  class_decl,
+                  resource_type,
+                  ignore_properties,
+                  **kwargs):
+
+    ctx = kwargs['ctx']
+    _, _, _, operation_name = ctx.operation.name.split('.')
+    props = ctx.node.properties
+    runtime_instance_properties = ctx.instance.runtime_properties
+    # Override the resource ID if needed
+    resource_id = kwargs.get(EXT_RES_ID)
+    if resource_id and not ctx.instance.runtime_properties.get(EXT_RES_ID):
+        ctx.instance.runtime_properties[EXT_RES_ID] = resource_id
+    if resource_id and not ctx.instance.runtime_properties.get(EXT_RES_ARN):
+        ctx.instance.runtime_properties[EXT_RES_ARN] = resource_id
+
+    # Override any runtime properties if needed
+    runtime_properties = kwargs.get('runtime_properties') or dict()
+    for key, val in runtime_properties.items():
+        ctx.instance.runtime_properties[key] = val
+
+    # Add new operation arguments
+    kwargs['resource_type'] = resource_type
+
+    # Check if "aws_config" is provided
+    # if "client_config" is empty, then the current node is a swift
+    # node and the "aws_config" will be taken as "aws_config" for
+    # boto3 config in order to use the S3 API
+    aws_config = ctx.instance.runtime_properties.get('aws_config')
+    aws_config_kwargs = kwargs.get('aws_config')
+
+    # Attribute needed for AWS resource class
+    class_decl_attr = {
+        'ctx_node': ctx.node,
+        'logger': ctx.logger,
+        'resource_id': utils.get_resource_id(
+            node=ctx.node, instance=ctx.instance),
+    }
+
+    # Check if "aws_config" is set and has a valid "dict" type because
+    #  the expected data type for "aws_config" must be "dict"
+    if aws_config:
+        if isinstance(aws_config, dict):
+            class_decl_attr.update({'aws_config': aws_config})
+        else:
+            # Raise an error if the provided "aws_config" is not a
+            # valid dict data type
+            raise NonRecoverableError(
+                'aws_config is invalid type: {0}, it must be '
+                'valid dict type'.format(type(aws_config)))
+
+    # Check the value of "aws_config" which could be part of "kwargs"
+    # and it has to be the same validation for the above "aws_config"
+    elif aws_config_kwargs:
+        if isinstance(aws_config_kwargs, dict):
+            class_decl_attr.update({'aws_config': aws_config_kwargs})
+        else:
+            # Raise an error if the provided "aws_config_kwargs"
+            # is not a valid dict data type
+            raise NonRecoverableError(
+                'The aws_config is invalid type: {0}, it must be '
+                'valid dict type'.format(type(aws_config)))
+
+    kwargs['iface'] = class_decl(**class_decl_attr) if class_decl else None
+
+    resource_config = None
+    if not ignore_properties:
+        # Normalize resource_config property
+        resource_config = props.get('resource_config') or dict()
+        resource_config_kwargs = resource_config.get('kwargs') or dict()
+        if 'kwargs' in resource_config:
+            del resource_config['kwargs']
+        resource_config.update(resource_config_kwargs)
+        # Update the argument
+        kwargs['resource_config'] = kwargs.get(
+            'resource_config') or resource_config or dict()
+
+        # ``resource_config`` could be part of the runtime instance
+        # properties, If ``resource_config`` is empty then check if it
+        # exists on runtime instance properties
+        if not resource_config \
+                and runtime_instance_properties \
+                and runtime_instance_properties.get('resource_config'):
+            kwargs['resource_config'] = \
+                runtime_instance_properties['resource_config']
+            resource_config = kwargs['resource_config']
+    resource_id = utils.get_resource_id(node=ctx.node, instance=ctx.instance)
+    # Check if using external
+    if ctx.node.properties.get('use_external_resource', False):
+        ctx.logger.info('{t} ID# {i} is user-provided.'.format(
+            t=resource_type, i=resource_id))
+        if not kwargs.get('force_operation', False) and \
+                operation_name not in ['precreate', 'poststart']:
+            # If "force_operation" is not set then we need to make
+            # sure that runtime properties for node instance are
+            # setting correctly
+            # Set "resource_config" and "EXT_RES_ID"
+            ctx.instance.runtime_properties['resource_config'] = \
+                resource_config
+            ctx.instance.runtime_properties[EXT_RES_ID] = resource_id
+            if operation_name not in ['delete', 'create'] and \
+                    not kwargs['iface'].verify_resource_exists():
+                raise NonRecoverableError(
+                    'Resource type {0} resource_id {1} not found.'.format(
+                        kwargs['resource_type'], kwargs['iface'].resource_id))
+            kwargs['iface'].populate_resource(ctx)
+            return
+        ctx.logger.warn('{t} ID# {i} has force_operation set.'.format(
+            t=resource_type, i=resource_id))
+    result = function(**kwargs)
+    if ctx.operation.name == 'cloudify.interfaces.lifecycle.configure':
+        kwargs['iface'].populate_resource(ctx)
+    if ctx.operation.name == 'cloudify.interfaces.lifecycle.delete':
+        # cleanup runtime after delete
+        keys = list(ctx.instance.runtime_properties.keys())
+        for key in keys:
+            del ctx.instance.runtime_properties[key]
+    return result
+
+
 def aws_resource(class_decl=None,
                  resource_type='AWS Resource',
                  ignore_properties=False):
@@ -203,124 +327,38 @@ def aws_resource(class_decl=None,
         '''Outer function'''
         def wrapper_inner(**kwargs):
             '''Inner, worker function'''
+            return _aws_resource(
+                function,
+                class_decl,
+                resource_type,
+                ignore_properties,
+                **kwargs)
+        return wrapper_inner
+    return operation(func=wrapper_outer, resumable=True)
+
+
+def multiple_aws_resource(class_decl=None,
+                          resource_type='AWS Resource',
+                          ignore_properties=False):
+    '''AWS resource decorator'''
+    def wrapper_outer(function):
+        '''Outer function'''
+        def wrapper_inner(**kwargs):
+            '''Inner, worker function'''
             ctx = kwargs['ctx']
-            _, _, _, operation_name = ctx.operation.name.split('.')
-            props = ctx.node.properties
-            runtime_instance_properties = ctx.instance.runtime_properties
-            # Override the resource ID if needed
-            resource_id = kwargs.get(EXT_RES_ID)
-            if resource_id and not \
-                    ctx.instance.runtime_properties.get(EXT_RES_ID):
-                ctx.instance.runtime_properties[EXT_RES_ID] = resource_id
-            if resource_id and not \
-                    ctx.instance.runtime_properties.get(EXT_RES_ARN):
-                ctx.instance.runtime_properties[EXT_RES_ARN] = resource_id
-            # Override any runtime properties if needed
-            runtime_properties = kwargs.get('runtime_properties') or dict()
-            for key, val in runtime_properties.items():
-                ctx.instance.runtime_properties[key] = val
-            # Add new operation arguments
-            kwargs['resource_type'] = resource_type
-
-            # Check if "aws_config" is provided
-            # if "client_config" is empty, then the current node is a swift
-            # node and the "aws_config" will be taken as "aws_config" for
-            # boto3 config in order to use the S3 API
-            aws_config = ctx.instance.runtime_properties.get('aws_config')
-            aws_config_kwargs = kwargs.get('aws_config')
-
-            # Attribute needed for AWS resource class
-            class_decl_attr = {
-                'ctx_node': ctx.node,
-                'logger': ctx.logger,
-                'resource_id': utils.get_resource_id(node=ctx.node,
-                                                     instance=ctx.instance),
-            }
-
-            # Check if "aws_config" is set and has a valid "dict" type because
-            #  the expected data type for "aws_config" must be "dict"
-            if aws_config:
-                if isinstance(aws_config, dict):
-                    class_decl_attr.update({'aws_config': aws_config})
-                else:
-                    # Raise an error if the provided "aws_config" is not a
-                    # valid dict data type
-                    raise NonRecoverableError(
-                        'aws_config is invalid type: {0}, it must be '
-                        'valid dict type'.format(type(aws_config)))
-
-            # Check the value of "aws_config" which could be part of "kwargs"
-            # and it has to be the same validation for the above "aws_config"
-            elif aws_config_kwargs:
-                if isinstance(aws_config_kwargs, dict):
-                    class_decl_attr.update({'aws_config': aws_config_kwargs})
-                else:
-                    # Raise an error if the provided "aws_config_kwargs"
-                    # is not a valid dict data type
-                    raise NonRecoverableError(
-                        'aws_config is invalid type: {0}, it must be '
-                        'valid dict type'.format(type(aws_config)))
-
-            kwargs['iface'] =\
-                class_decl(**class_decl_attr) if class_decl else None
-
-            resource_config = None
-            if not ignore_properties:
-                # Normalize resource_config property
-                resource_config = props.get('resource_config') or dict()
-                resource_config_kwargs = \
-                    resource_config.get('kwargs') or dict()
-                if 'kwargs' in resource_config:
-                    del resource_config['kwargs']
-                resource_config.update(resource_config_kwargs)
-                # Update the argument
-                kwargs['resource_config'] = kwargs.get('resource_config') or \
-                    resource_config or dict()
-
-                # ``resource_config`` could be part of the runtime instance
-                # properties, If ``resource_config`` is empty then check if it
-                # exists on runtime instance properties
-                if not resource_config and runtime_instance_properties \
-                        and runtime_instance_properties.get('resource_config'):
-                    kwargs['resource_config'] =\
-                        runtime_instance_properties['resource_config']
-                    resource_config = kwargs['resource_config']
-            resource_id = utils.get_resource_id(
-                node=ctx.node,
-                instance=ctx.instance)
-            # Check if using external
-            if ctx.node.properties.get('use_external_resource', False):
-                ctx.logger.info('%s ID# "%s" is user-provided.'
-                                % (resource_type, resource_id))
-                if not kwargs.get('force_operation', False) and \
-                        operation_name not in ['precreate', 'poststart']:
-                    # If "force_operation" is not set then we need to make
-                    # sure that runtime properties for node instance are
-                    # setting correctly
-                    # Set "resource_config" and "EXT_RES_ID"
-                    ctx.instance.runtime_properties[
-                        'resource_config'] = resource_config
-                    ctx.instance.runtime_properties[EXT_RES_ID] = resource_id
-                    if operation_name not in ['delete', 'create'] and \
-                            not kwargs['iface'].verify_resource_exists():
-                        raise NonRecoverableError(
-                            'Resource type {0} resource_id '
-                            '{1} not found.'.format(
-                                kwargs['resource_type'],
-                                kwargs['iface'].resource_id))
-                    kwargs['iface'].populate_resource(ctx)
-                    return
-                ctx.logger.warn('%s ID# "%s" has force_operation set.'
-                                % (resource_type, resource_id))
-            result = function(**kwargs)
-            if ctx.operation.name == 'cloudify.interfaces.lifecycle.configure':
-                kwargs['iface'].populate_resource(ctx)
-            if ctx.operation.name == 'cloudify.interfaces.lifecycle.delete':
-                # cleanup runtime after delete
-                keys = list(ctx.instance.runtime_properties.keys())
-                for key in keys:
-                    del ctx.instance.runtime_properties[key]
-            return result
+            for resource_id in ctx.instance.runtime_properties[MULTI_ID]:
+                kwargs_runtime_properties = kwargs.get('runtime_properties')
+                if not isinstance(kwargs_runtime_properties, dict):
+                    kwargs_runtime_properties = {}
+                kwargs_runtime_properties.update({EXT_RES_ID: resource_id})
+                kwargs['runtime_properties'] = kwargs_runtime_properties
+                utils.update_resource_id(ctx.instance, resource_id)
+                kwargs['ctx'] = ctx
+                _aws_resource(function,
+                              class_decl,
+                              resource_type,
+                              ignore_properties,
+                              **kwargs)
         return wrapper_inner
     return operation(func=wrapper_outer, resumable=True)
 
@@ -472,9 +510,13 @@ def tag_resources(fn):
         result = fn(**kwargs)
         ctx = kwargs.get('ctx')
         iface = kwargs.get('iface')
-        resource_id = utils.get_resource_id(
-            node=ctx.node,
-            instance=ctx.instance)
+        if len(ctx.instance.runtime_properties.get(MULTI_ID, [])) > 1:
+            resource_ids = ctx.instance.runtime_properties[MULTI_ID]
+            iface.update_resource_id(resource_ids[0])
+        else:
+            resource_ids = [utils.get_resource_id(
+                node=ctx.node,
+                instance=ctx.instance)]
         if ctx.node.properties.get('cloudify_tagging', False):
             add_default_tag(ctx, iface)
         else:
@@ -483,10 +525,10 @@ def tag_resources(fn):
             ctx.node.properties.get('Tags'),
             ctx.instance.runtime_properties.get('Tags'),
             kwargs.get('Tags'))
-        if iface and tags and resource_id:
+        if iface and tags and resource_ids:
             iface.tag({
                 'Tags': tags,
-                'Resources': [resource_id]})
+                'Resources': resource_ids})
         return result
     return wrapper
 
@@ -495,17 +537,21 @@ def untag_resources(fn):
     def wrapper(**kwargs):
         ctx = kwargs.get('ctx')
         iface = kwargs.get('iface')
-        resource_id = utils.get_resource_id(
-            node=ctx.node,
-            instance=ctx.instance)
+        if len(ctx.instance.runtime_properties.get(MULTI_ID, [])) > 1:
+            resource_ids = ctx.instance.runtime_properties[MULTI_ID]
+            iface.update_resource_id(resource_ids[0])
+        else:
+            resource_ids = [utils.get_resource_id(
+                node=ctx.node,
+                instance=ctx.instance)]
         tags = utils.get_tags_list(
             ctx.node.properties.get('Tags'),
             ctx.instance.runtime_properties.get('Tags'),
             kwargs.get('Tags'))
-        if iface and tags and resource_id:
+        if iface and tags and resource_ids:
             iface.untag({
                 'Tags': tags,
-                'Resources': [resource_id]})
+                'Resources': resource_ids})
         return fn(**kwargs)
     return wrapper
 
