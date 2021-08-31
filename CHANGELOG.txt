@@ -154,3 +154,7 @@
     - Fix issue introduced in the detach ebs change.
 2.12.3:
     - RD-2927: Upload local files to S3.
+2.12.4:
+    - Add tagging option for nodes create in aws.
+2.12.5:
+    - RD-3070: Handle Throttled Instances

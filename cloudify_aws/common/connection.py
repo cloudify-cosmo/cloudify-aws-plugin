@@ -18,6 +18,7 @@
 """
 # Third party imports
 import boto3
+from botocore.config import Config
 
 # Local imports
 from .utils import desecretize_client_config
@@ -35,8 +36,12 @@ class Boto3Connection(object):
     def __init__(self, node, aws_config=None):
         aws_config_whitelist = [
             'aws_access_key_id', 'aws_secret_access_key', 'region_name']
-        self.aws_config = desecretize_client_config(
-            node.properties.get(AWS_CONFIG_PROPERTY, dict()))
+
+        config_from_props = node.properties.get(AWS_CONFIG_PROPERTY, dict())
+        # Get additional config from node configuration.
+        additional_config = config_from_props.pop('additional_config', None)
+
+        self.aws_config = desecretize_client_config(config_from_props)
         # Merge user-provided AWS config with generated config
         if aws_config:
             self.aws_config.update(aws_config)
@@ -51,6 +56,10 @@ class Boto3Connection(object):
         # Delete all non-whitelisted keys
         self.aws_config = {k: v for k, v in self.aws_config.items()
                            if k in aws_config_whitelist}
+
+        # Add additional config after whitelist filter.
+        if additional_config and isinstance(additional_config, dict):
+            self.aws_config['config'] = Config(**additional_config)
 
     def client(self, service_name):
         '''

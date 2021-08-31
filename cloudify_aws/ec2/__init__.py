@@ -29,11 +29,15 @@ class EC2Base(AWSResourceBase):
     """
         AWS ELB base interface
     """
-    def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
+    def __init__(self,
+                 ctx_node,
+                 resource_id=None,
+                 client=None,
+                 logger=None):
+
         if not client:
             aws_config = ctx_node.properties.get(AWS_CONFIG_PROPERTY, dict())
             check_region_name(aws_config['region_name'])
-
         AWSResourceBase.__init__(
             self, client or Boto3Connection(ctx_node).client('ec2'),
             resource_id=resource_id, logger=logger)
