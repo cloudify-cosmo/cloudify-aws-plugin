@@ -22,6 +22,7 @@ from json import dumps as json_dumps
 from botocore.exceptions import ClientError
 
 # Cloudify
+from cloudify.exceptions import NonRecoverableError
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.iam import IAMBase
 
@@ -93,6 +94,18 @@ class IAMRole(IAMBase):
         self.client.detach_role_policy(**params)
 
 
+def validate_polices(policies, policies_from_properties):
+    for policy in policies_from_properties:
+        if not isinstance(policy, dict) or 'PolicyArn' not in policy:
+            raise NonRecoverableError(
+                'The policy_arns property contains invalid value. It must be '
+                'a list of dicts, and each dict must contain one key, '
+                '"PolicyArn".')
+        else:
+            policies.append(policy)
+    return policies
+
+
 @decorators.aws_resource(IAMRole, RESOURCE_TYPE)
 @decorators.aws_params(RESOURCE_NAME)
 def create(ctx, iface, resource_config, params, **_):
@@ -102,6 +115,9 @@ def create(ctx, iface, resource_config, params, **_):
             isinstance(params['AssumeRolePolicyDocument'], dict):
         params['AssumeRolePolicyDocument'] = \
             json_dumps(params['AssumeRolePolicyDocument'])
+
+    policies = validate_polices(_.get('modify_role_attribute_args', []),
+                                ctx.node.properties.get('policy_arns', []))
 
     # Actually create the resource
     create_response = iface.create(params)
@@ -113,16 +129,6 @@ def create(ctx, iface, resource_config, params, **_):
 
     # attach policy role
     policies_arn = []
-    policies = _.get('modify_role_attribute_args', [])
-    policies_property = ctx.node.properties.get('policy_arns', [])
-
-    for policy in policies_property:
-        if policy is dict:
-            policies.append(policy)
-        else:
-            ctx.logger.error("An ARN policy add in the blueprints property "
-                             "is not a dictionary")
-
     for policy in policies:
         payload = dict()
         payload['RoleName'] = resource_id
