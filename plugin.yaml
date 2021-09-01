@@ -1337,7 +1337,7 @@ node_types:
       <<: *resource_id
       policy_arns:
         description: >
-          List of ARN policies to be provided during creation.
+          List of ARN policies to be provided.
           The list needs to contain dictionaries containing a single ARN
           policy with the key 'PolicyArn'
         type: list
