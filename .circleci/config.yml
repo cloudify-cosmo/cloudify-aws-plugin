@@ -276,7 +276,8 @@ commands:
           command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/latest.zip
       - attach_workspace:
           at: workspace
-      - run: python .circleci/package_release.py
+      - run: ecosystem-tests package-release
+      # python .circleci/package_release.py
 
   merge_docs:
     steps:
