@@ -319,10 +319,10 @@ commands:
           command: pip install --upgrade setuptools
       - run:
           name: install local project
-          command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/latest.zip
+          command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/refs/heads/RD-3064-merge-docs-CLI.zip
       - attach_workspace:
           at: workspace
-      - run: python .circleci/merge_docs.py
+      - run: ecosystem-tests merge-docs
 
 jobs:
 
