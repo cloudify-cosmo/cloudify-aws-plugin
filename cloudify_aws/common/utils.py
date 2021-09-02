@@ -585,6 +585,36 @@ def raise_on_substring(iface,
         return {}
 
 
+def handle_response(iface,
+                    method,
+                    request=None,
+                    exit_substrings=None,
+                    raise_substrings=None,
+                    raisable=OperationRetry):
+
+    if isinstance(exit_substrings, text_type):
+        exit_substrings = [exit_substrings]
+
+    if isinstance(raise_substrings, text_type):
+        raise_substrings = [raise_substrings]
+
+    callable = getattr(iface, method)
+    try:
+        if request:
+            return callable(request)
+        else:
+            return callable()
+    except (NonRecoverableError, ClientError) as e:
+        if hasattr(e, 'message'):
+            message = e.message
+        else:
+            message = _compat.text_type(e)
+        if any(substring in message for substring in raise_substrings):
+            raise raisable(message)
+        elif any(substring in message for substring in exit_substrings):
+            return {}
+
+
 def with_rest_client(func):
     """
     :param func: This is a class for the aws resource need to be

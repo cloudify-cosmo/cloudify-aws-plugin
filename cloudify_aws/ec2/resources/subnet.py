@@ -208,6 +208,10 @@ def delete(ctx, iface, resource_config, **_):
     utils.exit_on_substring(iface,
                             'delete',
                             params,
+                            'NotFound')
+    utils.raise_on_substring(iface,
+                            'delete',
+                            params,
                             'DependencyViolation')
 
 
