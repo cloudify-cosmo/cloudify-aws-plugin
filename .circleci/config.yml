@@ -127,8 +127,7 @@ commands:
           command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/latest.zip
       - attach_workspace:
           at: workspace
-      - run: ecosystem-test validate-plugin-version
-
+      - run: python .circleci/validate_version.py
 
   generate_py36_wagon:
     steps:
@@ -273,12 +272,10 @@ commands:
           command: pip install --upgrade setuptools
       - run:
           name: install local project
-          command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/refs/heads/RD-3063-release-CLI.zip
-          # https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/latest.zip
+          command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/latest.zip
       - attach_workspace:
           at: workspace
-      - run: ecosystem-tests package-release
-      # python .circleci/package_release.py
+      - run: python .circleci/package_release.py
 
   merge_docs:
     steps:
@@ -319,7 +316,7 @@ commands:
           command: pip install --upgrade setuptools
       - run:
           name: install local project
-          command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/refs/heads/RD-3064-merge-docs-CLI.zip
+          command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/latest.zip
       - attach_workspace:
           at: workspace
       - run: ecosystem-tests merge-docs
