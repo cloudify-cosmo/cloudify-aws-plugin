@@ -273,12 +273,10 @@ commands:
           command: pip install --upgrade setuptools
       - run:
           name: install local project
-          command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/refs/heads/RD-3063-release-CLI.zip
-          # https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/latest.zip
+          command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/latest.zip
       - attach_workspace:
           at: workspace
       - run: ecosystem-tests package-release
-      # python .circleci/package_release.py
 
   merge_docs:
     steps:
