@@ -224,6 +224,9 @@ def attach(ctx, iface, resource_config, **_):
     if not instance_id:
         return
 
+    if SUBNET_ID in params:
+        del params[SUBNET_ID]
+
     # Actually attach the resources
     eni_attachment_id = iface.attach(params)
     ctx.instance.runtime_properties['attachment_id'] = \
