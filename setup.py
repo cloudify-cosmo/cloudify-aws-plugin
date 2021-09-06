@@ -43,6 +43,7 @@ setup(
     packages=find_packages(exclude=['tests*']),
     description='A Cloudify plugin for AWS',
     install_requires=[
+        'cloudify-utilities-plugins-sdk>=0.0.38',
         'cloudify-common>=4.5',
         'boto3==1.18.4',
         'botocore',

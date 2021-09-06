@@ -29,6 +29,7 @@ import requests
 from requests import exceptions
 from botocore.exceptions import ClientError
 
+
 from cloudify import ctx
 from cloudify.workflows import ctx as wtx
 from cloudify.manager import get_rest_client
@@ -807,3 +808,39 @@ def update_deployment_site(deployment_id, site_name, rest_client):
             deployment_id, detach_site=True)
     return rest_client.deployments.set_site(
         deployment_id, site_name)
+
+
+@with_rest_client
+def get_node_instances_by_type_related_to_node_name(node_name,
+                                                    node_type,
+                                                    deployment_id,
+                                                    rest_client):
+    """Filter node instances by type.
+
+    :param node_name: the node name that we wish to find relationships to.
+    :param node_type: the node type that we wish to filter.
+    :type node_type: str
+    :param deployment_id: The deployment ID.
+    :type deployment_id: str
+    :param rest_client: A Cloudify REST client.
+    :type rest_client: cloudify_rest_client.client.CloudifyClient
+    :return: A list of dicts of
+      cloudify_rest_client.node_instances.NodeInstance and
+      cloudify_rest_client.nodes.Node
+    :rtype: list
+    """
+    nodes = []
+    for ni in rest_client.node_instances.list(
+            deployment_id=deployment_id,
+            state='started',
+            _includes=['id',
+                       'version',
+                       'runtime_properties',
+                       'node_id',
+                       'relationships']):
+        rels = [rel['target_name'] for rel in ni.relationships]
+        node = rest_client.nodes.get(
+            node_id=ni.node_id, deployment_id=deployment_id)
+        if node_type in node.type_hierarchy and node_name in rels:
+            nodes.append({'node_instance': ni, 'node': node})
+    return nodes
