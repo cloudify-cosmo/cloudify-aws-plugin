@@ -260,7 +260,8 @@ def get_attached_instance_id(params):
     instance_id = params.get(INSTANCE_ID)
     if not instance_id:
         targ = \
-            utils.find_rel_by_node_type(_ctx.instance, INSTANCE_TYPE_DEPRECATED)
+            utils.find_rel_by_node_type(_ctx.instance,
+                                        INSTANCE_TYPE_DEPRECATED)
         if targ:
             return targ.target.instance.runtime_properties.get(
                 EXTERNAL_RESOURCE_ID)
@@ -292,4 +293,3 @@ def get_attached_instance_id(params):
                       'and no single existing EC2 Instance has a relationship '
                       'to the current ENI node. '
                       'Not performing attach operation.')
-
