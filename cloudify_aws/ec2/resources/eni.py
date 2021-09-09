@@ -214,16 +214,17 @@ def attach(ctx, iface, resource_config, **_):
     if not eni_id:
         eni_id = iface.resource_id
 
-    device_index = ctx.instance.runtime_properties.get('device_index', 1)
+    device_index = params.get(
+        'DeviceIndex') or ctx.instance.runtime_properties.get(
+        'device_index', 1)
     ctx.instance.runtime_properties['device_index'] = device_index
 
     params.update({NETWORKINTERFACE_ID: eni_id})
     params.update({'DeviceIndex': device_index})
-
     instance_id = get_attached_instance_id(params)
     if not instance_id:
         return
-
+    params[INSTANCE_ID] = instance_id
     if SUBNET_ID in params:
         del params[SUBNET_ID]
 
