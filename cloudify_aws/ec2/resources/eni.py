@@ -20,6 +20,7 @@
 from botocore.exceptions import ClientError
 
 from cloudify import ctx as _ctx
+from cloudify.exceptions import OperationRetry
 
 # Cloudify
 from cloudify_aws.ec2 import EC2Base
@@ -57,8 +58,7 @@ class EC2NetworkInterface(EC2Base):
                 self.client.describe_network_interfaces(**params)
         except ClientError:
             pass
-        else:
-            return resources.get(NETWORKINTERFACES)[0] if resources else None
+        return resources.get(NETWORKINTERFACES)[0] if resources else None
 
     @property
     def status(self):
@@ -67,6 +67,16 @@ class EC2NetworkInterface(EC2Base):
         if not props:
             return None
         return props['Status']
+
+    @property
+    def attachment(self):
+        props = self.properties
+        if not props:
+            return {}
+        try:
+            return props['Attachment']
+        except KeyError:
+            return {}
 
     def list_network_interfaces(self, filters=None):
         params = dict()
@@ -239,13 +249,25 @@ def attach(ctx, iface, resource_config, **_):
 def detach(ctx, iface, resource_config, **_):
     '''Detach an AWS EC2 NetworkInterface from a Subnet'''
     params = dict() if not resource_config else resource_config.copy()
-
     attachment_id = ctx.instance.runtime_properties.get('attachment_id', None)
     if not attachment_id:
-        return
+        try:
+            attachment_id = iface.attachment['AttachmentId']
+        except (TypeError, KeyError):
+            ctx.logger.warn(
+                'Detach operation requires an attachment ID. '
+                'No attachment_id runtime property was found and the '
+                'AWS API did not return an attachment for {i}.'.format(
+                    i=iface.resource_id))
+            return
 
     params.update({ATTACHMENT_ID: attachment_id})
+    if iface.attachment['Status'] == 'detached':
+        return
     iface.detach(params)
+    raise OperationRetry(
+        'Waiting for {i} attachment to be detached.'.format(
+            i=iface.resource_id))
 
 
 @decorators.aws_resource(EC2NetworkInterface, RESOURCE_TYPE)

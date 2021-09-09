@@ -162,3 +162,5 @@
     - RD-3082: Handle multiple ec2 instances per node instance.
 2.12.7:
     - RD-2921: Attach ENI instances on scale to single unscaled instance.
+2.12.8:
+    - RD-2921: Detach ENI instances on scale down from single instance.
