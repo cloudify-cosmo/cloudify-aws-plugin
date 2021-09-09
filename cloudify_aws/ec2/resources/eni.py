@@ -57,7 +57,7 @@ class EC2NetworkInterface(EC2Base):
             resources = \
                 self.client.describe_network_interfaces(**params)
         except ClientError:
-            pass
+            return
         return resources.get(NETWORKINTERFACES)[0] if resources else None
 
     @property
