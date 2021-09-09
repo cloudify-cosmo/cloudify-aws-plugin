@@ -88,8 +88,3 @@ class EC2Base(AWSResourceBase):
         if valid_zones and len(valid_zones) >= 1:
             return valid_zones[0]
         return None
-
-    def get_client_calls_spec(self):
-        for call in self.client_calls():
-            inspect(call)
-            # Gets all arguments and their defaults for all of the client calls.

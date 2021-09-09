@@ -214,7 +214,8 @@ class TestEC2NetworkInterface(TestBase):
             self.assertEqual(self.eni.resource_id,
                              'eni')
 
-    def test_attach(self):
+    @patch('cloudify_aws.ec2.resources.eni.get_attached_instance_id')
+    def test_attach(self, *_):
         ctx = self.get_mock_ctx("NetworkInterface")
         self.eni.resource_id = 'eni'
         config = {ATTACHMENT_ID: 'eni-attach'}
@@ -224,7 +225,8 @@ class TestEC2NetworkInterface(TestBase):
         self.assertEqual(self.eni.resource_id,
                          'eni')
 
-    def test_attach_with_relationships(self):
+    @patch('cloudify_aws.ec2.resources.eni.get_attached_instance_id')
+    def test_attach_with_relationships(self, *_):
         ctx = self.get_mock_ctx("NetworkInterface",
                                 type_hierarchy=[INSTANCE_TYPE_DEPRECATED])
         config = {ATTACHMENT_ID: 'eni-attach'}

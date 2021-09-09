@@ -106,16 +106,9 @@ class EC2Instances(EC2Base):
             return None
         return props['State']['Code']
 
-    @property
-    def client_calls(self):
-        return {
-            'describe': 'describe_instances',
-            'create': 'run_instances'
-        }
-
     def describe(self, params):
         try:
-            return self.make_client_call(self.client_calls['describe'], params)
+            return self.make_client_call('describe_instances', params)
         except NonRecoverableError:
             return {}
 
@@ -123,7 +116,7 @@ class EC2Instances(EC2Base):
         '''
             Create AWS EC2 Instances.
         '''
-        return self.make_client_call(self.client_calls['create'], params)
+        return self.make_client_call('run_instances', params)
 
     def start(self, params):
         '''

@@ -214,15 +214,19 @@ def attach(ctx, iface, resource_config, **_):
     if not eni_id:
         eni_id = iface.resource_id
 
-    device_index = ctx.instance.runtime_properties.get('device_index', 1)
+    device_index = params.get(
+        'DeviceIndex') or ctx.instance.runtime_properties.get(
+        'device_index', 1)
     ctx.instance.runtime_properties['device_index'] = device_index
 
     params.update({NETWORKINTERFACE_ID: eni_id})
     params.update({'DeviceIndex': device_index})
-
     instance_id = get_attached_instance_id(params)
     if not instance_id:
         return
+    params[INSTANCE_ID] = instance_id
+    if SUBNET_ID in params:
+        del params[SUBNET_ID]
 
     # Actually attach the resources
     eni_attachment_id = iface.attach(params)
@@ -260,7 +264,8 @@ def get_attached_instance_id(params):
     instance_id = params.get(INSTANCE_ID)
     if not instance_id:
         targ = \
-            utils.find_rel_by_node_type(_ctx.instance, INSTANCE_TYPE_DEPRECATED)
+            utils.find_rel_by_node_type(_ctx.instance,
+                                        INSTANCE_TYPE_DEPRECATED)
         if targ:
             return targ.target.instance.runtime_properties.get(
                 EXTERNAL_RESOURCE_ID)
@@ -292,4 +297,3 @@ def get_attached_instance_id(params):
                       'and no single existing EC2 Instance has a relationship '
                       'to the current ENI node. '
                       'Not performing attach operation.')
-
