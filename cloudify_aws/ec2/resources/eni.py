@@ -19,9 +19,11 @@
 # Boto
 from botocore.exceptions import ClientError
 
+from cloudify import ctx as _ctx
+
 # Cloudify
-from cloudify_aws.common import decorators, utils
 from cloudify_aws.ec2 import EC2Base
+from cloudify_aws.common import decorators, utils
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
 
 RESOURCE_TYPE = 'EC2 Network Interface'
@@ -212,25 +214,19 @@ def attach(ctx, iface, resource_config, **_):
     if not eni_id:
         eni_id = iface.resource_id
 
-    device_index = ctx.instance.runtime_properties.get('device_index', 1)
+    device_index = params.get(
+        'DeviceIndex') or ctx.instance.runtime_properties.get(
+        'device_index', 1)
     ctx.instance.runtime_properties['device_index'] = device_index
 
     params.update({NETWORKINTERFACE_ID: eni_id})
     params.update({'DeviceIndex': device_index})
-
-    instance_id = params.get(INSTANCE_ID)
+    instance_id = get_attached_instance_id(params)
     if not instance_id:
-        targ = \
-            utils.find_rel_by_node_type(ctx.instance, INSTANCE_TYPE_DEPRECATED)
-
-        # Attempt to use the SUBNET ID from parameters.
-        # Fallback to connected SUBNET.
-        if not targ:
-            return
-
-        params[INSTANCE_ID] = \
-            instance_id or \
-            targ.target.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
+        return
+    params[INSTANCE_ID] = instance_id
+    if SUBNET_ID in params:
+        del params[SUBNET_ID]
 
     # Actually attach the resources
     eni_attachment_id = iface.attach(params)
@@ -261,3 +257,43 @@ def modify_network_interface_attribute(ctx, iface, resource_config, **_):
             NETWORKINTERFACE_ID, iface.resource_id)
     params[NETWORKINTERFACE_ID] = eni_id
     iface.modify_network_interface_attribute(params)
+
+
+def get_attached_instance_id(params):
+    # Maybe the user passed an instance ID.
+    instance_id = params.get(INSTANCE_ID)
+    if not instance_id:
+        targ = \
+            utils.find_rel_by_node_type(_ctx.instance,
+                                        INSTANCE_TYPE_DEPRECATED)
+        if targ:
+            return targ.target.instance.runtime_properties.get(
+                EXTERNAL_RESOURCE_ID)
+
+    # Maybe the we have a started EC2 Instance
+    instances = utils.get_node_instances_by_type_related_to_node_name(
+        _ctx.node.id,
+        'cloudify.nodes.aws.ec2.Instances',
+        _ctx.deployment.id
+    )
+
+    if len(instances) == 1:
+        if instances[0]['node_instance'].state == 'started':
+            instance_id = instances[0]['node_instance'].runtime_properties.get(
+                EXTERNAL_RESOURCE_ID)
+        elif instances[0]['node'].properties['use_external_resource']:
+            instance_id = instances[0]['node'].properties.get('resource_id')
+        if instance_id:
+            _ctx.logger.info(
+                'A single EC2 Instance node instance '
+                'is connected to the nic and is in started state. '
+                'Attaching instance_id {instance} to ENI.'.format(
+                    instance=instance_id)
+            )
+            return instance_id
+
+    _ctx.logger.error('No instance ID provided in resource config, '
+                      'no relationship to EC2 instance provided, '
+                      'and no single existing EC2 Instance has a relationship '
+                      'to the current ENI node. '
+                      'Not performing attach operation.')
