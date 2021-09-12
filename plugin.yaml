@@ -3,7 +3,7 @@ plugins:
   aws:
     executor: central_deployment_agent
     package_name: cloudify-aws-plugin
-    package_version: '2.12.8'
+    package_version: '2.12.9'
 
 data_types:
 
@@ -1335,6 +1335,13 @@ node_types:
       <<: *external_resource
       <<: *client_config
       <<: *resource_id
+      policy_arns:
+        description: >
+          List of ARN policies to be provided.
+          The list needs to contain dictionaries containing a single ARN
+          policy with the key 'PolicyArn'
+        type: list
+        default: []
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
