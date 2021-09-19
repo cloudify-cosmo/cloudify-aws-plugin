@@ -21,6 +21,7 @@
 import os
 import json
 from base64 import b64encode
+from inspect import signature
 from collections import defaultdict
 
 # Third Party imports
@@ -66,6 +67,15 @@ GROUP_TYPE = 'cloudify.nodes.aws.ec2.SecurityGroup'
 NETWORK_INTERFACE_TYPE = 'cloudify.nodes.aws.ec2.Interface'
 
 
+def generate_resource_config(resource_function, use_default_inputs=True):
+    default_inputs = {}
+    # signature = signature(resource_function)
+    resource_config = {}
+    if use_default_inputs:
+        resource_config.update(default_inputs)
+    return resource_config
+
+
 class EC2Instances(EC2Base):
     '''
         EC2 Instances interface
@@ -77,6 +87,101 @@ class EC2Instances(EC2Base):
     def prepare_instance_ids_request(self, params=None):
         params = params or {}
         return {INSTANCE_IDS: params.get(INSTANCE_IDS, [self.resource_id])}
+
+    @property
+    def cloudify_node_type(self):
+        return 'cloudify.nodes.aws.ec2.Instances'
+
+    @property
+    def cloudify_node_type_derivation(self):
+        return 'cloudify.nodes.Root'
+
+    @property
+    def cloudify_node_properties(self):
+        node_properties = {
+            'use_external_resource': {
+                'type': bool,
+                'description': 'Indicate whether the resource exists or if '
+                               'Cloudify should create the resource, true if '
+                               'you are bringing an existing resource, false '
+                               'if you want cloudify to create it.',
+                'default': False
+            },
+            'resource_id': {
+                'type': str,
+                'description': 'The AWS resource ID of the external resource, '
+                               'if use_external_resource is true. Otherwise '
+                               'it is an empty string.',
+                'default': ''
+            },
+            'client_config': {
+                'type': dict,
+                'description': 'A dictionary of values to pass to '
+                               'authenticate with the AWS API.',
+                'default': {}
+            },
+        }
+        if self._cloudify_node_type_properties:
+            node_properties.update(self._cloudify_node_type_properties)
+        return node_properties
+
+    @property
+    def _cloudify_node_type_properties(self):
+        return {
+            'cloudify_tagging': {
+                'type': bool,
+                'description': 'Generate unique tag to identify ec2 instance.',
+                'default': False
+            },
+            'use_ipv6_ip': {
+                'type': bool,
+                'description': 'Tells us to use the IPv6 IP if one exists for '
+                               'agent installation. If use_public_ip is '
+                               'provided, this is overridden.',
+                'default': False
+            },
+            'use_public_ip': {
+                'type': bool,
+                'description': 'Tells the deployment to use the public IP '
+                               '(if available) of the resource for Cloudify '
+                               'Agent connections',
+                'default': False
+            },
+            'use_password': {
+                'type': bool,
+                'description': 'Whether to use a password for agent '
+                               'communication.',
+                'default': False
+            },
+        }
+
+    def cloudify_interfaces_lifecycle_create(self):
+        return
+
+    def cloudify_interfaces_lifecycle_operations(self):
+        return  {
+            'precreate': None,
+            'get': {
+                'client_call': 'describe_instances',
+            },
+            'create': {
+                'client_call': 'run_instances',
+                'client_call_args': generate_resource_config(
+                    getattr(self.client, 'run_instances'))
+            },
+            'preconfigure': None,
+            'configure': None,
+            'postconfigure': None,
+            'start': None,
+            'poststart': None,
+            'prestop': None,
+            'stop': None,
+            'unlink': None,
+            'delete': {
+                'client_call': 'terminate_instances',
+            },
+            'postdelete': None,
+        }
 
     @property
     def instance_ids_request(self):
@@ -165,7 +270,8 @@ def create(ctx, iface, resource_config, **kwargs):
     '''Creates AWS EC2 Instances'''
 
     params = utils.clean_params(
-        dict() if not resource_config else resource_config.copy())
+        dict() if not resource_config else resource_config.copy()
+    )
     handle_userdata(params)
     assign_subnet_param(params)
     assign_groups_param(params)
