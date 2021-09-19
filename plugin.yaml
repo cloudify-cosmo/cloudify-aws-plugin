@@ -1,5 +1,4 @@
 plugins:
-
   aws:
     executor: central_deployment_agent
     package_name: cloudify-aws-plugin
