@@ -275,7 +275,7 @@ commands:
           command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/latest.zip
       - attach_workspace:
           at: workspace
-      - run: ecosystem-test package-release
+      - run: ecosystem-test package-release cloudify-aws-plugin
 
   merge_docs:
     steps:
