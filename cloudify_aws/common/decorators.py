@@ -49,21 +49,25 @@ def _wait_for_status(kwargs,
                      status_pending,
                      status_good,
                      fail_on_missing):
+    """
+
+    @param kwargs:
+    @param _ctx:
+    @param _operation:
+    @param function:
+    @param status_pending:
+    @param status_good: the desirable status
+    @param fail_on_missing:
+    @return:
+    """
     _, _, _, operation_name = _operation.name.split('.')
     resource_type = kwargs.get('resource_type', 'AWS Resource')
     iface = kwargs['iface']
     # Run the operation if this is the first pass
     if _operation.retry_number == 0:
         function(**kwargs)
-        # issue 128 and issue 129
-        # by updating iface object with actual details from the
-        # AWS response assuming that actual state is available
-        # at ctx.instance.runtime_properties['create_response']
-        # and ctx.instance.runtime_properties[EXT_RES_ID]
-        # correctly updated after creation
 
-        # At first let's verify was a new AWS resource
-        # really created
+        # At first let's verify a new AWS resource was really created
         if iface.resource_id != _ctx.instance.runtime_properties.get(
                 EXT_RES_ID):
             # Assuming new resource was really created,
@@ -74,6 +78,10 @@ def _wait_for_status(kwargs,
 
     # Get a resource interface and query for the status
     status = iface.status
+    if status is None and resource_type is "EC2 Internet Gateway":
+        raise OperationRetry(
+            '%s is still in a pending state.'
+            % (resource_type, iface.resource_id))
     ctx.logger.debug('%s ID# "%s" reported status: %s'
                      % (resource_type, iface.resource_id, status))
     if status_pending and status in status_pending:
