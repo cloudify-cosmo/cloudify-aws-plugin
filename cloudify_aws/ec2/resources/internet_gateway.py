@@ -27,7 +27,7 @@ from cloudify_aws.common.constants import (
     TAG_SPECIFICATIONS_KWARG
     )
 
-RESOURCE_TYPE = 'EC2 Internet Gateway Bucket'
+RESOURCE_TYPE = 'EC2 Internet Gateway'
 INTERNETGATEWAYS = 'InternetGateways'
 INTERNETGATEWAY_ID = 'InternetGatewayId'
 INTERNETGATEWAY_IDS = 'InternetGatewayIds'
