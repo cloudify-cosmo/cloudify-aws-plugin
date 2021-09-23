@@ -85,8 +85,11 @@ class NodeTypeInterface(object):
         self.node_interface_implementation = node_interface_implementation
         self.node_interface_executor = \
             node_interface_executor or 'central_deployment_agent'
-        self._node_interface_inputs = node_interface_inputs
-        self._common_node_interface_inputs = []
+        self._node_interface_inputs = node_interface_inputs or {}
+
+    @property
+    def _common_node_interface_inputs(self):
+        raise NotImplementedError('Must be implemented by subclass.')
 
     @property
     def node_interface_inputs(self):
@@ -114,14 +117,14 @@ class CloudifyAWSNodeInterface(NodeTypeInterface):
         return [
             NodeInterfaceInput(
                 'aws_resource_id',
-                str,
+                'string',
                 'This overrides the resource_id property '
                 '(useful for setting the resource ID of a '
                 'node instance at runtime).',
             ),
             NodeInterfaceInput(
                 'runtime_properties',
-                dict,
+                'dict',
                 'This overrides any runtime property at '
                 'runtime. This is a key-value pair / '
                 'dictionary that will be passed, as-is, to '
@@ -130,14 +133,14 @@ class CloudifyAWSNodeInterface(NodeTypeInterface):
             ),
             NodeInterfaceInput(
                 'force_operation',
-                bool,
+                'boolean',
                 'Forces the current operation to be executed '
                 'regardless if the "use_external_resource" '
                 'property is set or not.',
             ),
             NodeInterfaceInput(
                 'resource_config',
-                dict,
+                'dict',
                 'Configuration key-value data to be passed '
                 'as-is to the corresponding Boto3 method. Key '
                 'names must match the case that Boto3 '
@@ -168,16 +171,19 @@ class CloudifyPluginSpec(object):
                  cloudify_node_type_name=None,
                  cloudify_node_type_parent=None,
                  cloudify_node_type_relationships=None,
-                 **kwargs):
-        self.cloudify_node_type_name = cloudify_node_type_name
+                 **_):
+        self._cloudify_node_type_name = cloudify_node_type_name
         self.cloudify_node_type_parent = cloudify_node_type_parent
         self._cloudify_node_type_properties = None
         self._cloudify_node_type_relationships = \
             cloudify_node_type_relationships
-        self.default_cloudify_node_properties = [
+
+    @property
+    def default_cloudify_node_properties(self):
+        return [
             NodeProperty(
                 'use_external_resource',
-                bool,
+                'boolean',
                 'Indicate whether the resource exists or if '
                 'Cloudify should create the resource, true if '
                 'you are bringing an existing resource, false '
@@ -186,13 +192,20 @@ class CloudifyPluginSpec(object):
             ),
             NodeProperty(
                 'resource_id',
-                str,
+                'string',
                 'The AWS resource ID of the external resource, '
                 'if use_external_resource is true. Otherwise '
                 'it is an empty string.',
                 cloudify_node_property_default='',
             ),
         ]
+
+    @property
+    def cloudify_node_type_name(self):
+        if self._cloudify_node_type_name:
+            return self._cloudify_node_type_name
+        raise RuntimeError(
+            'Class does not have definition of _cloudify_node_type_name')
 
     @property
     def default_relationships(self):
@@ -340,16 +353,16 @@ class CloudifyPluginSpec(object):
         }
 
     def to_yaml(self):
-        return yaml.dump(self.to_dict(), allow_unicode=True)
+        return yaml.dump(self.to_dict(), sort_keys=False)
 
 
-class CloudifyAWSPluginSpec(CloudifyPluginSpec):
+class CloudifyAWSPluginSpecMixin(CloudifyPluginSpec):
 
     @property
-    def client_config(self):
+    def client_config_node_property(self):
         return NodeProperty(
             'client_config',
-            dict,
+            'dict',
             'A dictionary of values to pass to authenticate with the AWS API.',
             {}
         )

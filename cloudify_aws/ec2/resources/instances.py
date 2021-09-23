@@ -75,7 +75,7 @@ def generate_resource_config(resource_function, use_default_inputs=True):
     return resource_config
 
 
-class EC2Instances(EC2Base, spec.CloudifyAWSPluginSpec):
+class EC2Instances(EC2Base, spec.CloudifyAWSPluginSpecMixin):
     '''
         EC2 Instances interface
     '''
@@ -88,37 +88,37 @@ class EC2Instances(EC2Base, spec.CloudifyAWSPluginSpec):
         return {INSTANCE_IDS: params.get(INSTANCE_IDS, [self.resource_id])}
 
     @property
-    def cloudify_node_type(self):
+    def cloudify_node_type_name(self):
         return 'cloudify.nodes.aws.ec2.Instances'
 
     @property
-    def cloudify_node_type_derivation(self):
-        return 'cloudify.nodes.Root'
+    def cloudify_node_type_parent(self):
+        return 'cloudify.nodes.Compute'
 
     @property
     def _cloudify_node_type_properties(self):
         return {
             'cloudify_tagging': {
-                'type': bool,
+                'type': 'boolean',
                 'description': 'Generate unique tag to identify ec2 instance.',
                 'default': False
             },
             'use_ipv6_ip': {
-                'type': bool,
+                'type': 'boolean',
                 'description': 'Tells us to use the IPv6 IP if one exists for '
                                'agent installation. If use_public_ip is '
                                'provided, this is overridden.',
                 'default': False
             },
             'use_public_ip': {
-                'type': bool,
+                'type': 'boolean',
                 'description': 'Tells the deployment to use the public IP '
                                '(if available) of the resource for Cloudify '
                                'Agent connections',
                 'default': False
             },
             'use_password': {
-                'type': bool,
+                'type': 'boolean',
                 'description': 'Whether to use a password for agent '
                                'communication.',
                 'default': False
@@ -128,16 +128,20 @@ class EC2Instances(EC2Base, spec.CloudifyAWSPluginSpec):
     @property
     def install_workflow_node_interfaces(self):
         interfaces = {}
-        interfaces.update(**self.cloudify_interfaces_lifecycle_create)
-        interfaces.update(**self.cloudify_interfaces_lifecycle_configure)
-        interfaces.update(**self.cloudify_interfaces_lifecycle_start)
+        interfaces.update(
+            **self.cloudify_interfaces_lifecycle_create.to_dict())
+        interfaces.update(
+            **self.cloudify_interfaces_lifecycle_configure.to_dict())
+        interfaces.update(
+            **self.cloudify_interfaces_lifecycle_start.to_dict())
         return interfaces
 
     @property
     def uninstall_workflow_node_interfaces(self):
         interfaces = {}
-        interfaces.update(**self.cloudify_interfaces_lifecycle_stop)
-        interfaces.update(**self.cloudify_interfaces_lifecycle_delete)
+        interfaces.update(**self.cloudify_interfaces_lifecycle_stop.to_dict())
+        interfaces.update(
+            **self.cloudify_interfaces_lifecycle_delete.to_dict())
         return interfaces
 
     @property
@@ -147,29 +151,34 @@ class EC2Instances(EC2Base, spec.CloudifyAWSPluginSpec):
         interfaces.update(**self.install_workflow_node_interfaces)
         interfaces.update(**self.uninstall_workflow_node_interfaces)
         interfaces.update(
-            **self.cloudify_interfaces_lifecycle_modify_instance_attribute)
+            **self.modify_instance_attribute_interface.to_dict())
         return interfaces
 
     @property
     def cloudify_interfaces_lifecycle_configure(self):
-        return spec.CloudifyAWSNodeInterface('configure', create)
+        return spec.CloudifyAWSNodeInterface(
+            'configure', 'cloudify_aws.resources.ec2.instances.create')
 
     @property
     def cloudify_interfaces_lifecycle_start(self):
-        return spec.CloudifyAWSNodeInterface('start', start)
+        return spec.CloudifyAWSNodeInterface(
+            'start', 'cloudify_aws.resources.ec2.instances.start')
 
     @property
     def cloudify_interfaces_lifecycle_stop(self):
-        return spec.CloudifyAWSNodeInterface('stop', stop)
+        return spec.CloudifyAWSNodeInterface(
+            'stop', 'cloudify_aws.resources.ec2.instances.stop')
 
     @property
     def cloudify_interfaces_lifecycle_delete(self):
-        return spec.CloudifyAWSNodeInterface('delete', delete)
+        return spec.CloudifyAWSNodeInterface(
+            'delete', 'cloudify_aws.resources.ec2.instances.delete')
 
     @property
-    def cloudify_interfaces_lifecycle_modify_instance_attribute(self):
+    def modify_instance_attribute_interface(self):
         return spec.CloudifyAWSNodeInterface(
-            'modify_instance_attribute', modify_instance_attribute)
+            'modify_instance_attribute',
+            'cloudify_aws.resources.ec2.instances.modify_instance_attribute')
 
     @property
     def instance_ids_request(self):

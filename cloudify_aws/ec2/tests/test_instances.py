@@ -366,6 +366,225 @@ class TestEC2Instances(TestBase):
                           instances.sort_devices(test_devices)]
         self.assertEqual(['0', '1', '2', '3'], sorted_devices)
 
+    def test_cloudify_node_type(self):
+        expected_node_type_string = """cloudify.nodes.aws.ec2.Instances:
+  derived_from: cloudify.nodes.Compute
+  properties:
+    client_config:
+      type: dict
+      description: A dictionary of values to pass to authenticate with the AWS API.
+      default: {}
+      required: false
+    use_external_resource:
+      type: boolean
+      description: Indicate whether the resource exists or if Cloudify should create
+        the resource, true if you are bringing an existing resource, false if you
+        want cloudify to create it.
+      default: false
+      required: false
+    resource_id:
+      type: string
+      description: The AWS resource ID of the external resource, if use_external_resource
+        is true. Otherwise it is an empty string.
+      default: ''
+      required: false
+    cloudify_tagging:
+      type: boolean
+      description: Generate unique tag to identify ec2 instance.
+      default: false
+    use_ipv6_ip:
+      type: boolean
+      description: Tells us to use the IPv6 IP if one exists for agent installation.
+        If use_public_ip is provided, this is overridden.
+      default: false
+    use_public_ip:
+      type: boolean
+      description: Tells the deployment to use the public IP (if available) of the
+        resource for Cloudify Agent connections
+      default: false
+    use_password:
+      type: boolean
+      description: Whether to use a password for agent communication.
+      default: false
+  interfaces:
+    create:
+      implementation: null
+      executor: central_deployment_agent
+      inputs:
+        aws_resource_id:
+          type: string
+          description: This overrides the resource_id property (useful for setting
+            the resource ID of a node instance at runtime).
+          default: null
+          required: false
+        runtime_properties:
+          type: dict
+          description: This overrides any runtime property at runtime. This is a key-value
+            pair / dictionary that will be passed, as-is, to the runtime properties
+            of the running instance.
+          default: null
+          required: false
+        force_operation:
+          type: boolean
+          description: Forces the current operation to be executed regardless if the
+            "use_external_resource" property is set or not.
+          default: null
+          required: false
+        resource_config:
+          type: dict
+          description: Configuration key-value data to be passed as-is to the corresponding
+            Boto3 method. Key names must match the case that Boto3 requires.
+          default: null
+          required: false
+    configure:
+      implementation: cloudify_aws.resources.ec2.instances.create
+      executor: central_deployment_agent
+      inputs:
+        aws_resource_id:
+          type: string
+          description: This overrides the resource_id property (useful for setting
+            the resource ID of a node instance at runtime).
+          default: null
+          required: false
+        runtime_properties:
+          type: dict
+          description: This overrides any runtime property at runtime. This is a key-value
+            pair / dictionary that will be passed, as-is, to the runtime properties
+            of the running instance.
+          default: null
+          required: false
+        force_operation:
+          type: boolean
+          description: Forces the current operation to be executed regardless if the
+            "use_external_resource" property is set or not.
+          default: null
+          required: false
+        resource_config:
+          type: dict
+          description: Configuration key-value data to be passed as-is to the corresponding
+            Boto3 method. Key names must match the case that Boto3 requires.
+          default: null
+          required: false
+    start:
+      implementation: cloudify_aws.resources.ec2.instances.start
+      executor: central_deployment_agent
+      inputs:
+        aws_resource_id:
+          type: string
+          description: This overrides the resource_id property (useful for setting
+            the resource ID of a node instance at runtime).
+          default: null
+          required: false
+        runtime_properties:
+          type: dict
+          description: This overrides any runtime property at runtime. This is a key-value
+            pair / dictionary that will be passed, as-is, to the runtime properties
+            of the running instance.
+          default: null
+          required: false
+        force_operation:
+          type: boolean
+          description: Forces the current operation to be executed regardless if the
+            "use_external_resource" property is set or not.
+          default: null
+          required: false
+        resource_config:
+          type: dict
+          description: Configuration key-value data to be passed as-is to the corresponding
+            Boto3 method. Key names must match the case that Boto3 requires.
+          default: null
+          required: false
+    stop:
+      implementation: cloudify_aws.resources.ec2.instances.stop
+      executor: central_deployment_agent
+      inputs:
+        aws_resource_id:
+          type: string
+          description: This overrides the resource_id property (useful for setting
+            the resource ID of a node instance at runtime).
+          default: null
+          required: false
+        runtime_properties:
+          type: dict
+          description: This overrides any runtime property at runtime. This is a key-value
+            pair / dictionary that will be passed, as-is, to the runtime properties
+            of the running instance.
+          default: null
+          required: false
+        force_operation:
+          type: boolean
+          description: Forces the current operation to be executed regardless if the
+            "use_external_resource" property is set or not.
+          default: null
+          required: false
+        resource_config:
+          type: dict
+          description: Configuration key-value data to be passed as-is to the corresponding
+            Boto3 method. Key names must match the case that Boto3 requires.
+          default: null
+          required: false
+    delete:
+      implementation: cloudify_aws.resources.ec2.instances.delete
+      executor: central_deployment_agent
+      inputs:
+        aws_resource_id:
+          type: string
+          description: This overrides the resource_id property (useful for setting
+            the resource ID of a node instance at runtime).
+          default: null
+          required: false
+        runtime_properties:
+          type: dict
+          description: This overrides any runtime property at runtime. This is a key-value
+            pair / dictionary that will be passed, as-is, to the runtime properties
+            of the running instance.
+          default: null
+          required: false
+        force_operation:
+          type: boolean
+          description: Forces the current operation to be executed regardless if the
+            "use_external_resource" property is set or not.
+          default: null
+          required: false
+        resource_config:
+          type: dict
+          description: Configuration key-value data to be passed as-is to the corresponding
+            Boto3 method. Key names must match the case that Boto3 requires.
+          default: null
+          required: false
+    modify_instance_attribute:
+      implementation: cloudify_aws.resources.ec2.instances.modify_instance_attribute
+      executor: central_deployment_agent
+      inputs:
+        aws_resource_id:
+          type: string
+          description: This overrides the resource_id property (useful for setting
+            the resource ID of a node instance at runtime).
+          default: null
+          required: false
+        runtime_properties:
+          type: dict
+          description: This overrides any runtime property at runtime. This is a key-value
+            pair / dictionary that will be passed, as-is, to the runtime properties
+            of the running instance.
+          default: null
+          required: false
+        force_operation:
+          type: boolean
+          description: Forces the current operation to be executed regardless if the
+            "use_external_resource" property is set or not.
+          default: null
+          required: false
+        resource_config:
+          type: dict
+          description: Configuration key-value data to be passed as-is to the corresponding
+            Boto3 method. Key names must match the case that Boto3 requires.
+          default: null
+          required: false
+"""  # noqa
+        # raise Exception(self.instances.to_yaml())
+        self.assertEqual(expected_node_type_string, self.instances.to_yaml())
+
 
 if __name__ == '__main__':
     unittest.main()
