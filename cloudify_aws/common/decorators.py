@@ -63,36 +63,29 @@ def _wait_for_status(kwargs,
     _, _, _, operation_name = _operation.name.split('.')
     resource_type = kwargs.get('resource_type', 'AWS Resource')
     iface = kwargs['iface']
-    # Run the operation if this is the first pass
-    if _operation.retry_number == 0:
+    # Run the operation if this is the resource has not been created yet
+    if not iface.resource_id:
         function(**kwargs)
-
-        # At first let's verify a new AWS resource was really created
-        if iface.resource_id != _ctx.instance.runtime_properties.get(
-                EXT_RES_ID):
-            # Assuming new resource was really created,
-            # so updating iface object
-            iface.resource_id = _ctx.instance.runtime_properties.get(
-                EXT_RES_ID)
-            utils.update_resource_id(ctx.instance, iface.resource_id)
+        # Let's verify a new AWS resource was really created
+        if not iface.resource_id:
+            raise OperationRetry("Resource not created, trying again")
 
     # Get a resource interface and query for the status
     status = iface.status
-    if status is None and resource_type is "EC2 Internet Gateway":
-        raise OperationRetry(
-            '%s is still in a pending state.'
-            % (resource_type, iface.resource_id))
     ctx.logger.debug('%s ID# "%s" reported status: %s'
                      % (resource_type, iface.resource_id, status))
+    if operation_name in ['create', 'configure']:
+        if not status and fail_on_missing:
+            raise OperationRetry('Fail on missing is true,'
+                                 'but this is a create operation. it should '
+                                 'always succeed')
+        elif status_good and status in status_good:
+            _ctx.instance.runtime_properties['create_response'] = \
+                utils.JsonCleanuper(iface.properties).to_dict()
     if status_pending and status in status_pending:
         raise OperationRetry(
             '%s ID# "%s" is still in a pending state.'
             % (resource_type, iface.resource_id))
-
-    elif status_good and status in status_good:
-        if operation_name in ['create', 'configure']:
-            _ctx.instance.runtime_properties['create_response'] = \
-                utils.JsonCleanuper(iface.properties).to_dict()
 
     elif not status and fail_on_missing:
         sleep(.5)
@@ -105,6 +98,8 @@ def _wait_for_status(kwargs,
         raise NonRecoverableError(
             '%s ID# "%s" reported an unexpected status: "%s"'
             % (resource_type, iface.resource_id, status))
+
+    ctx.logger.warn("Resource was created but no good status reached.")
 
 
 def aws_relationship(class_decl=None,
