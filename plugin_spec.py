@@ -8,7 +8,9 @@ SUPPORTED_TYPES = [EC2Instances]
 mock_ctx = MockNodeContext(
     'mock',
     {
-        'region_name': 'us-east-1',
+        'client_config': {
+            'region_name': 'us-east-1',
+        }
     }
 )
 current_ctx.set(mock_ctx)
