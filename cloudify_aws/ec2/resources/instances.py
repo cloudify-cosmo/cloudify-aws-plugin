@@ -66,15 +66,6 @@ GROUP_TYPE = 'cloudify.nodes.aws.ec2.SecurityGroup'
 NETWORK_INTERFACE_TYPE = 'cloudify.nodes.aws.ec2.Interface'
 
 
-def generate_resource_config(resource_function, use_default_inputs=True):
-    default_inputs = {}
-    # signature = signature(resource_function)
-    resource_config = {}
-    if use_default_inputs:
-        resource_config.update(default_inputs)
-    return resource_config
-
-
 class EC2Instances(EC2Base, spec.CloudifyAWSPluginSpecMixin):
     '''
         EC2 Instances interface
@@ -96,8 +87,17 @@ class EC2Instances(EC2Base, spec.CloudifyAWSPluginSpecMixin):
         return 'cloudify.nodes.Compute'
 
     @property
+    def cloudify_resource_config_docs_link(self):
+        return 'http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.run_instances'  # noqa
+
+    @property
     def _cloudify_node_type_properties(self):
         return {
+            'resource_config': {
+                'type': self.cloudify_resource_config_data_type.name,
+                'description': 'A dictionary of keys.',
+                'required': True,
+            },
             'cloudify_tagging': {
                 'type': 'boolean',
                 'description': 'Generate unique tag to identify ec2 instance.',

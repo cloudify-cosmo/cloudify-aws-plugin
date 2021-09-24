@@ -1,5 +1,24 @@
 import yaml
-from inspect import getfullargspec
+
+from botocore.loaders import create_loader
+
+
+class DataType(object):
+    def __init__(self, name, properties):
+        self.name = name
+        self.properties = properties
+
+    def to_dict(self):
+        return {
+            self.name: {
+                'properties': self.properties
+            }
+        }
+
+    def nested_dict(self):
+        return {
+            self.name: self.properties
+        }
 
 
 class NodeProperty(object):
@@ -321,34 +340,52 @@ class CloudifyPluginSpec(object):
         interfaces.update(**self.uninstall_workflow_node_interfaces)
         return interfaces
 
-    @staticmethod
-    def get_arg_names_and_defaults(method):
-        arg_names_and_defaults = []
-        spec = getfullargspec(method)
-        kwargs_split_index = len(spec.args) - len(spec.defaults)
-        for index in range(0, len(spec.args)):
-            if index < kwargs_split_index:
-                arg_name_and_default = {
-                    spec.args[index]: {
-                        'default': None
-                    }
-                }
-                arg_names_and_defaults.append(arg_name_and_default)
-            else:
-                arg_name_and_default = {
-                    spec.args[index]: {
-                        'default': spec.defaults[index - kwargs_split_index]
-                    }
-                }
-                arg_names_and_defaults.append(arg_name_and_default)
-        return arg_names_and_defaults
+    @property
+    def cloudify_resource_config_data_type(self):
+        raise NotImplementedError('Must be implemented by subclass.')
+
+    @property
+    def cloudify_resource_config_members_data_types(self):
+        raise NotImplementedError('Must be implemented by subclass.')
+
+    @property
+    def cloudify_resource_config_data_types(self):
+        required = self.cloudify_resource_config_members_data_types
+        required.update(**self.cloudify_resource_config_data_type.to_dict())
+        return required
+
+    @property
+    def plugin_name(self):
+        raise NotImplementedError('Must be implemented by subclass.')
+
+    @property
+    def cloudify_plugin_name(self):
+        raise NotImplementedError('Must be implemented by subclass.')
+
+    @property
+    def cloudify_plugin_package_executor(self):
+        raise NotImplementedError('Must be implemented by subclass.')
+
+    @property
+    def cloudify_plugin_package_name(self):
+        raise NotImplementedError('Must be implemented by subclass.')
 
     def to_dict(self):
         return {
-            self.cloudify_node_type_name: {
-                'derived_from': self.cloudify_node_type_parent,
-                'properties': self.cloudify_node_properties,
-                'interfaces': self.cloudify_node_type_interfaces,
+            'plugins': {
+                self.cloudify_plugin_name: {
+                    'executor': self.cloudify_plugin_package_executor,
+                    'package_name': self.cloudify_plugin_package_name,
+                    # 'package_version': self.package_version
+                }
+            },
+            'data_types': self.cloudify_resource_config_data_types,
+            'node_types': {
+                self.cloudify_node_type_name: {
+                    'derived_from': self.cloudify_node_type_parent,
+                    'properties': self.cloudify_node_properties,
+                    'interfaces': self.cloudify_node_type_interfaces,
+                }
             }
         }
 
@@ -359,12 +396,37 @@ class CloudifyPluginSpec(object):
 class CloudifyAWSPluginSpecMixin(CloudifyPluginSpec):
 
     @property
+    def cloudify_plugin_name(self):
+        return 'aws'
+
+    @property
+    def cloudify_plugin_package_name(self):
+        return 'cloudify-aws-plugin'
+
+    @property
+    def cloudify_plugin_package_executor(self):
+        return 'central_deployment_agent'
+
+    @property
+    def cloudify_resource_config_docs_link(self):
+        return ''
+
+    @property
     def client_config_node_property(self):
         return NodeProperty(
             'client_config',
             'dict',
             'A dictionary of values to pass to authenticate with the AWS API.',
             {}
+        )
+
+    @property
+    def client_config(self):
+        return NodeProperty(
+            'resource_config',
+            self.cloudify_resource_config_data_type,
+            self.cloudify_resource_config_docs_link,
+            cloudify_node_property_required=True,
         )
 
     @property
@@ -394,4 +456,53 @@ class CloudifyAWSPluginSpecMixin(CloudifyPluginSpec):
             '    \'create\': self.cloudify_interfaces_lifecycle_stop',
             '    \'start\': self.cloudify_interfaces_lifecycle_delete',
             '}'
+        )
+
+    @property
+    def botocore_service_name(self):
+        return 'ec2'
+
+    @property
+    def botocore_service_type(self):
+        return 'service-2'
+
+    @property
+    def botocore_service_function_name(self):
+        return 'RunInstancesRequest'
+
+    def get_resource_config_data_types(self):
+        resource_config = {}
+
+        loader = create_loader()
+        service_model = loader.load_service_model(
+            self.botocore_service_name, self.botocore_service_type)
+        model = service_model['shapes'][self.botocore_service_function_name]
+
+        for member in model['members']:
+            resource_config.update(
+                DataType(
+                    member,
+                    {'type': model['members'][member]['shape'],
+                     'description': model['members'][member]['documentation'],
+                     'required': member in model['required']}
+                ).nested_dict()
+            )
+        return resource_config
+
+    @property
+    def cloudify_node_type_resource_config_property(self):
+        return NodeProperty(
+            'resource_config', self.cloudify_resource_config_data_type)
+
+    @property
+    def cloudify_resource_config_members_data_types(self):
+        return self.get_resource_config_data_types()
+
+    @property
+    def cloudify_resource_config_data_type(self):
+        return DataType(
+            'cloudify.datatypes.aws.{service}.{function}'.format(
+                service=self.botocore_service_name,
+                function=self.botocore_service_function_name),
+            self.cloudify_resource_config_members_data_types
         )
