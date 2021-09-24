@@ -1126,6 +1126,7 @@ node_types:
             default: null
             required: false
 """  # noqa
+        # TODO: Improve this test.
         self.assertEqual(expected_node_type_string,
                          self.instances.to_yaml())
 

@@ -196,6 +196,7 @@ class CloudifyPluginSpec(object):
         self._cloudify_node_type_properties = None
         self._cloudify_node_type_relationships = \
             cloudify_node_type_relationships
+        # TODO: Add method to set plugin version string.
 
     @property
     def default_cloudify_node_properties(self):
@@ -471,6 +472,8 @@ class CloudifyAWSPluginSpecMixin(CloudifyPluginSpec):
         return 'RunInstancesRequest'
 
     def get_resource_config_data_types(self):
+        # TODO: Convert "shapes" to known YAML/Cloudify types.
+        # TODO: Cleanup Documentation from YAML markup.
         resource_config = {}
 
         loader = create_loader()
@@ -484,8 +487,7 @@ class CloudifyAWSPluginSpecMixin(CloudifyPluginSpec):
                     member,
                     {'type': model['members'][member]['shape'],
                      'description': model['members'][member]['documentation'],
-                     'required': member in model['required']}
-                ).nested_dict()
+                     'required': member in model['required']}).nested_dict()
             )
         return resource_config
 
