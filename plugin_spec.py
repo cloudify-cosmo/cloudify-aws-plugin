@@ -1,11 +1,16 @@
 from yaml import dump
 
 from cloudify.state import current_ctx
-from cloudify.mocks import MockCloudifyContext
+from cloudify.mocks import MockNodeContext
 from cloudify_aws.ec2.resources.instances import EC2Instances
 
 SUPPORTED_TYPES = [EC2Instances]
-mock_ctx = MockCloudifyContext()
+mock_ctx = MockNodeContext(
+    'mock',
+    {
+        'region_name': 'us-east-1',
+    }
+)
 current_ctx.set(mock_ctx)
 
 
