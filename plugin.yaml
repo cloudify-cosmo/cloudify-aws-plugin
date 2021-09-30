@@ -2,7 +2,7 @@ plugins:
   aws:
     executor: central_deployment_agent
     package_name: cloudify-aws-plugin
-    package_version: '2.12.9'
+    package_version: '2.12.10'
 
 data_types:
 
@@ -2225,7 +2225,7 @@ node_types:
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
-        default: false
+        default: true
 
   cloudify.nodes.aws.ec2.Vpc:
     derived_from: cloudify.nodes.aws.ec2.BaseType
@@ -2462,7 +2462,7 @@ node_types:
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
-        default: false
+        default: true
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -3566,7 +3566,7 @@ node_types:
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
-        default: false
+        default: true
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -3604,7 +3604,7 @@ node_types:
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
-        default: false
+        default: true
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding

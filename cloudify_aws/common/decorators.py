@@ -23,7 +23,7 @@ import sys
 from time import sleep
 
 # Third party imports
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 from cloudify import ctx
 from cloudify.decorators import operation
@@ -50,7 +50,6 @@ def _wait_for_status(kwargs,
                      status_good,
                      fail_on_missing):
     """
-
     @param kwargs:
     @param _ctx:
     @param _operation:
@@ -63,16 +62,36 @@ def _wait_for_status(kwargs,
     _, _, _, operation_name = _operation.name.split('.')
     resource_type = kwargs.get('resource_type', 'AWS Resource')
     iface = kwargs['iface']
+    try:
+        resource_id = iface.resource_id
+    except ParamValidationError:
+        resource_id = False
+    try:
+        status = iface.status
+    except ParamValidationError:
+        status = False
+    ctx.logger.info('First1 %s ID# "%s"' % (resource_type, iface.resource_id))
     # Run the operation if this is the resource has not been created yet
-    if not iface.resource_id:
+    if not resource_id or not status:
         function(**kwargs)
         # Let's verify a new AWS resource was really created
-        if not iface.resource_id:
+        ctx.logger.info('after %s ID# "%s" reported status: %s'
+                         % (resource_type, iface.resource_id, iface.status))
+        try:
+            resource_id = iface.resource_id
+        except ParamValidationError:
+            resource_id = False
+        try:
+            status = iface.status
+        except ParamValidationError:
+            status = False
+        if not resource_id or not status:
             raise OperationRetry("Resource not created, trying again")
+        ctx.logger.info("Exiting if statement")
 
     # Get a resource interface and query for the status
     status = iface.status
-    ctx.logger.debug('%s ID# "%s" reported status: %s'
+    ctx.logger.debug('Second %s ID# "%s" reported status: %s'
                      % (resource_type, iface.resource_id, status))
     if operation_name in ['create', 'configure']:
         if not status and fail_on_missing:
