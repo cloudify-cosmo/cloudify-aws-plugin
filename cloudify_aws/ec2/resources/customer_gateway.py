@@ -17,7 +17,7 @@
     AWS EC2 Customer Gateway interface
 """
 # Boto
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Cloudify
 from cloudify_aws.common import decorators, utils
@@ -47,7 +47,7 @@ class EC2CustomerGateway(EC2Base):
         try:
             resources = \
                 self.client.describe_customer_gateways(**params)
-        except ClientError:
+        except (ClientError, ParamValidationError):
             pass
         else:
             return resources.get(CUSTOMERGATEWAYS)[0] if resources else None

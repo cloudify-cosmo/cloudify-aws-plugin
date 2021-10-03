@@ -17,7 +17,7 @@
     AWS EC2 DhcpOptions interface
 """
 # Boto
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Cloudify
 from cloudify_aws.common import decorators, utils
@@ -48,7 +48,7 @@ class EC2DHCPOptions(EC2Base):
         try:
             resources = \
                 self.client.describe_dhcp_options(**params)
-        except ClientError:
+        except (ClientError, ParamValidationError):
             pass
         else:
             return resources.get(DHCPOPTIONS)[0] if resources else None

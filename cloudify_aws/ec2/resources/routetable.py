@@ -17,7 +17,7 @@
     AWS EC2 Route Table interface
 '''
 # Boto
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Cloudify
 from cloudify_aws.common import decorators, utils
@@ -54,7 +54,7 @@ class EC2RouteTable(EC2Base):
         try:
             resources = \
                 self.client.describe_route_tables(**params)
-        except ClientError:
+        except (ClientError, ParamValidationError):
             pass
         else:
             return None if not resources else resources.get(ROUTETABLES)[0]

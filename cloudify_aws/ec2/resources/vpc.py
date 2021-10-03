@@ -17,7 +17,7 @@
     AWS EC2 VPC interface
 '''
 # Third Party imports
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Local imports
 from cloudify_aws.common import decorators, utils
@@ -46,7 +46,7 @@ class EC2Vpc(EC2Base):
         try:
             resources = \
                 self.client.describe_vpcs(**params)
-        except ClientError:
+        except (ClientError, ParamValidationError):
             pass
         else:
             return None if not resources else resources.get(VPCS, [None])[0]

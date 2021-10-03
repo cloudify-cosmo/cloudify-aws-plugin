@@ -17,7 +17,7 @@
     AWS EC2 Internet interface
 '''
 # Boto
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Cloudify
 from cloudify_aws.common import decorators, utils
@@ -51,7 +51,7 @@ class EC2InternetGateway(EC2Base):
         try:
             resources = \
                 self.client.describe_internet_gateways(**params)
-        except ClientError:
+        except (ClientError, ParamValidationError):
             pass
         else:
             return resources.get(INTERNETGATEWAYS)[0] if resources else None

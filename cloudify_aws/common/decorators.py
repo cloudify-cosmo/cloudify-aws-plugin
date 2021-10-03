@@ -55,70 +55,75 @@ def _wait_for_status(kwargs,
     @param _operation:
     @param function:
     @param status_pending:
-    @param status_good: the desirable status
+    @param status_good: the desirable status or nothing
     @param fail_on_missing:
     @return:
     """
+    status_good = status_good or []
+    status_pending = status_pending or []
     _, _, _, operation_name = _operation.name.split('.')
     resource_type = kwargs.get('resource_type', 'AWS Resource')
     iface = kwargs['iface']
-    try:
-        resource_id = iface.resource_id
-    except ParamValidationError:
-        resource_id = False
-    try:
-        status = iface.status
-    except ParamValidationError:
-        status = False
-    ctx.logger.info('First1 %s ID# "%s"' % (resource_type, iface.resource_id))
+
+    resource_id = iface.resource_id
     # Run the operation if this is the resource has not been created yet
-    if not resource_id or not status:
-        function(**kwargs)
+    result = None
+    if not resource_id:
+        result = function(**kwargs)
         # Let's verify a new AWS resource was really created
-        ctx.logger.info('after %s ID# "%s" reported status: %s'
-                         % (resource_type, iface.resource_id, iface.status))
-        try:
-            resource_id = iface.resource_id
-        except ParamValidationError:
-            resource_id = False
-        try:
-            status = iface.status
-        except ParamValidationError:
-            status = False
-        if not resource_id or not status:
+        ctx.logger.info('after %s ID# "%s"' % (resource_type,
+                                               iface.resource_id))
+        ctx.logger.debug("the result of the function call is %s" % result)
+        resource_id = iface.resource_id
+        if not resource_id:
             raise OperationRetry("Resource not created, trying again")
-        ctx.logger.info("Exiting if statement")
 
     # Get a resource interface and query for the status
     status = iface.status
-    ctx.logger.debug('Second %s ID# "%s" reported status: %s'
+    ctx.logger.debug('%s ID# "%s" reported status: %s'
                      % (resource_type, iface.resource_id, status))
-    if operation_name in ['create', 'configure']:
-        if not status and fail_on_missing:
-            raise OperationRetry('Fail on missing is true,'
-                                 'but this is a create operation. it should '
-                                 'always succeed')
-        elif status_good and status in status_good:
-            _ctx.instance.runtime_properties['create_response'] = \
-                utils.JsonCleanuper(iface.properties).to_dict()
-    if status_pending and status in status_pending:
+
+    if status in status_pending:
         raise OperationRetry(
             '%s ID# "%s" is still in a pending state.'
             % (resource_type, iface.resource_id))
 
+    elif status in status_good:
+        _ctx.instance.runtime_properties['create_response'] = \
+            utils.JsonCleanuper(iface.properties).to_dict()
+        return result
+
     elif not status and fail_on_missing:
-        sleep(.5)
+        sleep(0.5)
         if iface.status:
-            return
+            return _wait_for_status(kwargs,
+                                    _ctx,
+                                    _operation,
+                                    function,
+                                    status_pending,
+                                    status_good,
+                                    fail_on_missing)
+
+        if operation_name in ['create', 'configure']:
+            raise OperationRetry('Fail on missing is true,'
+                                 'but this is a create operation. it should '
+                                 'always succeed')
+
         raise NonRecoverableError(
             '%s ID# "%s" no longer exists but "fail_on_missing" set'
             % (resource_type, iface.resource_id))
-    elif status_good and status not in status_good and fail_on_missing:
+
+    elif not status:
+        raise OperationRetry('waiting for operation to succeed')
+
+    elif status not in status_good and fail_on_missing:
         raise NonRecoverableError(
             '%s ID# "%s" reported an unexpected status: "%s"'
             % (resource_type, iface.resource_id, status))
 
+
     ctx.logger.warn("Resource was created but no good status reached.")
+    return result
 
 
 def aws_relationship(class_decl=None,

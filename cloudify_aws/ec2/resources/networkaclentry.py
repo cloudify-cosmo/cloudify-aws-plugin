@@ -17,7 +17,7 @@
     AWS EC2 NetworkAcl Entry interface
 """
 # Boto
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Cloudify
 from cloudify_aws.common import decorators, utils
@@ -46,7 +46,7 @@ class EC2NetworkAclEntry(EC2Base):
     def get_properties_by_filter(self, **filters):
         try:
             resources = self.client.describe_network_acls(**filters)
-        except ClientError:
+        except (ClientError, ParamValidationError):
             pass
         else:
             return resources.get(NETWORKACLS)[0] if resources else None
