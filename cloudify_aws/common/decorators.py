@@ -68,17 +68,34 @@ def _wait_for_status(kwargs,
     resource_id = iface.resource_id
     # Run the operation if this is the resource has not been created yet
     result = None
+    ctx.logger.info("resource id = %s" % resource_id)
+
     if not resource_id:
         result = function(**kwargs)
         # Let's verify a new AWS resource was really created
-        ctx.logger.info('after %s ID# "%s"' % (resource_type,
-                                               iface.resource_id))
+
         ctx.logger.debug("the result of the function call is %s" % result)
-        resource_id = iface.resource_id
-        if not resource_id:
-            raise OperationRetry("Resource not created, trying again")
+        iface_resource_id = iface.resource_id
+        runtime_resource_id = utils.get_resource_id(ctx.node, ctx.instance)
+        if iface_resource_id != runtime_resource_id:
+            if not iface_resource_id and runtime_resource_id:
+                iface.update_resource_id(runtime_resource_id)
+                resource_id = runtime_resource_id
+            elif not runtime_resource_id and iface_resource_id:
+                utils.update_resource_id(ctx.instance, iface_resource_id)
+                resource_id = iface_resource_id
+            elif iface_resource_id and runtime_resource_id:
+                raise NonRecoverableError(
+                    'There are resource IDs for the same resource. This '
+                    'indicates the operation may have run more than once and '
+                    'created multiple resources. '
+                    'Please check your aws account.')
+            else:
+                raise OperationRetry("Resource not created, trying again...")
+        ctx.logger.info('after %s ID# "%s"' % (resource_type, resource_id))
 
     # Get a resource interface and query for the status
+
     status = iface.status
     ctx.logger.debug('%s ID# "%s" reported status: %s'
                      % (resource_type, iface.resource_id, status))
@@ -110,7 +127,7 @@ def _wait_for_status(kwargs,
                                  'always succeed')
 
         raise NonRecoverableError(
-            '%s ID# "%s" no longer exists but "fail_on_missing" set'
+            '%s ID# "%s" no longer exists but "fail_on_missing" set.'
             % (resource_type, iface.resource_id))
 
     elif not status:
@@ -120,7 +137,6 @@ def _wait_for_status(kwargs,
         raise NonRecoverableError(
             '%s ID# "%s" reported an unexpected status: "%s"'
             % (resource_type, iface.resource_id, status))
-
 
     ctx.logger.warn("Resource was created but no good status reached.")
     return result
