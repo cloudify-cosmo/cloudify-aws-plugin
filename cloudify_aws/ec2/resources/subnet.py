@@ -205,10 +205,12 @@ def delete(ctx, iface, resource_config, **_):
             iface.resource_id or \
             ctx.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
 
-    utils.exit_on_substring(iface,
-                            'delete',
-                            params,
-                            'DependencyViolation')
+    utils.handle_response(iface,
+                          'delete',
+                          params,
+                          exit_substrings='NotFound',
+                          raise_substrings='DependencyViolation')
+    ctx.logger.info("handle_response")
 
 
 @decorators.aws_resource(EC2Subnet, RESOURCE_TYPE)

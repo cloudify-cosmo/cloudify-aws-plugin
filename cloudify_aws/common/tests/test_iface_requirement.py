@@ -177,6 +177,8 @@ class testIfaceRequirement(TestBase):
                 return
             elif 'Sent the TransitGatewayVpcAttachment' in str(e):
                 return
+            elif 'Waiting for foo attachment' in str(e):
+                return
             raise
         except AttributeError as e:
             if "no attribute 'node'" not in str(e):

@@ -254,10 +254,10 @@ class TestEC2NetworkInterface(TestBase):
         self.eni.resource_id = 'eni'
         config = {ATTACHMENT_ID: 'eni-attach'}
         iface = MagicMock()
+        iface.attachment = {'Status': 'detached', 'AttachmentId': 'foo'}
         iface.detach = self.mock_return(config)
         eni.detach(ctx, iface, config)
-        self.assertEqual(self.eni.resource_id,
-                         'eni')
+        self.assertEqual(self.eni.resource_id, 'eni')
 
     def test_detach_with_relationships(self):
         ctx = self.get_mock_ctx("NetworkInterface",
@@ -265,11 +265,11 @@ class TestEC2NetworkInterface(TestBase):
         config = {NETWORKINTERFACE_ID: 'eni'}
         self.eni.resource_id = config[NETWORKINTERFACE_ID]
         iface = MagicMock()
+        iface.attachment = {'Status': 'detached', 'AttachmentId': 'foo'}
         iface.detach = self.mock_return(config)
         ctx.instance.runtime_properties['attachment_id'] = 'eni-attach'
         eni.detach(ctx, iface, config)
-        self.assertEqual(self.eni.resource_id,
-                         'eni')
+        self.assertEqual(self.eni.resource_id, 'eni')
 
 
 if __name__ == '__main__':

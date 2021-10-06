@@ -530,7 +530,8 @@ def exit_on_substring(iface,
                       request=None,
                       substrings=None,
                       raisable=OperationRetry):
-    """This method is useful for deleting something that may have already been
+    """
+    This method is useful for deleting something that may have already been
     deleted. We really want to make sure that the resource no longer exists.
 
     :param iface: Resource interface derived from EC2Base.
@@ -565,7 +566,19 @@ def raise_on_substring(iface,
                        request=None,
                        substrings=None,
                        raisable=OperationRetry):
+    """
+    This method is useful for deleting something that might be needed by
+    another node.
+    We really want to make sure that the resource will be deleted once its
+    no longer needed.
 
+    :param iface: Resource interface derived from EC2Base.
+    :param method: The method on the Resource interface object.
+    :param request: The parameters to method.
+    :param substrings: Substrings to look for in the exception.
+    :param raisable: The exception to raise if substrings are found.
+    :return:
+    """
     if isinstance(substrings, text_type):
         substrings = [substrings]
 
@@ -583,6 +596,54 @@ def raise_on_substring(iface,
         if any(substring in message for substring in substrings):
             raise raisable(message)
         return {}
+
+
+def handle_response(iface,
+                    method,
+                    request=None,
+                    exit_substrings=None,
+                    raise_substrings=None,
+                    raisable=OperationRetry):
+    """
+    This method is useful for deleting something that might be needed by
+    another node or might be already free.
+    We really want to make sure that the resource will be deleted once its
+    no longer needed.
+
+    :param iface: Resource interface derived from EC2Base.
+    :param method: The method on the Resource interface object.
+    :param request: The parameters to method.
+    :param exit_substrings: Substrings to look for in the exception.
+                            This substring will cause the method to exit
+    :param raise_substrings: Substrings to look for in the exception.
+                             This substring will cause the method to raise
+                             an exception
+    :param raisable: The exception to raise if substrings are found.
+    :return:
+    """
+    if isinstance(exit_substrings, text_type):
+        exit_substrings = [exit_substrings]
+
+    if isinstance(raise_substrings, text_type):
+        raise_substrings = [raise_substrings]
+
+    callable = getattr(iface, method)
+    try:
+        if request:
+            return callable(request)
+        else:
+            return callable()
+    except (NonRecoverableError, ClientError) as e:
+        if hasattr(e, 'message'):
+            message = e.message
+        else:
+            message = _compat.text_type(e)
+        if any(substring in message for substring in raise_substrings):
+            raise raisable(message)
+        elif any(substring in message for substring in exit_substrings):
+            return
+        else:
+            raise e
 
 
 def with_rest_client(func):

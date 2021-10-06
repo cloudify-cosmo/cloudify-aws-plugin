@@ -162,3 +162,8 @@
     - RD-3082: Handle multiple ec2 instances per node instance.
 2.12.7:
     - RD-2921: Attach ENI instances on scale to single unscaled instance.
+2.12.8:
+    - RD-2921: Detach ENI instances on scale down from single instance.
+2.12.9:
+    - RD-2909: ARN policies can be added as a property at the creation of a deployment.
+    - RD-2945: Subnet on delete will exit of the substring contains "NotFound", and will retry if the substring contains "DependencyViolation".
