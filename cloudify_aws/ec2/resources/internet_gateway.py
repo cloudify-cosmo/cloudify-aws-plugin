@@ -26,6 +26,7 @@ from cloudify_aws.common.constants import (
     EXTERNAL_RESOURCE_ID,
     TAG_SPECIFICATIONS_KWARG
     )
+from cloudify.exceptions import OperationRetry
 
 RESOURCE_TYPE = 'EC2 Internet Gateway'
 INTERNETGATEWAYS = 'InternetGateways'
@@ -113,6 +114,10 @@ def prepare(ctx, resource_config, **_):
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS EC2 Internet Gateway'''
     params = dict() if not resource_config else resource_config.copy()
+    if iface.resource_id and not iface.properties:
+        raise OperationRetry("Create did not succeed, trying again ")
+    elif iface.resource_id:
+        return
     create_response = iface.create(params)['InternetGateway']
     ctx.instance.runtime_properties['create_response'] = \
         utils.JsonCleanuper(create_response).to_dict()
