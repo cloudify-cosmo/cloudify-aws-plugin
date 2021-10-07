@@ -184,8 +184,7 @@ def detach(ctx, iface, resource_config, **_):
     if association_ids and isinstance(association_ids, list):
         for association_id in association_ids:
             params.update({ASSOCIATION_ID: association_id})
-            iface.detach(params)
-    return utils.exit_on_substring(iface=iface,
-                                   method='detach',
-                                   request=params,
-                                   substrings='InvalidAssociationID.NotFound')
+            return utils.exit_on_substring(iface=iface,
+                                           method='detach',
+                                           request=params,
+                                           substrings='InvalidAssociationID.NotFound')
