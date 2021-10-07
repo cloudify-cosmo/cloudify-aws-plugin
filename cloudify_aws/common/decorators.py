@@ -98,6 +98,8 @@ def _wait_for_status(kwargs,
                     ' Please check your aws account.')
             else:
                 raise OperationRetry("Resource not created, trying again...")
+    elif iface.status not in status_good + status_pending:
+        result = function(**kwargs)
 
     ctx.logger.info('after %s ID# "%s"' % (resource_type, resource_id))
 
@@ -108,11 +110,9 @@ def _wait_for_status(kwargs,
                      % (resource_type, iface.resource_id, status))
 
     if iface.status in status_pending:
-        result = function(**kwargs)
-        if iface.status in status_pending:
-            raise OperationRetry(
-                '%s ID# "%s" is still in a pending state.'
-                % (resource_type, iface.resource_id))
+        raise OperationRetry(
+            '%s ID# "%s" is still in a pending state.'
+            % (resource_type, iface.resource_id))
 
     elif iface.status in status_good:
         _ctx.instance.runtime_properties['create_response'] = \
