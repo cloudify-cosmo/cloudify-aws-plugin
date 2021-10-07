@@ -98,9 +98,7 @@ def _wait_for_status(kwargs,
                     ' Please check your aws account.')
             else:
                 raise OperationRetry("Resource not created, trying again...")
-    else:
-        ctx.logger.info("yaniv got to else")
-        result = function(**kwargs)
+
     ctx.logger.info('after %s ID# "%s"' % (resource_type, resource_id))
 
     # Get a resource interface and query for the status
@@ -109,17 +107,19 @@ def _wait_for_status(kwargs,
     ctx.logger.debug('%s ID# "%s" reported status: %s'
                      % (resource_type, iface.resource_id, status))
 
-    if status in status_pending:
-        raise OperationRetry(
-            '%s ID# "%s" is still in a pending state.'
-            % (resource_type, iface.resource_id))
+    if iface.status in status_pending:
+        result = function(**kwargs)
+        if iface.status in status_pending:
+            raise OperationRetry(
+                '%s ID# "%s" is still in a pending state.'
+                % (resource_type, iface.resource_id))
 
-    elif status in status_good:
+    elif iface.status in status_good:
         _ctx.instance.runtime_properties['create_response'] = \
             utils.JsonCleanuper(iface.properties).to_dict()
         return result
 
-    elif not status and fail_on_missing:
+    elif not iface.status and fail_on_missing:
         sleep(0.5)
         if iface.status:
             return _wait_for_status(kwargs,
