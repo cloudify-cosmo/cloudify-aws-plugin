@@ -141,7 +141,6 @@ def delete(iface, resource_config, **_):
 
 
 @decorators.aws_resource(EC2InternetGateway, RESOURCE_TYPE)
-#@decorators.wait_for_status(status_good=['available'])
 def attach(ctx, iface, resource_config, **_):
     '''Attach an AWS EC2 Internet Gateway to a VPC'''
     params = dict() if not resource_config else resource_config.copy()

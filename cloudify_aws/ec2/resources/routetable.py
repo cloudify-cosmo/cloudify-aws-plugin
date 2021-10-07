@@ -187,4 +187,5 @@ def detach(ctx, iface, resource_config, **_):
             return utils.exit_on_substring(iface=iface,
                                            method='detach',
                                            request=params,
-                                           substrings='InvalidAssociationID.NotFound')
+                                           substrings=
+                                           'InvalidAssociationID.NotFound')

@@ -150,6 +150,7 @@ def _wait_for_status(kwargs,
     ctx.logger.warn("Resource was created but no good status reached.")
     return result
 
+
 def aws_relationship(class_decl=None,
                      resource_type='AWS Resource'):
     '''AWS resource decorator'''
