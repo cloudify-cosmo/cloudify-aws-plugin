@@ -222,7 +222,7 @@ def start(ctx, iface, resource_config, **_):
 @decorators.multiple_aws_resource(EC2Instances, RESOURCE_TYPE)
 @decorators.wait_for_status(
     status_good=[STOPPED],
-    status_pending=[PENDING, RUNNING, STOPPING, SHUTTING_DOWN])
+    status_pending=[PENDING, STOPPING, SHUTTING_DOWN])
 def stop(ctx, iface, resource_config, **_):
     '''Stops AWS EC2 Instances'''
 
