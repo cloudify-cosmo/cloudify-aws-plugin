@@ -48,7 +48,9 @@ def _wait_for_status(kwargs,
                      function,
                      status_pending,
                      status_good,
-                     fail_on_missing):
+                     fail_on_missing,
+                     try_for_success=None,
+                     require_status_good=True):
     """
     @param kwargs:
     @param _ctx:
@@ -57,18 +59,24 @@ def _wait_for_status(kwargs,
     @param status_pending:
     @param status_good: the desirable status or nothing
     @param fail_on_missing:
+    @param try_for_success: Ignore fail on missing directive.
+    @param require_status_good: Require that we try for status good.
+      This is really here to force the operation to retry the function again.
     @return:
     """
     status_good = status_good or []
     status_pending = status_pending or []
     _, _, _, operation_name = _operation.name.split('.')
+    try_for_success = try_for_success or operation_name in ['create',
+                                                            'configure']
     resource_type = kwargs.get('resource_type', 'AWS Resource')
     iface = kwargs['iface']
 
     resource_id = iface.resource_id
     # Run the operation if this is the resource has not been created yet
     result = None
-    ctx.logger.info("resource id = %s" % resource_id)
+
+    ctx.logger.debug('Resource %s ID# "%s"' % (resource_type, resource_id))
 
     if not resource_id:
         if operation_name not in ['create']:
@@ -87,9 +95,6 @@ def _wait_for_status(kwargs,
             elif not runtime_resource_id and iface_resource_id:
                 utils.update_resource_id(ctx.instance, iface_resource_id)
                 resource_id = iface_resource_id
-            elif operation_name in ['stop']:
-                ctx.logger.info("yaniv got to stop")
-                pass
             elif iface_resource_id and runtime_resource_id:
                 raise NonRecoverableError(
                     'There are multiple resource IDs for the same resource. '
@@ -98,30 +103,26 @@ def _wait_for_status(kwargs,
                     ' Please check your aws account.')
             else:
                 raise OperationRetry("Resource not created, trying again...")
-    elif iface.status not in status_good + status_pending:
-        result = function(**kwargs)
-
-    ctx.logger.info('after %s ID# "%s"' % (resource_type, resource_id))
-
-    # Get a resource interface and query for the status
 
     status = iface.status
+
+    # Get a resource interface and query for the status
     ctx.logger.debug('%s ID# "%s" reported status: %s'
                      % (resource_type, iface.resource_id, status))
 
-    if iface.status in status_pending:
-        raise OperationRetry(
-            '%s ID# "%s" is still in a pending state.'
-            % (resource_type, iface.resource_id))
-
-    elif iface.status in status_good:
+    if status in status_good:
         _ctx.instance.runtime_properties['create_response'] = \
             utils.JsonCleanuper(iface.properties).to_dict()
         return result
 
-    elif not iface.status and fail_on_missing:
+    elif status in status_pending:
+        raise OperationRetry(
+            '%s ID# "%s" is still in a pending state.'
+            % (resource_type, iface.resource_id))
+
+    elif not status and fail_on_missing:
         sleep(0.5)
-        if iface.status:
+        if status:
             return _wait_for_status(kwargs,
                                     _ctx,
                                     _operation,
@@ -130,17 +131,21 @@ def _wait_for_status(kwargs,
                                     status_good,
                                     fail_on_missing)
 
-        if operation_name in ['create', 'configure']:
-            raise OperationRetry('Fail on missing is true,'
+        if try_for_success:
+            raise OperationRetry('Fail on missing is true, '
                                  'but this is a create operation. it should '
-                                 'always succeed')
+                                 'reach expected status.')
 
         raise NonRecoverableError(
             '%s ID# "%s" no longer exists but "fail_on_missing" set.'
             % (resource_type, iface.resource_id))
 
     elif not status:
-        raise OperationRetry('waiting for operation to succeed')
+        raise OperationRetry('Waiting for operation to succeed')
+
+    elif status not in status_good + status_pending and require_status_good:
+        function(**kwargs)
+        raise OperationRetry('Waiting for operation to succeed')
 
     elif status not in status_good and fail_on_missing:
         raise NonRecoverableError(
