@@ -893,15 +893,14 @@ def get_node_instances_by_type_related_to_node_name(node_name,
     nodes = []
     for ni in rest_client.node_instances.list(
             deployment_id=deployment_id,
-            state='started',
             _includes=['id',
                        'version',
                        'runtime_properties',
                        'node_id',
                        'relationships']):
-        rels = [rel['target_name'] for rel in ni.relationships]
         node = rest_client.nodes.get(
             node_id=ni.node_id, deployment_id=deployment_id)
+        rels = [rel['target_name'] for rel in ni.relationships]
         if node_type in node.type_hierarchy and node_name in rels:
             nodes.append({'node_instance': ni, 'node': node})
     return nodes
