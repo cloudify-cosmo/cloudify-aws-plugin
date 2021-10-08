@@ -66,7 +66,8 @@ class TestDynamoDBTable(TestBase):
         self._prepare_create_raises_UnknownServiceError(
             type_hierarchy=TABLE_TH,
             type_name='dynamodb',
-            type_class=table
+            type_class=table,
+            operation_name='cloudify.interfaces.lifecycle.create'
         )
 
     def test_create(self):

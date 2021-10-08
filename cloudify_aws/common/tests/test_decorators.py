@@ -90,6 +90,15 @@ class TestDecorators(TestBase):
         def test_ok(*agrs, **kwargs):
             pass
 
+        # pending
+        mock_interface = MagicMock()
+        mock_interface.status = 'pending'
+        mock_interface.properties = {'status': 'pending'}
+        mock_interface.resource_id = 'foo'
+
+        with self.assertRaises(OperationRetry):
+            test_ok(ctx=_ctx, iface=mock_interface)
+
         # ok
         mock_interface = MagicMock()
         mock_interface.status = 'ok'
@@ -104,14 +113,6 @@ class TestDecorators(TestBase):
             'create_response': {'status': 'ok'},
         })
 
-        # pending
-        mock_interface = MagicMock()
-        mock_interface.status = 'pending'
-        mock_interface.properties = {'status': 'pending'}
-
-        with self.assertRaises(OperationRetry):
-            test_ok(ctx=_ctx, iface=mock_interface)
-
         # unknow
         mock_interface = MagicMock()
         mock_interface.status = 'unknown'
@@ -124,6 +125,7 @@ class TestDecorators(TestBase):
         mock_interface = MagicMock()
         mock_interface.status = None
         mock_interface.properties = {'status': None}
+        mock_interface.resource_id = 'foo'
 
         with self.assertRaises(NonRecoverableError):
             test_ok(ctx=_ctx, iface=mock_interface)
@@ -132,13 +134,15 @@ class TestDecorators(TestBase):
         mock_interface = MagicMock()
         mock_interface.status = None
         mock_interface.properties = {'status': None}
+        mock_interface.resource_id = 'foo'
 
         @decorators.wait_for_status(status_pending=['pending'],
                                     fail_on_missing=False)
         def test_ignore(*agrs, **kwargs):
             pass
 
-        test_ignore(ctx=_ctx, iface=mock_interface)
+        with self.assertRaises(OperationRetry):
+            test_ignore(ctx=_ctx, iface=mock_interface)
 
     def test_aws_params_default(self):
         """params is in priority"""

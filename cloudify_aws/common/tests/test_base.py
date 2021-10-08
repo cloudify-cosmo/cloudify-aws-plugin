@@ -508,14 +508,15 @@ class TestBase(unittest.TestCase):
 
     def _prepare_create_raises_UnknownServiceError(
         self, type_hierarchy, type_name, type_class,
-        type_node='cloudify.nodes.Root'
+        type_node='cloudify.nodes.Root', operation_name=None,
     ):
         _ctx = self.get_mock_ctx(
             'test_create',
             test_properties=DEFAULT_NODE_PROPERTIES,
             test_runtime_properties=DEFAULT_RUNTIME_PROPERTIES,
             type_hierarchy=type_hierarchy,
-            type_node=type_node
+            type_node=type_node,
+            ctx_operation_name=operation_name,
         )
 
         current_ctx.set(_ctx)

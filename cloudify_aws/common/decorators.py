@@ -48,9 +48,7 @@ def _wait_for_status(kwargs,
                      function,
                      status_pending,
                      status_good,
-                     fail_on_missing,
-                     try_for_success=None,
-                     require_status_good=True):
+                     fail_on_missing):
     """
     @param kwargs:
     @param _ctx:
@@ -59,33 +57,31 @@ def _wait_for_status(kwargs,
     @param status_pending:
     @param status_good: the desirable status or nothing
     @param fail_on_missing:
-    @param try_for_success: Ignore fail on missing directive.
-    @param require_status_good: Require that we try for status good.
-      This is really here to force the operation to retry the function again.
     @return:
     """
     status_good = status_good or []
     status_pending = status_pending or []
-    _, _, _, operation_name = _operation.name.split('.')
-    try_for_success = try_for_success or operation_name in ['create',
-                                                            'configure']
+
     resource_type = kwargs.get('resource_type', 'AWS Resource')
     iface = kwargs['iface']
 
+    _, _, _, operation_name = _operation.name.split('.')
+    creation_phase = operation_name in [
+        'precreate', 'create', 'configure']
     resource_id = iface.resource_id
+
     # Run the operation if this is the resource has not been created yet
     result = None
 
     ctx.logger.debug('Resource %s ID# "%s"' % (resource_type, resource_id))
 
-    if not resource_id:
-        if operation_name not in ['create']:
-            ctx.logger.warn('Not create function and no ID provided, '
-                            'this may result in failed operation.')
+    if (creation_phase and _ctx.operation.retry_number == 0) \
+            or not resource_id:
+        if not creation_phase:
+            ctx.logger.error(
+                'The resource should exist, but does not have a resource ID.')
         result = function(**kwargs)
-        # Let's verify a new AWS resource was really created
-
-        ctx.logger.debug("the result of the function call is %s" % result)
+        ctx.logger.debug("The function result is %s" % result)
         iface_resource_id = iface.resource_id
         runtime_resource_id = utils.get_resource_id(ctx.node, ctx.instance)
         if iface_resource_id != runtime_resource_id:
@@ -104,11 +100,13 @@ def _wait_for_status(kwargs,
             else:
                 raise OperationRetry("Resource not created, trying again...")
 
+    ctx.logger.debug('Requesting ID# "%s" status.' % resource_id)
+
     status = iface.status
 
     # Get a resource interface and query for the status
-    ctx.logger.debug('%s ID# "%s" reported status: %s'
-                     % (resource_type, iface.resource_id, status))
+    ctx.logger.debug('%s ID# "%s" reported status: %s.' % (
+        resource_type, resource_id, status))
 
     if status in status_good:
         _ctx.instance.runtime_properties['create_response'] = \
@@ -122,7 +120,7 @@ def _wait_for_status(kwargs,
 
     elif not status and fail_on_missing:
         sleep(0.5)
-        if status:
+        if iface.status:
             return _wait_for_status(kwargs,
                                     _ctx,
                                     _operation,
@@ -131,11 +129,6 @@ def _wait_for_status(kwargs,
                                     status_good,
                                     fail_on_missing)
 
-        if try_for_success:
-            raise OperationRetry('Fail on missing is true, '
-                                 'but this is a create operation. it should '
-                                 'reach expected status.')
-
         raise NonRecoverableError(
             '%s ID# "%s" no longer exists but "fail_on_missing" set.'
             % (resource_type, iface.resource_id))
@@ -143,9 +136,10 @@ def _wait_for_status(kwargs,
     elif not status:
         raise OperationRetry('Waiting for operation to succeed')
 
-    elif status not in status_good + status_pending and require_status_good:
-        function(**kwargs)
-        raise OperationRetry('Waiting for operation to succeed')
+    elif status not in status_good + status_pending:
+        result = function(**kwargs)
+        ctx.logger.debug("The function result is %s" % result)
+        raise OperationRetry('Waiting for operation to succeed...')
 
     elif status not in status_good and fail_on_missing:
         raise NonRecoverableError(
