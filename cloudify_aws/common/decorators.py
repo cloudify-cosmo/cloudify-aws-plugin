@@ -458,6 +458,10 @@ def wait_on_relationship_status(status_good=None,
 
 def wait_for_delete(status_deleted=None, status_pending=None):
     '''AWS resource decorator'''
+
+    status_deleted = status_deleted or []
+    status_pending = status_pending or []
+
     def wrapper_outer(function):
         '''Outer function'''
         def wrapper_inner(**kwargs):
@@ -474,12 +478,12 @@ def wait_for_delete(status_deleted=None, status_pending=None):
             status = iface.status
             ctx.logger.debug('%s ID# "%s" reported status: %s'
                              % (resource_type, iface.resource_id, status))
-            if not status or (status_deleted and status in status_deleted):
+            if not status or  status in status_deleted:
                 for key in [EXT_RES_ARN, EXT_RES_ID, 'resource_config']:
                     if key in ctx.instance.runtime_properties:
                         del ctx.instance.runtime_properties[key]
                 return
-            elif status_pending and status in status_pending:
+            elif status in status_pending:
                 raise OperationRetry(
                     '%s ID# "%s" is still in a pending state.'
                     % (resource_type, iface.resource_id))
