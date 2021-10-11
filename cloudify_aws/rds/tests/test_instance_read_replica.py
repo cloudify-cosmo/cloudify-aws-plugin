@@ -87,7 +87,8 @@ class TestRDSInstanceReadReplica(TestBase):
             _test_name,
             test_properties=NODE_PROPERTIES,
             test_runtime_properties=_test_runtime_properties,
-            type_hierarchy=INSTANCE_READ_REPLICA_TH
+            type_hierarchy=INSTANCE_READ_REPLICA_TH,
+            ctx_operation_name='cloudify.interfaces.lifecycle.create',
         )
         current_ctx.set(_ctx)
 
@@ -109,7 +110,8 @@ class TestRDSInstanceReadReplica(TestBase):
             _test_name,
             test_properties=NODE_PROPERTIES,
             test_runtime_properties=RUNTIME_PROPERTIES,
-            type_hierarchy=INSTANCE_READ_REPLICA_TH
+            type_hierarchy=INSTANCE_READ_REPLICA_TH,
+            ctx_operation_name='cloudify.interfaces.lifecycle.create',
         )
         current_ctx.set(_ctx)
 

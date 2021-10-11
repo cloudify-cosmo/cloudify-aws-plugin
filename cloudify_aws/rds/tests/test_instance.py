@@ -122,7 +122,8 @@ class TestRDSInstance(TestBase):
             _test_name,
             test_properties=NODE_PROPERTIES,
             test_runtime_properties=RUNTIME_PROPERTIES,
-            type_hierarchy=INSTANCE_TH
+            type_hierarchy=INSTANCE_TH,
+            ctx_operation_name='cloudify.interfaces.lifecycle.create',
         )
         current_ctx.set(_ctx)
 

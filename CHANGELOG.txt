@@ -167,3 +167,5 @@
 2.12.9:
     - RD-2909: ARN policies can be added as a property at the creation of a deployment.
     - RD-2945: Subnet on delete will exit of the substring contains "NotFound", and will retry if the substring contains "DependencyViolation".
+# 2.12.10:
+#     - RD-3159:fixed wait for status decorator

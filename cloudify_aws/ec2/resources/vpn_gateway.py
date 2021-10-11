@@ -22,7 +22,7 @@ from cloudify_aws.ec2 import EC2Base
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
 
 # Boto
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 RESOURCE_TYPE = 'EC2 VPN Gateway'
 VPNGATEWAYS = 'VpnGateways'
@@ -48,7 +48,7 @@ class EC2VPNGateway(EC2Base):
         try:
             resources = \
                 self.client.describe_vpn_gateways(**params)
-        except ClientError:
+        except (ClientError, ParamValidationError):
             pass
         else:
             return resources.get(VPNGATEWAYS)[0] if resources else None

@@ -18,7 +18,7 @@
 '''
 
 # Third Party imports
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Cloudify
 from cloudify import ctx
@@ -53,7 +53,7 @@ class EC2Keypair(EC2Base):
         try:
             resources = \
                 self.client.describe_key_pairs(**params)
-        except ClientError:
+        except (ClientError, ParamValidationError):
             pass
         else:
             keypairs = resources.get(KEYPAIRS, [])

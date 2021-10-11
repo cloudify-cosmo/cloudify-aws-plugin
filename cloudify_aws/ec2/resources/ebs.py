@@ -17,7 +17,7 @@
     AWS EC2 EBS Volume
 """
 # Boto
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 from botocore.exceptions import CapacityNotAvailableError
 
 # Cloudify
@@ -71,7 +71,7 @@ class EC2VolumeMixin(object):
         try:
             resources = \
                 self.client.describe_volumes(**params)
-        except ClientError:
+        except (ClientError, ParamValidationError):
             pass
         else:
             return resources.get(VOLUMES)[0] if resources else None

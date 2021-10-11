@@ -17,7 +17,7 @@
     AWS EC2 Route Table interface
 '''
 # Boto
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Cloudify
 from cloudify_aws.common import decorators, utils
@@ -54,7 +54,7 @@ class EC2RouteTable(EC2Base):
         try:
             resources = \
                 self.client.describe_route_tables(**params)
-        except ClientError:
+        except (ClientError, ParamValidationError):
             pass
         else:
             return None if not resources else resources.get(ROUTETABLES)[0]
@@ -184,4 +184,8 @@ def detach(ctx, iface, resource_config, **_):
     if association_ids and isinstance(association_ids, list):
         for association_id in association_ids:
             params.update({ASSOCIATION_ID: association_id})
-            iface.detach(params)
+            return utils.exit_on_substring(iface=iface,
+                                           method='detach',
+                                           request=params,
+                                           substrings='InvalidAssociationID'
+                                                      '.NotFound')

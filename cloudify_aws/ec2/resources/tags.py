@@ -21,7 +21,7 @@ from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.ec2 import EC2Base
 # Boto
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 RESOURCE_TYPE = 'EC2 Tags'
 
@@ -41,7 +41,7 @@ class EC2Tags(EC2Base):
         try:
             resources = \
                 self.client.client.describe_tags(**params)
-        except ClientError:
+        except (ClientError, ParamValidationError):
             pass
         else:
             return None if not resources else resources.get('Tags', [None])[0]

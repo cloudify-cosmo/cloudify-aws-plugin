@@ -17,7 +17,7 @@
     AWS EC2 Internet interface
 '''
 # Boto
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Cloudify
 from cloudify_aws.common import decorators, utils
@@ -26,8 +26,9 @@ from cloudify_aws.common.constants import (
     EXTERNAL_RESOURCE_ID,
     TAG_SPECIFICATIONS_KWARG
     )
+from cloudify.exceptions import OperationRetry
 
-RESOURCE_TYPE = 'EC2 Internet Gateway Bucket'
+RESOURCE_TYPE = 'EC2 Internet Gateway'
 INTERNETGATEWAYS = 'InternetGateways'
 INTERNETGATEWAY_ID = 'InternetGatewayId'
 INTERNETGATEWAY_IDS = 'InternetGatewayIds'
@@ -51,7 +52,7 @@ class EC2InternetGateway(EC2Base):
         try:
             resources = \
                 self.client.describe_internet_gateways(**params)
-        except ClientError:
+        except (ClientError, ParamValidationError):
             pass
         else:
             return resources.get(INTERNETGATEWAYS)[0] if resources else None
@@ -113,6 +114,10 @@ def prepare(ctx, resource_config, **_):
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS EC2 Internet Gateway'''
     params = dict() if not resource_config else resource_config.copy()
+    if iface.resource_id and not iface.properties:
+        raise OperationRetry("Create did not succeed, trying again ")
+    elif iface.resource_id:
+        return
     create_response = iface.create(params)['InternetGateway']
     ctx.instance.runtime_properties['create_response'] = \
         utils.JsonCleanuper(create_response).to_dict()
@@ -136,7 +141,6 @@ def delete(iface, resource_config, **_):
 
 
 @decorators.aws_resource(EC2InternetGateway, RESOURCE_TYPE)
-@decorators.wait_for_status(status_good=['available'])
 def attach(ctx, iface, resource_config, **_):
     '''Attach an AWS EC2 Internet Gateway to a VPC'''
     params = dict() if not resource_config else resource_config.copy()
@@ -176,6 +180,8 @@ def detach(ctx, iface, resource_config, **_):
     internet_gateway_id = params.get(INTERNETGATEWAY_ID)
     if not internet_gateway_id:
         internet_gateway_id = iface.resource_id
+    if not internet_gateway_id:
+        internet_gateway_id = utils.get_resource_id(ctx.node, ctx.instance)
 
     params.update({INTERNETGATEWAY_ID: internet_gateway_id})
 

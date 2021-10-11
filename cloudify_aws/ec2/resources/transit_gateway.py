@@ -19,7 +19,7 @@
 '''
 
 # Third Party imports
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 from cloudify.exceptions import NonRecoverableError, OperationRetry
 
 # Local imports
@@ -62,7 +62,7 @@ class EC2TransitGateway(EC2Base):
         try:
             resources = \
                 self.client.describe_transit_gateways(**params)
-        except ClientError:
+        except (ClientError, ParamValidationError):
             resources = None
         return resources if not resources else resources.get(
             TGS, [None])[0]

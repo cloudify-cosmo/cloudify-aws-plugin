@@ -21,7 +21,7 @@ from cloudify.exceptions import NonRecoverableError
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.ec2 import EC2Base
 # Boto
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 RESOURCE_TYPE = 'EC2 Image'
 IMAGES = 'Images'
@@ -49,7 +49,7 @@ class EC2Image(EC2Base):
         try:
             resources = \
                 self.client.describe_images(**params)
-        except ClientError:
+        except (ClientError, ParamValidationError):
             pass
         else:
             images = [] if not resources else resources.get(IMAGES)

@@ -19,7 +19,7 @@
 from __future__ import unicode_literals
 
 # Boto
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Cloudify
 from cloudify_aws.common import decorators, utils
@@ -52,7 +52,7 @@ class EC2VpcPeering(EC2Base):
                 self.client.describe_vpc_peering_connections(
                     **self.describe_vpc_peering_filter
                 )
-        except ClientError:
+        except (ClientError, ParamValidationError):
             pass
         else:
             return None if not resources\

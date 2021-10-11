@@ -13,7 +13,6 @@
 # limitations under the License.
 
 # Standard imports
-import unittest
 import copy
 import datetime
 
@@ -67,13 +66,6 @@ class TestCodePipeline(TestBase):
         self.fake_client = None
 
         super(TestCodePipeline, self).tearDown()
-
-    def test_create_raises_UnknownServiceError(self):
-        self._prepare_create_raises_UnknownServiceError(
-            type_hierarchy=PIPELINE_TH,
-            type_name='codepipeline',
-            type_class=pipeline
-        )
 
     def test_create(self):
         _ctx = self.get_mock_ctx(
@@ -174,6 +166,10 @@ class TestCodePipeline(TestBase):
             name=PIPELINE_NAME
         )
 
-
-if __name__ == '__main__':
-    unittest.main()
+    def test_create_raises_UnknownServiceError(self):
+        self._prepare_create_raises_UnknownServiceError(
+            type_hierarchy=PIPELINE_TH,
+            type_name='codepipeline',
+            type_class=pipeline,
+            operation_name='cloudify.interfaces.lifecycle.create',
+        )

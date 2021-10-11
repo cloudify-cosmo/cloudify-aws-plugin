@@ -19,7 +19,7 @@
 from __future__ import unicode_literals
 
 # Boto
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Cloudify
 from cloudify_aws.common import decorators, utils
@@ -50,7 +50,7 @@ class EC2VPNConnection(EC2Base):
                 self.client.describe_vpn_connections(
                     **self.describe_vpn_connection_filter
                 )
-        except ClientError:
+        except (ClientError, ParamValidationError):
             pass
         else:
             return None if not resources\

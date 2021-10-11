@@ -17,7 +17,7 @@
     AWS EC2 Subnet interface
 '''
 # Boto
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 from botocore.exceptions import CapacityNotAvailableError
 
 # Cloudify
@@ -56,7 +56,7 @@ class EC2Subnet(EC2Base):
         try:
             resources = \
                 self.client.describe_subnets(**params)
-        except ClientError:
+        except (ClientError, ParamValidationError):
             pass
         else:
             return None if not resources else resources.get(SUBNETS)[0]

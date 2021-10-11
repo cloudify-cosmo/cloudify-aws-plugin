@@ -51,7 +51,12 @@ NODE_PROPERTIES = {
 RUNTIME_PROPERTIES_AFTER_CREATE = {
     'aws_resource_arn': 'def',
     'aws_resource_id': 'abc',
-    'resource_config': {}
+    'resource_config': {},
+    'create_response': {
+        'LoadBalancerName': 'abc',
+        'LoadBalancerArn': 'def',
+        'State': {'Code': 'active'}
+    }
 }
 
 
@@ -166,6 +171,7 @@ class TestELBLoadBalancer(TestBase):
             test_runtime_properties=DEFAULT_RUNTIME_PROPERTIES,
             type_hierarchy=LOADBALANCER_TH,
             type_node=LOADBALANCER_TYPE,
+            ctx_operation_name='cloudify.interfaces.lifecycle.create',
         )
         _ctx.instance._relationships = [
             self.get_mock_relationship_ctx(

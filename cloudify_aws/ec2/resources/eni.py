@@ -17,7 +17,7 @@
     AWS EC2 NetworkInterface interface
 """
 # Boto
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 from cloudify import ctx as _ctx
 from cloudify.exceptions import OperationRetry
@@ -56,7 +56,7 @@ class EC2NetworkInterface(EC2Base):
         try:
             resources = \
                 self.client.describe_network_interfaces(**params)
-        except ClientError:
+        except (ClientError, ParamValidationError):
             return
         return resources.get(NETWORKINTERFACES)[0] if resources else None
 
