@@ -473,18 +473,27 @@ workflows:
       - cf_integration_tests_py3:
           requires:
             - build_bundle
+            - wagon
+            - rhel_wagon
+            - arch64_wagon
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - eks_integration_tests_py3:
           requires:
             - build_bundle
+            - wagon
+            - rhel_wagon
+            - arch64_wagon
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - hw_integration_tests_py3:
           requires:
             - build_bundle
+            - wagon
+            - rhel_wagon
+            - arch64_wagon
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
@@ -496,6 +505,7 @@ workflows:
             - unittests_py36
             - rhel_wagon
             - wagon
+            - arch64_wagon
             - validate_version
             - validate_documentation
             - cf_integration_tests_py3
@@ -544,6 +554,9 @@ workflows:
       - cf_integration_tests_py3:
           requires:
             - build_bundle
+            - wagon
+            - rhel_wagon
+            - arch64_wagon
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
@@ -583,6 +596,9 @@ workflows:
       - eks_integration_tests_py3:
           requires:
             - build_bundle
+            - wagon
+            - rhel_wagon
+            - arch64_wagon
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
@@ -622,6 +638,9 @@ workflows:
       - hw_integration_tests_py3:
           requires:
             - build_bundle
+            - wagon
+            - rhel_wagon
+            - arch64_wagon
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
