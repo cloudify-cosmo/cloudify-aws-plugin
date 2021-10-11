@@ -23,6 +23,11 @@ executors:
     machine:
       image: ubuntu-1604:201903-01
 
+  arm_wagon_generator:
+    machine:
+      image: ubuntu-2004:202101-01
+      resource_class: arm.medium
+
   cloudify-machine-py3:
     machine:
       image: ubuntu-1604:201903-01
@@ -128,6 +133,25 @@ commands:
       - attach_workspace:
           at: workspace
       - run: ecosystem-test validate-plugin-version
+
+  generate_arch64_wagon:
+    steps:
+      - run:
+          name: Create Workspace Build directory.
+          command: mkdir -p workspace/build
+      - run:
+          name: Build py36 Wagon
+          command: |
+              git clone https://github.com/cloudify-cosmo/cloudify-wagon-build-containers.git
+              docker build -t centos_aarch64 cloudify-wagon-build-containers/aarch_64/centos_7_py3
+              docker run -v ~/project/:/packaging centos_aarch64
+      - run:
+          name: copy wagon to workspace
+          command: cp *.wgn workspace/build/
+      - persist_to_workspace:
+          root: workspace
+          paths:
+            - build/*
 
   generate_py36_wagon:
     steps:
@@ -357,6 +381,12 @@ jobs:
       - checkout
       - generate_py36_wagon
 
+  arch64_wagon:
+    executor: arm_wagon_generator
+    steps:
+      - checkout
+      - generate_arch64_wagon
+
   rhel_wagon:
     executor: wagon_generator
     steps:
@@ -428,6 +458,10 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
+      - arch64_wagon:
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - build_bundle:
           filters:
             branches:
@@ -435,6 +469,7 @@ workflows:
           requires:
             - wagon
             - rhel_wagon
+            - arch64_wagon
       - cf_integration_tests_py3:
           requires:
             - build_bundle
@@ -474,10 +509,10 @@ workflows:
             - release
             - validate_documentation
 
-  nightly:
+  sunday_wednesday:
     triggers:
     - schedule:
-        cron: "0 3 * * *"
+        cron: "0 3 * * 0,3"
         filters:
           branches:
             only:
@@ -494,6 +529,10 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
+      - arch64_wagon:
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - build_bundle:
           filters:
             branches:
@@ -501,18 +540,85 @@ workflows:
           requires:
             - wagon
             - rhel_wagon
+            - arch64_wagon
       - cf_integration_tests_py3:
           requires:
             - build_bundle
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
+
+  monday_thursday:
+    triggers:
+    - schedule:
+        cron: "0 3 * * 1,4"
+        filters:
+          branches:
+            only:
+              - master
+    jobs:
+      - py3_compat
+      - unittests_py36
+      - validate_version
+      - rhel_wagon:
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+      - wagon:
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+      - arch64_wagon:
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+      - build_bundle:
+          filters:
+            branches:
+              only: /master/
+          requires:
+            - wagon
+            - rhel_wagon
+            - arch64_wagon
       - eks_integration_tests_py3:
           requires:
             - build_bundle
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
+
+  tuesday_friday_saturday:
+    triggers:
+    - schedule:
+        cron: "0 3 * * 2,5,6"
+        filters:
+          branches:
+            only:
+              - master
+    jobs:
+      - py3_compat
+      - unittests_py36
+      - validate_version
+      - rhel_wagon:
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+      - wagon:
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+      - arch64_wagon:
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+      - build_bundle:
+          filters:
+            branches:
+              only: /master/
+          requires:
+            - wagon
+            - rhel_wagon
+            - arch64_wagon
       - hw_integration_tests_py3:
           requires:
             - build_bundle
