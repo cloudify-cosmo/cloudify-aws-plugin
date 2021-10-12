@@ -97,7 +97,7 @@ commands:
           command: pip install --upgrade setuptools
       - run:
           name: install local project
-          command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/e4af68378e8ee391ad3bf60f6b757152f461169c.zip
+          command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/91f167c7a2adafb0b13b9bb21e29adf331154696.zip
       - attach_workspace:
           at: workspace
       - run: ecosystem-test validate-docs
@@ -340,7 +340,7 @@ commands:
           command: pip install --upgrade setuptools
       - run:
           name: install local project
-          command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/e4af68378e8ee391ad3bf60f6b757152f461169c.zip
+          command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/91f167c7a2adafb0b13b9bb21e29adf331154696.zip
       - attach_workspace:
           at: workspace
       - run: ecosystem-test merge-docs
