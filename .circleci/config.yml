@@ -254,7 +254,7 @@ commands:
 
   run_eks_test:
     steps:
-      - run: ecosystem-test local-blueprint-test  -b examples/blueprint-examples/kubernetes/aws-eks/blueprint.yaml --test-id=aws-eks -i aws_region_name=us-east-1 -i resource_suffix=$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test  -b examples/blueprint-examples/kubernetes/aws-eks/blueprint.yaml --test-id=aws-eks -i aws_region_name=us-east-1 -i eks_cluster_name=$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000
 
   release_plugin:
     steps:
