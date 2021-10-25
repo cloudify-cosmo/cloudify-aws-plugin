@@ -18,6 +18,9 @@ inputs:
     type: string
     default: { get_secret: ec2_region_name }
 
+    aws_instance_id:
+      type: string
+
 dsl_definitions:
 
   client_config: &client_config
@@ -109,4 +112,11 @@ node_templates:
           Period: 60
           EvaluationPeriods: 5
           Threshold: 60
+          Dimensions:
+            [
+              {
+                'Name': 'InstanceId',
+                'Value': { get_input: aws_instance_id }
+              }
+            ]
       client_config: *client_config
