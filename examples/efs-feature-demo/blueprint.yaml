@@ -3,7 +3,7 @@ tosca_definitions_version: cloudify_dsl_1_3
 imports:
   - http://www.getcloudify.org/spec/cloudify/4.5/types.yaml
   - plugin:cloudify-aws-plugin
-  - http://www.getcloudify.org/spec/fabric-plugin/1.5.2/plugin.yaml
+  - plugin:cloudify-fabric-plugin
 
 inputs:
 
@@ -75,7 +75,7 @@ node_templates:
           Filters:
           - Name: name
             Values:
-            - 'CentOS 7.3.1611 x86_64 with cloud-init (HVM)'
+            - 'CentOS 7.7.1908 x86_64 with cloud-init (HVM)'
           - Name: owner-id
             Values:
             - '057448758665'
@@ -175,9 +175,9 @@ node_templates:
     type: cloudify.nodes.aws.ec2.SecurityGroup
     properties:
       resource_config:
+        GroupName: security_group1
+        Description: efs security group
         kwargs:
-          GroupName: security_group1
-          Description: efs security group
           VpcId:  { get_attribute: [ vpc, aws_resource_id ] }
       client_config: *client_config
     relationships:
@@ -231,8 +231,8 @@ node_templates:
     type: cloudify.nodes.aws.ec2.Subnet
     properties:
       resource_config:
+        CidrBlock: 172.30.0.0/24
         kwargs:
-          CidrBlock: 172.30.0.0/24
           AvailabilityZone: { get_input: availability_zone }
       client_config: *client_config
     relationships:
@@ -253,6 +253,6 @@ node_templates:
     type: cloudify.nodes.aws.ec2.Vpc
     properties:
       resource_config:
+        CidrBlock: 172.30.0.0/16
         kwargs:
-          CidrBlock: 172.30.0.0/16
       client_config: *client_config
