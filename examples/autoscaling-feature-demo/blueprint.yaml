@@ -20,7 +20,7 @@ inputs:
 
   ami:
     type: string
-    default: ami-65e0e305
+    default: ami-098f55b4287a885ba
 
   instance_type:
     type: string
