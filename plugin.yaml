@@ -3458,13 +3458,25 @@ node_types:
           inputs: *operation_inputs
         configure:
           implementation: aws.cloudify_aws.cloudformation.resources.stack.create
-          inputs: *operation_inputs
+          inputs:
+            minimum_wait_time:
+              type: integer
+              default: 0
+              description: |
+               Minimum waiting time in seconds to complete the operation..
+            <<: *operation_inputs
         start:
           implementation: aws.cloudify_aws.cloudformation.resources.stack.start
           inputs: *operation_inputs
         delete:
           implementation: aws.cloudify_aws.cloudformation.resources.stack.delete
-          inputs: *operation_inputs
+          inputs:
+            minimum_wait_time:
+              type: integer
+              default: 0
+              description: |
+               Minimum waiting time in seconds to complete the operation..
+            <<: *operation_inputs
         pull:
           implementation: aws.cloudify_aws.cloudformation.resources.stack.pull
 
