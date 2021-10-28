@@ -16,11 +16,11 @@ inputs:
 
   aws_region_name:
     type: string
-    default: us-west-1
+    default: eu-west-1
 
   ami:
     type: string
-    default: ami-098f55b4287a885ba
+    default: ami-0b850cf02cc00fdc8
 
   instance_type:
     type: string
