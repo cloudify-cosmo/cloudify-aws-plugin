@@ -28,7 +28,7 @@ inputs:
 
   container_instance_image:
     type: string
-    default: ami-037a92bf1efdb11a2
+    default: ami-098f55b4287a885ba
 
   container_name:
     type: string
@@ -54,15 +54,17 @@ node_templates:
       resource_id: ecs_instance_iam_role
       client_config: *client_config
       resource_config:
-        kwargs:
-          Path: !!str /ecs-instance-role/
-          AssumeRolePolicyDocument:
-            Version: !!str 2012-10-17
-            Statement:
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
             - Effect: Allow
               Principal:
-                Service: !!str ec2.amazonaws.com
-              Action: !!str sts:AssumeRole
+                Service: 'ec2.amazonaws.com'
+              Action: 'sts:AssumeRole'
+        RoleName: {get_property: [SELF, resource_id]}
+        Path: '/ecs-instance-role/'
+        kwargs:
+
     relationships:
       - type: cloudify.relationships.aws.iam.role.connected_to
         target: ecs_instance_access
@@ -73,30 +75,31 @@ node_templates:
       resource_id: ecs_instance_access_policy
       client_config: *client_config
       resource_config:
+        PolicyName: {get_property: [SELF, resource_id]}
+        Path: !!str /ecs-instance-access/
+        PolicyDocument:
+          Version: !!str 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - !!str ecs:CreateCluster
+                - !!str ecs:DeregisterContainerInstance
+                - !!str ecs:DiscoverPollEndpoint
+                - !!str ecs:Poll
+                - !!str ecs:RegisterContainerInstance
+                - !!str ecs:StartTelemetrySession
+                - !!str ecs:UpdateContainerInstancesState
+                - !!str ecs:Submit*
+                - !!str ecr:GetAuthorizationToken
+                - !!str ecr:BatchCheckLayerAvailability
+                - !!str ecr:GetDownloadUrlForLayer
+                - !!str ecr:BatchGetImage
+                - !!str logs:CreateLogStream
+                - !!str logs:PutLogEvents
+              Resource: '*'
         kwargs:
           Description: >-
             Grants access for ECS agent to Amazon ECS API
-          Path: !!str /ecs-instance-access/
-          PolicyDocument:
-            Version: !!str 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - !!str ecs:CreateCluster
-                  - !!str ecs:DeregisterContainerInstance
-                  - !!str ecs:DiscoverPollEndpoint
-                  - !!str ecs:Poll
-                  - !!str ecs:RegisterContainerInstance
-                  - !!str ecs:StartTelemetrySession
-                  - !!str ecs:UpdateContainerInstancesState
-                  - !!str ecs:Submit*
-                  - !!str ecr:GetAuthorizationToken
-                  - !!str ecr:BatchCheckLayerAvailability
-                  - !!str ecr:GetDownloadUrlForLayer
-                  - !!str ecr:BatchGetImage
-                  - !!str logs:CreateLogStream
-                  - !!str logs:PutLogEvents
-                Resource: '*'
 
   ecs_instance_iam_role_instance_profile:
     type: cloudify.nodes.aws.iam.InstanceProfile
@@ -104,9 +107,9 @@ node_templates:
       client_config: *client_config
       resource_id: ecs_cfy_instance_profile
       resource_config:
+        InstanceProfileName: ecs_cfy_instance_profile
+        Path: '/ecs_cfy_instance_profile/'
         kwargs:
-          InstanceProfileName: ecs_cfy_instance_profile
-          Path: '/ecs_cfy_instance_profile/'
     relationships:
       - type: cloudify.relationships.depends_on
         target: ecs_instance_iam_role
@@ -117,15 +120,16 @@ node_templates:
       resource_id: ecs_service_iam_role
       client_config: *client_config
       resource_config:
-        kwargs:
-          Path: !!str /ecs-service-role/
-          AssumeRolePolicyDocument:
-            Version: !!str 2012-10-17
-            Statement:
+        AssumeRolePolicyDocument:
+          Version: !!str 2012-10-17
+          Statement:
             - Effect: Allow
               Principal:
                 Service: !!str ecs.amazonaws.com
               Action: !!str sts:AssumeRole
+        RoleName: {get_property: [SELF, resource_id]}
+        kwargs:
+          Path: !!str /ecs-service-role/
     relationships:
       - type: cloudify.relationships.aws.iam.role.connected_to
         target: ecs_service_access
@@ -136,23 +140,24 @@ node_templates:
       resource_id: ecs_service_access_policy
       client_config: *client_config
       resource_config:
+        PolicyName: {get_property: [SELF, resource_id]}
+        Path: !!str /ecs-service-access/
+        PolicyDocument:
+          Version: !!str 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - !!str ec2:AuthorizeSecurityGroupIngress
+                - !!str ec2:Describe*
+                - !!str elasticloadbalancing:DeregisterInstancesFromLoadBalancer
+                - !!str elasticloadbalancing:DeregisterTargets
+                - !!str elasticloadbalancing:Describe*
+                - !!str elasticloadbalancing:RegisterInstancesWithLoadBalancer
+                - !!str elasticloadbalancing:RegisterTargets
+              Resource: '*'
         kwargs:
           Description: >-
             Grants access for ECS service to the Amazon EC2 and Elastic Load Balancing APIs
-          Path: !!str /ecs-service-access/
-          PolicyDocument:
-            Version: !!str 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - !!str ec2:AuthorizeSecurityGroupIngress
-                  - !!str ec2:Describe*
-                  - !!str elasticloadbalancing:DeregisterInstancesFromLoadBalancer
-                  - !!str elasticloadbalancing:DeregisterTargets
-                  - !!str elasticloadbalancing:Describe*
-                  - !!str elasticloadbalancing:RegisterInstancesWithLoadBalancer
-                  - !!str elasticloadbalancing:RegisterTargets
-                Resource: '*'
 
   ecs_service:
     type: cloudify.nodes.aws.ecs.Service
@@ -186,10 +191,10 @@ node_templates:
     properties:
       client_config: *client_config
       resource_config:
+        AutoScalingGroupName: ecs_autoscaling_group
+        MinSize: 1
+        MaxSize: 1
         kwargs:
-          AutoScalingGroupName: ecs_autoscaling_group
-          MinSize: 1
-          MaxSize: 1
           DesiredCapacity: 1
           DefaultCooldown: 20
           AvailabilityZones:
@@ -213,10 +218,10 @@ node_templates:
     type: cloudify.nodes.aws.autoscaling.LaunchConfiguration
     properties:
       resource_config:
+        LaunchConfigurationName: container_instance
         kwargs:
           ImageId: { get_input: container_instance_image }
           InstanceType: { get_input: container_instance_type }
-          LaunchConfigurationName: container_instance
           IamInstanceProfile: { get_attribute: [ ecs_instance_iam_role_instance_profile, aws_resource_arn ] }
           KeyName: { get_property: [ key, resource_config,  KeyName] }
           AssociatePublicIpAddress: True
@@ -245,6 +250,8 @@ node_templates:
     type: cloudify.nodes.aws.elb.Rule
     properties:
       client_config: *client_config
+      resource_config:
+        Priority: 1
     interfaces:
       cloudify.interfaces.lifecycle:
         configure:
@@ -270,6 +277,12 @@ node_templates:
     type: cloudify.nodes.aws.elb.Listener
     properties:
       client_config: *client_config
+      resource_config:
+        Protocol: 'HTTP'
+        Port: 80
+        DefaultActions:
+          - Type: forward
+            TargetGroupArn: { get_attribute: [ forward_target_group, aws_resource_arn ] }
     interfaces:
       cloudify.interfaces.lifecycle:
         configure:
@@ -290,8 +303,8 @@ node_templates:
     type: cloudify.nodes.aws.elb.TargetGroup
     properties:
       resource_config:
+        Name: test-elb-target-group
         kwargs:
-          Name: test-elb-target-group
           Protocol: HTTP
           Port: 80
           HealthCheckProtocol: HTTP
@@ -315,8 +328,8 @@ node_templates:
     type: cloudify.nodes.aws.elb.LoadBalancer
     properties:
       resource_config:
+        Name: test-elb
         kwargs:
-          Name: test-elb
           Scheme: internet-facing
           Attributes:
             - Key: idle_timeout.timeout_seconds
@@ -386,9 +399,9 @@ node_templates:
     type: cloudify.nodes.aws.ec2.SecurityGroup
     properties:
       resource_config:
+        GroupName: SecurityGroup1
+        Description: Example Security Group 1
         kwargs:
-          GroupName: SecurityGroup1
-          Description: Example Security Group 1
       client_config: *client_config
     relationships:
       - type: cloudify.relationships.depends_on
@@ -433,8 +446,8 @@ node_templates:
     type: cloudify.nodes.aws.ec2.Subnet
     properties:
       resource_config:
+        CidrBlock: '10.0.0.0/24'
         kwargs:
-          CidrBlock: '10.0.0.0/24'
           AvailabilityZone: { concat: [ { get_input: aws_region_name}, 'a' ] }
       client_config: *client_config
       Tags:
@@ -450,8 +463,8 @@ node_templates:
     type: cloudify.nodes.aws.ec2.Subnet
     properties:
       resource_config:
+        CidrBlock: '10.0.2.0/24'
         kwargs:
-          CidrBlock: '10.0.2.0/24'
           AvailabilityZone: { concat: [ { get_input: aws_region_name}, 'c' ] }
       client_config: *client_config
     relationships:
@@ -465,8 +478,8 @@ node_templates:
     type: cloudify.nodes.aws.ec2.Subnet
     properties:
       resource_config:
+        CidrBlock: '10.0.1.0/24'
         kwargs:
-          CidrBlock: '10.0.1.0/24'
           AvailabilityZone: { concat: [ { get_input: aws_region_name}, 'b' ] }
       client_config: *client_config
     relationships:
@@ -479,8 +492,8 @@ node_templates:
     type: cloudify.nodes.aws.ec2.Vpc
     properties:
       resource_config:
+        CidrBlock: '10.0.0.0/16'
         kwargs:
-          CidrBlock: '10.0.0.0/16'
       client_config: *client_config
       Tags:
         - Key: Name
