@@ -46,6 +46,8 @@ node_templates:
   
   lambda_function_invocation:
     type: cloudify.nodes.aws.lambda.Invoke
+    properties:
+      region_name: { get_input: aws_region_name }
     relationships:
       - type: cloudify.relationships.aws.lambda.invoke.connected_to
         target: lambda_function
