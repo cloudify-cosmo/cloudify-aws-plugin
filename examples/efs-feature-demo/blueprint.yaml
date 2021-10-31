@@ -17,11 +17,11 @@ inputs:
 
   aws_region_name:
     type: string
-    default: { get_secret: ec2_region_name}
+    default: eu-west-1
 
   availability_zone:
     type: string
-    default: us-west-1a
+    default: eu-west-1a
 
 dsl_definitions:
   client_config: &client_config
