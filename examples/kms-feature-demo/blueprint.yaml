@@ -20,6 +20,7 @@ inputs:
 
   iam_arn:
     type: string
+    description: User arn
 
 dsl_definitions:
   client_config: &client_config
