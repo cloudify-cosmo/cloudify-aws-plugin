@@ -190,8 +190,6 @@ def create(ctx, iface, resource_config, minimum_wait_time=None, **_):
     # Actually create the resource
     iface.create(params)
 
-    ctx.logger.info('create ')
-
     if minimum_wait_time is not None and minimum_wait_time > 0:
         arrived_at_min_wait_time(ctx, minimum_wait_time)
 
@@ -238,8 +236,6 @@ def delete(ctx, iface, resource_config, minimum_wait_time=None, **_):
     if not name:
         name = iface.resource_id
     iface.delete({RESOURCE_NAME: name})
-
-    ctx.logger.info('delete ')
 
     if minimum_wait_time is not None and minimum_wait_time > 0:
         arrived_at_min_wait_time(ctx, minimum_wait_time)
@@ -321,13 +317,12 @@ def set_is_drifted_runtime_property(ctx, props):
 
 # min_wait_time should be in seconds.
 def arrived_at_min_wait_time(ctx, minimum_wait_time):
-    ctx.logger.info('It will take {} seconds to be ready'
-                    .format(minimum_wait_time))
+    ctx.logger.info('Minimum wait time provided: {}'.format(minimum_wait_time))
     count = 0
     ten_sec_to_sleep = 10
     while count < minimum_wait_time:
-        ctx.logger.info('Waiting minimum wait time ...')
         time.sleep(ten_sec_to_sleep)
         count += ten_sec_to_sleep
+        ctx.logger.info('The time elapsed is: {}'.format(count))
 
-    ctx.logger.info('done waiting')
+    ctx.logger.info('Minimum wait time elapsed.')
