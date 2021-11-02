@@ -16,12 +16,15 @@
     ~~~~~~~~~~~~~~
     AWS EC2 Route Table interface
 '''
+from time import sleep
+
 # Boto
+from cloudify.exceptions import OperationRetry
 from botocore.exceptions import ClientError, ParamValidationError
 
 # Cloudify
-from cloudify_aws.common import decorators, utils
 from cloudify_aws.ec2 import EC2Base
+from cloudify_aws.common import decorators, utils
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
 
 RESOURCE_TYPE = 'EC2 Route Table'
@@ -131,6 +134,14 @@ def create(ctx, iface, resource_config, **_):
     iface.update_resource_id(route_table_id)
     utils.update_resource_id(ctx.instance,
                              route_table_id)
+    max_wait = 5
+    counter = 0
+    while not iface.properties:
+        ctx.logger.debug('Waiting for Route Table to be created.')
+        sleep(5)
+        if max_wait > counter:
+            break
+        counter += 1
 
 
 @decorators.aws_resource(EC2RouteTable, RESOURCE_TYPE,
@@ -147,7 +158,9 @@ def delete(ctx, iface, resource_config, **_):
             iface.resource_id or \
             ctx.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
 
-    iface.delete(params)
+    if iface.properties:
+        iface.delete(params)
+        raise OperationRetry('Waiting for route table to delete.')
 
 
 @decorators.aws_resource(EC2RouteTable, RESOURCE_TYPE)
