@@ -565,18 +565,16 @@ def tag_resources(fn):
         result = fn(**kwargs)
         ctx = kwargs.get('ctx')
         iface = kwargs.get('iface')
-        if not iface.resource_id:
-            resource_id = utils.get_resource_id(
-                node=ctx.node,
-                instance=ctx.instance)
-            iface.update_resource_id(resource_id)
         if len(ctx.instance.runtime_properties.get(MULTI_ID, [])) > 1:
             resource_ids = ctx.instance.runtime_properties[MULTI_ID]
             iface.update_resource_id(resource_ids[0])
         else:
-            resource_ids = [utils.get_resource_id(
-                node=ctx.node,
-                instance=ctx.instance)]
+            if not iface.resource_id:
+                resource_id = utils.get_resource_id(
+                    node=ctx.node,
+                    instance=ctx.instance)
+                iface.update_resource_id(resource_id)
+            resource_ids = [iface.resource_id]
         if ctx.node.properties.get('cloudify_tagging', False):
             add_default_tag(ctx, iface)
         else:
