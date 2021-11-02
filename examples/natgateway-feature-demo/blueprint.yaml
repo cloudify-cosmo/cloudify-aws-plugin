@@ -49,9 +49,9 @@ node_templates:
     type: cloudify.nodes.aws.ec2.Subnet
     properties:
       resource_config:
+        CidrBlock: '172.30.0.0/24'
         kwargs:
-          CidrBlock: '172.30.0.0/24'
-          AvailabilityZone: { concat: [ { get_input: aws_region_name }, 'd' ] }
+          AvailabilityZone: { concat: [ { get_input: aws_region_name }, 'b' ] }
       client_config: *client_config
       Tags:
         - Key: Name
@@ -64,8 +64,8 @@ node_templates:
     type: cloudify.nodes.aws.ec2.Vpc
     properties:
       resource_config:
+        CidrBlock: '172.30.0.0/16'
         kwargs:
-          CidrBlock: '172.30.0.0/16'
       client_config: *client_config
       Tags:
         - Key: Name

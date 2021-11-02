@@ -18,8 +18,9 @@ inputs:
     type: string
     default: { get_secret: ec2_region_name }
 
-    aws_instance_id:
-      type: string
+  aws_instance_id:
+    type: string
+    required: True
 
 dsl_definitions:
 
