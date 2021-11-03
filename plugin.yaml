@@ -2981,6 +2981,10 @@ node_types:
   cloudify.nodes.aws.ec2.Image:
     derived_from: cloudify.nodes.Root
     properties:
+      use_external_resource:
+        type: boolean
+        default: true
+        description: indecates if external_resourc should be used
       <<: *external_resource
       <<: *client_config
       <<: *resource_id

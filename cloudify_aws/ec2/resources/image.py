@@ -95,10 +95,13 @@ def prepare_describe_image_filter(params, iface):
 def prepare(ctx, iface, resource_config, **_):
     """Prepares an AWS EC2 Image"""
     # Save the parameters
-    ctx.instance.runtime_properties['resource_config'] = resource_config
-    iface = \
-        prepare_describe_image_filter(
-            resource_config.copy(),
-            iface)
-    ami = iface.properties
-    utils.update_resource_id(ctx.instance, ami.get(IMAGE_ID))
+    if ctx.instance.runtime_properties['use_external_resource']:
+        ctx.instance.runtime_properties['resource_config'] = resource_config
+        iface = \
+            prepare_describe_image_filter(
+                resource_config.copy(),
+                iface)
+        ami = iface.properties
+        utils.update_resource_id(ctx.instance, ami.get(IMAGE_ID))
+    else:
+
