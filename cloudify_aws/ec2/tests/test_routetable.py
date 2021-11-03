@@ -17,6 +17,7 @@ import unittest
 
 # Third party imports
 from mock import patch, MagicMock
+from cloudify.exceptions import OperationRetry
 
 # Local imports
 from cloudify_aws.common._compat import reload_module
@@ -41,7 +42,7 @@ class TestEC2RouteTable(TestBase):
 
     def setUp(self):
         self.routetable = EC2RouteTable("ctx_node", resource_id=True,
-                                        client=True, logger=None)
+                                        client=MagicMock(), logger=None)
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',
                       mock_decorator)
         mock2 = patch('cloudify_aws.common.decorators.wait_for_status',
@@ -169,7 +170,8 @@ class TestEC2RouteTable(TestBase):
     def test_delete(self):
         ctx = self.get_mock_ctx("RouteTable")
         iface = MagicMock()
-        routetable.delete(ctx=ctx, iface=iface, resource_config={})
+        with self.assertRaises(OperationRetry):
+            routetable.delete(ctx=ctx, iface=iface, resource_config={})
         self.assertTrue(iface.delete.called)
 
     def test_detach(self):
