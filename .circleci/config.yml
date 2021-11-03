@@ -775,9 +775,9 @@ workflows:
             - wagon
             - rhel_wagon
             - arch64_wagon
-            filters:
-              branches:
-                only: /([0-9\.]*\-build|master|dev)/
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - ec2_instance_integration_tests_py3:
           requires:
             - build_bundle
@@ -863,9 +863,9 @@ workflows:
             - wagon
             - rhel_wagon
             - arch64_wagon
-            filters:
-              branches:
-                only: /([0-9\.]*\-build|master|dev)/
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - ec2_transit_gateway_integration_tests_py3:
           requires:
             - build_bundle
@@ -942,36 +942,36 @@ workflows:
             - wagon
             - rhel_wagon
             - arch64_wagon
-            filters:
-              branches:
-                only: /([0-9\.]*\-build|master|dev)/
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - dynamodb_integration_tests_py3:
           requires:
             - build_bundle
             - wagon
             - rhel_wagon
             - arch64_wagon
-            filters:
-              branches:
-                only: /([0-9\.]*\-build|master|dev)/
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - ec2_keys_integration_tests_py3:
           requires:
             - build_bundle
             - wagon
             - rhel_wagon
             - arch64_wagon
-            filters:
-              branches:
-                only: /([0-9\.]*\-build|master|dev)/
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - natgateway_integration_tests_py3:
           requires:
             - build_bundle
             - wagon
             - rhel_wagon
             - arch64_wagon
-            filters:
-              branches:
-                only: /([0-9\.]*\-build|master|dev)/
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - sqs_integration_tests_py3:
           requires:
             - build_bundle
