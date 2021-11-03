@@ -275,9 +275,9 @@ commands:
     steps:
       - run: ecosystem-test local-blueprint-test  -b examples/ebs-feature-demo/blueprint.yaml --test-id=ebs -i aws_region_name=eu-west-1 --on-failure=uninstall-force --timeout=3000
 
-  run_ec2_instace_test:
+  run_ec2_instance_test:
       steps:
-        - run: ecosystem-test local-blueprint-test  -b examples/ec2-instace-feature-demo/blueprint.yaml --test-id=ec2_instace -i aws_region_name=eu-west-1 -i availability_zone=eu-west-1a --on-failure=uninstall-force --timeout=3000
+        - run: ecosystem-test local-blueprint-test  -b examples/ec2-instance-feature-demo/blueprint.yaml --test-id=ec2_instace -i aws_region_name=eu-west-1 -i availability_zone=eu-west-1a --on-failure=uninstall-force --timeout=3000
 
   run_ec2_keys_test:
     steps:
