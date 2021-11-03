@@ -320,6 +320,11 @@ commands:
       - run: ecosystem-test local-blueprint-test  -b
       - examples/sqs-feature-demo/blueprint.yaml --test-id=ec2-image -i aws_region_name=eu-west-1 --on-failure=uninstall-force --timeout=3000
 
+  run_kms_test:
+    steps:
+      - run: ecosystem-test local-blueprint-test  -b
+      - examples/kms-feature-demo/blueprint.yaml --test-id=ec2-image -i aws_region_name=eu-west-1 -i iam_arn=arn:aws:iam::919239153674:user/plugins_test_user --on-failure=uninstall-force --timeout=3000
+
   release_plugin:
     steps:
       - run:
@@ -613,6 +618,16 @@ jobs:
       - prepare_test_manager
       - run_sqs_test
 
+  kms_integration_tests_py3:
+    executor: cloudify-machine-py3
+    environment:
+      CLOUDIFY_SSL_TRUST_ALL: true
+    steps:
+      - checkout
+      - create_manager_container_py3
+      - prepare_test_manager
+      - run_kms_test
+
   hw_integration_tests_py3:
     executor: cloudify-machine-py3
     environment:
@@ -861,6 +876,15 @@ workflows:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - s3_integration_tests_py3:
+          requires:
+            - build_bundle
+            - wagon
+            - rhel_wagon
+            - arch64_wagon
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+      - kms_integration_tests_py3:
           requires:
             - build_bundle
             - wagon
