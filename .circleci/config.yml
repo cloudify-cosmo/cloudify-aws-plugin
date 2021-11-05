@@ -9,8 +9,8 @@ checkout:
         git checkout -qf FETCH_HEAD
       fi
 
-
 executors:
+
   py27:
     docker:
       - image: circleci/python:2.7
@@ -458,24 +458,24 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-#      - arch64_wagon:
-#          filters:
-#            branches:
-#              only: /([0-9\.]*\-build|master|dev)/
+      - arch64_wagon:
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - build_bundle:
           filters:
             branches:
-              only: /master/
+              only: /([0-9\.]*\-build|master|dev)/
           requires:
             - wagon
             - rhel_wagon
-#            - arch64_wagon
+            - arch64_wagon
       - cf_integration_tests_py3:
           requires:
             - build_bundle
             - wagon
             - rhel_wagon
-#            - arch64_wagon
+            - arch64_wagon
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
@@ -484,7 +484,7 @@ workflows:
             - build_bundle
             - wagon
             - rhel_wagon
-#            - arch64_wagon
+            - arch64_wagon
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
@@ -493,7 +493,7 @@ workflows:
             - build_bundle
             - wagon
             - rhel_wagon
-#            - arch64_wagon
+            - arch64_wagon
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
@@ -505,7 +505,7 @@ workflows:
             - unittests_py36
             - rhel_wagon
             - wagon
-#            - arch64_wagon
+            - arch64_wagon
             - validate_version
             - validate_documentation
             - cf_integration_tests_py3
@@ -539,10 +539,10 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-#      - arch64_wagon:
-#          filters:
-#            branches:
-#              only: /([0-9\.]*\-build|master|dev)/
+      - arch64_wagon:
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - build_bundle:
           filters:
             branches:
@@ -550,13 +550,13 @@ workflows:
           requires:
             - wagon
             - rhel_wagon
-#            - arch64_wagon
+            - arch64_wagon
       - cf_integration_tests_py3:
           requires:
             - build_bundle
             - wagon
             - rhel_wagon
-#            - arch64_wagon
+            - arch64_wagon
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
@@ -581,10 +581,10 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-#      - arch64_wagon:
-#          filters:
-#            branches:
-#              only: /([0-9\.]*\-build|master|dev)/
+      - arch64_wagon:
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - build_bundle:
           filters:
             branches:
@@ -592,13 +592,13 @@ workflows:
           requires:
             - wagon
             - rhel_wagon
-#            - arch64_wagon
+            - arch64_wagon
       - eks_integration_tests_py3:
           requires:
             - build_bundle
             - wagon
             - rhel_wagon
-#            - arch64_wagon
+            - arch64_wagon
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
@@ -623,10 +623,10 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-#      - arch64_wagon:
-#          filters:
-#            branches:
-#              only: /([0-9\.]*\-build|master|dev)/
+      - arch64_wagon:
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - build_bundle:
           filters:
             branches:
@@ -634,13 +634,13 @@ workflows:
           requires:
             - wagon
             - rhel_wagon
-#            - arch64_wagon
+            - arch64_wagon
       - hw_integration_tests_py3:
           requires:
             - build_bundle
             - wagon
             - rhel_wagon
-#            - arch64_wagon
+            - arch64_wagon
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
