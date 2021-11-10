@@ -179,6 +179,12 @@ class testIfaceRequirement(TestBase):
                 return
             elif 'Waiting for foo attachment' in str(e):
                 return
+            elif 'Waiting for Internet Gateway to be created' in str(e):
+                return
+            elif 'Waiting for VPC to be created' in str(e):
+                return
+            elif 'Waiting for route table to delete' in str(e):
+                return
             raise
         except AttributeError as e:
             if "no attribute 'node'" not in str(e):

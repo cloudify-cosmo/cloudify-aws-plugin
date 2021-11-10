@@ -16,6 +16,8 @@
     ~~~~~~~~~~~~~~
     AWS EC2 Security Group interface
 '''
+from time import sleep
+
 # Boto
 from botocore.exceptions import ClientError
 
@@ -167,6 +169,14 @@ def create(ctx, iface, resource_config, **_):
     iface.update_resource_id(group_id)
     utils.update_resource_id(
         ctx.instance, group_id)
+    max_wait = 5
+    counter = 0
+    while not iface.properties:
+        ctx.logger.debug('Waiting for Route Table to be created.')
+        sleep(5)
+        if max_wait > counter:
+            break
+        counter += 1
 
 
 @decorators.aws_resource(EC2SecurityGroup, RESOURCE_TYPE)

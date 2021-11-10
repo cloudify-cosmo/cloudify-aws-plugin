@@ -17,6 +17,8 @@
     AWS EC2 VPC interface
 '''
 # Third Party imports
+from time import sleep
+
 from botocore.exceptions import ClientError, ParamValidationError
 
 # Local imports
@@ -135,6 +137,14 @@ def create(ctx, iface, resource_config, **_):
             vpc_id
         iface.modify_vpc_attribute(
             modify_vpc_attribute_args)
+    max_wait = 5
+    counter = 0
+    while not iface.properties:
+        ctx.logger.debug('Waiting for VPC to be created.')
+        sleep(5)
+        if max_wait > counter:
+            break
+        counter += 1
 
 
 @decorators.aws_resource(EC2Vpc, RESOURCE_TYPE,

@@ -16,6 +16,8 @@
     ~~~~~~~~~~~~~~
     AWS EC2 Internet interface
 '''
+from time import sleep
+
 # Boto
 from botocore.exceptions import ClientError, ParamValidationError
 
@@ -123,6 +125,14 @@ def create(ctx, iface, resource_config, **_):
         utils.JsonCleanuper(create_response).to_dict()
     utils.update_resource_id(ctx.instance,
                              create_response.get(INTERNETGATEWAY_ID))
+    max_wait = 5
+    counter = 0
+    while not iface.properties:
+        ctx.logger.debug('Waiting for Internet Gateway to be created.')
+        sleep(5)
+        if max_wait > counter:
+            break
+        counter += 1
 
 
 @decorators.aws_resource(EC2InternetGateway, RESOURCE_TYPE,

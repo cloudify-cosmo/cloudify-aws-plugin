@@ -168,7 +168,7 @@ def prepare(ctx, resource_config, **_):
 @decorators.wait_for_status(
     status_good=['CREATE_COMPLETE'],
     status_pending=['CREATE_IN_PROGRESS'])
-def create(ctx, iface, resource_config, **_):
+def create(ctx, iface, resource_config, minimum_wait_time=None, **_):
     """Creates an AWS CloudFormation Stack"""
     # Create a copy of the resource config for clean manipulation.
     params = dict() if not resource_config else resource_config.copy()
@@ -189,6 +189,9 @@ def create(ctx, iface, resource_config, **_):
         setattr(iface, 'resource_id', params.get(RESOURCE_NAME))
     # Actually create the resource
     iface.create(params)
+
+    if minimum_wait_time is not None and minimum_wait_time > 0:
+        arrived_at_min_wait_time(ctx, minimum_wait_time)
 
 
 def test(_value):
@@ -224,7 +227,7 @@ def start(ctx, iface, **_):
 @decorators.wait_for_delete(
     status_deleted=['DELETE_COMPLETE'],
     status_pending=['DELETE_IN_PROGRESS'])
-def delete(iface, resource_config, **_):
+def delete(ctx, iface, resource_config, minimum_wait_time=None, **_):
     """Deletes an AWS CloudFormation Stack"""
     # Create a copy of the resource config for clean manipulation.
     params = \
@@ -233,6 +236,9 @@ def delete(iface, resource_config, **_):
     if not name:
         name = iface.resource_id
     iface.delete({RESOURCE_NAME: name})
+
+    if minimum_wait_time is not None and minimum_wait_time > 0:
+        arrived_at_min_wait_time(ctx, minimum_wait_time)
 
 
 @decorators.aws_resource(CloudFormationStack, RESOURCE_TYPE)
@@ -307,3 +313,16 @@ def set_is_drifted_runtime_property(ctx, props):
         ctx.instance.runtime_properties[IS_DRIFTED] = True
     else:
         ctx.instance.runtime_properties[IS_DRIFTED] = False
+
+
+# min_wait_time should be in seconds.
+def arrived_at_min_wait_time(ctx, minimum_wait_time):
+    ctx.logger.info('Minimum wait time provided: {}'.format(minimum_wait_time))
+    count = 0
+    ten_sec_to_sleep = 10
+    while count < minimum_wait_time:
+        time.sleep(ten_sec_to_sleep)
+        count += ten_sec_to_sleep
+        ctx.logger.info('The time elapsed is: {}'.format(count))
+
+    ctx.logger.info('Minimum wait time elapsed.')
