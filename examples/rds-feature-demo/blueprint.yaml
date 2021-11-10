@@ -176,6 +176,8 @@ node_templates:
       use_external_resource: true
       resource_id: { get_input: aws_vpc_subnet_1_id }
       client_config: *client_config
+      resource_config:
+        CidrBlock: ''
     relationships:
       - type: cloudify.relationships.depends_on
         target: rds_vpc
@@ -183,6 +185,8 @@ node_templates:
   rds_subnet_2:
     type: cloudify.nodes.aws.ec2.Subnet
     properties:
+      resource_config:
+        CidrBlock: ''
       use_external_resource: true
       resource_id: { get_input: aws_vpc_subnet_2_id }
       client_config: *client_config
@@ -193,6 +197,9 @@ node_templates:
   rds_security_group:
     type: cloudify.nodes.aws.ec2.SecurityGroup
     properties:
+      resource_config:
+        Description: ''
+        GroupName: ''
       use_external_resource: true
       resource_id: { get_input: aws_security_group_id }
       client_config: *client_config
@@ -203,6 +210,8 @@ node_templates:
   rds_vpc:
     type: cloudify.nodes.aws.ec2.Vpc
     properties:
+      resource_config:
+        CidrBlock: ''
       use_external_resource: true
       resource_id: { get_input: aws_vpc_id }
       client_config: *client_config

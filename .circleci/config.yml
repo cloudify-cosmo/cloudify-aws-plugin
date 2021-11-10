@@ -256,6 +256,61 @@ commands:
     steps:
       - run: ecosystem-test local-blueprint-test  -b examples/blueprint-examples/kubernetes/aws-eks/blueprint.yaml --test-id=aws-eks -i aws_region_name=us-east-1 -i eks_cluster_name=test-$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000
 
+  run_ec2_image_test:
+      steps:
+        - run: ecosystem-test local-blueprint-test  -b examples/ec2-image-feature-demo/blueprint.yaml --test-id=ec2_image -i aws_region_name=eu-west-1 --on-failure=uninstall-force --timeout=3000
+
+  run_autoscaling_test:
+        steps:
+          - run: ecosystem-test local-blueprint-test  -b examples/autoscaling-feature-demo/blueprint.yaml --test-id=autoscaling --on-failure=uninstall-force --timeout=3000
+
+  run_cloudformation_test:
+    steps:
+      - run: ecosystem-test local-blueprint-test  -b examples/cloudformation-feature-demo/blueprint.yaml --test-id=cloudformation -i aws_region_name=eu-west-1 --on-failure=uninstall-force --timeout=3000
+  run_dynamodb_test:
+    steps:
+      - run: ecosystem-test local-blueprint-test  -b examples/dynamodb-feature-demo/blueprint.yaml --test-id=dynamodb -i aws_region_name=eu-west-1 --on-failure=uninstall-force --timeout=3000
+
+  run_ebs_test:
+    steps:
+      - run: ecosystem-test local-blueprint-test  -b examples/ebs-feature-demo/blueprint.yaml --test-id=ebs -i aws_region_name=eu-west-1 --on-failure=uninstall-force --timeout=3000
+
+  run_ec2_instance_test:
+      steps:
+        - run: ecosystem-test local-blueprint-test  -b examples/ec2-instance-feature-demo/blueprint.yaml --test-id=ec2_instace -i aws_region_name=eu-west-1 -i availability_zone=eu-west-1a --on-failure=uninstall-force --timeout=3000
+
+  run_ec2_keys_test:
+    steps:
+      - run: ecosystem-test local-blueprint-test  -b examples/ec2-keys-feature-demo/blueprint.yaml --test-id=ec2_keys -i aws_region_name=eu-west-1 --on-failure=uninstall-force --timeout=3000
+
+  run_ec2_transit_gateway_test:
+    steps:
+      - run: ecosystem-test local-blueprint-test  -b examples/ec2-transit-gateway-feature-demo/blueprint.yaml --test-id=ec2_transit_gateway -i aws_region_name_a=eu-west-1 -i aws_region_name_b=eu-west-1 --on-failure=uninstall-force --timeout=3000
+
+  run_ec2_vpc_test:
+    steps:
+      - run: ecosystem-test local-blueprint-test  -b examples/ec2-vpc-feature-demo/blueprint.yaml --test-id=ec2_vpc -i aws_region_name=eu-west-1 --on-failure=uninstall-force --timeout=3000
+
+  run_natgateway_test:
+    steps:
+      - run: ecosystem-test local-blueprint-test  -b examples/natgateway-feature-demo/blueprint.yaml --test-id=natgateway -i aws_region_name=eu-west-1 --on-failure=uninstall-force --timeout=3000
+
+  run_s3_test:
+    steps:
+      - run: ecosystem-test local-blueprint-test  -b examples/s3-feature-demo/blueprint.yaml --test-id=s3 -i aws_region_name=eu-west-1 --on-failure=uninstall-force --timeout=3000
+
+  run_sns_test:
+    steps:
+      - run: ecosystem-test local-blueprint-test  -b examples/sns-feature-demo/blueprint.yaml --test-id=sns -i aws_region_name=eu-west-1 --on-failure=uninstall-force --timeout=3000
+
+  run_sqs_test:
+    steps:
+      - run: ecosystem-test local-blueprint-test  -b examples/sqs-feature-demo/blueprint.yaml --test-id=sqs -i aws_region_name=eu-west-1 --on-failure=uninstall-force --timeout=3000
+
+  run_kms_test:
+    steps:
+      - run: ecosystem-test local-blueprint-test  -b examples/kms-feature-demo/blueprint.yaml --test-id=kms -i aws_region_name=eu-west-1 -i iam_arn=arn:aws:iam::919239153674:user/plugins_test_user --on-failure=uninstall-force --timeout=3000
+
   release_plugin:
     steps:
       - run:
@@ -419,6 +474,146 @@ jobs:
       - prepare_test_manager
       - run_eks_test
 
+  ec2_image_integration_tests_py3:
+    executor: cloudify-machine-py3
+    environment:
+      CLOUDIFY_SSL_TRUST_ALL: true
+    steps:
+      - checkout
+      - create_manager_container_py3
+      - prepare_test_manager
+      - run_ec2_image_test
+
+  ec2_instance_integration_tests_py3:
+    executor: cloudify-machine-py3
+    environment:
+      CLOUDIFY_SSL_TRUST_ALL: true
+    steps:
+      - checkout
+      - create_manager_container_py3
+      - prepare_test_manager
+      - run_ec2_instance_test
+
+  ec2_keys_integration_tests_py3:
+    executor: cloudify-machine-py3
+    environment:
+      CLOUDIFY_SSL_TRUST_ALL: true
+    steps:
+      - checkout
+      - create_manager_container_py3
+      - prepare_test_manager
+      - run_ec2_keys_test
+
+  ec2_transit_gateway_integration_tests_py3:
+    executor: cloudify-machine-py3
+    environment:
+      CLOUDIFY_SSL_TRUST_ALL: true
+    steps:
+      - checkout
+      - create_manager_container_py3
+      - prepare_test_manager
+      - run_ec2_transit_gateway_test
+
+  ec2_vpc_integration_tests_py3:
+    executor: cloudify-machine-py3
+    environment:
+      CLOUDIFY_SSL_TRUST_ALL: true
+    steps:
+      - checkout
+      - create_manager_container_py3
+      - prepare_test_manager
+      - run_ec2_vpc_test
+
+  autoscaleing_integration_tests_py3:
+    executor: cloudify-machine-py3
+    environment:
+      CLOUDIFY_SSL_TRUST_ALL: true
+    steps:
+      - checkout
+      - create_manager_container_py3
+      - prepare_test_manager
+      - run_autoscaling_test
+
+  cloudformation_integration_tests_py3:
+    executor: cloudify-machine-py3
+    environment:
+      CLOUDIFY_SSL_TRUST_ALL: true
+    steps:
+      - checkout
+      - create_manager_container_py3
+      - prepare_test_manager
+      - run_cloudformation_test
+
+  dynamodb_integration_tests_py3:
+    executor: cloudify-machine-py3
+    environment:
+      CLOUDIFY_SSL_TRUST_ALL: true
+    steps:
+      - checkout
+      - create_manager_container_py3
+      - prepare_test_manager
+      - run_dynamodb_test
+
+  ebs_integration_tests_py3:
+    executor: cloudify-machine-py3
+    environment:
+      CLOUDIFY_SSL_TRUST_ALL: true
+    steps:
+      - checkout
+      - create_manager_container_py3
+      - prepare_test_manager
+      - run_ebs_test
+
+  natgateway_integration_tests_py3:
+    executor: cloudify-machine-py3
+    environment:
+      CLOUDIFY_SSL_TRUST_ALL: true
+    steps:
+      - checkout
+      - create_manager_container_py3
+      - prepare_test_manager
+      - run_natgateway_test
+
+  s3_integration_tests_py3:
+    executor: cloudify-machine-py3
+    environment:
+      CLOUDIFY_SSL_TRUST_ALL: true
+    steps:
+      - checkout
+      - create_manager_container_py3
+      - prepare_test_manager
+      - run_s3_test
+
+  sns_integration_tests_py3:
+    executor: cloudify-machine-py3
+    environment:
+      CLOUDIFY_SSL_TRUST_ALL: true
+    steps:
+      - checkout
+      - create_manager_container_py3
+      - prepare_test_manager
+      - run_sns_test
+
+  sqs_integration_tests_py3:
+    executor: cloudify-machine-py3
+    environment:
+      CLOUDIFY_SSL_TRUST_ALL: true
+    steps:
+      - checkout
+      - create_manager_container_py3
+      - prepare_test_manager
+      - run_sqs_test
+
+  kms_integration_tests_py3:
+    executor: cloudify-machine-py3
+    environment:
+      CLOUDIFY_SSL_TRUST_ALL: true
+    steps:
+      - checkout
+      - create_manager_container_py3
+      - prepare_test_manager
+      - run_kms_test
+
   hw_integration_tests_py3:
     executor: cloudify-machine-py3
     environment:
@@ -560,6 +755,43 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
+      - ebs_integration_tests_py3:
+          requires:
+            - build_bundle
+            - wagon
+            - rhel_wagon
+            - arch64_wagon
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+      - ec2_instance_integration_tests_py3:
+          requires:
+            - build_bundle
+            - wagon
+            - rhel_wagon
+            - arch64_wagon
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+      - ec2_vpc_integration_tests_py3:
+          requires:
+            - build_bundle
+            - wagon
+            - rhel_wagon
+            - arch64_wagon
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+      - sns_integration_tests_py3:
+          requires:
+            - build_bundle
+            - wagon
+            - rhel_wagon
+            - arch64_wagon
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+
 
   monday_thursday:
     triggers:
@@ -602,6 +834,52 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
+      - ec2_image_integration_tests_py3:
+          requires:
+            - build_bundle
+            - wagon
+            - rhel_wagon
+            - arch64_wagon
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+      - autoscaleing_integration_tests_py3:
+          requires:
+            - build_bundle
+            - wagon
+            - rhel_wagon
+            - arch64_wagon
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+      - ec2_transit_gateway_integration_tests_py3:
+          requires:
+            - build_bundle
+            - wagon
+            - rhel_wagon
+            - arch64_wagon
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+      - s3_integration_tests_py3:
+          requires:
+            - build_bundle
+            - wagon
+            - rhel_wagon
+            - arch64_wagon
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+      - kms_integration_tests_py3:
+          requires:
+            - build_bundle
+            - wagon
+            - rhel_wagon
+            - arch64_wagon
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+
 
   tuesday_friday_saturday:
     triggers:
@@ -636,6 +914,51 @@ workflows:
             - rhel_wagon
             - arch64_wagon
       - hw_integration_tests_py3:
+          requires:
+            - build_bundle
+            - wagon
+            - rhel_wagon
+            - arch64_wagon
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+      - cloudformation_integration_tests_py3:
+          requires:
+            - build_bundle
+            - wagon
+            - rhel_wagon
+            - arch64_wagon
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+      - dynamodb_integration_tests_py3:
+          requires:
+            - build_bundle
+            - wagon
+            - rhel_wagon
+            - arch64_wagon
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+      - ec2_keys_integration_tests_py3:
+          requires:
+            - build_bundle
+            - wagon
+            - rhel_wagon
+            - arch64_wagon
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+      - natgateway_integration_tests_py3:
+          requires:
+            - build_bundle
+            - wagon
+            - rhel_wagon
+            - arch64_wagon
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+      - sqs_integration_tests_py3:
           requires:
             - build_bundle
             - wagon

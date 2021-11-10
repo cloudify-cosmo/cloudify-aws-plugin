@@ -70,7 +70,7 @@ node_templates:
     properties:
       resource_config:
         FunctionName: myLambdaFunction
-        Runtime: python2.7
+        Runtime: python3.7
         Handler: main.lambda_handler
         Code:
           ZipFile: function/main.zip

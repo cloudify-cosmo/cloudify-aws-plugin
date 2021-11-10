@@ -34,9 +34,9 @@ node_templates:
     type: cloudify.nodes.aws.ec2.SecurityGroup
     properties:
       resource_config:
+        Description: Example.
+        GroupName: security_group0
         kwargs:
-          GroupName: security_group0
-          Description: Example.
           VpcId: { get_input: vpc }
       client_config: *client_config
 
@@ -44,9 +44,9 @@ node_templates:
     type: cloudify.nodes.aws.ec2.SecurityGroup
     properties:
       resource_config:
+        Description: Example.
+        GroupName: security_group1
         kwargs:
-          GroupName: security_group1
-          Description: Example.
           VpcId: { get_input: vpc }
       client_config: *client_config
 

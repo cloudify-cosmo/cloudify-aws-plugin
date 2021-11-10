@@ -1,48 +1,64 @@
 tosca_definitions_version: cloudify_dsl_1_3
 
 imports:
-  - http://www.getcloudify.org/spec/cloudify/4.5/types.yaml
+  - http://www.getcloudify.org/spec/cloudify/6.1.0/types.yaml
   - plugin:cloudify-aws-plugin
 
 inputs:
-
-  aws_access_key_id:
-    type: string
-    default: { get_secret: aws_access_key_id }
-
-  aws_secret_access_key:
-    type: string
-    default: { get_secret: aws_secret_access_key }
-
   aws_region_name:
+    required: yes
+    description: AWS Region Name
     type: string
-    default: { get_secret: ec2_region_name }
+    default: us-east-1
+    constraints:
+      - valid_values:
+        - us-east-1
+        - us-east-2
+        - us-west-1
+        - us-west-2
+        - ca-central-1
+        - eu-central-1
+        - eu-west-1
+        - eu-west-2
 
   ecs_cluster_name:
+    description: ECS Cluster Name
     type: string
     default: my_cluster
 
   container_instance_type:
+    description: Container Instance Type
     type: string
     default: t2.large
 
-  container_instance_image:
-    type: string
-    default: ami-037a92bf1efdb11a2
-
   container_name:
+    description: Container Name
     type: string
     default: wordpress
 
   container_port:
+    description: Container Port
     type: integer
     default: 80
+
+  container_instance_image:
+    description: Container Instance Image (Amazon Linux AMI 2.0.20181112 x86_64 ECS HVM GP2 - amzn2-ami-ecs-hvm-2.0.20181112-x86_64-ebs)
+    type: dict
+    default:
+      us-east-1: ami-0a6b7e0cc0b1f464f
+      us-east-2: ami-037a92bf1efdb11a2
+      us-west-1: ami-0184f498956de7db5
+      us-west-2: ami-0c1f4871ebaae6d86
+      ca-central-1: ami-02c80e9173258d289
+      eu-central-1: ami-055aa9664ef169e25
+      eu-west-1: ami-0acc9f8be17a41897
+      eu-west-2: ami-0b5225210a12d9951
 
 dsl_definitions:
 
   client_config: &client_config
-    aws_access_key_id: { get_input: aws_access_key_id }
-    aws_secret_access_key: { get_input: aws_secret_access_key }
+    aws_access_key_id: { get_secret: aws_access_key_id }
+    aws_secret_access_key: { get_secret: aws_secret_access_key }
     region_name: { get_input: aws_region_name }
 
 
@@ -54,15 +70,15 @@ node_templates:
       resource_id: ecs_instance_iam_role
       client_config: *client_config
       resource_config:
-        kwargs:
-          Path: !!str /ecs-instance-role/
-          AssumeRolePolicyDocument:
-            Version: !!str 2012-10-17
-            Statement:
-            - Effect: Allow
-              Principal:
-                Service: !!str ec2.amazonaws.com
-              Action: !!str sts:AssumeRole
+        RoleName: { concat: [ 'cfy_ecs_role', '-', { get_input: ecs_cluster_name } ] }
+        Path: !!str /ecs-instance-role/
+        AssumeRolePolicyDocument:
+          Version: !!str 2012-10-17
+          Statement:
+          - Effect: Allow
+            Principal:
+              Service: !!str ec2.amazonaws.com
+            Action: !!str sts:AssumeRole
     relationships:
       - type: cloudify.relationships.aws.iam.role.connected_to
         target: ecs_instance_access
@@ -73,11 +89,10 @@ node_templates:
       resource_id: ecs_instance_access_policy
       client_config: *client_config
       resource_config:
-        kwargs:
-          Description: >-
-            Grants access for ECS agent to Amazon ECS API
-          Path: !!str /ecs-instance-access/
-          PolicyDocument:
+        PolicyName: { concat: ['cfy_ecs_instance_access', '-', { get_input: ecs_cluster_name }, '-policy' ] }
+        Description: Grants access for ECS agent to Amazon ECS API
+        Path: !!str /ecs-instance-access/
+        PolicyDocument:
             Version: !!str 2012-10-17
             Statement:
               - Effect: Allow
@@ -104,9 +119,8 @@ node_templates:
       client_config: *client_config
       resource_id: ecs_cfy_instance_profile
       resource_config:
-        kwargs:
-          InstanceProfileName: ecs_cfy_instance_profile
-          Path: '/ecs_cfy_instance_profile/'
+        InstanceProfileName: ecs_cfy_instance_profile
+        Path: '/ecs_cfy_instance_profile/'
     relationships:
       - type: cloudify.relationships.depends_on
         target: ecs_instance_iam_role
@@ -117,15 +131,15 @@ node_templates:
       resource_id: ecs_service_iam_role
       client_config: *client_config
       resource_config:
-        kwargs:
-          Path: !!str /ecs-service-role/
-          AssumeRolePolicyDocument:
-            Version: !!str 2012-10-17
-            Statement:
-            - Effect: Allow
-              Principal:
-                Service: !!str ecs.amazonaws.com
-              Action: !!str sts:AssumeRole
+        RoleName: { concat: [ ecs_service, '-', { get_input: ecs_cluster_name}, '-role' ] }
+        Path: !!str /ecs-service-role/
+        AssumeRolePolicyDocument:
+          Version: !!str 2012-10-17
+          Statement:
+          - Effect: Allow
+            Principal:
+              Service: !!str ecs.amazonaws.com
+            Action: !!str sts:AssumeRole
     relationships:
       - type: cloudify.relationships.aws.iam.role.connected_to
         target: ecs_service_access
@@ -136,23 +150,23 @@ node_templates:
       resource_id: ecs_service_access_policy
       client_config: *client_config
       resource_config:
-        kwargs:
-          Description: >-
-            Grants access for ECS service to the Amazon EC2 and Elastic Load Balancing APIs
-          Path: !!str /ecs-service-access/
-          PolicyDocument:
-            Version: !!str 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - !!str ec2:AuthorizeSecurityGroupIngress
-                  - !!str ec2:Describe*
-                  - !!str elasticloadbalancing:DeregisterInstancesFromLoadBalancer
-                  - !!str elasticloadbalancing:DeregisterTargets
-                  - !!str elasticloadbalancing:Describe*
-                  - !!str elasticloadbalancing:RegisterInstancesWithLoadBalancer
-                  - !!str elasticloadbalancing:RegisterTargets
-                Resource: '*'
+        Description: >-
+          Grants access for ECS service to the Amazon EC2 and Elastic Load Balancing APIs
+        PolicyName: { concat: ['cfy_ecs_service_access', '-', { get_input: ecs_cluster_name }, '-policy' ] }
+        Path: !!str /ecs-service-access/
+        PolicyDocument:
+          Version: !!str 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - !!str ec2:AuthorizeSecurityGroupIngress
+                - !!str ec2:Describe*
+                - !!str elasticloadbalancing:DeregisterInstancesFromLoadBalancer
+                - !!str elasticloadbalancing:DeregisterTargets
+                - !!str elasticloadbalancing:Describe*
+                - !!str elasticloadbalancing:RegisterInstancesWithLoadBalancer
+                - !!str elasticloadbalancing:RegisterTargets
+              Resource: '*'
 
   ecs_service:
     type: cloudify.nodes.aws.ecs.Service
@@ -186,10 +200,10 @@ node_templates:
     properties:
       client_config: *client_config
       resource_config:
+        AutoScalingGroupName: ecs_autoscaling_group
+        MinSize: 1
+        MaxSize: 1
         kwargs:
-          AutoScalingGroupName: ecs_autoscaling_group
-          MinSize: 1
-          MaxSize: 1
           DesiredCapacity: 1
           DefaultCooldown: 20
           AvailabilityZones:
@@ -213,12 +227,12 @@ node_templates:
     type: cloudify.nodes.aws.autoscaling.LaunchConfiguration
     properties:
       resource_config:
+        ImageId: { get_input: [ container_instance_image, { get_input: aws_region_name } ] }
+        InstanceType: { get_input: container_instance_type }
+        LaunchConfigurationName: container_instance
+        KeyName: { get_property: [ key, resource_config,  KeyName] }
         kwargs:
-          ImageId: { get_input: container_instance_image }
-          InstanceType: { get_input: container_instance_type }
-          LaunchConfigurationName: container_instance
           IamInstanceProfile: { get_attribute: [ ecs_instance_iam_role_instance_profile, aws_resource_arn ] }
-          KeyName: { get_property: [ key, resource_config,  KeyName] }
           AssociatePublicIpAddress: True
           SecurityGroups:
             - { get_attribute: [ securitygroup1, aws_resource_id ] }
@@ -245,6 +259,8 @@ node_templates:
     type: cloudify.nodes.aws.elb.Rule
     properties:
       client_config: *client_config
+      resource_config:
+        Priority: 101
     interfaces:
       cloudify.interfaces.lifecycle:
         configure:
@@ -270,16 +286,13 @@ node_templates:
     type: cloudify.nodes.aws.elb.Listener
     properties:
       client_config: *client_config
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        configure:
-          inputs:
-            resource_config:
-              Protocol: HTTP
-              Port: 80
-              DefaultActions:
-                - Type: forward
-                  TargetGroupArn: { get_attribute: [ forward_target_group, aws_resource_arn ] }
+      resource_config:
+        Protocol: HTTP
+        Port: 80
+        DefaultActions:
+          - Type: forward
+            TargetGroupArn: { get_attribute: [ forward_target_group, aws_resource_arn ] }
+
     relationships:
       - type: cloudify.relationships.depends_on
         target: elb
@@ -290,12 +303,12 @@ node_templates:
     type: cloudify.nodes.aws.elb.TargetGroup
     properties:
       resource_config:
+        Name: test-elb-target-group
+        Protocol: HTTP
+        Port: 80
+        HealthCheckProtocol: HTTP
+        HealthCheckPort: '80'
         kwargs:
-          Name: test-elb-target-group
-          Protocol: HTTP
-          Port: 80
-          HealthCheckProtocol: HTTP
-          HealthCheckPort: '80'
           HealthCheckPath: '/wp-admin'
           HealthCheckIntervalSeconds: 30
           HealthCheckTimeoutSeconds: 20
@@ -315,8 +328,8 @@ node_templates:
     type: cloudify.nodes.aws.elb.LoadBalancer
     properties:
       resource_config:
+        Name: test-elb
         kwargs:
-          Name: test-elb
           Scheme: internet-facing
           Attributes:
             - Key: idle_timeout.timeout_seconds
@@ -386,9 +399,9 @@ node_templates:
     type: cloudify.nodes.aws.ec2.SecurityGroup
     properties:
       resource_config:
+        GroupName: SecurityGroup1
+        Description: Example Security Group 1
         kwargs:
-          GroupName: SecurityGroup1
-          Description: Example Security Group 1
       client_config: *client_config
     relationships:
       - type: cloudify.relationships.depends_on
@@ -433,8 +446,8 @@ node_templates:
     type: cloudify.nodes.aws.ec2.Subnet
     properties:
       resource_config:
+        CidrBlock: '10.0.0.0/24'
         kwargs:
-          CidrBlock: '10.0.0.0/24'
           AvailabilityZone: { concat: [ { get_input: aws_region_name}, 'a' ] }
       client_config: *client_config
       Tags:
@@ -450,8 +463,8 @@ node_templates:
     type: cloudify.nodes.aws.ec2.Subnet
     properties:
       resource_config:
+        CidrBlock: '10.0.2.0/24'
         kwargs:
-          CidrBlock: '10.0.2.0/24'
           AvailabilityZone: { concat: [ { get_input: aws_region_name}, 'c' ] }
       client_config: *client_config
     relationships:
@@ -465,8 +478,8 @@ node_templates:
     type: cloudify.nodes.aws.ec2.Subnet
     properties:
       resource_config:
+        CidrBlock: '10.0.1.0/24'
         kwargs:
-          CidrBlock: '10.0.1.0/24'
           AvailabilityZone: { concat: [ { get_input: aws_region_name}, 'b' ] }
       client_config: *client_config
     relationships:
@@ -479,8 +492,8 @@ node_templates:
     type: cloudify.nodes.aws.ec2.Vpc
     properties:
       resource_config:
+        CidrBlock: '10.0.0.0/16'
         kwargs:
-          CidrBlock: '10.0.0.0/16'
       client_config: *client_config
       Tags:
         - Key: Name
@@ -529,25 +542,6 @@ node_templates:
               "memory": 500,
               "essential": true
             }]
-          # Use JSON as above, or YAML as below.
-          # - name: wordpress
-          #   links:
-          #   - mysql
-          #   image: wordpress
-          #   essential: true
-          #   portMappings:
-          #   - containerPort: 80
-          #     hostPort: 80
-          #   memory: 500
-          #   cpu: 10
-          # - name: mysql
-          #   image: mysql
-          #   essential: true
-          #   memory: 500
-          #   cpu: 10
-          #   environment:
-          #   - name: MYSQL_ROOT_PASSWORD
-          #     value: password
       client_config: *client_config
     relationships:
       - type: cloudify.relationships.depends_on

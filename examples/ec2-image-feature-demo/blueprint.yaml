@@ -18,6 +18,16 @@ inputs:
     type: string
     default: { get_secret: ec2_region_name }
 
+  ami_owner_filter:
+    type: string
+    description: The AWS AMI owner number.
+    default: '057448758665'
+
+  ami_name_filter:
+    type: string
+    description: The name of the AWS AMI in the AWS region.
+    default: 'CentOS 7.7.1908 x86_64 with cloud-init (HVM)'
+
 dsl_definitions:
 
   client_config: &client_config
@@ -33,7 +43,10 @@ node_templates:
       resource_config:
         kwargs:
           Filters:
-            - Name: image-id
+            - Name: name
               Values:
-                - ami-0120b2cc79038bf90
+                - { get_input: ami_name_filter }
+            - Name: owner-id
+              Values:
+                - { get_input: ami_owner_filter }
       client_config: *client_config
