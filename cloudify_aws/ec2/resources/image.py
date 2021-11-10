@@ -40,15 +40,24 @@ class EC2Image(EC2Base):
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
-        self.describe_image_filters = {}
+        image_filters = ctx_node.properties["resource_config"].get(
+                "kwargs", {}).get("Filters")
+        self.describe_image_filters = None
+        if resource_id:
+            self.prepare_describe_image_filter({IMAGE_IDS: [resource_id]})
+        elif image_filters:
+            self.prepare_describe_image_filter({FILTERS: image_filters})
 
     @property
     def properties(self):
         """Gets the properties of an external resource"""
         params = self.describe_image_filters
+        if not params:
+            return
         try:
             resources = \
                 self.client.describe_images(**params)
+            self.logger.info('Describe images returned: {}'.format(resources))
         except (ClientError, ParamValidationError):
             pass
         else:
@@ -61,7 +70,13 @@ class EC2Image(EC2Base):
     @property
     def status(self):
         """Gets the status of an external resource"""
-        props = self.properties
+        try:
+            props = self.properties
+        except NonRecoverableError as e:
+            if 'Found no AMIs matching provided filters' in str(e):
+                props = None
+            else:
+                raise e
         if not props:
             return None
         return props['State']
@@ -77,31 +92,68 @@ class EC2Image(EC2Base):
         return res
 
     def delete(self, params=None):
-        return
+        self.logger.debug('Deleting %s' % self.type_name)
+        self.logger.debug('Deregistering ImageId %s' % params.get('ImageId'))
+        self.client.deregister_image(**params)
 
-
-def prepare_describe_image_filter(params, iface):
-    iface.describe_image_filters = {
-        DRY_RUN: params.get(DRY_RUN, False),
-        IMAGE_IDS: params.get(IMAGE_IDS, []),
-        OWNERS: params.get(OWNERS, []),
-        EXECUTABLE_USERS: params.get(EXECUTABLE_USERS, []),
-        FILTERS: params.get(FILTERS, [])
-    }
-    return iface
+    def prepare_describe_image_filter(self, params):
+        dry_run = params.get(DRY_RUN, False)
+        image_ids = params.get(IMAGE_IDS, [])
+        owners = params.get(OWNERS, [])
+        executable_users = params.get(EXECUTABLE_USERS, [])
+        filters = params.get(FILTERS, [])
+        if any([dry_run, image_ids, owners, executable_users, filters]):
+            self.describe_image_filters = {
+                DRY_RUN: dry_run,
+                IMAGE_IDS: image_ids,
+                OWNERS: owners,
+                EXECUTABLE_USERS: executable_users,
+                FILTERS: filters}
+            self.logger.debug('Updated image filter: {}'.format(
+                self.describe_image_filters))
 
 
 @decorators.aws_resource(EC2Image, resource_type=RESOURCE_TYPE)
 def prepare(ctx, iface, resource_config, **_):
     """Prepares an AWS EC2 Image"""
     # Save the parameters
-    if ctx.instance.runtime_properties['use_external_resource']:
+    if ctx.node.properties.get('use_external_resource'):
         ctx.instance.runtime_properties['resource_config'] = resource_config
-        iface = \
-            prepare_describe_image_filter(
-                resource_config.copy(),
-                iface)
-        ami = iface.properties
-        utils.update_resource_id(ctx.instance, ami.get(IMAGE_ID))
-    else:
+        iface.prepare_describe_image_filter(resource_config)
+        utils.update_resource_id(ctx.instance, iface.properties.get(IMAGE_ID))
 
+
+@decorators.aws_resource(EC2Image, resource_type=RESOURCE_TYPE)
+@decorators.wait_for_status(status_good=['available'], fail_on_missing=False)
+def create(ctx, iface, resource_config, **_):
+    """Create an AWS EC2 Image"""
+    if ctx.instance.runtime_properties.get('use_external_resource'):
+        # if use_external_resource there we are using an existing image
+        return
+
+    params = utils.clean_params(resource_config)
+    if 'InstanceId' not in params:
+        params['InstanceId'] = utils.find_resource_id_by_type(
+            ctx.instance, 'cloudify.nodes.aws.ec2.Instances')
+    params = utils.clean_empty_vals(params)
+
+    # Actually create the resource
+    create_response = iface.create(params)
+    ctx.instance.runtime_properties['create_response'] = \
+        utils.JsonCleanuper(create_response).to_dict()
+    iface.update_resource_id(create_response['ImageId'])
+    utils.update_resource_id(ctx.instance, create_response['ImageId'])
+
+
+@decorators.aws_resource(EC2Image, resource_type=RESOURCE_TYPE)
+@decorators.wait_for_delete(status_deleted=['deregistered'])
+def delete(ctx, iface, resource_config, **_):
+    """delete/deregister an AWS EC2 Image"""
+    if not ctx.instance.runtime_properties.get('use_external_resource'):
+        params = {'ImageId': iface.resource_id}
+        try:
+            iface.delete(params)
+        except ClientError as e:
+            if 'is no longer available' in str(e):
+                return
+            raise e

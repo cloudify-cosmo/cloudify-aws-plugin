@@ -2,7 +2,7 @@ plugins:
   aws:
     executor: central_deployment_agent
     package_name: cloudify-aws-plugin
-    package_version: '2.12.13'
+    package_version: '2.12.14'
 
 data_types:
 
@@ -871,11 +871,114 @@ data_types:
         description: http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.create_route
         default: {}
 
+  cloudify.datatypes.aws.ec2.Image.config.create.BlockDeviceMappings:
+    properties:
+      DeviceName:
+        type: string
+        required: false
+        description: ~
+      VirtualName:
+        type: string
+        required: false
+        description: ~
+      Ebs:
+        type: cloudify.datatypes.aws.ec2.Image.config.create.BlockDeviceMappings.Ebs
+        required: false
+        description: ~
+      NoDevice:
+        type: string
+        required: false
+        description: ~
+      kwargs:
+        description: ~
+        default: { }
+
   cloudify.datatypes.aws.ec2.Image.config:
     properties:
+      BlockDeviceMappings:
+        type: cloudify.datatypes.aws.ec2.Image.config.create.BlockDeviceMappings
+        required: false
+        description: list contaning a dict of arguments to create an ami.
+      Description:
+        type: string
+        required: false
+        description: The description of the created image.
+      DryRun:
+        type: boolean
+        required: false
+        description: ~
+      InstanceId:
+        type: string
+        required: false
+        description: The InstanceId to create an image from.
+      Name:
+        type: string
+        required: false
+        description: The name of the image.
+      NoReboot:
+        type: boolean
+        required: false
+        description: ~
+      TagSpecifications:
+        type: cloudify.datatypes.aws.TagSpecifications
+        required: false
+        description: ~
       kwargs:
         description: "https://docs.cloudify.co/latest/working_with/official_plugins/infrastructure/aws/#cloudify-nodes-aws-ec2-image"
         default: {}
+
+  cloudify.datatypes.aws.ec2.Image.config.create.BlockDeviceMappings.Ebs:
+    properties:
+      DeleteOnTermination:
+        type: boolean
+        required: false
+        description: ~
+      Iops:
+        type: integer
+        required: false
+        description: ~
+      SnapshotId:
+        type: string
+        required: false
+        description: ~
+      VolumeSize:
+        type: integer
+        required: false
+        description: ~
+      VolumeType:
+        type: string
+        required: false
+        description: ~
+      KmsKeyId:
+        type: string
+        required: false
+        description:
+      Throughput:
+        type: integer
+        required: false
+        description: ~
+      OutpostArn:
+        type: string
+        required: false
+        description: ~
+      Encrypted:
+        type: boolean
+        required: false
+        description: ~
+      kwargs:
+        description: ~
+        default: { }
+
+  cloudify.datatypes.aws.TagSpecifications:
+    properties:
+      ResourceType:
+        type: string
+        required: false
+        description: ~
+      Tags:
+        type: list
+        required: false
+
 
   cloudify.datatypes.aws.ec2.Tags.config:
     properties:
@@ -2985,7 +3088,6 @@ node_types:
         type: boolean
         default: true
         description: indecates if external_resourc should be used
-      <<: *external_resource
       <<: *client_config
       <<: *resource_id
       resource_config:
@@ -2998,6 +3100,12 @@ node_types:
       cloudify.interfaces.lifecycle:
         create:
           implementation: aws.cloudify_aws.ec2.resources.image.prepare
+          inputs: *operation_inputs
+        configure:
+          implementation: aws.cloudify_aws.ec2.resources.image.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.ec2.resources.image.delete
           inputs: *operation_inputs
 
   cloudify.nodes.aws.ec2.Tags:
