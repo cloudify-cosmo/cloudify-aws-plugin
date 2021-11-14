@@ -358,13 +358,15 @@ def _aws_resource(function,
                         kwargs['resource_type'], kwargs['iface'].resource_id))
             if iface:
                 iface.populate_resource(ctx)
+                kwargs['iface'] = iface
             return
         ctx.logger.warn('{t} ID# {i} has force_operation set.'.format(
             t=resource_type, i=resource_id))
     result = function(**kwargs)
     if ctx.operation.name == 'cloudify.interfaces.lifecycle.configure' \
-                and iface:
+            and iface:
         iface.populate_resource(ctx)
+        kwargs['iface'] = iface
     if ctx.operation.name == 'cloudify.interfaces.lifecycle.delete':
         # cleanup runtime after delete
         keys = list(ctx.instance.runtime_properties.keys())
