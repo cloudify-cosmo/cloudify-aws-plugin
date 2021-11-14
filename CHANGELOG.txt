@@ -173,3 +173,5 @@
     - RD-586 Timeout for CloudFormation stack creation/deletion needs to be increased (add minimum_wait_time)
 2.12.12:
     - RD-3369-Return Aarch64 Wagons to Bundle
+2.12.13:
+    - RD-3565: Fix Populate Resource issue.
