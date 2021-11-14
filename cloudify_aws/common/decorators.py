@@ -338,6 +338,7 @@ def _aws_resource(function,
             resource_config = kwargs['resource_config']
     resource_id = utils.get_resource_id(node=ctx.node, instance=ctx.instance)
     # Check if using external
+    iface = kwargs.get('iface')
     if ctx.node.properties.get('use_external_resource', False):
         ctx.logger.info('{t} ID# {i} is user-provided.'.format(
             t=resource_type, i=resource_id))
@@ -355,13 +356,17 @@ def _aws_resource(function,
                 raise NonRecoverableError(
                     'Resource type {0} resource_id {1} not found.'.format(
                         kwargs['resource_type'], kwargs['iface'].resource_id))
-            kwargs['iface'].populate_resource(ctx)
+            if iface:
+                iface.populate_resource(ctx)
+                kwargs['iface'] = iface
             return
         ctx.logger.warn('{t} ID# {i} has force_operation set.'.format(
             t=resource_type, i=resource_id))
     result = function(**kwargs)
-    if ctx.operation.name == 'cloudify.interfaces.lifecycle.configure':
-        kwargs['iface'].populate_resource(ctx)
+    if ctx.operation.name == 'cloudify.interfaces.lifecycle.configure' \
+            and iface:
+        iface.populate_resource(ctx)
+        kwargs['iface'] = iface
     if ctx.operation.name == 'cloudify.interfaces.lifecycle.delete':
         # cleanup runtime after delete
         keys = list(ctx.instance.runtime_properties.keys())
