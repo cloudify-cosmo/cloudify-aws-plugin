@@ -37,12 +37,21 @@ from cloudify_aws.ec2.resources.image import (
 class TestEC2Image(TestBase):
 
     def setUp(self):
-        self.image = EC2Image("ctx_node", resource_id=True,
-                              client=True, logger=None)
+        ctx_node_mock = MagicMock(
+            properties={'resource_config': {'Name': 'foo'}})
+        mock_client = MagicMock()
+        self.image = EC2Image(ctx_node_mock,
+                              resource_id=True,
+                              client=mock_client,
+                              logger=None)
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',
                       mock_decorator)
         mock1.start()
         reload_module(image)
+        self.image.describe_image_filters = \
+            {'Filters': {
+                'name': 'CentOS 7.7.1908 x86_64 with cloud-init (HVM)',
+                'owner-id': '057448758665'}}
 
     def test_class_properties(self):
         effect = self.get_client_error_exception(name='EC2 Image')
@@ -67,12 +76,10 @@ class TestEC2Image(TestBase):
 
     def test_class_status(self):
         value = {}
+
         self.image.client = self.make_client_function('describe_images',
                                                       return_value=value)
-        with self.assertRaises(NonRecoverableError) as e:
-            self.image.status
-        self.assertEqual(text_type(e.exception),
-                         u"Found no AMIs matching provided filters.")
+        self.assertIsNone(self.image.status)
 
         value = {IMAGES: [None]}
         self.image.client = self.make_client_function('describe_images',
@@ -97,6 +104,7 @@ class TestEC2Image(TestBase):
         ctx = self.get_mock_ctx("Image")
         config = {IMAGE_ID: 'image', OWNERS: 'owner'}
         iface = MagicMock()
+        ctx.node.properties['use_external_resource'] = True
         iface.create = self.mock_return(config)
         image.prepare(ctx, iface, config)
         self.assertEqual(ctx.instance.runtime_properties['resource_config'],

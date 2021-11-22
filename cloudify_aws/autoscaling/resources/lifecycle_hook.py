@@ -73,7 +73,7 @@ class AutoscalingLifecycleHook(AutoscalingBase):
         return res
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(AutoscalingLifecycleHook, RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     """Prepares an AWS Autoscaling Lifecycle Hook"""
     # Save the parameters

@@ -86,7 +86,7 @@ class AutoscalingLaunchConfiguration(AutoscalingBase):
         return res
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(AutoscalingLaunchConfiguration, RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     """Prepares an AWS Autoscaling Autoscaling Launch Configuration"""
     # Save the parameters

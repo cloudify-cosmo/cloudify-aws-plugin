@@ -89,7 +89,7 @@ def prepare_describe_cluster_filter(params, iface):
     return iface
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(ECSCluster, RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     """Prepares an AWS ECS Cluster"""
     # Save the parameters

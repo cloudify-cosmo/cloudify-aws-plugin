@@ -505,6 +505,7 @@ def check_availability_zone(zone):
 
 
 def clean_params(p):
+    p = dict() if not p else p.copy()
     if not isinstance(p, dict) or not p:
         return {}
     for _k, _v in list(p.items()):
@@ -904,3 +905,22 @@ def get_node_instances_by_type_related_to_node_name(node_name,
         if node_type in node.type_hierarchy and node_name in rels:
             nodes.append({'node_instance': ni, 'node': node})
     return nodes
+
+
+def clean_empty_vals(params):
+    if isinstance(params, dict):
+        new_params = {}
+        for key, val in params.items():
+            if isinstance(val, dict) or isinstance(val, list):
+                val = clean_empty_vals(val)
+            if val:
+                new_params[key] = val
+        return new_params
+    if isinstance(params, list):
+        new_params = []
+        for val in params:
+            if isinstance(val, dict) or isinstance(val, list):
+                val = clean_empty_vals(val)
+            if val:
+                new_params.append(val)
+        return new_params

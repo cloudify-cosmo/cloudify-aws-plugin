@@ -157,7 +157,7 @@ class CloudFormationStack(AWSCloudFormationBase):
             return resources.get(STACK_RESOURCES_DRIFTS, [])
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(CloudFormationStack, RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     """Prepares an AWS CloudFormation Stack"""
     # Save the parameters

@@ -82,7 +82,7 @@ class S3BucketLifecycleConfiguration(S3Base):
         self.client.delete_bucket_lifecycle(**params)
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(S3BucketLifecycleConfiguration, RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     """Prepares an AWS Bucket Lifecycle Configuration Policy"""
     # Save the parameters

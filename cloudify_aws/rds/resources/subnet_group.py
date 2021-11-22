@@ -77,7 +77,7 @@ class SubnetGroup(RDSBase):
         self.client.delete_db_subnet_group(**params)
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(SubnetGroup, RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     '''Prepares an AWS RDS Subnet Group'''
     # Save the parameters
@@ -119,6 +119,7 @@ def create(ctx, iface, resource_config, **_):
     utils.update_resource_id(ctx.instance, resource_id)
     utils.update_resource_arn(
         ctx.instance, create_response['DBSubnetGroup']['DBSubnetGroupArn'])
+    ctx.instance.runtime_properties["create_response"] = create_response
 
 
 @decorators.aws_resource(SubnetGroup, RESOURCE_TYPE,

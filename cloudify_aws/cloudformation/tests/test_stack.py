@@ -90,19 +90,24 @@ class TestCloudFormationStack(TestBase):
         _ctx = self.get_mock_ctx(
             'test_create', test_properties=NODE_PROPERTIES,
             test_runtime_properties=RUNTIME_PROPERTIES,
-            type_hierarchy=STACK_TH,
-            ctx_operation_name='cloudify.interfaces.lifecycle.configure')
+            type_hierarchy=STACK_TH)
 
         current_ctx.set(_ctx)
-        self.fake_client.describe_stacks = MagicMock(return_value={
-            'Stacks': [{'StackName': 'Stack',
-                        'StackStatus': 'CREATE_COMPLETE'}]
-        })
+        self.fake_client.describe_stacks = MagicMock(side_effect=[
+            {},
+            {
+                'Stacks': [{'StackName': 'Stack',
+                            'StackStatus': 'CREATE_COMPLETE'}]
+            },
+            {
+                'Stacks': [{'StackName': 'Stack',
+                            'StackStatus': 'CREATE_COMPLETE'}]
+            }
+        ])
 
         self.fake_client.create_stack = MagicMock(return_value={
             'StackId': 'stack'
         })
-
         stack.create(ctx=_ctx, resource_config=None, iface=None)
 
         self.fake_boto.assert_called_with('cloudformation', **CLIENT_CONFIG)
@@ -135,13 +140,20 @@ class TestCloudFormationStack(TestBase):
                 'test_delete',
                 test_properties=NODE_PROPERTIES,
                 test_runtime_properties=RUNTIMEPROP_AFTER_CREATE,
-                type_hierarchy=STACK_TH)
+                type_hierarchy=STACK_TH,
+                ctx_operation_name='cloudify.interfaces.lifecycle.delete')
 
         current_ctx.set(_ctx)
-        self.fake_client.describe_stacks = MagicMock(return_value={
-            'Stacks': [{'StackName': 'Stack',
-                        'StackStatus': 'DELETE_COMPLETE'}]
-        })
+        self.fake_client.describe_stacks = MagicMock(side_effect=[
+            {
+                'Stacks': [{'StackName': 'Stack',
+                            'StackStatus': 'CREATE_COMPLETE'}]
+            },
+            {
+                'Stacks': [{'StackName': 'Stack',
+                            'StackStatus': 'DELETE_COMPLETE'}]
+            }
+        ])
 
         self.fake_client.delete_stack = MagicMock(return_value=DELETE_RESPONSE)
 
@@ -160,7 +172,9 @@ class TestCloudFormationStack(TestBase):
             self.get_mock_ctx('test_pull',
                               test_properties=NODE_PROPERTIES,
                               test_runtime_properties=RUNTIMEPROP_AFTER_START,
-                              type_hierarchy=STACK_TH)
+                              type_hierarchy=STACK_TH,
+                              ctx_operation_name='cloudify.interfaces.'
+                                                 'lifecycle.pull')
         current_ctx.set(_ctx)
 
         # Change StackId

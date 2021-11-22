@@ -186,7 +186,8 @@ def _detach_ebs(iface, volume_id, **kwargs):
         deleted_params['InstanceId'] = kwargs['InstanceId']
     if 'DryRun' in kwargs:
         deleted_params['DryRun'] = kwargs['DryRun']
-    iface.delete(deleted_params)
+    if iface.status not in [DETACHED, AVAILABLE]:
+        iface.delete(deleted_params)
 
 
 def _create_attachment(ctx, iface, resource_config):
@@ -304,7 +305,8 @@ def delete(ctx, iface, resource_config, **_):
     deleted_params[VOLUME_ID] = resource_id
 
     volume_config = ctx.instance.runtime_properties['resource_config']
-    deleted_params['DryRun'] = volume_config.get('DryRun') or False
+    if isinstance(volume_config, dict):
+        deleted_params['DryRun'] = volume_config.get('DryRun') or False
     iface.delete(deleted_params)
 
 
@@ -347,7 +349,7 @@ def attach_using_relationship(ctx, iface, **_):
 
 
 @decorators.aws_relationship(EC2Volume, RESOURCE_TYPE_VOLUME)
-@decorators.wait_on_relationship_status(status_good=[DETACHED, AVAILABLE],
+@decorators.wait_on_relationship_unlink(status_deleted=[DETACHED, AVAILABLE],
                                         status_pending=[DETACHING, INUSE])
 def detach_using_relationship(ctx, **_):
     """
@@ -381,7 +383,7 @@ def attach(ctx, iface, resource_config, **_):
 
 @decorators.aws_resource(EC2VolumeAttachment, RESOURCE_TYPE_VOLUME_ATTACHMENT,
                          ignore_properties=True)
-@decorators.wait_for_status(status_good=[DETACHED, AVAILABLE],
+@decorators.wait_for_delete(status_deleted=[DETACHED, AVAILABLE],
                             status_pending=[DETACHING, INUSE])
 def detach(ctx, iface, resource_config, **kwargs):
     """

@@ -75,7 +75,7 @@ class S3BucketTagging(S3Base):
         self.client.delete_bucket_tagging(**params)
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(S3BucketTagging, RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     """Prepares an AWS Bucket Bucket Tagging"""
     # Save the parameters

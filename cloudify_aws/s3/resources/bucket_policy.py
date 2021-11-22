@@ -84,7 +84,7 @@ class S3BucketPolicy(S3Base):
         self.client.delete_bucket_policy(**params)
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(S3BucketPolicy, RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     """Prepares an AWS S3 Bucket Policy"""
     # Save the parameters
