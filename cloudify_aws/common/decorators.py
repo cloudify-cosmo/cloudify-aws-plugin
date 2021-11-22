@@ -382,7 +382,8 @@ def _aws_resource(function,
     #                 not kwargs['iface'].verify_resource_exists():
     #             raise NonRecoverableError(
     #                 'Resource type {0} resource_id {1} not found.'.format(
-    #                     kwargs['resource_type'], kwargs['iface'].resource_id))
+    #                     kwargs['resource_type'],
+    #                     kwargs['iface'].resource_id))
     #         if iface:
     #             iface.populate_resource(ctx)
     #             kwargs['iface'] = iface
