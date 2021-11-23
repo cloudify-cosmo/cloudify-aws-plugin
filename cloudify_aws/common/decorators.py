@@ -393,15 +393,51 @@ def _aws_resource(function,
 
     create_operation = get_create_op(ctx.operation.name)
     delete_operation = get_delete_op(ctx.operation.name)
-    if not skip(
-            resource_type=resource_type,
-            resource_id=ctx.instance.id,
-            _ctx_node=ctx.node,
-            exists=iface.status,
-            special_condition=kwargs.get('force_operation'),
-            create_operation=create_operation,
-            delete_operation=delete_operation):
-        result = function(**kwargs)
+
+    # if not skip(
+    #         resource_type=resource_type,
+    #         resource_id=ctx.instance.id,
+    #         _ctx_node=ctx.node,
+    #         exists=iface.status,
+    #         special_condition=kwargs.get('force_operation'),
+    #         create_operation=create_operation,
+    #         delete_operation=delete_operation):
+    #     result = function(**kwargs)
+
+    if ctx.node.properties.get('use_external_resource', False):
+        ctx.logger.info('{t} ID# {i} is user-provided.'.format(
+            t=resource_type, i=resource_id))
+        if not skip(
+                resource_type=resource_type,
+                resource_id=ctx.instance.id,
+                _ctx_node=ctx.node,
+                exists=iface.status,
+                special_condition=kwargs.get('force_operation'),
+                create_operation=create_operation,
+                delete_operation=delete_operation):
+
+            # If "force_operation" is not set then we need to make
+            # sure that runtime properties for node instance are
+            # setting correctly
+            # Set "resource_config" and "EXT_RES_ID"
+
+            ctx.instance.runtime_properties['resource_config'] = \
+                resource_config
+            ctx.instance.runtime_properties[EXT_RES_ID] = resource_id
+            if operation_name not in ['delete', 'create'] and \
+                    not kwargs['iface'].verify_resource_exists():
+                raise NonRecoverableError(
+                    'Resource type {0} resource_id {1} not found.'.format(
+                        kwargs['resource_type'],
+                        kwargs['iface'].resource_id))
+            if iface:
+                iface.populate_resource(ctx)
+                kwargs['iface'] = iface
+            return
+        ctx.logger.warn('{t} ID# {i} has force_operation set.'.format(
+            t=resource_type, i=resource_id))
+    result = function(**kwargs)
+
     if ctx.operation.name == 'cloudify.interfaces.lifecycle.configure' \
             and iface:
         iface.populate_resource(ctx)
