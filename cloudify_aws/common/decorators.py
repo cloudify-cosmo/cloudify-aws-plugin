@@ -410,8 +410,6 @@ def _aws_resource(function,
     #     ctx.logger.warn('{t} ID# {i} has force_operation set.'.format(
     #         t=resource_type, i=resource_id))
 
-
-
     # if ctx.node.properties.get('use_external_resource', False):
     #     ctx.logger.info('{t} ID# {i} is user-provided.'.format(
     #         t=resource_type, i=resource_id))
