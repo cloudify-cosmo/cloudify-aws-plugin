@@ -113,7 +113,8 @@ class TestBase(unittest.TestCase):
                      ctx_operation_name=None):
 
         operation_ctx = {
-            'retry_number': 0, 'name': 'cloudify.interfaces.lifecycle.'
+            'retry_number': 0,
+            'name': 'cloudify.interfaces.lifecycle.configure'
         } if not ctx_operation_name else {
             'retry_number': 0, 'name': ctx_operation_name
         }
