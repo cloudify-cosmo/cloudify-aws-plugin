@@ -368,12 +368,15 @@ def _aws_resource(function,
     iface = kwargs.get('iface')
     create_operation = get_create_op(ctx.operation.name)
     delete_operation = get_delete_op(ctx.operation.name)
-
+    if ctx.instance.id:
+        exists = True
+    else:
+        exists = False
     if not skip(
             resource_type=resource_type,
             resource_id=ctx.instance.id,
             _ctx_node=ctx.node,
-            exists=iface.get('status'),
+            exists=exists,
             special_condition=kwargs.get('force_operation'),
             create_operation=create_operation,
             delete_operation=delete_operation):
