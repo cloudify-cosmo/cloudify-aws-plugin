@@ -373,7 +373,7 @@ def _aws_resource(function,
             resource_type=resource_type,
             resource_id=ctx.instance.id,
             _ctx_node=ctx.node,
-            exists=iface.status,
+            exists=iface.get('status'),
             special_condition=kwargs.get('force_operation'),
             create_operation=create_operation,
             delete_operation=delete_operation):
