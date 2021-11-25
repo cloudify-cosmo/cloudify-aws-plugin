@@ -35,6 +35,7 @@ class DBInstance(RDSBase):
     '''
         AWS RDS DB Instance interface
     '''
+
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         RDSBase.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
@@ -149,27 +150,27 @@ def prepare_assoc(ctx, iface, resource_config, **inputs):
                           'cloudify.nodes.aws.rds.SubnetGroup'):
         ctx.source.instance.runtime_properties[
             'resource_config']['DBSubnetGroupName'] = utils.get_resource_id(
-                node=ctx.target.node,
-                instance=ctx.target.instance,
-                raise_on_missing=True)
+            node=ctx.target.node,
+            instance=ctx.target.instance,
+            raise_on_missing=True)
     elif utils.is_node_type(ctx.target.node,
                             'cloudify.nodes.aws.rds.OptionGroup'):
         ctx.source.instance.runtime_properties[
             'resource_config']['OptionGroupName'] = utils.get_resource_id(
-                node=ctx.target.node,
-                instance=ctx.target.instance,
-                raise_on_missing=True)
+            node=ctx.target.node,
+            instance=ctx.target.instance,
+            raise_on_missing=True)
     elif utils.is_node_type(ctx.target.node,
                             'cloudify.nodes.aws.rds.ParameterGroup'):
         ctx.source.instance.runtime_properties[
             'resource_config']['DBParameterGroupName'] = utils.get_resource_id(
-                node=ctx.target.node,
-                instance=ctx.target.instance,
-                raise_on_missing=True)
+            node=ctx.target.node,
+            instance=ctx.target.instance,
+            raise_on_missing=True)
     elif (utils.is_node_type(ctx.target.node,
-                             'cloudify.aws.nodes.SecurityGroup')
-              or utils.is_node_type(ctx.target.node,
-                                    'cloudify.nodes.aws.ec2.SecurityGroup')):
+                             'cloudify.aws.ec2.SecurityGroup')
+          or utils.is_node_type(ctx.target.node,
+                                'cloudify.nodes.aws.nodes.SecurityGroup')):
         security_groups = ctx.source.instance.runtime_properties[
             'resource_config'].get('VpcSecurityGroupIds', list())
         security_groups.append(
