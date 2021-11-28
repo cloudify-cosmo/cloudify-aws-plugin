@@ -160,7 +160,9 @@ class TestCloudFormationStack(TestBase):
             self.get_mock_ctx('test_pull',
                               test_properties=NODE_PROPERTIES,
                               test_runtime_properties=RUNTIMEPROP_AFTER_START,
-                              type_hierarchy=STACK_TH)
+                              type_hierarchy=STACK_TH,
+                              ctx_operation_name='cloudify.interfaces.'
+                                                 'lifecycle.delete')
         current_ctx.set(_ctx)
 
         # Change StackId
