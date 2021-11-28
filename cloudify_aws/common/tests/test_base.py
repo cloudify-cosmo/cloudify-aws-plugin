@@ -110,8 +110,7 @@ class TestBase(unittest.TestCase):
                      test_relationships=None,
                      type_hierarchy=None,
                      type_node='cloudify.nodes.Root',
-                     ctx_operation_name='cloudify.interfaces.lifecycle.'
-                                        'configure'):
+                     ctx_operation_name=None):
 
         operation_ctx = {
             'retry_number': 0,

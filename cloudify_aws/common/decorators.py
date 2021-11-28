@@ -366,6 +366,7 @@ def _aws_resource(function,
     resource_id = utils.get_resource_id(node=ctx.node, instance=ctx.instance)
     # Check if using external
     iface = kwargs.get('iface')
+
     create_operation = get_create_op(ctx.operation.name)
     delete_operation = get_delete_op(ctx.operation.name)
     if ctx.instance.id:
@@ -380,7 +381,6 @@ def _aws_resource(function,
             special_condition=kwargs.get('force_operation'),
             create_operation=create_operation,
             delete_operation=delete_operation):
-
         result = function(**kwargs)
     else:
         ctx.instance.runtime_properties['resource_config'] = resource_config
@@ -388,6 +388,7 @@ def _aws_resource(function,
         if iface:
             iface.populate_resource(ctx)
             kwargs['iface'] = iface
+
     # if ctx.node.properties.get('use_external_resource', False):
     #     ctx.logger.info('{t} ID# {i} is user-provided.'.format(
     #         t=resource_type, i=resource_id))
