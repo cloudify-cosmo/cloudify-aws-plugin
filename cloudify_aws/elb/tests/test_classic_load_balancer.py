@@ -270,6 +270,7 @@ class TestELBClassicLoadBalancer(TestBase):
             test_runtime_properties=RUNTIME_PROPERTIES_AFTER_CREATE,
             type_hierarchy=LOADBALANCER_TH,
             type_node=LOADBALANCER_TYPE,
+            ctx_operation_name='cloudify.interfaces.lifecycle.delete'
         )
 
         current_ctx.set(_ctx)
