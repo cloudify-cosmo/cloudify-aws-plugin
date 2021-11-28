@@ -236,8 +236,8 @@ class TestSQSQueue(TestBase):
             _ctx.instance.runtime_properties,
             {
                 'aws_resource_arn': 'fake_QueueArn',
-                'aws_resource_id': 'fake_QueueUrl',
-                'resource_config': {}
+                'aws_resource_id': 'fake_QueueUrl'
+                # 'resource_config': {}
             }
         )
 
