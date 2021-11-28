@@ -110,7 +110,8 @@ class TestIAMGroup(TestBase):
             'test_delete',
             test_properties=NODE_PROPERTIES,
             test_runtime_properties=RUNTIME_PROPERTIES_AFTER_CREATE,
-            type_hierarchy=GROUP_TH
+            type_hierarchy=GROUP_TH,
+            ctx_operation_name='cloudify.interfaces.lifecycle.delete'
         )
 
         current_ctx.set(_ctx)
