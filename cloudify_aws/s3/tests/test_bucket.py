@@ -136,6 +136,7 @@ class TestS3Bucket(TestBase):
             type_node=BUCKET_TYPE,
             type_name='s3',
             type_class=bucket,
+            operation_name="cloudify.interfaces.lifecycle.configure"
         )
 
     def test_create(self):
