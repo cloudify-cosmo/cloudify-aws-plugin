@@ -122,7 +122,8 @@ class TestRDSOption(TestBase):
                 '_set_changed': True,
                 'resource_config': {}
             },
-            type_hierarchy=PARAMETER_OPTION_TH
+            type_hierarchy=PARAMETER_OPTION_TH,
+            operation_name="cloudify.interfaces.lifecycle.configure"
         )
 
         _target_ctx = self.get_mock_ctx(
