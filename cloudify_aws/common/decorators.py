@@ -369,7 +369,7 @@ def _aws_resource(function,
 
     create_operation = get_create_op(ctx.operation.name)
     delete_operation = get_delete_op(ctx.operation.name)
-    if ctx.instance.id:
+    if iface.status:
         exists = True
     else:
         exists = False
