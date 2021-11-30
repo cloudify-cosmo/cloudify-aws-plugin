@@ -96,7 +96,7 @@ def prepare_describe_task_definition_filter(params, iface):
     return iface
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(ECSTaskDefinition, RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     """Prepares an ECS Task Definition"""
     # Save the parameters

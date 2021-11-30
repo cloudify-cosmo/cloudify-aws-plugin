@@ -165,7 +165,7 @@ def _download_local_file(local_path):
             causes=[exception_to_error_cause(error, tb)])
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(S3BucketObject, RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     """Prepares an AWS S3 Bucket Object"""
     # Save the parameters

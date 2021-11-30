@@ -124,7 +124,7 @@ def get_cluster_name(ctx):
     return cluster_name
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(ECSService, RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     """Prepares an AWS ECS Service"""
     # Save the parameters

@@ -123,7 +123,7 @@ class TestRDSOption(TestBase):
                 'resource_config': {}
             },
             type_hierarchy=PARAMETER_OPTION_TH,
-            operation_name="cloudify.interfaces.lifecycle.configure"
+            ctx_operation_name="cloudify.interfaces.lifecycle.configure"
         )
 
         _target_ctx = self.get_mock_ctx(
@@ -136,7 +136,7 @@ class TestRDSOption(TestBase):
                 'aws_resource_id': 'aws_target_mock_id',
             },
             type_hierarchy=type_hierarchy,
-            operation_name="cloudify.interfaces.lifecycle.configure"
+            ctx_operation_name="cloudify.interfaces.lifecycle.configure"
         )
 
         _ctx = self.get_mock_relationship_ctx(
@@ -145,7 +145,7 @@ class TestRDSOption(TestBase):
             test_runtime_properties={},
             test_source=_source_ctx,
             test_target=_target_ctx,
-            operation_name="cloudify.interfaces.lifecycle.configure"
+            ctx_operation_name="cloudify.interfaces.lifecycle.configure"
         )
 
         return _source_ctx, _target_ctx, _ctx

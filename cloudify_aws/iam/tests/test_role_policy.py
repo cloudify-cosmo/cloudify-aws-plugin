@@ -175,8 +175,7 @@ class TestIAMRolePolicy(TestBase):
         self.fake_client.delete_role_policy.assert_called_with(
             PolicyName='aws_resource', RoleName='subnet_id')
         self.assertEqual(
-            _ctx.instance.runtime_properties,
-            RUNTIME_PROPERTIES_AFTER_CREATE
+            _ctx.instance.runtime_properties, {}
         )
 
 

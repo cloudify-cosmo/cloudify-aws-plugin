@@ -78,7 +78,7 @@ class EFSMountTarget(EFSBase):
         self.client.delete_mount_target(**params)
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(EFSMountTarget, RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     """Prepares an AWS EFS Mount Target"""
     # Save the parameters

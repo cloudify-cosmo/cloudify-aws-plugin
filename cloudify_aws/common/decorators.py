@@ -256,11 +256,10 @@ def get_create_op(op_name):
     Normally we just do the logic in the last return. However, we may want
     special behavior for some types.
 
-    :param op_name: ctx.operation.name.
+    :param op_name: ctx.operation.name.split('.')[-1].
     :return: bool
     """
-    op = op_name.split('.')[-1]
-    return 'configure' in op
+    return 'configure' == op_name
     # return 'create' in op or 'configure' in op
 
 
@@ -269,11 +268,10 @@ def get_delete_op(op_name):
     Normally we just do the logic in the last return. However, we may want
     special behavior for some types.
 
-    :param op_name: ctx.operation.name.
+    :param op_name: ctx.operation.name.split('.')[-1].
     :return: bool
     """
-    op = op_name.split('.')[-1]
-    return 'delete' in op
+    return 'delete' == op_name
 
 
 def _aws_resource(function,
@@ -284,6 +282,10 @@ def _aws_resource(function,
 
     ctx = kwargs['ctx']
     _, _, _, operation_name = ctx.operation.name.split('.')
+    create_operation = get_create_op(operation_name)
+    delete_operation = get_delete_op(operation_name)
+    if create_operation and '__deleted' in ctx.instance.runtime_properties:
+        del ctx.instance.runtime_properties['__deleted']
     props = ctx.node.properties
     runtime_instance_properties = ctx.instance.runtime_properties
     # Override the resource ID if needed
@@ -367,18 +369,20 @@ def _aws_resource(function,
     # Check if using external
     iface = kwargs.get('iface')
 
-    create_operation = get_create_op(ctx.operation.name)
-    delete_operation = get_delete_op(ctx.operation.name)
-    if iface.status:
-        exists = True
-    else:
+    special_condition = (not create_operation and not delete_operation) or \
+        kwargs.get('force_operation')
+    try:
+        exists = iface.status
+    except (AttributeError, NotImplementedError):
         exists = False
+        special_condition = True
+    result = None
     if not skip(
             resource_type=resource_type,
             resource_id=ctx.instance.id,
             _ctx_node=ctx.node,
             exists=exists,
-            special_condition=kwargs.get('force_operation'),
+            special_condition=special_condition,
             create_operation=create_operation,
             delete_operation=delete_operation):
         result = function(**kwargs)
@@ -448,15 +452,15 @@ def _aws_resource(function,
     #         t=resource_type, i=resource_id))
     # result = function(**kwargs)
 
-    if ctx.operation.name == 'cloudify.interfaces.lifecycle.configure' \
-            and iface:
+    if create_operation and iface:
         iface.populate_resource(ctx)
         kwargs['iface'] = iface
-    if ctx.operation.name == 'cloudify.interfaces.lifecycle.delete':
+    if delete_operation:
         # cleanup runtime after delete
         keys = list(ctx.instance.runtime_properties.keys())
         for key in keys:
-            del ctx.instance.runtime_properties[key]
+            if key != '__deleted':
+                del ctx.instance.runtime_properties[key]
     return result
 
 

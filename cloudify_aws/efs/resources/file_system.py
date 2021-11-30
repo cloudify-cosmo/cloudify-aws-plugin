@@ -71,7 +71,7 @@ class EFSFileSystem(EFSBase):
         self.client.delete_file_system(**params)
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(EFSFileSystem, RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     """Prepares an AWS EFS File System"""
     # Save the parameters

@@ -123,6 +123,13 @@ class TestBase(unittest.TestCase):
                 'region_name': 'us-foobar-1'
             }
         }
+        if 'use_external_resource' not in test_properties:
+            test_properties['use_external_resource'] = False
+        if 'create_if_missing' not in test_properties:
+            test_properties['create_if_missing'] = False
+        if 'modify_external_resource' not in test_properties:
+            test_properties['modify_external_resource'] = True
+
         test_runtime_properties = test_runtime_properties or {}
 
         ctx = MockCloudifyContext(
@@ -580,14 +587,15 @@ class TestBase(unittest.TestCase):
             'test_prepare',
             test_properties=DEFAULT_NODE_PROPERTIES,
             test_runtime_properties=DEFAULT_RUNTIME_PROPERTIES,
-            type_hierarchy=type_hierarchy
+            type_hierarchy=type_hierarchy,
+            ctx_operation_name='cloudify.interfaces.lifecycle.create'
         )
 
         current_ctx.set(_ctx)
         fake_boto, fake_client = self.fake_boto_client(type_name)
-
+        iface = MagicMock()
         with patch('boto3.client', fake_boto):
-            type_class.prepare(ctx=_ctx, resource_config=None, iface=None)
+            type_class.prepare(ctx=_ctx, resource_config={}, iface=iface)
 
             self.assertEqual(
                 _ctx.instance.runtime_properties, {

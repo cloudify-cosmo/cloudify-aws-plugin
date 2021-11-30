@@ -70,7 +70,7 @@ class EFSFileSystemTags(EFSBase):
         self.client.delete_tags(**params)
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(EFSFileSystemTags, RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     """Prepares an AWS EFS File System Tags"""
     # Save the parameters

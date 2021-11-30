@@ -24,8 +24,14 @@ from cloudify_aws.common import decorators
 
 class TestDecorators(TestBase):
 
+    def setUp(self):
+        super(TestDecorators, self).setUp()
+        self.maxDiff = None
+
     def _gen_decorators_context(self, _test_name, runtime_prop=None,
                                 prop=None, op_name=None):
+
+        op_name = op_name or 'cloudify.interfaces.lifecycle.create'
 
         _test_node_properties = prop if prop else {
             'use_external_resource': False
@@ -38,7 +44,7 @@ class TestDecorators(TestBase):
             test_properties=_test_node_properties,
             test_runtime_properties=_test_runtime_properties,
             type_hierarchy=['cloudify.nodes.Root'],
-            ctx_operation_name=None if not op_name else op_name
+            ctx_operation_name=op_name
         )
         current_ctx.set(_ctx)
         return _ctx
@@ -368,7 +374,9 @@ class TestDecorators(TestBase):
             'resource_config': {}
         })
 
-        test_func(ctx=_ctx, aws_resource_id='res_id')
+        iface = MagicMock()
+        iface.status = None
+        test_func(ctx=_ctx, aws_resource_id='res_id', iface=iface)
 
         self.assertEqual(_ctx.instance.runtime_properties,
                          {'aws_resource_arn': 'res_arn',

@@ -195,6 +195,7 @@ class testIfaceRequirement(TestBase):
                 test_target=self.get_op_ctx(operation_callable))
             self.perform_operation(operation_callable, args, kwargs)
 
+    @patch('cloudify_aws.common.decorators.skip')
     @patch('cloudify_aws.common.utils.get_rest_client')
     @patch('cloudify_aws.common.connection.Boto3Connection')
     @patch('cloudify_aws.common.decorators._wait_for_status')

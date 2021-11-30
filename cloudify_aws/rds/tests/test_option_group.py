@@ -150,8 +150,10 @@ class TestRDSOptionGroup(TestBase):
         self.fake_client.delete_option_group = MagicMock(
             return_value={}
         )
+        iface = MagicMock()
+        iface.status = None
         option_group.delete(
-            ctx=_ctx, resource_config=None, iface=None
+            ctx=_ctx, resource_config=None, iface=iface
         )
         self.fake_boto.assert_called_with(
             'rds', **CLIENT_CONFIG

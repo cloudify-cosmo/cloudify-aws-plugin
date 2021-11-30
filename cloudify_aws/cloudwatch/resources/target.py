@@ -71,7 +71,7 @@ class CloudwatchTarget(AWSCloudwatchBase):
         return res
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(CloudwatchTarget, RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     """Prepares an AWS Cloudwatch Alarm"""
     # Save the parameters

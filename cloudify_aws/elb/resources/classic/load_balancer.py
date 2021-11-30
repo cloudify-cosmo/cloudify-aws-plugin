@@ -119,7 +119,7 @@ class ELBClassicLoadBalancer(ELBBase):
             'deregister_instances_from_load_balancer', params)
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(ELBClassicLoadBalancer, RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     """Prepares an ELB classic load balancer"""
     # Save the parameters
