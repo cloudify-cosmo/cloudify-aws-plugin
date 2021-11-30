@@ -286,7 +286,7 @@ class TestELBClassicLoadBalancer(TestBase):
         iface.status = None
         load_balancer.delete(ctx=_ctx, resource_config=None, iface=iface)
 
-        self.fake_boto.assert_called_with('elb', **CLIENT_CONFIG)
+        self.fake_boto.assert_called_with('rds', **CLIENT_CONFIG)
 
         self.fake_client.delete_load_balancer.assert_called_with(
             LoadBalancerName='aws_resource'
