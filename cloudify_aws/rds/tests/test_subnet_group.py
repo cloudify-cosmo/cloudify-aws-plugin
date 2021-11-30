@@ -101,7 +101,6 @@ class TestRDSSubnetGroup(TestBase):
             test_properties=NODE_PROPERTIES,
             test_runtime_properties=RUNTIME_PROPERTIES,
             type_hierarchy=SUBNET_GROUP_TH,
-            # ctx_operation_name='cloudify.interfaces.lifecycle.configure',
         )
 
         current_ctx.set(_ctx)
@@ -123,14 +122,6 @@ class TestRDSSubnetGroup(TestBase):
                     'Stacks': [{'StackName': 'Stack',
                                 'StackStatus': 'CREATE_COMPLETE'}]
                 }
-                # return_value={'DBSubnetGroups': [{
-                #     'SubnetGroupStatus': 'Complete',
-                #     'DBSubnetGroup': {
-                #         'DBSubnetGroupName': 'zzzzzz-subnet-group',
-                #         'DBSubnetGroupArn': 'DBSubnetGroupArn',
-                #         'SubnetIds': SUBNET_IDS
-                #     }
-                # }]}
             ])
 
         self.fake_client.create_db_subnet_group = MagicMock(
