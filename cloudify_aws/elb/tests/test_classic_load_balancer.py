@@ -226,8 +226,7 @@ class TestELBClassicLoadBalancer(TestBase):
             test_runtime_properties=RUNTIME_PROPERTIES_AFTER_CREATE,
             type_hierarchy=LOADBALANCER_TH,
             type_node=LOADBALANCER_TYPE,
-            ctx_operation_name='aws.cloudify_aws.elb.'
-                               'resources.load_balancer.modify'
+            ctx_operation_name='cloudify.interfaces.lifecycle.start'
         )
 
         current_ctx.set(_ctx)
@@ -286,7 +285,7 @@ class TestELBClassicLoadBalancer(TestBase):
         iface.status = None
         load_balancer.delete(ctx=_ctx, resource_config=None, iface=iface)
 
-        self.fake_boto.assert_called_with('rds', **CLIENT_CONFIG)
+        self.fake_boto.assert_called_with('elb', **CLIENT_CONFIG)
 
         self.fake_client.delete_load_balancer.assert_called_with(
             LoadBalancerName='aws_resource'
