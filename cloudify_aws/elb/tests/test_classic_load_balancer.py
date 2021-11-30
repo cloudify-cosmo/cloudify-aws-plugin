@@ -211,13 +211,13 @@ class TestELBClassicLoadBalancer(TestBase):
                     ]
                 },
             ])
-        # self.fake_client.create_load_balancer = self.mock_return({
-        #     'LoadBalancers': [{
-        #         RESOURCE_NAME: "abc",
-        #         LB_ARN: "def"
-        #     }],
-        #     'DNSName': 'DNSName'
-        # })
+        self.fake_client.create_load_balancer = self.mock_return({
+            'LoadBalancers': [{
+                RESOURCE_NAME: "abc",
+                LB_ARN: "def"
+            }],
+            'DNSName': 'DNSName'
+        })
 
         load_balancer.create(ctx=_ctx, resource_config=None, iface=None,
                              params=None)
