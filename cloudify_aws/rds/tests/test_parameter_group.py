@@ -249,9 +249,11 @@ class TestRDSParameterGroup(TestBase):
                 }]
             }
         )
+        iface = MagicMock()
+        iface.status = None
         with self.assertRaises(OperationRetry) as error:
             parameter_group.delete(
-                ctx=_ctx, resource_config=None, iface=None
+                ctx=_ctx, resource_config=None, iface=iface
             )
 
         self.assertEqual(
