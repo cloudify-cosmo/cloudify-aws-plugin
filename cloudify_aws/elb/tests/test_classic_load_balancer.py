@@ -226,6 +226,8 @@ class TestELBClassicLoadBalancer(TestBase):
             test_runtime_properties=RUNTIME_PROPERTIES_AFTER_CREATE,
             type_hierarchy=LOADBALANCER_TH,
             type_node=LOADBALANCER_TYPE,
+            ctx_operation_name='aws.cloudify_aws.elb.'
+                               'resources.load_balancer.modify'
         )
 
         current_ctx.set(_ctx)
