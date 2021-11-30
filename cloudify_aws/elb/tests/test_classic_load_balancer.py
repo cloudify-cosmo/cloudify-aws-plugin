@@ -16,7 +16,7 @@
 import unittest
 
 # Third party imports
-from mock import patch, Mock
+from mock import patch, Mock, MagicMock
 
 from cloudify.state import current_ctx
 from cloudify.exceptions import OperationRetry
@@ -236,7 +236,9 @@ class TestELBClassicLoadBalancer(TestBase):
             DELETE_RESPONSE)
 
         # should be used resource config from inputs
-        load_balancer.start(ctx=_ctx, resource_config={'a': 'b'}, iface=None)
+        iface = MagicMock()
+        iface.status = None
+        load_balancer.start(ctx=_ctx, resource_config={'a': 'b'}, iface=iface)
 
         self.fake_boto.assert_called_with('elb', **CLIENT_CONFIG)
 
