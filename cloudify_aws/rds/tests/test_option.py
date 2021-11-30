@@ -145,7 +145,7 @@ class TestRDSOption(TestBase):
             test_runtime_properties={},
             test_source=_source_ctx,
             test_target=_target_ctx,
-            ctx_operation_name="cloudify.interfaces.lifecycle.configure"
+            # ctx_operation_name="cloudify.interfaces.lifecycle.configure"
         )
 
         return _source_ctx, _target_ctx, _ctx
