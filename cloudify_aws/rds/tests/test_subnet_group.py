@@ -101,21 +101,37 @@ class TestRDSSubnetGroup(TestBase):
             test_properties=NODE_PROPERTIES,
             test_runtime_properties=RUNTIME_PROPERTIES,
             type_hierarchy=SUBNET_GROUP_TH,
-            ctx_operation_name='cloudify.interfaces.lifecycle.configure',
+            # ctx_operation_name='cloudify.interfaces.lifecycle.configure',
         )
 
         current_ctx.set(_ctx)
 
         self.fake_client.describe_db_subnet_groups = MagicMock(
-            return_value={'DBSubnetGroups': [{
-                'SubnetGroupStatus': 'Complete',
-                'DBSubnetGroup': {
-                    'DBSubnetGroupName': 'zzzzzz-subnet-group',
-                    'DBSubnetGroupArn': 'DBSubnetGroupArn',
-                    'SubnetIds': SUBNET_IDS
+            side_effect=[
+                {},
+                {
+                    'DBSubnetGroups': [{
+                        'SubnetGroupStatus': 'Complete',
+                        'DBSubnetGroup': {
+                            'DBSubnetGroupName': 'zzzzzz-subnet-group',
+                            'DBSubnetGroupArn': 'DBSubnetGroupArn',
+                            'SubnetIds': SUBNET_IDS
+                        }
+                    }]
+                },
+                {
+                    'Stacks': [{'StackName': 'Stack',
+                                'StackStatus': 'CREATE_COMPLETE'}]
                 }
-            }]}
-        )
+                # return_value={'DBSubnetGroups': [{
+                #     'SubnetGroupStatus': 'Complete',
+                #     'DBSubnetGroup': {
+                #         'DBSubnetGroupName': 'zzzzzz-subnet-group',
+                #         'DBSubnetGroupArn': 'DBSubnetGroupArn',
+                #         'SubnetIds': SUBNET_IDS
+                #     }
+                # }]}
+            ])
 
         self.fake_client.create_db_subnet_group = MagicMock(
             return_value={'DBSubnetGroup': {
@@ -147,7 +163,7 @@ class TestRDSSubnetGroup(TestBase):
                 'aws_resource_id': 'zzzzzz-subnet-group',
                 'resource_config': {
                     'DBSubnetGroupDescription':
-                                    'MySQL5.7 Subnet Group',
+                        'MySQL5.7 Subnet Group',
                     'DBSubnetGroupName': 'zzzzzz-subnet-group',
                     'SubnetIds': SUBNET_IDS
                 },
