@@ -198,13 +198,26 @@ class TestELBClassicLoadBalancer(TestBase):
 
         current_ctx.set(_ctx)
 
-        self.fake_client.create_load_balancer = self.mock_return({
-            'LoadBalancers': [{
-                RESOURCE_NAME: "abc",
-                LB_ARN: "def"
-            }],
-            'DNSName': 'DNSName'
-        })
+        self.fake_client.describe_load_balancers = Mock(
+            side_effect=[
+                {},
+                {
+                    'LoadBalancerDescriptions': [
+                        {
+                            'LoadBalancerDescriptions': [
+                                {'State': {'Code': 'ok'}}
+                            ]
+                        }
+                    ]
+                },
+            ])
+        # self.fake_client.create_load_balancer = self.mock_return({
+        #     'LoadBalancers': [{
+        #         RESOURCE_NAME: "abc",
+        #         LB_ARN: "def"
+        #     }],
+        #     'DNSName': 'DNSName'
+        # })
 
         load_balancer.create(ctx=_ctx, resource_config=None, iface=None,
                              params=None)
