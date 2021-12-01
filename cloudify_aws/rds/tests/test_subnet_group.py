@@ -147,7 +147,8 @@ class TestRDSSubnetGroup(TestBase):
         self.fake_client.describe_db_subnet_groups.assert_called_with(
             DBSubnetGroupName='zzzzzz-subnet-group'
         )
-
+        print("yaniv _ctx.instance.runtime_properties = {}".format(
+            _ctx.instance.runtime_properties))
         self.assertEqual(
             _ctx.instance.runtime_properties, {
                 'aws_resource_arn': 'DBSubnetGroupArn',
