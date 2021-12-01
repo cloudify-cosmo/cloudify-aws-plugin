@@ -89,7 +89,7 @@ class CodePipelinePipeline(CodePipelineBase):
         return self.client.start_pipeline_execution(**params)
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(CodePipelinePipeline, RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     # Save the parameters
     ctx.instance.runtime_properties['resource_config'] = resource_config

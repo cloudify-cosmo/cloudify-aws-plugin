@@ -70,7 +70,7 @@ class TestAutoscalingGroup(TestBase):
 
         super(TestAutoscalingGroup, self).tearDown()
 
-    def _prepare_context(self, runtime_prop=None):
+    def _prepare_context(self, runtime_prop=None, ctx_operation_name=None):
         mock_subnet = MagicMock()
         mock_subnet.type_hierarchy = 'cloudify.relationships.depends_on'
         mock_subnet.target.instance.runtime_properties = {
@@ -98,7 +98,8 @@ class TestAutoscalingGroup(TestBase):
                 'resource_config': {}
             },
             type_hierarchy=GROUP_TH,
-            test_relationships=[mock_config, mock_subnet]
+            test_relationships=[mock_config, mock_subnet],
+            ctx_operation_name=ctx_operation_name
         )
 
         current_ctx.set(_ctx)
@@ -206,7 +207,8 @@ class TestAutoscalingGroup(TestBase):
         )
 
     def test_stop(self):
-        _ctx = self._prepare_context(RUNTIME_PROPERTIES_AFTER_CREATE)
+        _ctx = self._prepare_context(RUNTIME_PROPERTIES_AFTER_CREATE,
+                                     'cloudify.interfaces.lifecycle.stop')
 
         self.fake_client.update_auto_scaling_group = self.mock_return(
             DELETE_RESPONSE)
@@ -219,7 +221,8 @@ class TestAutoscalingGroup(TestBase):
         )
 
         self.fake_client.detach_instances = self.mock_return(DELETE_RESPONSE)
-
+        iface = MagicMock
+        iface.status = self.fake_client.describe_auto_scaling_groups['AutoScalingGroups'][0]['Status']  # noqa
         # we don't have things for remove
         autoscaling_group.stop(ctx=_ctx, resource_config=None,
                                iface=None)

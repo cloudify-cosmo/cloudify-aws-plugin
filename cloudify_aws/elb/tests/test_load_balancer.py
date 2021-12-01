@@ -147,7 +147,15 @@ class TestELBLoadBalancer(TestBase):
         )
 
         current_ctx.set(_ctx)
-
+        self.fake_client.describe_load_balancers = MagicMock(side_effect=[
+            {},
+            {
+                'LoadBalancers': []
+            },
+            {
+                'LoadBalancers': [{'State': {'Code': 0}}]
+            }
+        ])
         load_balancer.prepare(ctx=_ctx, resource_config=None, iface=None,
                               params=None)
 
@@ -239,6 +247,7 @@ class TestELBLoadBalancer(TestBase):
             test_runtime_properties=RUNTIME_PROPERTIES_AFTER_CREATE,
             type_hierarchy=LOADBALANCER_TH,
             type_node=LOADBALANCER_TYPE,
+            ctx_operation_name='cloudify.interfaces.lifecycle.start'
         )
         _ctx.instance._relationships = [
             self.get_mock_relationship_ctx(
@@ -251,6 +260,17 @@ class TestELBLoadBalancer(TestBase):
         current_ctx.set(_ctx)
 
         _ctx.instance.runtime_properties['resource_config'] = {}
+        self.fake_client.describe_load_balancers = MagicMock(side_effect=[
+            {
+                'LoadBalancers': [{'State': {'Code': 'active'}}]
+            },
+            {
+                'LoadBalancers': [{'State': {'Code': 'active'}}]
+            },
+            {
+                'LoadBalancers': [{'State': {'Code': 'active'}}]
+            }
+        ])
 
         load_balancer.modify(ctx=_ctx, resource_config=None, iface=None,
                              params=None)
@@ -269,6 +289,7 @@ class TestELBLoadBalancer(TestBase):
             test_runtime_properties=RUNTIME_PROPERTIES_AFTER_CREATE,
             type_hierarchy=LOADBALANCER_TH,
             type_node=LOADBALANCER_TYPE,
+            ctx_operation_name='cloudify.interfaces.lifecycle.start'
         )
         _ctx.instance._relationships = [
             self.get_mock_relationship_ctx(
@@ -300,6 +321,7 @@ class TestELBLoadBalancer(TestBase):
             test_runtime_properties=RUNTIME_PROPERTIES_AFTER_CREATE,
             type_hierarchy=LOADBALANCER_TH,
             type_node=LOADBALANCER_TYPE,
+            ctx_operation_name='cloudify.interfaces.lifecycle.start'
         )
         _ctx.node.properties['resource_config'] = {LB_ATTR: 'attr'}
         _ctx.instance._relationships = [
@@ -334,6 +356,7 @@ class TestELBLoadBalancer(TestBase):
             test_runtime_properties=RUNTIME_PROPERTIES_AFTER_CREATE,
             type_hierarchy=LOADBALANCER_TH,
             type_node=LOADBALANCER_TYPE,
+            ctx_operation_name='cloudify.interfaces.lifecycle.delete'
         )
 
         current_ctx.set(_ctx)

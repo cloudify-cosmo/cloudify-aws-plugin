@@ -99,7 +99,7 @@ class ELBTargetGroup(ELBBase):
         return res[GRP_ATTR]
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(ELBTargetGroup, RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     '''Prepares an ELB listener'''
     # Save the parameters

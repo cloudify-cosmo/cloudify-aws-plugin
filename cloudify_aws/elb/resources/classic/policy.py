@@ -104,7 +104,7 @@ class ELBClassicPolicy(ELBBase):
         return self.client.delete_load_balancer_policy(**params)
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(ELBClassicPolicy, RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     """Prepares an ELB classic policy"""
     # Save the parameters

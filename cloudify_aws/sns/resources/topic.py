@@ -88,7 +88,7 @@ class SNSTopic(SNSBase):
         self.client.delete_topic(**params)
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(SNSTopic, RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     """Prepares an AWS SNS Topic"""
     # Save the parameters

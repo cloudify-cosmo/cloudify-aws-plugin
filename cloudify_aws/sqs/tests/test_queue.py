@@ -216,7 +216,8 @@ class TestSQSQueue(TestBase):
             'test_delete',
             test_properties=NODE_PROPERTIES,
             test_runtime_properties=RUNTIME_PROPERTIES_AFTER_CREATE,
-            type_hierarchy=QUEUE_TH
+            type_hierarchy=QUEUE_TH,
+            ctx_operation_name='cloudify.interfaces.lifecycle.delete'
         )
 
         current_ctx.set(_ctx)
@@ -233,11 +234,7 @@ class TestSQSQueue(TestBase):
 
         self.assertEqual(
             _ctx.instance.runtime_properties,
-            {
-                'aws_resource_arn': 'fake_QueueArn',
-                'aws_resource_id': 'fake_QueueUrl',
-                'resource_config': {}
-            }
+            {}
         )
 
     def test_SQSQueueClass_status(self):

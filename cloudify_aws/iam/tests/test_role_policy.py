@@ -151,6 +151,7 @@ class TestIAMRolePolicy(TestBase):
             test_runtime_properties=RUNTIME_PROPERTIES_AFTER_CREATE,
             type_hierarchy=ROLEPOLICY_TH,
             type_node=ROLEPOLICY_TYPE,
+            ctx_operation_name='cloudify.interfaces.lifecycle.delete'
         )
         _ctx.instance._relationships = [
             self.get_mock_relationship_ctx(
@@ -174,8 +175,7 @@ class TestIAMRolePolicy(TestBase):
         self.fake_client.delete_role_policy.assert_called_with(
             PolicyName='aws_resource', RoleName='subnet_id')
         self.assertEqual(
-            _ctx.instance.runtime_properties,
-            RUNTIME_PROPERTIES_AFTER_CREATE
+            _ctx.instance.runtime_properties, {}
         )
 
 

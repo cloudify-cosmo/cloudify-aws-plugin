@@ -90,7 +90,7 @@ class SNSSubscription(SNSBase):
         return res
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(SNSSubscription, RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     """Prepares an AWS SNS Topic"""
     # Save the parameters

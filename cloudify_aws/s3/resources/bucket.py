@@ -87,7 +87,7 @@ class S3Bucket(S3Base):
                     'Response {0}'.format(delete_object))
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(S3Bucket, RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     """Prepares an AWS S3 Bucket"""
     # Save the parameters

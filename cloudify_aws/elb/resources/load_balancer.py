@@ -109,7 +109,7 @@ class ELBLoadBalancer(ELBBase):
         return res[LB_ATTR]
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(ELBLoadBalancer, RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     '''Prepares an ELB load balancer'''
     # Save the parameters

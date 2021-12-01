@@ -76,7 +76,7 @@ class SQSQueue(SQSBase):
         self.client.delete_queue(**params)
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(SQSQueue, RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     """Prepares an AWS SQS Queue"""
     # Save the parameters
