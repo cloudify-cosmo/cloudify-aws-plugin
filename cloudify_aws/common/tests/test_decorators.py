@@ -482,6 +482,7 @@ class TestDecorators(TestBase):
     def test_aws_resource_use_external_resource(self):
         fake_class_instance = MagicMock()
         FakeClass = MagicMock(return_value=fake_class_instance)
+        FakeClass.status = True
 
         # use_external_resource=True
         _ctx = self._gen_decorators_context('test_aws_resource', runtime_prop={
@@ -504,8 +505,10 @@ class TestDecorators(TestBase):
         def test_with_mock(*args, **kwargs):
             mock_func(*args, **kwargs)
 
+        iface = MagicMock()
+        iface.status = True
         test_with_mock(ctx=_ctx, aws_resource_id='res_id',
-                       runtime_properties={'a': 'b'})
+                       runtime_properties={'a': 'b'}, iface=iface)
         self.assertEqual(_ctx.instance.runtime_properties,
                          {'aws_resource_arn': 'res_id',
                           'aws_resource_id': 'aws_id',
