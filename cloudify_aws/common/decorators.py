@@ -338,6 +338,10 @@ def _aws_resource(function,
             resource_config = kwargs['resource_config']
     resource_id = utils.get_resource_id(node=ctx.node, instance=ctx.instance)
     # Check if using external
+    if props.get('use_external_resource') and \
+            'cloudify.nodes.aws.ec2.Image' in ctx.node.type_hierarchy and \
+            operation_name == 'create':
+        pass
     iface = kwargs.get('iface')
     if ctx.node.properties.get('use_external_resource', False):
         ctx.logger.info('{t} ID# {i} is user-provided.'.format(
@@ -362,12 +366,12 @@ def _aws_resource(function,
             return
         ctx.logger.warn('{t} ID# {i} has force_operation set.'.format(
             t=resource_type, i=resource_id))
+    ctx.logger.debug('Executing: {} with params {}'.format(function, kwargs))
     result = function(**kwargs)
-    if ctx.operation.name == 'cloudify.interfaces.lifecycle.configure' \
-            and iface:
+    if operation_name == 'configure' and iface:
         iface.populate_resource(ctx)
         kwargs['iface'] = iface
-    if ctx.operation.name == 'cloudify.interfaces.lifecycle.delete':
+    elif operation_name == 'delete':
         # cleanup runtime after delete
         keys = list(ctx.instance.runtime_properties.keys())
         for key in keys:
