@@ -506,7 +506,7 @@ class TestDecorators(TestBase):
             mock_func(*args, **kwargs)
 
         iface = MagicMock()
-        iface.status = 0
+        iface.status = True
         test_with_mock(ctx=_ctx, aws_resource_id='res_id',
                        runtime_properties={'a': 'b'}, iface=iface)
         self.assertEqual(_ctx.instance.runtime_properties,
