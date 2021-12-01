@@ -118,6 +118,16 @@ class TestRDSSubnetGroup(TestBase):
                         }
                     }]
                 },
+                {
+                    'DBSubnetGroups': [{
+                        'SubnetGroupStatus': 'Complete',
+                        'DBSubnetGroup': {
+                            'DBSubnetGroupName': 'zzzzzz-subnet-group',
+                            'DBSubnetGroupArn': 'DBSubnetGroupArn',
+                            'SubnetIds': SUBNET_IDS
+                        }
+                    }]
+                },
             ])
 
         self.fake_client.create_db_subnet_group = MagicMock(
