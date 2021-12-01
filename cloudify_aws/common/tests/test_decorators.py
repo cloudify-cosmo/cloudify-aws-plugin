@@ -482,7 +482,7 @@ class TestDecorators(TestBase):
     def test_aws_resource_use_external_resource(self):
         fake_class_instance = MagicMock()
         FakeClass = MagicMock(return_value=fake_class_instance)
-        FakeClass.status = False
+        FakeClass.status = True
 
         # use_external_resource=True
         _ctx = self._gen_decorators_context('test_aws_resource', runtime_prop={
