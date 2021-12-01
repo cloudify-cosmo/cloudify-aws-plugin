@@ -506,7 +506,8 @@ class TestDecorators(TestBase):
 
         test_with_mock(ctx=_ctx, aws_resource_id='res_id',
                        runtime_properties={'a': 'b'})
-        self.maxDiff = None
+        print("yaniv _ctx.instance.runtime_properties = {}".format(
+            _ctx.instance.runtime_properties))
         self.assertEqual(_ctx.instance.runtime_properties,
                          {'aws_resource_arn': 'res_id',
                           'aws_resource_id': 'aws_id',
