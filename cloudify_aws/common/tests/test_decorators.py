@@ -512,7 +512,7 @@ class TestDecorators(TestBase):
                          {'aws_resource_arn': 'res_id',
                           'aws_resource_id': 'aws_id',
                           'a': 'b',
-                          'resource_config': {'c': 'd'}})
+                          'resource_config': {}})
 
         mock_func.assert_not_called()
 
