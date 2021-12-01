@@ -250,7 +250,6 @@ class TestELBClassicLoadBalancer(TestBase):
         current_ctx.set(_ctx)
         self.fake_client.describe_load_balancers = Mock(
             side_effect=[
-                {},
                 {
                     'LoadBalancerDescriptions': [
                         {
