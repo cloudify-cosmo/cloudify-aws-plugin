@@ -496,7 +496,7 @@ class TestDecorators(TestBase):
             },
             'e': 'f',
             'use_external_resource': True
-        }, op_name='cloudify.interfaces.lifecycle.create')
+        }, op_name='cloudify.interfaces.lifecycle.configure')
         current_ctx.set(_ctx)
 
         mock_func = MagicMock()
