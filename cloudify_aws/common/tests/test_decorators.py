@@ -496,7 +496,7 @@ class TestDecorators(TestBase):
             },
             'e': 'f',
             'use_external_resource': True
-        }, op_name='cloudify.interfaces.lifecycle.configure')
+        }, op_name='cloudify.interfaces.lifecycle.create')
         current_ctx.set(_ctx)
 
         mock_func = MagicMock()
@@ -506,16 +506,15 @@ class TestDecorators(TestBase):
             mock_func(*args, **kwargs)
 
         iface = MagicMock()
-        iface.status = True
+        iface.status = None
         test_with_mock(ctx=_ctx, aws_resource_id='res_id',
                        runtime_properties={'a': 'b'}, iface=iface)
-        # self.assertEqual(_ctx.instance.runtime_properties,
-        #                  {'aws_resource_arn': 'res_id',
-        #                   'aws_resource_id': 'aws_id',
-        #                   'a': 'b',
-        #                   'resource_config': {}})
-        #
-        # print(_ctx.instance.runtime_properties)
+        self.assertEqual(_ctx.instance.runtime_properties,
+                         {'aws_resource_arn': 'res_id',
+                          'aws_resource_id': 'aws_id',
+                          'a': 'b',
+                          'resource_config': {}})
+
         mock_func.assert_not_called()
 
         # force call
