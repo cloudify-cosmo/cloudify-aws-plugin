@@ -20,7 +20,7 @@
 import re
 
 # Third party imports
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Cloudify
 from cloudify_aws.common import decorators, utils
@@ -58,7 +58,7 @@ class ELBListener(ELBBase):
         try:
             resources = self.client.describe_listeners(
                 ListenerArns=[self.resource_id])
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         else:
             return None \

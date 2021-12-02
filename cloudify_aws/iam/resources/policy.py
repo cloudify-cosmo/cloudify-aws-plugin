@@ -19,7 +19,7 @@
 from json import dumps as json_dumps
 
 # Boto
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Cloudify
 from cloudify_aws.common import decorators, utils
@@ -43,7 +43,7 @@ class IAMPolicy(IAMBase):
         resource = None
         try:
             resource = self.client.get_policy(PolicyArn=self.resource_id)
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         if not resource or not resource.get('Policy', dict()):
             return None

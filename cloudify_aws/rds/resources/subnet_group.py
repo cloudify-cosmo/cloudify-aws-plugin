@@ -22,7 +22,7 @@ from cloudify_aws.rds import RDSBase
 from cloudify.exceptions import NonRecoverableError
 
 # Boto
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 RESOURCE_TYPE = 'RDS Subnet Group'
 
@@ -42,7 +42,7 @@ class SubnetGroup(RDSBase):
         try:
             resources = self.client.describe_db_subnet_groups(
                 DBSubnetGroupName=self.resource_id)
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         if not resources or not resources.get('DBSubnetGroups', list()):
             return None

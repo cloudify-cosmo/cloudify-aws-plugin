@@ -17,7 +17,7 @@
     AWS EC2 VPC interface
 '''
 # Third Party imports
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 from cloudify.exceptions import OperationRetry
 
@@ -53,7 +53,7 @@ class EC2SpotFleetRequest(EC2Base):
         try:
             return self.make_client_call(
                 'describe_spot_fleet_requests', params)
-        except ClientError:
+        except (ParamValidationError, ClientError):
             return
 
     @property

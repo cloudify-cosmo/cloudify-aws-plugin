@@ -22,7 +22,7 @@ from __future__ import unicode_literals
 
 # Boto
 
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Cloudify
 from cloudify_aws.common import decorators, utils
@@ -52,7 +52,7 @@ class ECSCluster(ECSBase):
                 self.client.describe_clusters(
                     **self.describe_cluster_filter
                 )
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         else:
             return None if not resources else resources.get(CLUSTERS)[0]

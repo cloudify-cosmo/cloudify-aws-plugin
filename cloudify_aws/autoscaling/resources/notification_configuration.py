@@ -20,7 +20,7 @@
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.autoscaling import AutoscalingBase
 # Boto
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 RESOURCE_TYPE = 'AutoScaling Group Notification Configuration'
 DESCRIBE_KEY = 'AutoScalingGroupNames'
@@ -46,7 +46,7 @@ class AutoscalingNotification(AutoscalingBase):
         try:
             resources = \
                 self.client.describe_notification_configurations(**params)
-        except ClientError:
+        except (ParamValidationError, ClientError):
             return []
         else:
             return resources.get(RESOURCE_KEY, [None])

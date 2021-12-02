@@ -17,7 +17,7 @@
     AWS SNS Subscription interface
 """
 # Standard imports
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Local imports
 from cloudify.exceptions import NonRecoverableError
@@ -48,7 +48,7 @@ class SNSSubscription(SNSBase):
         try:
             resources = \
                 self.client.list_subscriptions()
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         else:
             for resource in resources:

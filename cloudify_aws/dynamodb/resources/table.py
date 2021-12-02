@@ -17,7 +17,7 @@
     AWS DynamoDB Table interface
 """
 # Third party imports
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Cloudify
 from cloudify_aws.common import decorators, utils
@@ -42,7 +42,7 @@ class DynamoDBTable(DynamoDBBase):
         try:
             resources = self.client.describe_table(
                 TableName=self.resource_id)
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         if not resources or not resources.get('Table'):
             return None

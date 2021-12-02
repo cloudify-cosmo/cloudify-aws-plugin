@@ -53,7 +53,7 @@ class S3BucketPolicy(S3Base):
             resource = \
                 self.client.get_bucket_policy(
                     {BUCKET: self.resource_id})
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         else:
             return resource[POLICY] if resource else None

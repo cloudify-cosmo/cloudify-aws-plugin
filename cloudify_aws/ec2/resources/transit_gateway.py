@@ -109,7 +109,7 @@ class EC2TransitGatewayAttachment(EC2Base):
         try:
             resources = \
                 self.client.describe_transit_gateway_vpc_attachments(**params)
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         else:
             return None if not resources else resources.get(

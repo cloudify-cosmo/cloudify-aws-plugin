@@ -22,7 +22,7 @@ from __future__ import unicode_literals
 
 # Boto
 
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 from cloudify.exceptions import OperationRetry
 
@@ -54,7 +54,7 @@ class EKSNodeGroup(EKSBase):
                 self.client.describe_nodegroup(
                     **self.describe_param
                 )[NODEGROUP]
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         else:
             return None if not properties else properties

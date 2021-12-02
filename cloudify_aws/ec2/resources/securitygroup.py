@@ -19,7 +19,7 @@
 from time import sleep
 
 # Boto
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Cloudify
 from cloudify_aws.common import decorators, utils
@@ -55,7 +55,7 @@ class EC2SecurityGroup(EC2Base):
         try:
             resources = \
                 self.client.describe_security_groups(**params)
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         else:
             return None if not resources else resources.get(GROUPS, [None])[0]
@@ -65,9 +65,10 @@ class EC2SecurityGroup(EC2Base):
     def status(self):
         '''Gets the status of an external resource'''
         props = self.properties
-        if not props:
-            return None
-        return props['State']
+        try:
+            return props['State']
+        except (KeyError, TypeError):
+            return
 
     def create(self, params):
         '''

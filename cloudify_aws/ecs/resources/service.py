@@ -22,7 +22,7 @@ from __future__ import unicode_literals
 
 # Boto
 
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Cloudify
 from cloudify_aws.common import decorators, utils
@@ -57,7 +57,7 @@ class ECSService(ECSBase):
                 self.client.describe_services(
                     **self.describe_service_filter
                 )
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         else:
             return None if not resources else resources.get(SERVICES)[0]

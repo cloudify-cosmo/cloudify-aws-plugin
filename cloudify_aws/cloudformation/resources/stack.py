@@ -22,7 +22,7 @@ import json
 from datetime import datetime
 
 # Third party imports
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Local imports
 from cloudify_aws.common._compat import text_type
@@ -66,7 +66,7 @@ class CloudFormationStack(AWSCloudFormationBase):
         try:
             resources = \
                 self.client.describe_stacks(**params)
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         else:
             return resources.get(STACKS, [None])[0]

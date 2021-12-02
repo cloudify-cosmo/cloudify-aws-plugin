@@ -20,7 +20,7 @@
 from time import sleep
 
 # Third party imports
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 from cloudify_aws.common._compat import text_type
 
@@ -45,7 +45,7 @@ class Route53HostedZone(Route53Base):
         '''Gets the properties of an external resource'''
         try:
             return self.client.get_hosted_zone(Id=self.resource_id)
-        except ClientError:
+        except (ParamValidationError, ClientError):
             return None
 
     @property

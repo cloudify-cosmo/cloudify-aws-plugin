@@ -26,7 +26,7 @@ from cloudify_aws.common import decorators, utils
 from cloudify_aws.autoscaling import AutoscalingBase
 
 # Boto
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 RESOURCE_TYPE = 'Autoscaling Group'
 GROUPS = 'AutoScalingGroups'
@@ -59,7 +59,7 @@ class AutoscalingGroup(AutoscalingBase):
         try:
             resources = \
                 self.client.describe_auto_scaling_groups(**params)
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         else:
             return resources.get(GROUPS, [None])[0]

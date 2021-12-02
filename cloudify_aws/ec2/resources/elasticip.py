@@ -17,7 +17,7 @@
     AWS EC2 ElasticIP interface
 """
 # Boto
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 from cloudify.exceptions import OperationRetry
 
@@ -57,7 +57,7 @@ class EC2ElasticIP(EC2Base):
                 resources = self.client.describe_addresses(**params)
             else:
                 resources = self.client.describe_addresses()
-        except ClientError:
+        except (ParamValidationError, ClientError):
             return []
         return resources.get(ADDRESSES, [])
 

@@ -17,7 +17,7 @@
     AWS EFS File System interface
 """
 # Third Party imports
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Local imports
 from cloudify_aws.efs import EFSBase
@@ -45,7 +45,7 @@ class EFSFileSystem(EFSBase):
         try:
             resources = \
                 self.client.describe_file_systems(**params)
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         else:
             return resources.get(FILESYSTEMS, [None])[0]

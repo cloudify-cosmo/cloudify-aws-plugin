@@ -17,7 +17,7 @@
     AWS IAM Group interface
 '''
 # Boto
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Cloudify
 from cloudify_aws.common import decorators, utils
@@ -41,7 +41,7 @@ class IAMGroup(IAMBase):
         resource = None
         try:
             resource = self.client.get_group(GroupName=self.resource_id)
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         if not resource or not resource.get('Group', dict()):
             return None

@@ -20,7 +20,7 @@
 from cloudify_aws.common import decorators
 from cloudify_aws.s3 import S3Base
 # Boto
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 RESOURCE_TYPE = 'S3 Bucket'
 RESOURCE_NAME = 'Bucket'
@@ -42,7 +42,7 @@ class S3Bucket(S3Base):
         """Gets the properties of an external resource"""
         try:
             resources = self.client.list_buckets()
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         else:
             for resource in resources:

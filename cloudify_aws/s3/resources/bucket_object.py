@@ -22,7 +22,7 @@ import sys
 import tempfile
 
 # Third Party Imports
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 from cloudify import ctx
 from cloudify_aws.common._compat import urlopen
@@ -87,7 +87,7 @@ class S3BucketObject(S3Base):
                 self.client.head_object(
                     **{OBJECT_KEY: self.resource_id,
                        BUCKET: self.bucket_name})
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
 
         return resource

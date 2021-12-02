@@ -21,7 +21,7 @@ from cloudify.exceptions import NonRecoverableError
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.rds import RDSBase
 # Boto
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 RESOURCE_TYPE = 'RDS DB Instance Read Replica'
 
@@ -41,7 +41,7 @@ class DBInstanceReadReplica(RDSBase):
         try:
             resources = self.client.describe_db_instances(
                 DBInstanceIdentifier=self.resource_id)
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         if not resources or not resources.get('DBInstances', list()):
             return None

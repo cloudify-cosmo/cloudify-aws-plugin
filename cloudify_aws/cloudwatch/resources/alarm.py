@@ -17,7 +17,7 @@
     AWS Cloudwatch Alarm interface
 """
 # Third party imports
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Local imports
 from cloudify_aws.common import decorators, utils
@@ -44,7 +44,7 @@ class CloudwatchAlarm(AWSCloudwatchBase):
         try:
             resources = \
                 self.client.describe_alarms(**params)
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         else:
             return resources.get(METRIC_ALARMS, [None])[0]

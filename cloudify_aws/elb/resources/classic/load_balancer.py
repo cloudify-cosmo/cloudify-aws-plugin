@@ -17,7 +17,7 @@
     AWS ELB load balancer interface
 """
 # Third Party imports
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Local imports
 from cloudify.exceptions import OperationRetry
@@ -56,7 +56,7 @@ class ELBClassicLoadBalancer(ELBBase):
         try:
             resources = self.client.describe_load_balancers(
                 LoadBalancerNames=[self.resource_id])
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         else:
             return resources['LoadBalancerDescriptions'][0] \

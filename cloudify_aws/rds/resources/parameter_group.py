@@ -20,7 +20,7 @@
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.rds import RDSBase
 # Boto
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 RESOURCE_TYPE = 'RDS Parameter Group'
 
@@ -40,7 +40,7 @@ class ParameterGroup(RDSBase):
         try:
             resources = self.client.describe_db_parameter_groups(
                 DBParameterGroupName=self.resource_id)
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         if not resources or not resources.get('DBParameterGroups', list()):
             return None

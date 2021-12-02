@@ -22,7 +22,7 @@ from __future__ import unicode_literals
 
 # Boto
 
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Cloudify
 from cloudify_aws.common import decorators, utils
@@ -55,7 +55,7 @@ class ECSTaskDefinition(ECSBase):
                 self.client.describe_task_definition(
                     **self.describe_task_definition_filter
                 )
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         else:
             return None if not resources\

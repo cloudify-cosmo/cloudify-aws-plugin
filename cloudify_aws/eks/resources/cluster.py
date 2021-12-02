@@ -22,7 +22,7 @@ import json
 
 # Boto
 import boto3
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 from cloudify.decorators import operation
 from cloudify.exceptions import NonRecoverableError
@@ -82,7 +82,7 @@ class EKSCluster(EKSBase):
         """Gets the properties of an external resource"""
         try:
             properties = self.describe()
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         else:
             return None if not properties else properties
@@ -99,7 +99,7 @@ class EKSCluster(EKSBase):
         params = params or self.describe_param
         try:
             return self.client.describe_cluster(**params)[CLUSTER]
-        except ClientError:
+        except (ParamValidationError, ClientError):
             return {}
 
     def describe_all(self):
@@ -114,7 +114,7 @@ class EKSCluster(EKSBase):
         """
         try:
             return self.make_client_call('list_clusters', params)[CLUSTERS]
-        except ClientError:
+        except (ParamValidationError, ClientError):
             return []
 
     def create(self, params):
