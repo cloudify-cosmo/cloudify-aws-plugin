@@ -48,7 +48,7 @@ class TestEC2Image(TestBase):
                       mock_decorator)
         mock1.start()
         reload_module(image)
-        self.image.describe_image_filters = \
+        self.image._describe_image_filters = \
             {'Filters': {
                 'name': 'CentOS 7.7.1908 x86_64 with cloud-init (HVM)',
                 'owner-id': '057448758665'}}

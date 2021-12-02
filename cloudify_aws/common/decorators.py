@@ -338,12 +338,12 @@ def _aws_resource(function,
             resource_config = kwargs['resource_config']
     resource_id = utils.get_resource_id(node=ctx.node, instance=ctx.instance)
     # Check if using external
+    iface = kwargs.get('iface')
     if props.get('use_external_resource') and \
             'cloudify.nodes.aws.ec2.Image' in ctx.node.type_hierarchy and \
             operation_name == 'create':
         pass
-    iface = kwargs.get('iface')
-    if ctx.node.properties.get('use_external_resource', False):
+    elif ctx.node.properties.get('use_external_resource', False):
         ctx.logger.info('{t} ID# {i} is user-provided.'.format(
             t=resource_type, i=resource_id))
         if not kwargs.get('force_operation', False) and \
