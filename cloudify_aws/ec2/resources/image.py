@@ -42,7 +42,7 @@ class EC2Image(EC2Base):
         self.type_name = RESOURCE_TYPE
         image_filters = ctx_node.properties["resource_config"].get(
                 "kwargs", {}).get("Filters")
-        self.describe_image_filters = None
+        self._describe_image_filters = None
         if resource_id:
             self.prepare_describe_image_filter({IMAGE_IDS: [resource_id]})
         elif image_filters:
@@ -52,6 +52,7 @@ class EC2Image(EC2Base):
     def properties(self):
         """Gets the properties of an external resource"""
         params = self.describe_image_filters
+        self.logger.info('Params: {}'.format(params))
         if not params:
             return
         try:
@@ -96,6 +97,10 @@ class EC2Image(EC2Base):
         self.logger.debug('Deregistering ImageId %s' % params.get('ImageId'))
         self.client.deregister_image(**params)
 
+    @property
+    def describe_image_filters(self):
+        return self._describe_image_filters
+
     def prepare_describe_image_filter(self, params):
         dry_run = params.get(DRY_RUN, False)
         image_ids = params.get(IMAGE_IDS, [])
@@ -103,7 +108,7 @@ class EC2Image(EC2Base):
         executable_users = params.get(EXECUTABLE_USERS, [])
         filters = params.get(FILTERS, [])
         if any([dry_run, image_ids, owners, executable_users, filters]):
-            self.describe_image_filters = {
+            self._describe_image_filters = {
                 DRY_RUN: dry_run,
                 IMAGE_IDS: image_ids,
                 OWNERS: owners,
