@@ -101,6 +101,9 @@ def _wait_for_status(kwargs,
                     ' Please check your aws account.')
             else:
                 raise OperationRetry("Resource not created, trying again...")
+        else:
+            kwargs['iface'].update_resource_id(runtime_resource_id)
+            resource_id = runtime_resource_id
 
     ctx.logger.debug('Requesting ID# "%s" status.' % resource_id)
 
@@ -381,21 +384,26 @@ def _aws_resource(function,
 
     iface = kwargs.get('iface')
 
-    special_condition = get_special_condition(
-        props.get('use_external_resource'),
-        ctx.node.type_hierarchy,
-        operation_name,
-        create_operation,
-        delete_operation,
-        kwargs.get('force_operation'))
-
     try:
         exists = iface.status
     except (AttributeError, NotImplementedError):
         exists = False
         special_condition = True
+    else:
+        special_condition = get_special_condition(
+            props.get('use_external_resource'),
+            ctx.node.type_hierarchy,
+            operation_name,
+            create_operation,
+            delete_operation,
+            kwargs.get('force_operation'))
+
     result = None
-    if not skip(
+    if create_operation and ctx.operation.retry_number > 0 and \
+            resource_id and exists and not special_condition:
+        ctx.logger.info('Not retrying create after ID {} received.'.format(
+            resource_id))
+    elif not skip(
             resource_type=resource_type,
             resource_id=ctx.instance.id,
             _ctx_node=ctx.node,
