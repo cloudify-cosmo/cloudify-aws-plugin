@@ -53,8 +53,11 @@ class EC2VPNConnection(EC2Base):
         except (ClientError, ParamValidationError):
             pass
         else:
-            return None if not resources\
-                else resources.get(VPN_CONNECTIONS)[0]
+            if not resources:
+                return None
+            else:
+                self.logging.debug("yaniv log = {}".format(resources))
+                return resources.get(VPN_CONNECTIONS)[0]
 
     @property
     def status(self):

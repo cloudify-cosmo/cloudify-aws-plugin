@@ -55,8 +55,10 @@ class EC2VpcPeering(EC2Base):
         except (ClientError, ParamValidationError):
             pass
         else:
-            return None if not resources\
-                else resources.get(VPC_PEERING_CONNECTIONS)[0]
+            if not resources:
+                return None
+            else:
+                return resources.get(VPC_PEERING_CONNECTIONS)[0]
 
     @property
     def status(self):
