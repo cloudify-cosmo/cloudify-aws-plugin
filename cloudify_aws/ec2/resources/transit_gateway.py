@@ -253,8 +253,14 @@ def request_vpc_attachment(ctx,
         'VpcId': vpc_id,
         'SubnetIds': subnet_ids
     }
-
-    response = iface.create(request)
+    try:
+        response = iface.create(request)
+    except (NonRecoverableError, ClientError) as e:
+        raise OperationRetry(
+            'Waiting for {t} to be in valid state: {s}. '
+            'Error={e}'.format(t=transit_gateway_attachment_id,
+                               s=iface.status,
+                               e=e))
     ctx.logger.info('Sent the {r} creation request.'.format(
         r=TG_ATTACHMENT))
     ctx.source.instance.runtime_properties[TG_ATTACHMENTS][vpc_id] = \
