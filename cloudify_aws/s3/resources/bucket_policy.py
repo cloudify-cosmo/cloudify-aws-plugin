@@ -52,7 +52,9 @@ class S3BucketPolicy(S3Base):
         try:
             resource = \
                 self.client.get_bucket_policy(
-                    {BUCKET: self.resource_id})
+                    Bucket='BUCKET',
+                    ExpectedBucketOwner=self.resource_id
+                )
         except (ParamValidationError, ClientError):
             pass
         else:

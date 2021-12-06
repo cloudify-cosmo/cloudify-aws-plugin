@@ -48,7 +48,9 @@ class S3BucketLifecycleConfiguration(S3Base):
         try:
             resources = \
                 self.client.get_bucket_lifecycle_configuration(
-                    {BUCKET: self.resource_id})
+                    Bucket='BUCKET',
+                    ExpectedBucketOwner=self.resource_id
+                )
         except (ParamValidationError, ClientError):
             pass
         else:
