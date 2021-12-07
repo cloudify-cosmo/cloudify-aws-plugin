@@ -40,7 +40,14 @@ class EC2VPNConnection(EC2Base):
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
-        self._describe_vpn_connection_filter = {}
+        connection_id = ctx_node.properties.get(
+            'resource_config', {}).get('kwargs', {}).get(VPN_CONNECTION_ID)
+        if connection_id:
+            self._describe_vpn_connection_filter = {
+                VPN_CONNECTION_IDS: [connection_id]
+            }
+        else:
+            self._describe_vpn_connection_filter = {}
 
     @property
     def describe_vpn_connection_filter(self):
