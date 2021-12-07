@@ -55,6 +55,7 @@ class EC2VpcPeering(EC2Base):
         except (ClientError, ParamValidationError):
             pass
         else:
+            self.logger.debug("yaniv log = {}".format(resources))
             if not resources:
                 return None
             else:
