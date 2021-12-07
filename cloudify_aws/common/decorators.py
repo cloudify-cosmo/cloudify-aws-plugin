@@ -263,6 +263,8 @@ def get_special_condition(external,
     if external and 'cloudify.nodes.aws.ec2.Image' in node_type and \
             op_name == 'create':
         return True
+    if create_op and 'cloudify.nodes.aws.ec2.VpcPeeringRequest' in node_type:
+        return True
     return not create_op and not delete_op or force
 
 
