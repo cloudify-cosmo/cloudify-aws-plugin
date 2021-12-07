@@ -55,14 +55,12 @@ class EC2VPNConnection(EC2Base):
                     **self.describe_vpn_connection_filter
                 )
         except (ClientError, ParamValidationError):
-            pass
-        else:
-            if not resources:
-                return None
-            else:
-
-                self.logger.debug("yaniv log = {}".format(resources))
-                return resources.get(VPN_CONNECTIONS)[0]
+            resources = {}
+        self.logger.debug("yaniv log = {}".format(resources))
+        for resource in resources.get(VPN_CONNECTIONS, []):
+            for vpn_connection in self.describe_vpn_connection_filter:
+                if resource['VpnConnectionId'] == vpn_connection:
+                    return resource
 
     @property
     def status(self):

@@ -59,7 +59,7 @@ class EC2VpcPeering(EC2Base):
                     **self.describe_vpc_peering_filter
                 )
         except (ClientError, ParamValidationError):
-            resources = []
+            resources = {}
         self.logger.debug("yaniv log = {}".format(resources))
         for vpc in self.describe_vpc_peering_filter.get(
                 VPC_PEERING_CONNECTION_IDS, []):
