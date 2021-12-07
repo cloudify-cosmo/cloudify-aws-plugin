@@ -118,7 +118,7 @@ class EC2VpcPeering(EC2Base):
 
 
 def prepare_describe_vpc_peering_filter(params, iface):
-    iface.describe_vpc_peering_filter = {
+    iface._describe_vpc_peering_filter = {
         VPC_PEERING_CONNECTION_IDS: [params.get(PEER_VPC_ID)],
     }
 
