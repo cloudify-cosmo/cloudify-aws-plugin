@@ -46,6 +46,10 @@ class EC2VPNConnection(EC2Base):
             self._describe_vpn_connection_filter = {
                 VPN_CONNECTION_IDS: [connection_id]
             }
+        elif self.resource_id:
+            self._describe_vpn_connection_filter = {
+                VPN_CONNECTION_IDS: [self.resource_id]
+            }
         else:
             self._describe_vpn_connection_filter = {}
 
@@ -67,9 +71,8 @@ class EC2VPNConnection(EC2Base):
             resources = {}
         self.logger.debug("yaniv log = {}".format(resources))
         for resource in resources.get(VPN_CONNECTIONS, []):
-            for vpn_connection in self.describe_vpn_connection_filter:
-                if resource['VpnConnectionId'] == vpn_connection:
-                    return resource
+            if resource['VpnConnectionId'] == self.resource_id:
+                return resource
 
     @property
     def status(self):
