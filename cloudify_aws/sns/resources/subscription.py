@@ -51,8 +51,6 @@ class SNSSubscription(SNSBase):
         except (ParamValidationError, ClientError):
             pass
         else:
-            self.logger.debug("yaniv log resources = {}".format(resources))
-            self.logger.debug("yaniv log self.resource_id = {}".format(self.resource_id))
             for resource in resources['Subscriptions']:
                 if resource[SUB_ARN] == self.resource_id:
                     return resource
