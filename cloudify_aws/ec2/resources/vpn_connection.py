@@ -57,7 +57,7 @@ class EC2VPNConnection(EC2Base):
                 return None
             else:
 
-                self.logging.debug("yaniv log = {}".format(resources))
+                # self.logging.debug("yaniv log = {}".format(resources))
                 return resources.get(VPN_CONNECTIONS)[0]
 
     @property
