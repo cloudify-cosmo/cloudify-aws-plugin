@@ -95,7 +95,8 @@ def prepare(ctx, resource_config, **_):
 @decorators.aws_resource(EC2VPNConnection, RESOURCE_TYPE)
 @decorators.wait_for_status(
     status_good=['available'],
-    status_pending=['pending'])
+    status_pending=['pending'],
+    fail_on_missing=False)
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS EC2 VPN Connection"""
     params = dict() if not resource_config else resource_config.copy()
