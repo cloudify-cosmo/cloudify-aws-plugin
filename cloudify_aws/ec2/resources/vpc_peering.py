@@ -59,11 +59,11 @@ class EC2VpcPeering(EC2Base):
             if not resources:
                 return None
             else:
-                return resources.get(VPC_PEERING_CONNECTIONS)[0]
-                # try:
-                #     return resources.get(VPC_PEERING_CONNECTIONS)[0]
-                # except IndexError:
-                #     return None
+                # return resources.get(VPC_PEERING_CONNECTIONS)[0]
+                try:
+                    return resources.get(VPC_PEERING_CONNECTIONS)[0]
+                except IndexError:
+                    return None
 
     @property
     def status(self):
