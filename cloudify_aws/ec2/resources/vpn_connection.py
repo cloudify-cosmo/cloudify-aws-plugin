@@ -40,7 +40,11 @@ class EC2VPNConnection(EC2Base):
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
-        self.describe_vpn_connection_filter = {}
+        self._describe_vpn_connection_filter = {}
+
+    @property
+    def describe_vpn_connection_filter(self):
+        return self._describe_vpn_connection_filter
 
     @property
     def properties(self):
@@ -57,7 +61,7 @@ class EC2VPNConnection(EC2Base):
                 return None
             else:
 
-                # self.logging.debug("yaniv log = {}".format(resources))
+                self.logger.debug("yaniv log = {}".format(resources))
                 return resources.get(VPN_CONNECTIONS)[0]
 
     @property
@@ -78,7 +82,7 @@ class EC2VPNConnection(EC2Base):
 
 
 def prepare_describe_vpn_connection_filter(params, iface):
-    iface.describe_vpn_connection_filter = {
+    iface._describe_vpn_connection_filter = {
         VPN_CONNECTION_IDS: [params.get(VPN_CONNECTION_ID)],
     }
 
