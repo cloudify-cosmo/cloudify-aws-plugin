@@ -52,7 +52,8 @@ class SNSSubscription(SNSBase):
             pass
         else:
             for resource in resources:
-                # self.logger.debug("yaniv log = {}".format(resource))
+
+                self.logger.debug("yaniv log = {}".format(resource))
                 if resource[SUB_ARN] == self.resource_id:
                     return resource
         return None
