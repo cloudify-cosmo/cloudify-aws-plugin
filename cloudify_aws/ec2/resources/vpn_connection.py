@@ -50,6 +50,8 @@ class EC2VPNConnection(EC2Base):
     def properties(self):
         """Gets the properties of an external resource"""
         try:
+            self.logger.debug("filter = {}".format(
+                self.describe_vpn_connection_filter))
             resources = \
                 self.client.describe_vpn_connections(
                     **self.describe_vpn_connection_filter
