@@ -85,6 +85,11 @@ def _wait_for_status(kwargs,
 
     ctx.logger.debug('Resource %s ID# "%s"' % (resource_type, resource_id))
     ctx_instance = get_ctx_instance()
+
+    rds_id = _ctx.node.properties.get('resource_id')
+    if rds_id == 'cfy-marketplace-rds-db':
+        ctx.logger.info('3')
+
     if (creation_phase and _ctx.operation.retry_number == 0) \
             or not resource_id:
         if not creation_phase:
@@ -113,9 +118,21 @@ def _wait_for_status(kwargs,
             kwargs['iface'].update_resource_id(runtime_resource_id)
             resource_id = runtime_resource_id
 
+    rds_id = _ctx.node.properties.get('resource_id')
+    if rds_id == 'cfy-marketplace-rds-db':
+        ctx.logger.info('4')
+
     ctx.logger.debug('Requesting ID# "%s" status.' % resource_id)
 
+    rds_id = _ctx.node.properties.get('resource_id')
+    if rds_id == 'cfy-marketplace-rds-db':
+        ctx.logger.info('5')
+
     status = kwargs['iface'].status
+
+    rds_id = _ctx.node.properties.get('resource_id')
+    if rds_id == 'cfy-marketplace-rds-db':
+        ctx.logger.info('6')
 
     # Get a resource interface and query for the status
     ctx.logger.debug('%s ID# "%s" reported status: %s.' % (
@@ -127,11 +144,17 @@ def _wait_for_status(kwargs,
         return result
 
     elif status in status_pending:
+        rds_id = _ctx.node.properties.get('resource_id')
+        if rds_id == 'cfy-marketplace-rds-db':
+            ctx.logger.info('7')
         raise OperationRetry(
             '%s ID# "%s" is still in a pending state.'
             % (resource_type, kwargs['iface'].resource_id))
 
     elif not status and fail_on_missing:
+        rds_id = _ctx.node.properties.get('resource_id')
+        if rds_id == 'cfy-marketplace-rds-db':
+            ctx.logger.info('8')
         sleep(0.5)
         if kwargs['iface'].status:
             return _wait_for_status(kwargs,
@@ -160,6 +183,10 @@ def _wait_for_status(kwargs,
             % (resource_type, kwargs['iface'].resource_id, status))
 
     ctx.logger.warn("Resource was created but no good status reached.")
+    rds_id = _ctx.node.properties.get('resource_id')
+    if rds_id == 'cfy-marketplace-rds-db':
+        ctx.logger.info('9')
+
     return result
 
 
@@ -312,6 +339,10 @@ def _aws_resource(function,
     if create_operation and '__deleted' in ctx.instance.runtime_properties:
         del ctx.instance.runtime_properties['__deleted']
     props = ctx.node.properties
+    rds_id = props.get('resource_id')
+    if rds_id == 'cfy-marketplace-rds-db':
+        ctx.logger.info('B1')
+
     runtime_instance_properties = ctx.instance.runtime_properties
     # Override the resource ID if needed
     resource_id = kwargs.get(EXT_RES_ID)
@@ -320,10 +351,17 @@ def _aws_resource(function,
     if resource_id and not ctx.instance.runtime_properties.get(EXT_RES_ARN):
         ctx.instance.runtime_properties[EXT_RES_ARN] = resource_id
 
+    rds_id = props.get('resource_id')
+    if rds_id == 'cfy-marketplace-rds-db':
+        ctx.logger.info('B2')
+
     # Override any runtime properties if needed
     runtime_properties = kwargs.get('runtime_properties') or dict()
     for key, val in runtime_properties.items():
         ctx.instance.runtime_properties[key] = val
+    rds_id = props.get('resource_id')
+    if rds_id == 'cfy-marketplace-rds-db':
+        ctx.logger.info('B3')
 
     # Add new operation arguments
     kwargs['resource_type'] = resource_type
@@ -335,6 +373,10 @@ def _aws_resource(function,
     aws_config = ctx.instance.runtime_properties.get('aws_config')
     aws_config_kwargs = kwargs.get('aws_config')
 
+    rds_id = props.get('resource_id')
+    if rds_id == 'cfy-marketplace-rds-db':
+        ctx.logger.info('B4')
+
     # Attribute needed for AWS resource class
     class_decl_attr = {
         'ctx_node': ctx.node,
@@ -342,6 +384,10 @@ def _aws_resource(function,
         'resource_id': utils.get_resource_id(
             node=ctx.node, instance=ctx.instance),
     }
+
+    rds_id = props.get('resource_id')
+    if rds_id == 'cfy-marketplace-rds-db':
+        ctx.logger.info('B5')
 
     # Check if "aws_config" is set and has a valid "dict" type because
     #  the expected data type for "aws_config" must be "dict"
@@ -369,8 +415,15 @@ def _aws_resource(function,
 
     kwargs['iface'] = class_decl(**class_decl_attr) if class_decl else None
 
+    rds_id = props.get('resource_id')
+    if rds_id == 'cfy-marketplace-rds-db':
+        ctx.logger.info('B6')
+
     resource_config = None
     if not ignore_properties:
+        rds_id = props.get('resource_id')
+        if rds_id == 'cfy-marketplace-rds-db':
+            ctx.logger.info('B7')
         # Normalize resource_config property
         resource_config = props.get('resource_config') or dict()
         resource_config_kwargs = resource_config.get('kwargs') or dict()
@@ -390,9 +443,18 @@ def _aws_resource(function,
             kwargs['resource_config'] = \
                 runtime_instance_properties['resource_config']
             resource_config = kwargs['resource_config']
+
+    rds_id = props.get('resource_id')
+    if rds_id == 'cfy-marketplace-rds-db':
+        ctx.logger.info('B8')
+
     resource_id = utils.get_resource_id(node=ctx.node, instance=ctx.instance)
 
     iface = kwargs.get('iface')
+
+    rds_id = props.get('resource_id')
+    if rds_id == 'cfy-marketplace-rds-db':
+        ctx.logger.info('B9')
 
     try:
         exists = iface.status
@@ -407,6 +469,11 @@ def _aws_resource(function,
             create_operation,
             delete_operation,
             kwargs.get('force_operation'))
+
+    rds_id = props.get('resource_id')
+    if rds_id == 'cfy-marketplace-rds-db':
+        ctx.logger.info('B10')
+
 
     result = None
     if create_operation and ctx.operation.retry_number > 0 and \
@@ -428,6 +495,11 @@ def _aws_resource(function,
         if iface:
             iface.populate_resource(ctx)
             kwargs['iface'] = iface
+
+    rds_id = props.get('resource_id')
+    if rds_id == 'cfy-marketplace-rds-db':
+        ctx.logger.info('B11')
+
     if create_operation and iface:
         iface.populate_resource(ctx)
         kwargs['iface'] = iface
@@ -437,6 +509,11 @@ def _aws_resource(function,
         for key in keys:
             if key != '__deleted':
                 del ctx.instance.runtime_properties[key]
+
+    rds_id = props.get('resource_id')
+    if rds_id == 'cfy-marketplace-rds-db':
+        ctx.logger.info('B12')
+
     return result
 
 
