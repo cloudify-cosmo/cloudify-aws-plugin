@@ -67,10 +67,18 @@ def _wait_for_status(kwargs,
 
     resource_type = kwargs.get('resource_type', 'AWS Resource')
 
+    rds_id = _ctx.node.properties.get('resource_id')
+    if rds_id == 'cfy-marketplace-rds-db':
+        ctx.logger.info('1')
+
     _, _, _, operation_name = _operation.name.split('.')
     creation_phase = operation_name in [
         'precreate', 'create', 'configure']
     resource_id = kwargs['iface'].resource_id
+
+    rds_id = _ctx.node.properties.get('resource_id')
+    if rds_id == 'cfy-marketplace-rds-db':
+        ctx.logger.info('2')
 
     # Run the operation if this is the resource has not been created yet
     result = None
