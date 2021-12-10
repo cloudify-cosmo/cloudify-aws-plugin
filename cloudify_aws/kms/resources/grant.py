@@ -62,14 +62,14 @@ class KMSKeyGrant(KMSBase):
         self.client.revoke_grant(**params)
 
 
-@decorators.aws_resource(KMSKeyGrant, RESOURCE_TYPE)
+@decorators.aws_resource(KMSKeyGrant, RESOURCE_TYPE, waits_for_status=False)
 def prepare(ctx, resource_config, **_):
     """Prepares an AWS KMS Key"""
     # Save the parameters
     ctx.instance.runtime_properties['resource_config'] = resource_config
 
 
-@decorators.aws_resource(KMSKeyGrant, RESOURCE_TYPE)
+@decorators.aws_resource(KMSKeyGrant, RESOURCE_TYPE, waits_for_status=False)
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS KMS Key Grant"""
     # Create a copy of the resource config for clean manipulation.
@@ -108,7 +108,8 @@ def create(ctx, iface, resource_config, **_):
 
 @decorators.aws_resource(KMSKeyGrant,
                          RESOURCE_TYPE,
-                         ignore_properties=True)
+                         ignore_properties=True,
+                         waits_for_status=False)
 def delete(ctx, iface, resource_config, **_):
     """Deletes an KMS Key Grant"""
 

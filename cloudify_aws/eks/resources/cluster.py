@@ -229,7 +229,7 @@ def _store_kubeconfig_in_runtime_properties(node, instance, iface, params):
             'kubeconf not json serializable {0}'.format(text_type(error)))
 
 
-@decorators.aws_resource(EKSCluster, RESOURCE_TYPE)
+@decorators.aws_resource(EKSCluster, RESOURCE_TYPE, waits_for_status=False)
 def prepare(ctx, iface, resource_config, **_):
     """Prepares an AWS EKS Cluster"""
     # Save the parameters
@@ -241,7 +241,7 @@ def prepare(ctx, iface, resource_config, **_):
     ctx.instance.runtime_properties['resource_config'] = resource_config
 
 
-@decorators.aws_resource(EKSCluster, RESOURCE_TYPE)
+@decorators.aws_resource(EKSCluster, RESOURCE_TYPE, waits_for_status=False)
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS EKS Cluster"""
     params = dict() if not resource_config else resource_config.copy()
@@ -260,7 +260,7 @@ def create(ctx, iface, resource_config, **_):
         utils.update_resource_arn(ctx.instance, resource_arn)
 
 
-@decorators.aws_resource(EKSCluster, RESOURCE_TYPE)
+@decorators.aws_resource(EKSCluster, RESOURCE_TYPE, waits_for_status=False)
 def poststart(ctx, iface, resource_config, **_):
     params = dict() if not resource_config else resource_config.copy()
     name = params.get('name') or ctx.node.properties.get('resource_id')
@@ -323,7 +323,7 @@ def poststart(ctx, iface, resource_config, **_):
         iface.properties).to_dict()
 
 
-@decorators.aws_resource(EKSCluster, RESOURCE_TYPE)
+@decorators.aws_resource(EKSCluster, RESOURCE_TYPE, waits_for_status=False)
 def delete(ctx, iface, resource_config, **_):
     """Deletes an AWS EKS Cluster"""
 

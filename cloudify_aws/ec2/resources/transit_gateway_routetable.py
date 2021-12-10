@@ -101,7 +101,9 @@ class EC2TransitGatewayRouteTable(EC2Base):
 
 
 @decorators.aws_resource(
-    EC2TransitGatewayRouteTable, resource_type=RESOURCE_TYPE)
+    EC2TransitGatewayRouteTable,
+    resource_type=RESOURCE_TYPE,
+    waits_for_status=False)
 def prepare(ctx, iface, resource_config, **_):
     '''Prepares an AWS EC2 Route Table'''
     # Save the parameters

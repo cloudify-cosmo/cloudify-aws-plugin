@@ -106,7 +106,7 @@ def validate_polices(policies, policies_from_properties):
     return policies
 
 
-@decorators.aws_resource(IAMRole, RESOURCE_TYPE)
+@decorators.aws_resource(IAMRole, RESOURCE_TYPE, waits_for_status=False)
 @decorators.aws_params(RESOURCE_NAME)
 def create(ctx, iface, resource_config, params, **_):
     '''Creates an AWS IAM Role'''

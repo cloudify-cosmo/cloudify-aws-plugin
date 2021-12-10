@@ -113,7 +113,9 @@ class EC2Image(EC2Base):
                 self.describe_image_filters))
 
 
-@decorators.aws_resource(EC2Image, resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(EC2Image,
+                         resource_type=RESOURCE_TYPE,
+                         waits_for_status=False)
 def prepare(ctx, iface, resource_config, **_):
     """Prepares an AWS EC2 Image"""
     # Save the parameters

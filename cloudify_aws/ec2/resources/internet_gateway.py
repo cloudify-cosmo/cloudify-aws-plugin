@@ -104,14 +104,18 @@ class EC2InternetGateway(EC2Base):
         return res
 
 
-@decorators.aws_resource(EC2InternetGateway, RESOURCE_TYPE)
+@decorators.aws_resource(EC2InternetGateway,
+                         RESOURCE_TYPE,
+                         waits_for_status=False)
 def prepare(ctx, resource_config, **_):
     '''Prepares an AWS EC2 Internet Gateway'''
     # Save the parameters
     ctx.instance.runtime_properties['resource_config'] = resource_config
 
 
-@decorators.aws_resource(EC2InternetGateway, RESOURCE_TYPE)
+@decorators.aws_resource(EC2InternetGateway,
+                         RESOURCE_TYPE,
+                         waits_for_status=False)
 @decorators.tag_resources
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS EC2 Internet Gateway'''
@@ -135,8 +139,10 @@ def create(ctx, iface, resource_config, **_):
         counter += 1
 
 
-@decorators.aws_resource(EC2InternetGateway, RESOURCE_TYPE,
-                         ignore_properties=True)
+@decorators.aws_resource(EC2InternetGateway,
+                         RESOURCE_TYPE,
+                         ignore_properties=True,
+                         waits_for_status=False)
 @decorators.untag_resources
 def delete(iface, resource_config, **_):
     '''Deletes an AWS EC2 Internet Gateway'''
@@ -150,7 +156,9 @@ def delete(iface, resource_config, **_):
     iface.delete(params)
 
 
-@decorators.aws_resource(EC2InternetGateway, RESOURCE_TYPE)
+@decorators.aws_resource(EC2InternetGateway,
+                         RESOURCE_TYPE,
+                         waits_for_status=False)
 def attach(ctx, iface, resource_config, **_):
     '''Attach an AWS EC2 Internet Gateway to a VPC'''
     params = dict() if not resource_config else resource_config.copy()
@@ -181,8 +189,10 @@ def attach(ctx, iface, resource_config, **_):
     iface.attach(attach_params)
 
 
-@decorators.aws_resource(EC2InternetGateway, RESOURCE_TYPE,
-                         ignore_properties=True)
+@decorators.aws_resource(EC2InternetGateway,
+                         RESOURCE_TYPE,
+                         ignore_properties=True,
+                         waits_for_status=False)
 def detach(ctx, iface, resource_config, **_):
     '''Detach an AWS EC2 Internet Gateway from a VPC'''
     params = dict() if not resource_config else resource_config.copy()

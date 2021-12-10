@@ -83,7 +83,8 @@ class DBInstance(RDSBase):
         self.client.delete_db_instance(**params)
 
 
-@decorators.aws_resource(DBInstance, RESOURCE_TYPE)
+@decorators.aws_resource(DBInstance, RESOURCE_TYPE,
+                         waits_for_status=False)
 def prepare(ctx, resource_config, **_):
     '''Prepares an AWS RDS Instance'''
     # Save the parameters
@@ -117,7 +118,8 @@ def create(ctx, iface, resource_config, **_):
 
 
 @decorators.aws_resource(DBInstance, RESOURCE_TYPE,
-                         ignore_properties=True)
+                         ignore_properties=True,
+                         waits_for_status=False)
 def start(ctx, iface, resource_config, **_):
     '''Updates an AWS RDS Instance Runtime Properties'''
 

@@ -77,7 +77,9 @@ class EC2CustomerGateway(EC2Base):
         return res
 
 
-@decorators.aws_resource(EC2CustomerGateway, resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(EC2CustomerGateway,
+                         resource_type=RESOURCE_TYPE,
+                         waits_for_status=False)
 def prepare(ctx, resource_config, **_):
     """Prepares an AWS EC2 Customer Gateway"""
     # Save the parameters
@@ -113,7 +115,8 @@ def create(ctx, iface, resource_config, **_):
                              create_response.get(CUSTOMERGATEWAY_ID))
 
 
-@decorators.aws_resource(EC2CustomerGateway, RESOURCE_TYPE,
+@decorators.aws_resource(EC2CustomerGateway,
+                         RESOURCE_TYPE,
                          ignore_properties=True)
 @decorators.wait_for_delete(status_deleted=['deleted'],
                             status_pending=['deleting'])

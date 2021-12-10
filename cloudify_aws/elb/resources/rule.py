@@ -92,14 +92,18 @@ class ELBRule(ELBBase):
         self.client.delete_rule(**params)
 
 
-@decorators.aws_resource(ELBRule, RESOURCE_TYPE)
+@decorators.aws_resource(ELBRule,
+                         RESOURCE_TYPE,
+                         waits_for_status=False)
 def prepare(ctx, resource_config, **_):
     '''Prepares an ELB rule'''
     # Save the parameters
     ctx.instance.runtime_properties['resource_config'] = resource_config
 
 
-@decorators.aws_resource(ELBRule, RESOURCE_TYPE)
+@decorators.aws_resource(ELBRule,
+                         RESOURCE_TYPE,
+                         waits_for_status=False)
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS ELB rule'''
     # Build API params

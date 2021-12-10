@@ -53,14 +53,16 @@ class EC2Tags(EC2Base):
         return None
 
 
-@decorators.aws_resource(EC2Tags, resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(EC2Tags,
+                         resource_type=RESOURCE_TYPE,
+                         waits_for_status=False)
 def prepare(ctx, iface, resource_config, **_):
     '''Prepares an AWS EC2 Vpc'''
     # Save the parameters
     ctx.instance.runtime_properties['resource_config'] = resource_config
 
 
-@decorators.aws_resource(EC2Tags, RESOURCE_TYPE)
+@decorators.aws_resource(EC2Tags, RESOURCE_TYPE, waits_for_status=False)
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS EC2 Tags'''
     params = \
@@ -83,7 +85,7 @@ def create(ctx, iface, resource_config, **_):
         utils.JsonCleanuper(create_response).to_dict()
 
 
-@decorators.aws_resource(EC2Tags, RESOURCE_TYPE)
+@decorators.aws_resource(EC2Tags, RESOURCE_TYPE, waits_for_status=False)
 def delete(ctx, iface, resource_config, **_):
     '''Deletes an AWS EC2 Tags'''
 

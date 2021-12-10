@@ -123,14 +123,18 @@ class EC2SpotInstances(EC2Instances):
                 'Instances: {i}'.format(i=[statuses]))
 
 
-@decorators.aws_resource(EC2SpotInstances, resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(EC2SpotInstances,
+                         resource_type=RESOURCE_TYPE,
+                         waits_for_status=False)
 def prepare(ctx, iface, resource_config, **_):
     '''Prepares an AWS EC2 Spot Instance Request'''
     # Save the parameters
     ctx.instance.runtime_properties['resource_config'] = resource_config
 
 
-@decorators.aws_resource(EC2SpotInstances, RESOURCE_TYPE)
+@decorators.aws_resource(EC2SpotInstances,
+                         RESOURCE_TYPE,
+                         waits_for_status=False)
 @decorators.tag_resources
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS EC2 Spot Instance Request'''
@@ -148,7 +152,8 @@ def create(ctx, iface, resource_config, **_):
     utils.update_resource_id(ctx.instance, instance_id)
 
 
-@decorators.aws_resource(EC2SpotInstances, RESOURCE_TYPE)
+@decorators.aws_resource(EC2SpotInstances,
+                         RESOURCE_TYPE)
 @decorators.tag_resources
 @decorators.wait_for_status(status_good=GOOD)
 def configure(ctx, iface, resource_config, **_):
@@ -158,7 +163,9 @@ def configure(ctx, iface, resource_config, **_):
     ctx.instance.runtime_properties[INSTANCE_IDS] = iface.get_instance_ids()
 
 
-@decorators.aws_resource(EC2SpotInstances, RESOURCE_TYPE)
+@decorators.aws_resource(EC2SpotInstances,
+                         RESOURCE_TYPE,
+                         waits_for_status=False)
 @decorators.tag_resources
 def stop(ctx, iface, resource_config, **_):
     '''Deletes an AWS EC2 Spot Instance Request'''
@@ -166,7 +173,9 @@ def stop(ctx, iface, resource_config, **_):
     iface.delete_instances()
 
 
-@decorators.aws_resource(EC2SpotInstances, RESOURCE_TYPE)
+@decorators.aws_resource(EC2SpotInstances,
+                         RESOURCE_TYPE,
+                         waits_for_status=False)
 @decorators.tag_resources
 def delete(ctx, iface, resource_config, **_):
     '''Deletes an AWS EC2 Spot Instance Request'''

@@ -109,7 +109,9 @@ class ELBLoadBalancer(ELBBase):
         return res[LB_ATTR]
 
 
-@decorators.aws_resource(ELBLoadBalancer, RESOURCE_TYPE)
+@decorators.aws_resource(ELBLoadBalancer,
+                         RESOURCE_TYPE,
+                         waits_for_status=False)
 def prepare(ctx, resource_config, **_):
     '''Prepares an ELB load balancer'''
     # Save the parameters
@@ -171,7 +173,8 @@ def create(ctx, iface, resource_config, params, **_):
 
 
 @decorators.aws_resource(ELBLoadBalancer,
-                         RESOURCE_TYPE)
+                         RESOURCE_TYPE,
+                         waits_for_status=False)
 def modify(ctx, iface, resource_config, **_):
     '''modify an AWS ELB load balancer attributes'''
     params = utils.clean_params(

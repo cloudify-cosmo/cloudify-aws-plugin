@@ -120,7 +120,9 @@ class IAMGroup(IAMBase):
         self.client.detach_group_policy(**params)
 
 
-@decorators.aws_resource(IAMGroup, RESOURCE_TYPE)
+@decorators.aws_resource(IAMGroup,
+                         RESOURCE_TYPE,
+                         waits_for_status=False)
 @decorators.aws_params(RESOURCE_NAME)
 def create(ctx, iface, resource_config, params, **_):
     '''Creates an AWS IAM Group'''

@@ -78,14 +78,14 @@ class EFSMountTarget(EFSBase):
         self.client.delete_mount_target(**params)
 
 
-@decorators.aws_resource(EFSMountTarget, RESOURCE_TYPE)
+@decorators.aws_resource(EFSMountTarget, RESOURCE_TYPE, waits_for_status=False)
 def prepare(ctx, resource_config, **_):
     """Prepares an AWS EFS Mount Target"""
     # Save the parameters
     ctx.instance.runtime_properties['resource_config'] = resource_config
 
 
-@decorators.aws_resource(EFSMountTarget, RESOURCE_TYPE)
+@decorators.aws_resource(EFSMountTarget, RESOURCE_TYPE, waits_for_status=False)
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS EFS Mount Target"""
 
@@ -138,8 +138,10 @@ def create(ctx, iface, resource_config, **_):
     ctx.instance.runtime_properties[NAT_ID] = output.get(NAT_ID)
 
 
-@decorators.aws_resource(EFSMountTarget, RESOURCE_TYPE,
-                         ignore_properties=True)
+@decorators.aws_resource(EFSMountTarget,
+                         RESOURCE_TYPE,
+                         ignore_properties=True,
+                         waits_for_status=False)
 def delete(iface, resource_config, **_):
     """Deletes an AWS EFS Mount Target"""
 

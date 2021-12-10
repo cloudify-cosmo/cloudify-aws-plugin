@@ -119,14 +119,18 @@ class ELBClassicLoadBalancer(ELBBase):
             'deregister_instances_from_load_balancer', params)
 
 
-@decorators.aws_resource(ELBClassicLoadBalancer, RESOURCE_TYPE)
+@decorators.aws_resource(ELBClassicLoadBalancer,
+                         RESOURCE_TYPE,
+                         waits_for_status=False)
 def prepare(ctx, resource_config, **_):
     """Prepares an ELB classic load balancer"""
     # Save the parameters
     ctx.instance.runtime_properties['resource_config'] = resource_config
 
 
-@decorators.aws_resource(ELBClassicLoadBalancer, RESOURCE_TYPE)
+@decorators.aws_resource(ELBClassicLoadBalancer,
+                         RESOURCE_TYPE,
+                         waits_for_status=False)
 @decorators.aws_params(RESOURCE_NAME, params_priority=False)
 def create(ctx, iface, resource_config, params, **_):
     """Creates an AWS ELB classic load balancer"""
@@ -165,7 +169,8 @@ def create(ctx, iface, resource_config, params, **_):
 
 @decorators.aws_resource(ELBClassicLoadBalancer,
                          RESOURCE_TYPE,
-                         ignore_properties=True)
+                         ignore_properties=True,
+                         waits_for_status=False)
 def start(ctx, iface, resource_config, **_):
     """modify an AWS ELB load balancer attributes"""
 
@@ -189,7 +194,8 @@ def start(ctx, iface, resource_config, **_):
 
 @decorators.aws_resource(ELBClassicLoadBalancer,
                          RESOURCE_TYPE,
-                         ignore_properties=True)
+                         ignore_properties=True,
+                         waits_for_status=False)
 def delete(ctx, iface, resource_config, **_):
     """Deletes an AWS ELB classic load balancer"""
 

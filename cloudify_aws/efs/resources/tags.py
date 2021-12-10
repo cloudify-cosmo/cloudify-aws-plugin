@@ -70,14 +70,18 @@ class EFSFileSystemTags(EFSBase):
         self.client.delete_tags(**params)
 
 
-@decorators.aws_resource(EFSFileSystemTags, RESOURCE_TYPE)
+@decorators.aws_resource(EFSFileSystemTags,
+                         RESOURCE_TYPE,
+                         waits_for_status=False)
 def prepare(ctx, resource_config, **_):
     """Prepares an AWS EFS File System Tags"""
     # Save the parameters
     ctx.instance.runtime_properties['resource_config'] = resource_config
 
 
-@decorators.aws_resource(EFSFileSystemTags, RESOURCE_TYPE)
+@decorators.aws_resource(EFSFileSystemTags,
+                         RESOURCE_TYPE,
+                         waits_for_status=False)
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS EFS File System Tags"""
 
@@ -104,7 +108,9 @@ def create(ctx, iface, resource_config, **_):
     iface.create(params)
 
 
-@decorators.aws_resource(EFSFileSystemTags, RESOURCE_TYPE)
+@decorators.aws_resource(EFSFileSystemTags,
+                         RESOURCE_TYPE,
+                         waits_for_status=False)
 def delete(ctx, iface, resource_config, **_):
     """Deletes an AWS EFS File System Tags"""
 

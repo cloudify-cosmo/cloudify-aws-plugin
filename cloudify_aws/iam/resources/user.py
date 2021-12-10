@@ -150,7 +150,7 @@ class IAMUser(IAMBase):
         self.client.detach_user_policy(**params)
 
 
-@decorators.aws_resource(IAMUser, RESOURCE_TYPE)
+@decorators.aws_resource(IAMUser, RESOURCE_TYPE, waits_for_status=False)
 @decorators.aws_params(RESOURCE_NAME)
 def create(ctx, iface, resource_config, params, **_):
     '''Creates an AWS IAM User'''

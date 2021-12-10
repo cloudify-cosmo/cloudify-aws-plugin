@@ -165,7 +165,8 @@ def _download_local_file(local_path):
             causes=[exception_to_error_cause(error, tb)])
 
 
-@decorators.aws_resource(S3BucketObject, RESOURCE_TYPE)
+@decorators.aws_resource(S3BucketObject, RESOURCE_TYPE,
+                         waits_for_status=False)
 def prepare(ctx, resource_config, **_):
     """Prepares an AWS S3 Bucket Object"""
     # Save the parameters
@@ -173,7 +174,9 @@ def prepare(ctx, resource_config, **_):
 
 
 @decorators.check_swift_resource
-@decorators.aws_resource(S3BucketObject, RESOURCE_TYPE)
+@decorators.aws_resource(S3BucketObject,
+                         RESOURCE_TYPE,
+                         waits_for_status=False)
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS S3 Bucket Object"""
 

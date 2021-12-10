@@ -99,7 +99,9 @@ class EC2SpotFleetRequest(EC2Base):
         return self.make_client_call('describe_spot_fleet_instances', params)
 
 
-@decorators.aws_resource(EC2SpotFleetRequest, resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(EC2SpotFleetRequest,
+                         resource_type=RESOURCE_TYPE,
+                         waits_for_status=False)
 def prepare(ctx, iface, resource_config, **_):
     '''Prepares an AWS EC2 Vpc'''
     # Save the parameters
@@ -125,8 +127,10 @@ def create(ctx, iface, resource_config, **_):
     utils.update_resource_id(ctx.instance, spot_fleed_request_id)
 
 
-@decorators.aws_resource(EC2SpotFleetRequest, RESOURCE_TYPE,
-                         ignore_properties=True)
+@decorators.aws_resource(EC2SpotFleetRequest,
+                         RESOURCE_TYPE,
+                         ignore_properties=True,
+                         waits_for_status=False)
 @decorators.untag_resources
 def delete(iface, resource_config, terminate_instances=False, **_):
     '''Deletes an AWS EC2 Vpc'''
