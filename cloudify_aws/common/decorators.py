@@ -405,10 +405,6 @@ def _aws_resource(function,
             kwargs.pop('waits_for_status', False))
 
     result = None
-    # if create_operation and ctx.operation.retry_number > 0 and \
-    #         resource_id and exists and not special_condition:
-    #     ctx.logger.info('Not retrying create after ID {} received.'.format(
-    #         resource_id))
     if not skip(
             resource_type=resource_type,
             resource_id=ctx.instance.id,
