@@ -386,7 +386,6 @@ def _aws_resource(function,
                 runtime_instance_properties['resource_config']
             resource_config = kwargs['resource_config']
     resource_id = utils.get_resource_id(node=ctx.node, instance=ctx.instance)
-<<<<<<< HEAD
 
     iface = kwargs.get('iface')
 
@@ -426,40 +425,6 @@ def _aws_resource(function,
             iface.populate_resource(ctx)
             kwargs['iface'] = iface
     if create_operation and iface:
-=======
-    # Check if using external
-    iface = kwargs.get('iface')
-    if props.get('use_external_resource') and \
-            'cloudify.nodes.aws.ec2.Image' in ctx.node.type_hierarchy and \
-            operation_name == 'create':
-        pass
-    elif ctx.node.properties.get('use_external_resource', False):
-        ctx.logger.info('{t} ID# {i} is user-provided.'.format(
-            t=resource_type, i=resource_id))
-        if not kwargs.get('force_operation', False) and \
-                operation_name not in ['precreate', 'poststart']:
-            # If "force_operation" is not set then we need to make
-            # sure that runtime properties for node instance are
-            # setting correctly
-            # Set "resource_config" and "EXT_RES_ID"
-            ctx.instance.runtime_properties['resource_config'] = \
-                resource_config
-            ctx.instance.runtime_properties[EXT_RES_ID] = resource_id
-            if operation_name not in ['delete', 'create'] and \
-                    not kwargs['iface'].verify_resource_exists():
-                raise NonRecoverableError(
-                    'Resource type {0} resource_id {1} not found.'.format(
-                        kwargs['resource_type'], kwargs['iface'].resource_id))
-            if iface:
-                iface.populate_resource(ctx)
-                kwargs['iface'] = iface
-            return
-        ctx.logger.warn('{t} ID# {i} has force_operation set.'.format(
-            t=resource_type, i=resource_id))
-    ctx.logger.debug('Executing: {} with params {}'.format(function, kwargs))
-    result = function(**kwargs)
-    if operation_name == 'configure' and iface:
->>>>>>> fefaace (fix issue in ami)
         iface.populate_resource(ctx)
         kwargs['iface'] = iface
     if delete_operation:
