@@ -226,13 +226,16 @@ commands:
             pip install -r test-requirements.txt
       - run:
           name: download manager docker image
-          command:  docker pull cloudifyplatform/premium-cloudify-manager-aio:latest
+          command:  wget http://repository.cloudifysource.org/cloudify/6.2.0/ga-release/cloudify-manager-aio-docker-6.2.0-ga.tar
+      - run:
+          name: load docker manager image
+          command: docker load -i cloudify-manager-aio-docker-6.2.0-ga.tar
       - run:
           name: show images
           command: docker images
       - run:
           name: start docker container
-          command: docker run --name cfy_manager -d --restart unless-stopped -v /sys/fs/cgroup:/sys/fs/cgroup:ro --tmpfs /run --tmpfs /run/lock --security-opt seccomp:unconfined --cap-add SYS_ADMIN --network host cloudifyplatform/premium-cloudify-manager-aio
+          command: docker run --name cfy_manager -d --restart unless-stopped -v /sys/fs/cgroup:/sys/fs/cgroup:ro --tmpfs /run --tmpfs /run/lock --security-opt seccomp:unconfined --cap-add SYS_ADMIN --network host cloudify-manager-aio-x86_64
       - run:
           name: wait for starter
           command: docker exec -it cfy_manager cfy_manager wait-for-starter
