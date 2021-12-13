@@ -18,9 +18,11 @@
 '''
 # Third Party imports
 from time import sleep
+import sys
 
 from botocore.exceptions import ClientError, ParamValidationError
 from cloudify.exceptions import NonRecoverableError
+from cloudify.utils import exception_to_error_cause
 
 # Local imports
 from cloudify_aws.common import decorators, utils
@@ -38,7 +40,6 @@ class EC2Vpc(EC2Base):
     '''
         EC2 Vpc interface
     '''
-
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
@@ -127,17 +128,14 @@ def create(ctx, iface, resource_config, **_):
     # Actually create the resource
     try:
         create_response = iface.create(params)[VPC]
-    except ClientError as e:
-        if 'VpcLimitExceeded' in str(e):
-            ctx.logger.debug('except ClientError: {}'.format(str(e)))
-            raise NonRecoverableError('Please add quota vpc or delete unused vpc and try again')
-        raise e
-    except NonRecoverableError as e:
-        if 'VpcLimitExceeded' in str(e):
-            ctx.logger.debug('except NonRecoverableError: {}'.format(str(e)))
-            raise NonRecoverableError('Please add quota vpc or delete unused vpc and try again')
-        raise e
-
+    except NonRecoverableError as ex:
+        if 'VpcLimitExceeded' in str(ex):
+            _, _, tb = sys.exc_info()
+            raise NonRecoverableError(
+                "Please add quota vpc or delete unused vpc and try again.",
+                causes=[exception_to_error_cause(ex, tb)])
+        else:
+            raise ex
     ctx.instance.runtime_properties['create_response'] = \
         utils.JsonCleanuper(create_response).to_dict()
 
