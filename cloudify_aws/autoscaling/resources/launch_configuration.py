@@ -17,7 +17,7 @@
     AWS Autoscaling Launch Configuration interface
 """
 # Third party imports
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Cloudify imports
 from cloudify.exceptions import NonRecoverableError
@@ -58,7 +58,7 @@ class AutoscalingLaunchConfiguration(AutoscalingBase):
         try:
             resources = \
                 self.client.describe_launch_configurations(**params)
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         else:
             return resources.get(LCS, [None])[0]
@@ -86,7 +86,7 @@ class AutoscalingLaunchConfiguration(AutoscalingBase):
         return res
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(AutoscalingLaunchConfiguration, RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     """Prepares an AWS Autoscaling Autoscaling Launch Configuration"""
     # Save the parameters

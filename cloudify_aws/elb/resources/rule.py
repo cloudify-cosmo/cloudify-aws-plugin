@@ -20,7 +20,7 @@
 import re
 
 # Third Party imports
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Local imports
 from cloudify_aws.common import decorators, utils
@@ -57,7 +57,7 @@ class ELBRule(ELBBase):
         try:
             resources = self.client.describe_rules(
                 RuleArns=[self.resource_id])
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         else:
             return None \
@@ -92,14 +92,18 @@ class ELBRule(ELBBase):
         self.client.delete_rule(**params)
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(ELBRule,
+                         RESOURCE_TYPE,
+                         waits_for_status=False)
 def prepare(ctx, resource_config, **_):
     '''Prepares an ELB rule'''
     # Save the parameters
     ctx.instance.runtime_properties['resource_config'] = resource_config
 
 
-@decorators.aws_resource(ELBRule, RESOURCE_TYPE)
+@decorators.aws_resource(ELBRule,
+                         RESOURCE_TYPE,
+                         waits_for_status=False)
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS ELB rule'''
     # Build API params

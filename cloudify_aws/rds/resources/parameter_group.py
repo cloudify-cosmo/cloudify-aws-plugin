@@ -20,7 +20,7 @@
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.rds import RDSBase
 # Boto
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 RESOURCE_TYPE = 'RDS Parameter Group'
 
@@ -40,7 +40,7 @@ class ParameterGroup(RDSBase):
         try:
             resources = self.client.describe_db_parameter_groups(
                 DBParameterGroupName=self.resource_id)
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         if not resources or not resources.get('DBParameterGroups', list()):
             return None
@@ -82,7 +82,8 @@ class ParameterGroup(RDSBase):
         self.client.delete_db_parameter_group(**params)
 
 
-@decorators.aws_resource(ParameterGroup, RESOURCE_TYPE)
+@decorators.aws_resource(ParameterGroup, RESOURCE_TYPE,
+                         waits_for_status=False)
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS RDS Parameter Group'''
     # Build API params
@@ -100,7 +101,8 @@ def create(ctx, iface, resource_config, **_):
 
 
 @decorators.aws_resource(ParameterGroup, RESOURCE_TYPE,
-                         ignore_properties=True)
+                         ignore_properties=True,
+                         waits_for_status=False)
 def configure(iface, resource_config, **_):
     '''Configures an AWS RDS Parameter Group'''
     if not resource_config:

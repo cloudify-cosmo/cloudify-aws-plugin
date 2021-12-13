@@ -95,9 +95,9 @@ class TestEC2VpcPeering(TestBase):
                 ]
             }
 
-        self.vpc_peering.describe_vpc_peering_filter = {
+        self.vpc_peering._describe_vpc_peering_filter = {
             vpc_peering.VPC_PEERING_CONNECTION_IDS:
-                ['test_peering_connection_id']
+                ['vpc_id_test']
         }
         self.vpc_peering.client = self.make_client_function(
             'describe_vpc_peering_connections', return_value=response)
@@ -154,6 +154,10 @@ class TestEC2VpcPeering(TestBase):
                 ]
             }
 
+        self.vpc_peering._describe_vpc_peering_filter = {
+            vpc_peering.VPC_PEERING_CONNECTION_IDS:
+                ['vpc_id_test']
+        }
         self.vpc_peering.client = self.make_client_function(
             'describe_vpc_peering_connections', return_value=response)
 
@@ -291,10 +295,11 @@ class TestEC2VpcPeering(TestBase):
 
     def test_prepare(self):
         ctx = self.get_mock_ctx("EC2VpcPeering")
-        vpc_peering.prepare(ctx, 'config')
+        iface = MagicMock()
+        vpc_peering.prepare(ctx, {'foo': 'bar'}, iface)
         self.assertEqual(
             ctx.instance.runtime_properties['resource_config'],
-            'config')
+            {'foo': 'bar'})
 
     def test_create(self):
         iface = MagicMock()

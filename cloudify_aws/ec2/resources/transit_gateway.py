@@ -109,7 +109,7 @@ class EC2TransitGatewayAttachment(EC2Base):
         try:
             resources = \
                 self.client.describe_transit_gateway_vpc_attachments(**params)
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         else:
             return None if not resources else resources.get(
@@ -146,7 +146,9 @@ class EC2TransitGatewayAttachment(EC2Base):
             'delete_transit_gateway_vpc_attachment', params)
 
 
-@decorators.aws_resource(EC2TransitGateway, resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(EC2TransitGateway,
+                         resource_type=RESOURCE_TYPE,
+                         waits_for_status=False)
 def prepare(ctx, iface, resource_config, **_):
     '''Prepares an AWS EC2 Transit Gateway'''
     # Save the parameters
@@ -172,8 +174,10 @@ def create(ctx, iface, resource_config, **_):
     utils.update_resource_id(ctx.instance, transit_gateway_id)
 
 
-@decorators.aws_resource(EC2TransitGateway, RESOURCE_TYPE,
-                         ignore_properties=True)
+@decorators.aws_resource(EC2TransitGateway,
+                         RESOURCE_TYPE,
+                         ignore_properties=True,
+                         waits_for_status=False)
 @decorators.untag_resources
 def delete(iface, resource_config, **_):
     '''Deletes an AWS EC2 Transit Gateway'''
@@ -253,8 +257,14 @@ def request_vpc_attachment(ctx,
         'VpcId': vpc_id,
         'SubnetIds': subnet_ids
     }
-
-    response = iface.create(request)
+    try:
+        response = iface.create(request)
+    except (NonRecoverableError, ClientError) as e:
+        raise OperationRetry(
+            'Waiting for {t} to be in valid state: {s}. '
+            'Error={e}'.format(t=transit_gateway_attachment_id,
+                               s=iface.status,
+                               e=e))
     ctx.logger.info('Sent the {r} creation request.'.format(
         r=TG_ATTACHMENT))
     ctx.source.instance.runtime_properties[TG_ATTACHMENTS][vpc_id] = \

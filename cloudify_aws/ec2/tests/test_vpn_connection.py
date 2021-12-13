@@ -33,8 +33,9 @@ class TestEC2VPNConnection(TestBase):
 
     def setUp(self):
         super(TestEC2VPNConnection, self).setUp()
-        self.vpn_connection = EC2VPNConnection("ctx_node", resource_id=True,
-                                               client=True, logger=None)
+        ctx = self.get_mock_ctx("TestEC2VPNConnection")
+        self.vpn_connection = EC2VPNConnection(ctx.node, resource_id='foo',
+                                               client=None, logger=None)
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',
                       mock_decorator)
         mock1.start()
@@ -59,7 +60,7 @@ class TestEC2VPNConnection(TestBase):
                         'Category': 'category_test',
                         'State': 'state_test',
                         'Type': 'type_test',
-                        'VpnConnectionId': 'vpn_connection_id_test',
+                        'VpnConnectionId': 'foo',
                         'VpnGatewayId': 'vpn_gateway_id_test',
                         'Options': {
                             'StaticRoutesOnly': True
@@ -91,9 +92,9 @@ class TestEC2VPNConnection(TestBase):
                 ]
             }
 
-        self.vpn_connection.describe_vpn_connection_filter = {
+        self.vpn_connection._describe_vpn_connection_filter = {
             vpn_connection.VPN_CONNECTION_IDS:
-                ['vpn_connection_id_test']
+                ['foo']
         }
         self.vpn_connection.client = self.make_client_function(
             'describe_vpn_connections', return_value=response)
@@ -101,7 +102,7 @@ class TestEC2VPNConnection(TestBase):
         self.assertEqual(
             self.vpn_connection.properties[
                 vpn_connection.VPN_CONNECTION_ID],
-            'vpn_connection_id_test'
+            'foo'
         )
 
     def test_class_status(self):
@@ -115,7 +116,7 @@ class TestEC2VPNConnection(TestBase):
                         'Category': 'category_test',
                         'State': 'state_test',
                         'Type': 'type_test',
-                        'VpnConnectionId': 'vpn_connection_id_test',
+                        'VpnConnectionId': 'foo',
                         'VpnGatewayId': 'vpn_gateway_id_test',
                         'Options': {
                             'StaticRoutesOnly': True
@@ -153,7 +154,7 @@ class TestEC2VPNConnection(TestBase):
         self.assertEqual(self.vpn_connection.status, 'state_test')
 
     def test_class_status_empty(self):
-        response = {vpn_connection.VPN_CONNECTIONS: [{}]}
+        response = {vpn_connection.VPN_CONNECTIONS: []}
 
         self.vpn_connection.client = self.make_client_function(
             'describe_vpn_connections', return_value=response)

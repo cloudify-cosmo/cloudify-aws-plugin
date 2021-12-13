@@ -16,7 +16,7 @@
 import unittest
 
 # Third party imports
-from mock import patch, Mock
+from mock import patch, Mock, MagicMock
 
 from cloudify.state import current_ctx
 from cloudify.exceptions import OperationRetry
@@ -165,6 +165,11 @@ class TestELBClassicLoadBalancer(TestBase):
 
         current_ctx.set(_ctx)
 
+        self.fake_client.describe_load_balancers = Mock(
+            side_effect=[
+                {},
+            ])
+
         load_balancer.prepare(ctx=_ctx, resource_config=None, iface=None,
                               params=None)
 
@@ -198,6 +203,19 @@ class TestELBClassicLoadBalancer(TestBase):
 
         current_ctx.set(_ctx)
 
+        self.fake_client.describe_load_balancers = Mock(
+            side_effect=[
+                {},
+                {
+                    'LoadBalancerDescriptions': [
+                        {
+                            'LoadBalancerDescriptions': [
+                                {'State': {'Code': 'ok'}}
+                            ]
+                        }
+                    ]
+                },
+            ])
         self.fake_client.create_load_balancer = self.mock_return({
             'LoadBalancers': [{
                 RESOURCE_NAME: "abc",
@@ -226,15 +244,21 @@ class TestELBClassicLoadBalancer(TestBase):
             test_runtime_properties=RUNTIME_PROPERTIES_AFTER_CREATE,
             type_hierarchy=LOADBALANCER_TH,
             type_node=LOADBALANCER_TYPE,
+            ctx_operation_name='cloudify.interfaces.lifecycle.start'
         )
 
         current_ctx.set(_ctx)
-
+        self.fake_client.describe_load_balancers = Mock(
+            side_effect=[
+                {}
+            ])
         self.fake_client.modify_load_balancer_attributes = self.mock_return(
             DELETE_RESPONSE)
 
         # should be used resource config from inputs
-        load_balancer.start(ctx=_ctx, resource_config={'a': 'b'}, iface=None)
+        iface = MagicMock()
+        iface.status = None
+        load_balancer.start(ctx=_ctx, resource_config={'a': 'b'}, iface=iface)
 
         self.fake_boto.assert_called_with('elb', **CLIENT_CONFIG)
 
@@ -252,7 +276,19 @@ class TestELBClassicLoadBalancer(TestBase):
         )
 
         current_ctx.set(_ctx)
-
+        self.fake_client.describe_load_balancers = Mock(
+            side_effect=[
+                {},
+                {
+                    'LoadBalancerDescriptions': [
+                        {
+                            'LoadBalancerDescriptions': [
+                                {'State': {'Code': 'ok'}}
+                            ]
+                        }
+                    ]
+                },
+            ])
         self.fake_client.modify_load_balancer_attributes = self.mock_return(
             DELETE_RESPONSE)
 
@@ -270,14 +306,21 @@ class TestELBClassicLoadBalancer(TestBase):
             test_runtime_properties=RUNTIME_PROPERTIES_AFTER_CREATE,
             type_hierarchy=LOADBALANCER_TH,
             type_node=LOADBALANCER_TYPE,
+            ctx_operation_name='cloudify.interfaces.lifecycle.delete'
         )
 
         current_ctx.set(_ctx)
 
+        self.fake_client.describe_load_balancers = Mock(
+            side_effect=[
+                {}
+            ])
         self.fake_client.delete_load_balancer = self.mock_return(
             DELETE_RESPONSE)
 
-        load_balancer.delete(ctx=_ctx, resource_config=None, iface=None)
+        iface = MagicMock()
+        iface.status = None
+        load_balancer.delete(ctx=_ctx, resource_config=None, iface=iface)
 
         self.fake_boto.assert_called_with('elb', **CLIENT_CONFIG)
 

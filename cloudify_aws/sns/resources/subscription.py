@@ -17,7 +17,7 @@
     AWS SNS Subscription interface
 """
 # Standard imports
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Local imports
 from cloudify.exceptions import NonRecoverableError
@@ -48,13 +48,13 @@ class SNSSubscription(SNSBase):
         try:
             resources = \
                 self.client.list_subscriptions()
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         else:
-            for resource in resources:
-                if resource[SUB_ARN] == self.resource_id:
-                    return resource
-        return None
+            if resources:
+                for resource in resources['Subscriptions']:
+                    if resource[SUB_ARN] == self.resource_id:
+                        return resource
 
     @property
     def status(self):
@@ -90,7 +90,7 @@ class SNSSubscription(SNSBase):
         return res
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(SNSSubscription, RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     """Prepares an AWS SNS Topic"""
     # Save the parameters

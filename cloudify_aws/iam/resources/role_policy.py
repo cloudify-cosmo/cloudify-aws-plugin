@@ -62,7 +62,7 @@ class IAMRolePolicy(IAMBase):
         return res
 
 
-@decorators.aws_resource(IAMRolePolicy, RESOURCE_TYPE)
+@decorators.aws_resource(IAMRolePolicy, RESOURCE_TYPE, waits_for_status=False)
 @decorators.aws_params(RESOURCE_NAME)
 def create(ctx, iface, resource_config, params, **_):
     '''Creates an AWS IAM Role Policy'''
@@ -82,8 +82,10 @@ def create(ctx, iface, resource_config, params, **_):
     iface.create(params)
 
 
-@decorators.aws_resource(IAMRolePolicy, RESOURCE_TYPE,
-                         ignore_properties=True)
+@decorators.aws_resource(IAMRolePolicy,
+                         RESOURCE_TYPE,
+                         ignore_properties=True,
+                         waits_for_status=False)
 def delete(ctx, iface, resource_config, **_):
     '''Deletes an AWS IAM Role Policy'''
     params = \

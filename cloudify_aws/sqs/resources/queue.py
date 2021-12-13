@@ -20,7 +20,7 @@
 import json
 
 # Third party imports
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Local imports
 from cloudify_aws.common._compat import text_type
@@ -50,7 +50,7 @@ class SQSQueue(SQSBase):
             resource = \
                 self.client.list_queues(
                     QueueNamePrefix=self.resource_id)
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         else:
             return resource.get(QUEUE_URLS, [None])[0]
@@ -76,7 +76,7 @@ class SQSQueue(SQSBase):
         self.client.delete_queue(**params)
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(SQSQueue, RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     """Prepares an AWS SQS Queue"""
     # Save the parameters

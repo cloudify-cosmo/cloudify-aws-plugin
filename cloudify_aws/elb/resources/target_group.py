@@ -17,7 +17,7 @@
     AWS ELB target group
 '''
 # Third Party imports
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Local imports
 from cloudify_aws.common import decorators, utils
@@ -52,7 +52,7 @@ class ELBTargetGroup(ELBBase):
         try:
             resources = self.client.describe_target_groups(
                 TargetGroupArns=[self.resource_id])
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         else:
             return None \
@@ -99,7 +99,7 @@ class ELBTargetGroup(ELBBase):
         return res[GRP_ATTR]
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(ELBTargetGroup, RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     '''Prepares an ELB listener'''
     # Save the parameters

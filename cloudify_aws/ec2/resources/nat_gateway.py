@@ -143,7 +143,7 @@ def create(ctx, iface, resource_config, **_):
                          ignore_properties=True)
 @decorators.wait_for_delete(
     status_deleted=['deleted'],
-    status_pending=['deleting'])
+    status_pending=['deleting', 'pending'])
 @decorators.untag_resources
 def delete(iface, resource_config, **_):
     """Deletes an AWS EC2 NAT Gateway"""

@@ -29,10 +29,13 @@ from cloudify import ctx
 from cloudify.decorators import operation
 from cloudify.utils import exception_to_error_cause
 from cloudify.exceptions import OperationRetry, NonRecoverableError
+from cloudify_common_sdk.utils import \
+    skip_creative_or_destructive_operation as skip
 
 # Local imports
 from cloudify_aws.common import utils
 from cloudify_aws.common._compat import text_type
+from cloudify_common_sdk.utils import get_ctx_instance
 from cloudify_aws.common.constants import (
     SWIFT_NODE_PREFIX,
     SWIFT_ERROR_TOKEN_CODE,
@@ -63,18 +66,17 @@ def _wait_for_status(kwargs,
     status_pending = status_pending or []
 
     resource_type = kwargs.get('resource_type', 'AWS Resource')
-    iface = kwargs['iface']
 
     _, _, _, operation_name = _operation.name.split('.')
     creation_phase = operation_name in [
         'precreate', 'create', 'configure']
-    resource_id = iface.resource_id
+    resource_id = kwargs['iface'].resource_id
 
     # Run the operation if this is the resource has not been created yet
     result = None
 
     ctx.logger.debug('Resource %s ID# "%s"' % (resource_type, resource_id))
-
+    ctx_instance = get_ctx_instance()
     if (creation_phase and _ctx.operation.retry_number == 0) \
             or not resource_id:
         if not creation_phase:
@@ -82,14 +84,14 @@ def _wait_for_status(kwargs,
                 'The resource should exist, but does not have a resource ID.')
         result = function(**kwargs)
         ctx.logger.debug("The function result is %s" % result)
-        iface_resource_id = iface.resource_id
-        runtime_resource_id = utils.get_resource_id(ctx.node, ctx.instance)
+        iface_resource_id = kwargs['iface'].resource_id
+        runtime_resource_id = utils.get_resource_id(ctx.node, ctx_instance)
         if iface_resource_id != runtime_resource_id:
             if not iface_resource_id and runtime_resource_id:
-                iface.update_resource_id(runtime_resource_id)
+                kwargs['iface'].update_resource_id(runtime_resource_id)
                 resource_id = runtime_resource_id
             elif not runtime_resource_id and iface_resource_id:
-                utils.update_resource_id(ctx.instance, iface_resource_id)
+                utils.update_resource_id(ctx_instance, iface_resource_id)
                 resource_id = iface_resource_id
             elif iface_resource_id and runtime_resource_id:
                 raise NonRecoverableError(
@@ -99,28 +101,31 @@ def _wait_for_status(kwargs,
                     ' Please check your aws account.')
             else:
                 raise OperationRetry("Resource not created, trying again...")
+        else:
+            kwargs['iface'].update_resource_id(runtime_resource_id)
+            resource_id = runtime_resource_id
 
     ctx.logger.debug('Requesting ID# "%s" status.' % resource_id)
 
-    status = iface.status
+    status = kwargs['iface'].status
 
     # Get a resource interface and query for the status
     ctx.logger.debug('%s ID# "%s" reported status: %s.' % (
         resource_type, resource_id, status))
 
     if status in status_good:
-        _ctx.instance.runtime_properties['create_response'] = \
-            utils.JsonCleanuper(iface.properties).to_dict()
+        ctx_instance.runtime_properties['create_response'] = \
+            utils.JsonCleanuper(kwargs['iface'].properties).to_dict()
         return result
 
     elif status in status_pending:
         raise OperationRetry(
             '%s ID# "%s" is still in a pending state.'
-            % (resource_type, iface.resource_id))
+            % (resource_type, kwargs['iface'].resource_id))
 
     elif not status and fail_on_missing:
         sleep(0.5)
-        if iface.status:
+        if kwargs['iface'].status:
             return _wait_for_status(kwargs,
                                     _ctx,
                                     _operation,
@@ -131,7 +136,7 @@ def _wait_for_status(kwargs,
 
         raise NonRecoverableError(
             '%s ID# "%s" no longer exists but "fail_on_missing" set.'
-            % (resource_type, iface.resource_id))
+            % (resource_type, kwargs['iface'].resource_id))
 
     elif not status:
         raise OperationRetry('Waiting for operation to succeed')
@@ -144,7 +149,7 @@ def _wait_for_status(kwargs,
     elif status not in status_good and fail_on_missing:
         raise NonRecoverableError(
             '%s ID# "%s" reported an unexpected status: "%s"'
-            % (resource_type, iface.resource_id, status))
+            % (resource_type, kwargs['iface'].resource_id, status))
 
     ctx.logger.warn("Resource was created but no good status reached.")
     return result
@@ -249,6 +254,49 @@ def aws_params(resource_name, params_priority=True):
     return wrapper_outer
 
 
+def get_special_condition(external,
+                          node_type,
+                          op_name,
+                          create_op,
+                          delete_op,
+                          force,
+                          waits_for_status):
+    if external and 'cloudify.nodes.aws.ec2.Image' in node_type and \
+            op_name == 'create':
+        return True
+    if external and 'cloudify.nodes.aws.ec2.Image' in node_type and \
+            op_name == 'delete':
+        return False
+    if waits_for_status:
+        return True
+    if create_op and 'cloudify.nodes.aws.ec2.VpcPeeringRequest' in node_type:
+        return True
+    return not create_op and not delete_op or force
+
+
+def get_create_op(op_name):
+    """ Determine if we are dealing with a creation operation.
+    Normally we just do the logic in the last return. However, we may want
+    special behavior for some types.
+
+    :param op_name: ctx.operation.name.split('.')[-1].
+    :return: bool
+    """
+    return 'configure' == op_name
+    # return 'create' in op or 'configure' in op
+
+
+def get_delete_op(op_name):
+    """ Determine if we are dealing with a deletion operation.
+    Normally we just do the logic in the last return. However, we may want
+    special behavior for some types.
+
+    :param op_name: ctx.operation.name.split('.')[-1].
+    :return: bool
+    """
+    return 'delete' == op_name
+
+
 def _aws_resource(function,
                   class_decl,
                   resource_type,
@@ -257,6 +305,10 @@ def _aws_resource(function,
 
     ctx = kwargs['ctx']
     _, _, _, operation_name = ctx.operation.name.split('.')
+    create_operation = get_create_op(operation_name)
+    delete_operation = get_delete_op(operation_name)
+    if create_operation and '__deleted' in ctx.instance.runtime_properties:
+        del ctx.instance.runtime_properties['__deleted']
     props = ctx.node.properties
     runtime_instance_properties = ctx.instance.runtime_properties
     # Override the resource ID if needed
@@ -337,56 +389,62 @@ def _aws_resource(function,
                 runtime_instance_properties['resource_config']
             resource_config = kwargs['resource_config']
     resource_id = utils.get_resource_id(node=ctx.node, instance=ctx.instance)
-    # Check if using external
+
     iface = kwargs.get('iface')
-    if props.get('use_external_resource') and \
-            'cloudify.nodes.aws.ec2.Image' in ctx.node.type_hierarchy and \
-            operation_name == 'create':
-        pass
-    elif ctx.node.properties.get('use_external_resource', False):
-        ctx.logger.info('{t} ID# {i} is user-provided.'.format(
-            t=resource_type, i=resource_id))
-        if not kwargs.get('force_operation', False) and \
-                operation_name not in ['precreate', 'poststart']:
-            # If "force_operation" is not set then we need to make
-            # sure that runtime properties for node instance are
-            # setting correctly
-            # Set "resource_config" and "EXT_RES_ID"
-            ctx.instance.runtime_properties['resource_config'] = \
-                resource_config
-            ctx.instance.runtime_properties[EXT_RES_ID] = resource_id
-            if operation_name not in ['delete', 'create'] and \
-                    not kwargs['iface'].verify_resource_exists():
-                raise NonRecoverableError(
-                    'Resource type {0} resource_id {1} not found.'.format(
-                        kwargs['resource_type'], kwargs['iface'].resource_id))
-            if iface:
-                iface.populate_resource(ctx)
-                kwargs['iface'] = iface
-            return
-        ctx.logger.warn('{t} ID# {i} has force_operation set.'.format(
-            t=resource_type, i=resource_id))
-    ctx.logger.debug('Executing: {} with params {}'.format(function, kwargs))
-    result = function(**kwargs)
-    if operation_name == 'configure' and iface:
+
+    try:
+        exists = iface.status
+    except (AttributeError, NotImplementedError):
+        exists = False
+        special_condition = True
+    else:
+        special_condition = get_special_condition(
+            props.get('use_external_resource'),
+            ctx.node.type_hierarchy,
+            operation_name,
+            create_operation,
+            delete_operation,
+            kwargs.get('force_operation'),
+            kwargs.pop('waits_for_status', False))
+
+    result = None
+    if not skip(
+            resource_type=resource_type,
+            resource_id=ctx.instance.id,
+            _ctx_node=ctx.node,
+            exists=exists,
+            special_condition=special_condition,
+            create_operation=create_operation,
+            delete_operation=delete_operation):
+        result = function(**kwargs)
+    else:
+        ctx.instance.runtime_properties['resource_config'] = resource_config
+        ctx.instance.runtime_properties[EXT_RES_ID] = resource_id
+        if iface:
+            iface.populate_resource(ctx)
+            kwargs['iface'] = iface
+    if create_operation and iface:
         iface.populate_resource(ctx)
         kwargs['iface'] = iface
-    elif operation_name == 'delete':
+    if delete_operation:
         # cleanup runtime after delete
         keys = list(ctx.instance.runtime_properties.keys())
         for key in keys:
-            del ctx.instance.runtime_properties[key]
+            if key != '__deleted':
+                del ctx.instance.runtime_properties[key]
     return result
 
 
 def aws_resource(class_decl=None,
                  resource_type='AWS Resource',
-                 ignore_properties=False):
+                 ignore_properties=False,
+                 waits_for_status=True):
     '''AWS resource decorator'''
     def wrapper_outer(function):
         '''Outer function'''
         def wrapper_inner(**kwargs):
             '''Inner, worker function'''
+            kwargs['waits_for_status'] = waits_for_status
             return _aws_resource(
                 function,
                 class_decl,
@@ -444,6 +502,25 @@ def wait_for_status(status_good=None,
     return wrapper_outer
 
 
+def wait_on_relationship_unlink(status_deleted=None,
+                                status_pending=None):
+    '''AWS resource decorator'''
+    def wrapper_outer(function):
+        '''Outer function'''
+        def wrapper_inner(**kwargs):
+            '''Inner, worker function'''
+            _ctx = kwargs['ctx']
+            _operation = _ctx.operation
+            _wait_for_delete(kwargs,
+                             _ctx,
+                             _operation,
+                             function,
+                             status_pending,
+                             status_deleted)
+        return wrapper_inner
+    return wrapper_outer
+
+
 def wait_on_relationship_status(status_good=None,
                                 status_pending=None,
                                 fail_on_missing=True):
@@ -475,32 +552,53 @@ def wait_for_delete(status_deleted=None, status_pending=None):
         '''Outer function'''
         def wrapper_inner(**kwargs):
             '''Inner, worker function'''
-            ctx = kwargs['ctx']
-            resource_type = kwargs.get('resource_type', 'AWS Resource')
-            iface = kwargs['iface']
-            # Run the operation if this is the first pass
-            if not ctx.instance.runtime_properties.get('__deleted', False):
-                function(**kwargs)
-                # flag will be removed after first call without any exceptions
-                ctx.instance.runtime_properties['__deleted'] = True
-            # Get a resource interface and query for the status
-            status = iface.status
-            ctx.logger.debug('%s ID# "%s" reported status: %s'
-                             % (resource_type, iface.resource_id, status))
-            if not status or status in status_deleted:
-                for key in [EXT_RES_ARN, EXT_RES_ID, 'resource_config']:
-                    if key in ctx.instance.runtime_properties:
-                        del ctx.instance.runtime_properties[key]
-                return
-            elif status in status_pending:
-                raise OperationRetry(
-                    '%s ID# "%s" is still in a pending state.'
-                    % (resource_type, iface.resource_id))
-            raise NonRecoverableError(
-                '%s ID# "%s" reported an unexpected status: "%s"'
-                % (resource_type, iface.resource_id, status))
+            _ctx = kwargs['ctx']
+            _operation = _ctx.operation
+            _wait_for_delete(kwargs,
+                             _ctx,
+                             _operation,
+                             function,
+                             status_pending,
+                             status_deleted)
         return wrapper_inner
     return wrapper_outer
+
+
+def _wait_for_delete(kwargs,
+                     ctx,
+                     operation,
+                     function,
+                     status_pending,
+                     status_deleted):
+    print('This is the operation: {}'.format(operation))
+    resource_type = kwargs.get('resource_type', 'AWS Resource')
+    iface = kwargs['iface']
+    ctx_instance = get_ctx_instance()
+    # Run the operation if this is the first pass
+    delete_operation = 'delete' == operation.name.split('.')[-1]
+    deleted_already = ctx_instance.runtime_properties.get(
+        '__deleted', False)
+    if delete_operation and not deleted_already or not delete_operation:
+        function(**kwargs)
+        # flag will be removed after first call without any exceptions
+        ctx_instance.runtime_properties['__deleted'] = True
+    # Get a resource interface and query for the status
+    status = iface.status
+    ctx.logger.debug('%s ID# "%s" reported status: %s'
+                     % (resource_type, iface.resource_id, status))
+    if not status or status in status_deleted:
+        if delete_operation:
+            for key in [EXT_RES_ARN, EXT_RES_ID, 'resource_config']:
+                if key in ctx_instance.runtime_properties:
+                    del ctx_instance.runtime_properties[key]
+        return
+    elif status in status_pending:
+        raise OperationRetry(
+            '%s ID# "%s" is still in a pending state.'
+            % (resource_type, iface.resource_id))
+    raise NonRecoverableError(
+        '%s ID# "%s" reported an unexpected status: "%s"'
+        % (resource_type, iface.resource_id, status))
 
 
 def check_swift_resource(func):

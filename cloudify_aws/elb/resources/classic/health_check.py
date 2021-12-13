@@ -67,14 +67,18 @@ class ELBClassicHealthCheck(ELBBase):
         return None
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(ELBClassicHealthCheck,
+                         RESOURCE_TYPE,
+                         waits_for_status=False)
 def prepare(ctx, resource_config, **_):
     """Prepares an ELB classic health check"""
     # Save the parameters
     ctx.instance.runtime_properties['resource_config'] = resource_config
 
 
-@decorators.aws_resource(ELBClassicHealthCheck, RESOURCE_TYPE)
+@decorators.aws_resource(ELBClassicHealthCheck,
+                         RESOURCE_TYPE,
+                         waits_for_status=False)
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS ELB classic health check"""
 

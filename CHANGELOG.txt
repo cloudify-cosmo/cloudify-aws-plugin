@@ -177,3 +177,6 @@
     - RD-3565: Fix Populate Resource issue.
 2.12.14:
     - RD-3358: Added option to create an EC2 ami image.
+2.13.0:
+    - RD-3635 Fix detach a disk.
+    - Fixed security group attachment in rds.

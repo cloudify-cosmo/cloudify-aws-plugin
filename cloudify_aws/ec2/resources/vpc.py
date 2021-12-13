@@ -17,13 +17,16 @@
     AWS EC2 VPC interface
 '''
 # Third Party imports
+import sys
 from time import sleep
 
+from cloudify.exceptions import NonRecoverableError
+from cloudify.utils import exception_to_error_cause
 from botocore.exceptions import ClientError, ParamValidationError
 
 # Local imports
-from cloudify_aws.common import decorators, utils
 from cloudify_aws.ec2 import EC2Base
+from cloudify_aws.common import decorators, utils
 
 RESOURCE_TYPE = 'EC2 Vpc'
 VPC = 'Vpc'
@@ -104,7 +107,9 @@ class EC2Vpc(EC2Base):
             main_route_table_id
 
 
-@decorators.aws_resource(EC2Vpc, resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(EC2Vpc,
+                         resource_type=RESOURCE_TYPE,
+                         waits_for_status=False)
 def prepare(ctx, iface, resource_config, **_):
     '''Prepares an AWS EC2 Vpc'''
     # Save the parameters
@@ -121,7 +126,16 @@ def create(ctx, iface, resource_config, **_):
         dict() if not resource_config else resource_config.copy())
 
     # Actually create the resource
-    create_response = iface.create(params)[VPC]
+    try:
+        create_response = iface.create(params)[VPC]
+    except NonRecoverableError as ex:
+        if 'VpcLimitExceeded' in str(ex):
+            _, _, tb = sys.exc_info()
+            raise NonRecoverableError(
+                "Please add quota vpc or delete unused vpc and try again.",
+                causes=[exception_to_error_cause(ex, tb)])
+        else:
+            raise ex
     ctx.instance.runtime_properties['create_response'] = \
         utils.JsonCleanuper(create_response).to_dict()
 

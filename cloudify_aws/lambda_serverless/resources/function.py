@@ -23,7 +23,7 @@ from os.path import exists as path_exists
 from contextlib import contextmanager
 
 # Boto
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Cloudify
 from cloudify_aws.common import decorators, utils
@@ -57,7 +57,7 @@ class LambdaFunction(LambdaBase):
         resource = None
         try:
             resource = self.client.get_function(FunctionName=self.resource_id)
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         if not resource or not resource.get('Configuration', dict()):
             return None

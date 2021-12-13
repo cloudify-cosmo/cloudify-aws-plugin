@@ -17,7 +17,7 @@
     AWS pipeline interface
 """
 # Third party imports
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Cloudify
 from cloudify.decorators import operation
@@ -46,7 +46,7 @@ class CodePipelinePipeline(CodePipelineBase):
         try:
             resource = self.client.get_pipeline_state(
                 name=self.resource_id)
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         return resource
 
@@ -89,7 +89,7 @@ class CodePipelinePipeline(CodePipelineBase):
         return self.client.start_pipeline_execution(**params)
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(CodePipelinePipeline, RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     # Save the parameters
     ctx.instance.runtime_properties['resource_config'] = resource_config

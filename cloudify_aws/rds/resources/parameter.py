@@ -23,7 +23,8 @@ from cloudify_aws.rds.resources.parameter_group import ParameterGroup
 RESOURCE_TYPE = 'RDS Parameter'
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(resource_type=RESOURCE_TYPE,
+                         waits_for_status=False)
 def configure(ctx, resource_config, **_):
     '''Configures an AWS RDS Parameter'''
     # Save the parameters

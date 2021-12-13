@@ -86,7 +86,9 @@ class IAMInstanceProfile(IAMBase):
         self.client.remove_role_from_instance_profile(**params)
 
 
-@decorators.aws_resource(IAMInstanceProfile, RESOURCE_TYPE)
+@decorators.aws_resource(IAMInstanceProfile,
+                         RESOURCE_TYPE,
+                         waits_for_status=False)
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS IAM Profile'''
     # Build API params
@@ -123,7 +125,9 @@ def create(ctx, iface, resource_config, **_):
         ctx.instance.runtime_properties['RoleName'] = role_name
 
 
-@decorators.aws_resource(IAMInstanceProfile, RESOURCE_TYPE)
+@decorators.aws_resource(IAMInstanceProfile,
+                         RESOURCE_TYPE,
+                         waits_for_status=False)
 def delete(ctx, iface, resource_config, **_):
     '''Deletes an AWS IAM Profile'''
     # Create a copy of the resource config for clean manipulation.

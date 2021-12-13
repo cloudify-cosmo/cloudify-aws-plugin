@@ -23,7 +23,9 @@ from cloudify_aws.iam.resources.user import IAMUser
 RESOURCE_TYPE = 'IAM User Login Profile'
 
 
-@decorators.aws_resource(IAMUser, RESOURCE_TYPE)
+@decorators.aws_resource(IAMUser,
+                         RESOURCE_TYPE,
+                         waits_for_status=False)
 def configure(ctx, resource_config, **_):
     '''Configures an AWS IAM Login Profile'''
     # Save the parameters

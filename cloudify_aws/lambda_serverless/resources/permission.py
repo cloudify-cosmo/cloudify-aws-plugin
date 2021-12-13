@@ -66,7 +66,7 @@ class LambdaPermission(LambdaBase):
         self.client.remove_permission(**params)
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(LambdaPermission, RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     '''Prepares an AWS Lambda Permission'''
     # Save the parameters

@@ -22,7 +22,7 @@ from __future__ import unicode_literals
 
 # Boto
 
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Cloudify
 from cloudify_aws.common import decorators, utils
@@ -55,7 +55,7 @@ class ECSTaskDefinition(ECSBase):
                 self.client.describe_task_definition(
                     **self.describe_task_definition_filter
                 )
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         else:
             return None if not resources\
@@ -96,7 +96,7 @@ def prepare_describe_task_definition_filter(params, iface):
     return iface
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(ECSTaskDefinition, RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     """Prepares an ECS Task Definition"""
     # Save the parameters

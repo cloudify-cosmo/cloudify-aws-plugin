@@ -17,7 +17,7 @@
     AWS Autoscaling Policy interface
 """
 # Third part imports
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Local imports
 from cloudify_aws.common import decorators, utils
@@ -48,7 +48,7 @@ class AutoscalingPolicy(AutoscalingBase):
         try:
             resources = \
                 self.client.describe_policies(**params)
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         else:
             return resources.get(SCALING_POLICIES, [None])[0]
@@ -75,7 +75,7 @@ class AutoscalingPolicy(AutoscalingBase):
         return res
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(AutoscalingPolicy, RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     """Prepares an AWS Autoscaling Autoscaling Policy"""
     # Save the parameters

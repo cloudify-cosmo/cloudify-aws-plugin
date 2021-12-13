@@ -19,7 +19,7 @@
 from json import dumps as json_dumps
 
 # Boto
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Cloudify
 from cloudify_aws.common import decorators, utils
@@ -43,7 +43,7 @@ class IAMPolicy(IAMBase):
         resource = None
         try:
             resource = self.client.get_policy(PolicyArn=self.resource_id)
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         if not resource or not resource.get('Policy', dict()):
             return None
@@ -73,7 +73,9 @@ class IAMPolicy(IAMBase):
         self.client.delete_policy(**params)
 
 
-@decorators.aws_resource(IAMPolicy, RESOURCE_TYPE)
+@decorators.aws_resource(IAMPolicy,
+                         RESOURCE_TYPE,
+                         waits_for_status=False)
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS IAM Policy'''
     # Build API params
@@ -101,7 +103,8 @@ def create(ctx, iface, resource_config, **_):
     utils.update_resource_arn(ctx.instance, create_response['Policy']['Arn'])
 
 
-@decorators.aws_resource(IAMPolicy, RESOURCE_TYPE,
+@decorators.aws_resource(IAMPolicy,
+                         RESOURCE_TYPE,
                          ignore_properties=True)
 @decorators.wait_for_delete()
 def delete(iface, resource_config, **_):

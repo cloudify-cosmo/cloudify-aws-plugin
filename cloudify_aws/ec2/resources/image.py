@@ -118,7 +118,9 @@ class EC2Image(EC2Base):
                 self.describe_image_filters))
 
 
-@decorators.aws_resource(EC2Image, resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(EC2Image,
+                         resource_type=RESOURCE_TYPE,
+                         waits_for_status=False)
 def prepare(ctx, iface, resource_config, **_):
     """Prepares an AWS EC2 Image"""
     # Save the parameters
@@ -150,7 +152,9 @@ def create(ctx, iface, resource_config, **_):
     utils.update_resource_id(ctx.instance, create_response['ImageId'])
 
 
-@decorators.aws_resource(EC2Image, resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(EC2Image,
+                         resource_type=RESOURCE_TYPE,
+                         waits_for_status=False)
 @decorators.wait_for_delete(status_deleted=['deregistered'])
 def delete(ctx, iface, resource_config, **_):
     """delete/deregister an AWS EC2 Image"""

@@ -22,7 +22,7 @@ from __future__ import unicode_literals
 
 # Boto
 
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 from cloudify.exceptions import OperationRetry
 
@@ -54,7 +54,7 @@ class EKSNodeGroup(EKSBase):
                 self.client.describe_nodegroup(
                     **self.describe_param
                 )[NODEGROUP]
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         else:
             return None if not properties else properties
@@ -113,14 +113,16 @@ def prepare_describe_node_group_filter(params, iface):
     return iface
 
 
-@decorators.aws_resource(EKSNodeGroup, resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(EKSNodeGroup,
+                         resource_type=RESOURCE_TYPE,
+                         waits_for_status=False)
 def prepare(ctx, resource_config, **_):
     """Prepares an AWS EKS Node Group"""
     # Save the parameters
     ctx.instance.runtime_properties['resource_config'] = resource_config
 
 
-@decorators.aws_resource(EKSNodeGroup, RESOURCE_TYPE)
+@decorators.aws_resource(EKSNodeGroup, RESOURCE_TYPE, waits_for_status=False)
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS EKS Node Group"""
     params = dict() if not resource_config else resource_config.copy()
@@ -147,7 +149,7 @@ def create(ctx, iface, resource_config, **_):
     iface.wait_for_nodegroup(params, 'nodegroup_active')
 
 
-@decorators.aws_resource(EKSNodeGroup, RESOURCE_TYPE)
+@decorators.aws_resource(EKSNodeGroup, RESOURCE_TYPE, waits_for_status=False)
 def start(ctx, iface, resource_config, **_):
     """Updates an AWS EKS Node Group"""
     params = dict() if not resource_config else resource_config.copy()
@@ -179,7 +181,7 @@ def start(ctx, iface, resource_config, **_):
     iface.wait_for_nodegroup(params, 'nodegroup_active')
 
 
-@decorators.aws_resource(EKSNodeGroup, RESOURCE_TYPE)
+@decorators.aws_resource(EKSNodeGroup, RESOURCE_TYPE, waits_for_status=False)
 def delete(ctx, iface, resource_config, **_):
     """Deletes an AWS EKS Node Group"""
 

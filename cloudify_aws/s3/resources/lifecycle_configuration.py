@@ -48,8 +48,10 @@ class S3BucketLifecycleConfiguration(S3Base):
         try:
             resources = \
                 self.client.get_bucket_lifecycle_configuration(
-                    {BUCKET: self.resource_id})
-        except ClientError:
+                    Bucket='BUCKET',
+                    ExpectedBucketOwner=self.resource_id
+                )
+        except (ParamValidationError, ClientError):
             pass
         else:
             for resource in resources.get(RULES, []):
@@ -82,14 +84,18 @@ class S3BucketLifecycleConfiguration(S3Base):
         self.client.delete_bucket_lifecycle(**params)
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(S3BucketLifecycleConfiguration,
+                         RESOURCE_TYPE,
+                         waits_for_status=False)
 def prepare(ctx, resource_config, **_):
     """Prepares an AWS Bucket Lifecycle Configuration Policy"""
     # Save the parameters
     ctx.instance.runtime_properties['resource_config'] = resource_config
 
 
-@decorators.aws_resource(S3BucketLifecycleConfiguration, RESOURCE_TYPE)
+@decorators.aws_resource(S3BucketLifecycleConfiguration,
+                         RESOURCE_TYPE,
+                         waits_for_status=False)
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS S3 Bucket Lifecycle Configuration"""
 

@@ -17,7 +17,7 @@
     AWS IAM User interface
 '''
 # Boto
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Cloudify
 from cloudify_aws.common import decorators, utils
@@ -42,7 +42,7 @@ class IAMUser(IAMBase):
         resource = None
         try:
             resource = self.client.get_user(UserName=self.resource_id)
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         if not resource or not resource.get('User', dict()):
             return None
@@ -150,7 +150,7 @@ class IAMUser(IAMBase):
         self.client.detach_user_policy(**params)
 
 
-@decorators.aws_resource(IAMUser, RESOURCE_TYPE)
+@decorators.aws_resource(IAMUser, RESOURCE_TYPE, waits_for_status=False)
 @decorators.aws_params(RESOURCE_NAME)
 def create(ctx, iface, resource_config, params, **_):
     '''Creates an AWS IAM User'''

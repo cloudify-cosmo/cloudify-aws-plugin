@@ -14,7 +14,7 @@
 
 import unittest
 
-from mock import MagicMock
+from mock import MagicMock, PropertyMock
 from cloudify_aws.common.tests.test_base import TestBase
 from cloudify.state import current_ctx
 from cloudify.exceptions import OperationRetry, NonRecoverableError
@@ -24,8 +24,14 @@ from cloudify_aws.common import decorators
 
 class TestDecorators(TestBase):
 
+    def setUp(self):
+        super(TestDecorators, self).setUp()
+        self.maxDiff = None
+
     def _gen_decorators_context(self, _test_name, runtime_prop=None,
                                 prop=None, op_name=None):
+
+        op_name = op_name or 'cloudify.interfaces.lifecycle.create'
 
         _test_node_properties = prop if prop else {
             'use_external_resource': False
@@ -38,13 +44,15 @@ class TestDecorators(TestBase):
             test_properties=_test_node_properties,
             test_runtime_properties=_test_runtime_properties,
             type_hierarchy=['cloudify.nodes.Root'],
-            ctx_operation_name=None if not op_name else op_name
+            ctx_operation_name=op_name
         )
         current_ctx.set(_ctx)
         return _ctx
 
     def test_wait_for_delete(self):
-        _ctx = self._gen_decorators_context('test_wait_for_delete')
+        _ctx = self._gen_decorators_context(
+            'test_wait_for_delete',
+            op_name='cloudify.interfaces.lifecycle.delete')
 
         @decorators.wait_for_delete(status_deleted=['deleted'],
                                     status_pending=['pending'])
@@ -368,7 +376,9 @@ class TestDecorators(TestBase):
             'resource_config': {}
         })
 
-        test_func(ctx=_ctx, aws_resource_id='res_id')
+        iface = MagicMock()
+        iface.status = None
+        test_func(ctx=_ctx, aws_resource_id='res_id', iface=iface)
 
         self.assertEqual(_ctx.instance.runtime_properties,
                          {'aws_resource_arn': 'res_arn',
@@ -487,23 +497,30 @@ class TestDecorators(TestBase):
             },
             'e': 'f',
             'use_external_resource': True
-        }, op_name='cloudify.interfaces.lifecycle.create')
+        }, op_name='cloudify.interfaces.lifecycle.configure')
         current_ctx.set(_ctx)
 
         mock_func = MagicMock()
 
-        @decorators.aws_resource(class_decl=FakeClass)
+        @decorators.aws_resource(class_decl=FakeClass, waits_for_status=False)
         def test_with_mock(*args, **kwargs):
             mock_func(*args, **kwargs)
 
+        iface = MagicMock()
+        iface.status = PropertyMock(return_value=True)
         test_with_mock(ctx=_ctx, aws_resource_id='res_id',
-                       runtime_properties={'a': 'b'})
-
-        self.assertEqual(_ctx.instance.runtime_properties,
-                         {'aws_resource_arn': 'res_id',
-                          'aws_resource_id': 'aws_id',
-                          'a': 'b',
-                          'resource_config': {'c': 'd'}})
+                       runtime_properties={'a': 'b'}, iface=iface)
+        expected = {
+            'aws_resource_arn': 'res_id',
+            'aws_resource_id': 'aws_id',
+            'a': 'b',
+            'resource_config': {
+                'c': 'd'
+            },
+            '__cloudify_tagged_external_resource': True
+        }
+        self.assertDictEqual(_ctx.instance.runtime_properties,
+                             expected)
 
         mock_func.assert_not_called()
 

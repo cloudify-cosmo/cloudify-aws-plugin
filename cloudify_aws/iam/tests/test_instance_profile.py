@@ -132,7 +132,8 @@ class TestIAMInstanceProfile(TestBase):
             'test_delete',
             test_properties=NODE_PROPERTIES,
             test_runtime_properties={},
-            type_hierarchy=INSTANCE_PROFILE_TH
+            type_hierarchy=INSTANCE_PROFILE_TH,
+            ctx_operation_name='cloudify.interfaces.lifecycle.delete'
         )
 
         current_ctx.set(_ctx)

@@ -92,14 +92,16 @@ class EC2DHCPOptions(EC2Base):
         return res
 
 
-@decorators.aws_resource(EC2DHCPOptions, resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(EC2DHCPOptions,
+                         resource_type=RESOURCE_TYPE,
+                         waits_for_status=False)
 def prepare(ctx, resource_config, **_):
     """Prepares an AWS EC2 DhcpOptions"""
     # Save the parameters
     ctx.instance.runtime_properties['resource_config'] = resource_config
 
 
-@decorators.aws_resource(EC2DHCPOptions, RESOURCE_TYPE)
+@decorators.aws_resource(EC2DHCPOptions, RESOURCE_TYPE, waits_for_status=False)
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS EC2 DhcpOptions"""
 
@@ -116,8 +118,10 @@ def create(ctx, iface, resource_config, **_):
     utils.update_resource_id(ctx.instance, dhcp_options_id)
 
 
-@decorators.aws_resource(EC2DHCPOptions, RESOURCE_TYPE,
-                         ignore_properties=True)
+@decorators.aws_resource(EC2DHCPOptions,
+                         RESOURCE_TYPE,
+                         ignore_properties=True,
+                         waits_for_status=False)
 def delete(ctx, iface, resource_config, **_):
     """Deletes an AWS EC2 DhcpOptions"""
 
@@ -134,7 +138,9 @@ def delete(ctx, iface, resource_config, **_):
     iface.delete(params)
 
 
-@decorators.aws_resource(EC2DHCPOptions, RESOURCE_TYPE)
+@decorators.aws_resource(EC2DHCPOptions,
+                         RESOURCE_TYPE,
+                         waits_for_status=False)
 def attach(ctx, iface, resource_config, **_):
     '''Attaches an AWS EC2 DhcpOptions to a VPC'''
     params = dict() if not resource_config else resource_config.copy()
@@ -164,8 +170,10 @@ def attach(ctx, iface, resource_config, **_):
     iface.attach(params)
 
 
-@decorators.aws_resource(EC2DHCPOptions, RESOURCE_TYPE,
-                         ignore_properties=True)
+@decorators.aws_resource(EC2DHCPOptions,
+                         RESOURCE_TYPE,
+                         ignore_properties=True,
+                         waits_for_status=False)
 def detach(ctx, iface, resource_config, **_):
     '''Detach an AWS EC2 DhcpOptions from a VPC'''
     params = dict() if not resource_config else resource_config.copy()

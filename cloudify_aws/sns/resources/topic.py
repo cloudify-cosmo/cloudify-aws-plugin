@@ -17,7 +17,7 @@
     AWS SNS Topic interface
 """
 # Standard imports
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Local imports
 from cloudify_aws.common import decorators, utils
@@ -43,7 +43,7 @@ class SNSTopic(SNSBase):
         try:
             resources = \
                 self.client.list_topics()
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         else:
             for resource in resources:
@@ -88,7 +88,7 @@ class SNSTopic(SNSBase):
         self.client.delete_topic(**params)
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(SNSTopic, RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     """Prepares an AWS SNS Topic"""
     # Save the parameters

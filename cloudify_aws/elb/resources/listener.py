@@ -20,7 +20,7 @@
 import re
 
 # Third party imports
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Cloudify
 from cloudify_aws.common import decorators, utils
@@ -58,7 +58,7 @@ class ELBListener(ELBBase):
         try:
             resources = self.client.describe_listeners(
                 ListenerArns=[self.resource_id])
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         else:
             return None \
@@ -93,7 +93,7 @@ class ELBListener(ELBBase):
         self.client.delete_listener(**params)
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(ELBListener, RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     '''Prepares an ELB listener'''
     # Save the parameters

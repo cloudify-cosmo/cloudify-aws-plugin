@@ -18,7 +18,7 @@
 """
 
 # Third party imports
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Local imports
 from cloudify_aws.common import decorators, utils
@@ -50,7 +50,7 @@ class CloudwatchEventsRule(AWSCloudwatchBase):
         try:
             resources = \
                 self.client.describe_rule(**params)
-        except ClientError:
+        except (ParamValidationError, ClientError):
             pass
         else:
             return resources[0]
@@ -77,7 +77,7 @@ class CloudwatchEventsRule(AWSCloudwatchBase):
         return res
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(CloudwatchEventsRule, RESOURCE_TYPE)
 def prepare(ctx, resource_config, **_):
     """Prepares an AWS Cloudwatch Events Rule"""
     # Save the parameters

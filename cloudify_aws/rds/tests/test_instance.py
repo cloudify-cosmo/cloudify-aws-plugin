@@ -186,7 +186,8 @@ class TestRDSInstance(TestBase):
             _test_name,
             test_properties=NODE_PROPERTIES,
             test_runtime_properties=RUNTIME_PROPERTIES_AFTER_CREATE,
-            type_hierarchy=INSTANCE_TH
+            type_hierarchy=INSTANCE_TH,
+            ctx_operation_name='cloudify.interfaces.lifecycle.delete'
         )
         current_ctx.set(_ctx)
 
@@ -213,7 +214,10 @@ class TestRDSInstance(TestBase):
             }
         )
 
-    def _create_instance_relationships(self, node_id, type_hierarchy):
+    def _create_instance_relationships(self,
+                                       node_id,
+                                       type_hierarchy,
+                                       op_name=None):
         _source_ctx = self.get_mock_ctx(
             'test_attach_source',
             test_properties={
@@ -225,7 +229,8 @@ class TestRDSInstance(TestBase):
                 '_set_changed': True,
                 'resource_config': {}
             },
-            type_hierarchy=INSTANCE_TH
+            type_hierarchy=INSTANCE_TH,
+            ctx_operation_name=op_name
         )
 
         _target_ctx = self.get_mock_ctx(
@@ -235,7 +240,8 @@ class TestRDSInstance(TestBase):
                 'resource_id': 'prepare_attach_target',
                 'aws_resource_id': 'aws_target_mock_id',
             },
-            type_hierarchy=type_hierarchy
+            type_hierarchy=type_hierarchy,
+            ctx_operation_name=op_name
         )
 
         _ctx = self.get_mock_relationship_ctx(
@@ -314,22 +320,25 @@ class TestRDSInstance(TestBase):
     def test_prepare_assoc_SecurityGroup(self):
         _source_ctx, _target_ctx, _ctx = self._create_instance_relationships(
             'test_prepare_assoc',
-            ['cloudify.nodes.Root', 'cloudify.aws.nodes.SecurityGroup']
+            ['cloudify.nodes.Root', 'cloudify.nodes.aws.ec2.SecurityGroup'],
+            op_name='cloudify.interfaces.relationship_lifecycle.establish'
         )
         current_ctx.set(_ctx)
 
         instance.prepare_assoc(
             ctx=_ctx, resource_config=None, iface=None
         )
+        expected = {
+            '_set_changed': True,
+            'aws_resource_id': 'aws_resource_mock_id',
+            'resource_config': {
+                'VpcSecurityGroupIds': ['aws_target_mock_id']
+            },
+            'resource_id': 'prepare_attach_source'
+        }
         self.assertEqual(
-            _source_ctx.instance.runtime_properties, {
-                '_set_changed': True,
-                'aws_resource_id': 'aws_resource_mock_id',
-                'resource_config': {
-                    'VpcSecurityGroupIds': ['aws_target_mock_id']
-                },
-                'resource_id': 'prepare_attach_source'
-            }
+            expected,
+            _source_ctx.instance.runtime_properties,
         )
 
     def test_prepare_assoc_Role_NonRecoverableError(self):

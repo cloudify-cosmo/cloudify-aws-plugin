@@ -40,21 +40,38 @@ class EC2VPNConnection(EC2Base):
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
-        self.describe_vpn_connection_filter = {}
+        connection_id = ctx_node.properties.get(
+            'resource_config', {}).get('kwargs', {}).get(VPN_CONNECTION_ID)
+        if connection_id:
+            self._describe_vpn_connection_filter = {
+                VPN_CONNECTION_IDS: [connection_id]
+            }
+        elif self.resource_id:
+            self._describe_vpn_connection_filter = {
+                VPN_CONNECTION_IDS: [self.resource_id]
+            }
+        else:
+            self._describe_vpn_connection_filter = {}
+
+    @property
+    def describe_vpn_connection_filter(self):
+        return self._describe_vpn_connection_filter
 
     @property
     def properties(self):
         """Gets the properties of an external resource"""
         try:
+            self.logger.debug("filter = {}".format(
+                self.describe_vpn_connection_filter))
             resources = \
                 self.client.describe_vpn_connections(
                     **self.describe_vpn_connection_filter
                 )
         except (ClientError, ParamValidationError):
-            pass
-        else:
-            return None if not resources\
-                else resources.get(VPN_CONNECTIONS)[0]
+            resources = {}
+        for resource in resources.get(VPN_CONNECTIONS, []):
+            if resource['VpnConnectionId'] == self.resource_id:
+                return resource
 
     @property
     def status(self):
@@ -74,7 +91,7 @@ class EC2VPNConnection(EC2Base):
 
 
 def prepare_describe_vpn_connection_filter(params, iface):
-    iface.describe_vpn_connection_filter = {
+    iface._describe_vpn_connection_filter = {
         VPN_CONNECTION_IDS: [params.get(VPN_CONNECTION_ID)],
     }
 
@@ -89,7 +106,8 @@ def prepare(ctx, resource_config, **_):
 @decorators.aws_resource(EC2VPNConnection, RESOURCE_TYPE)
 @decorators.wait_for_status(
     status_good=['available'],
-    status_pending=['pending'])
+    status_pending=['pending'],
+    fail_on_missing=False)
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS EC2 VPN Connection"""
     params = dict() if not resource_config else resource_config.copy()

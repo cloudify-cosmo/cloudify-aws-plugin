@@ -43,8 +43,9 @@ setup(
     packages=find_packages(exclude=['tests*']),
     description='A Cloudify plugin for AWS',
     install_requires=[
+        'boto3',
         'cloudify-common>=4.5',
-        'boto3==1.18.4',
+        'cloudify-utilities-plugins-sdk>=0.0.48'
         'botocore',
         'pycryptodome==3.9.7'
     ]

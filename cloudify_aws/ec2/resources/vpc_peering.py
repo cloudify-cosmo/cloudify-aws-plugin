@@ -42,21 +42,30 @@ class EC2VpcPeering(EC2Base):
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
-        self.describe_vpc_peering_filter = {}
+        self._describe_vpc_peering_filter = {}
+
+    @property
+    def describe_vpc_peering_filter(self):
+        return self._describe_vpc_peering_filter
 
     @property
     def properties(self):
         """Gets the properties of an external resource"""
         try:
+            self.logger.info('Filter: {}'.format(
+                self.describe_vpc_peering_filter))
             resources = \
                 self.client.describe_vpc_peering_connections(
                     **self.describe_vpc_peering_filter
                 )
         except (ClientError, ParamValidationError):
-            pass
-        else:
-            return None if not resources\
-                else resources.get(VPC_PEERING_CONNECTIONS)[0]
+            resources = {}
+        for vpc in self.describe_vpc_peering_filter.get(
+                VPC_PEERING_CONNECTION_IDS, []):
+            for vpc_peering_connection in resources.get(
+                    VPC_PEERING_CONNECTIONS):
+                if vpc == vpc_peering_connection['RequesterVpcInfo']['VpcId']:
+                    return vpc_peering_connection
 
     @property
     def status(self):
@@ -108,16 +117,17 @@ class EC2VpcPeering(EC2Base):
 
 
 def prepare_describe_vpc_peering_filter(params, iface):
-    iface.describe_vpc_peering_filter = {
+    iface._describe_vpc_peering_filter = {
         VPC_PEERING_CONNECTION_IDS: [params.get(PEER_VPC_ID)],
     }
 
 
 @decorators.aws_resource(EC2VpcPeering, resource_type=RESOURCE_TYPE)
-def prepare(ctx, resource_config, **_):
+def prepare(ctx, resource_config, iface, **_):
     """Prepares an AWS EC2 Vpc Peering """
     # Save the parameters
     ctx.instance.runtime_properties['resource_config'] = resource_config
+    prepare_describe_vpc_peering_filter(resource_config.copy(), iface)
 
 
 @decorators.aws_resource(EC2VpcPeering, RESOURCE_TYPE)

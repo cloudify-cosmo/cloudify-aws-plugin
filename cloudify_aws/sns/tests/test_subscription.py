@@ -64,19 +64,19 @@ class TestSNSSubscription(TestBase):
         res = self.subscription.properties
         self.assertIsNone(res)
 
-        value = [{SUB_ARN: 'arn'}]
+        value = {'Subscriptions': [{SUB_ARN: 'arn'}]}
         self.subscription.client = self.make_client_function(
             'list_subscriptions',
             return_value=value)
         self.subscription.resource_id = 'arn'
         res = self.subscription.properties
-        self.assertEqual(res, value[0])
+        self.assertEqual(res, value['Subscriptions'][0])
 
     def test_class_status(self):
         res = self.subscription.status
         self.assertIsNone(res)
 
-        value = [{SUB_ARN: 'arn'}]
+        value = {'Subscriptions': [{SUB_ARN: 'arn'}]}
         self.subscription.client = self.make_client_function(
             'list_subscriptions',
             return_value=value)

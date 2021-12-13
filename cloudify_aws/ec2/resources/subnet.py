@@ -97,7 +97,9 @@ class EC2Subnet(EC2Base):
         return res
 
 
-@decorators.aws_resource(EC2Subnet, resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(EC2Subnet,
+                         resource_type=RESOURCE_TYPE,
+                         waits_for_status=False)
 def prepare(ctx, resource_config, **_):
     '''Prepares an AWS EC2 Subnet'''
     # Save the parameters

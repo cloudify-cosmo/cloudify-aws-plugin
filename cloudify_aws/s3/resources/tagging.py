@@ -75,14 +75,18 @@ class S3BucketTagging(S3Base):
         self.client.delete_bucket_tagging(**params)
 
 
-@decorators.aws_resource(resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(S3BucketTagging,
+                         RESOURCE_TYPE,
+                         waits_for_status=False)
 def prepare(ctx, resource_config, **_):
     """Prepares an AWS Bucket Bucket Tagging"""
     # Save the parameters
     ctx.instance.runtime_properties['resource_config'] = resource_config
 
 
-@decorators.aws_resource(S3BucketTagging, RESOURCE_TYPE)
+@decorators.aws_resource(S3BucketTagging,
+                         RESOURCE_TYPE,
+                         waits_for_status=False)
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS S3 Bucket Bucket Tagging"""
 
@@ -109,8 +113,10 @@ def create(ctx, iface, resource_config, **_):
     iface.create(params)
 
 
-@decorators.aws_resource(S3BucketTagging, RESOURCE_TYPE,
-                         ignore_properties=True)
+@decorators.aws_resource(S3BucketTagging,
+                         RESOURCE_TYPE,
+                         ignore_properties=True,
+                         waits_for_status=False)
 def delete(iface, resource_config, **_):
     """Deletes an AWS S3 Bucket Bucket Tagging"""
 
