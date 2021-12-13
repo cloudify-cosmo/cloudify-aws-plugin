@@ -20,6 +20,7 @@
 from time import sleep
 
 from botocore.exceptions import ClientError, ParamValidationError
+from cloudify.exceptions import NonRecoverableError
 
 # Local imports
 from cloudify_aws.common import decorators, utils
@@ -37,6 +38,7 @@ class EC2Vpc(EC2Base):
     '''
         EC2 Vpc interface
     '''
+
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
@@ -123,7 +125,19 @@ def create(ctx, iface, resource_config, **_):
         dict() if not resource_config else resource_config.copy())
 
     # Actually create the resource
-    create_response = iface.create(params)[VPC]
+    try:
+        create_response = iface.create(params)[VPC]
+    except ClientError as e:
+        if 'VpcLimitExceeded' in str(e):
+            ctx.logger.debug('except ClientError: {}'.format(str(e)))
+            raise NonRecoverableError('Please add quota vpc or delete unused vpc and try again')
+        raise e
+    except NonRecoverableError as e:
+        if 'VpcLimitExceeded' in str(e):
+            ctx.logger.debug('except NonRecoverableError: {}'.format(str(e)))
+            raise NonRecoverableError('Please add quota vpc or delete unused vpc and try again')
+        raise e
+
     ctx.instance.runtime_properties['create_response'] = \
         utils.JsonCleanuper(create_response).to_dict()
 
