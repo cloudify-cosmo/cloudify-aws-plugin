@@ -261,10 +261,13 @@ def get_special_condition(external,
                           delete_op,
                           force,
                           waits_for_status):
-    if waits_for_status:
-        return True
     if external and 'cloudify.nodes.aws.ec2.Image' in node_type and \
             op_name == 'create':
+        return True
+    if external and 'cloudify.nodes.aws.ec2.Image' in node_type and \
+            op_name == 'delete':
+        return False
+    if waits_for_status:
         return True
     if create_op and 'cloudify.nodes.aws.ec2.VpcPeeringRequest' in node_type:
         return True
