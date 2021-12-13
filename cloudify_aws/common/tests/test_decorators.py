@@ -519,6 +519,8 @@ class TestDecorators(TestBase):
             },
             '__cloudify_tagged_external_resource': True
         }
+        print("expected = {}".format(expected))
+        print("whats there = ".format(_ctx.instance.runtime_properties))
         self.assertDictEqual(_ctx.instance.runtime_properties,
                              expected)
 
