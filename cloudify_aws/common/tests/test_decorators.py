@@ -502,7 +502,7 @@ class TestDecorators(TestBase):
 
         mock_func = MagicMock()
 
-        @decorators.aws_resource(class_decl=FakeClass)
+        @decorators.aws_resource(class_decl=FakeClass, waits_for_status=False)
         def test_with_mock(*args, **kwargs):
             mock_func(*args, **kwargs)
 

@@ -51,10 +51,10 @@ class SNSSubscription(SNSBase):
         except (ParamValidationError, ClientError):
             pass
         else:
-            for resource in resources['Subscriptions']:
-                if resource[SUB_ARN] == self.resource_id:
-                    return resource
-        return None
+            if resources:
+                for resource in resources['Subscriptions']:
+                    if resource[SUB_ARN] == self.resource_id:
+                        return resource
 
     @property
     def status(self):
