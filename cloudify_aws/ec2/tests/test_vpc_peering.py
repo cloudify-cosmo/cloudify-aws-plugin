@@ -291,7 +291,7 @@ class TestEC2VpcPeering(TestBase):
 
     def test_prepare(self):
         ctx = self.get_mock_ctx("EC2VpcPeering")
-        iface = MagicMock
+        iface = MagicMock()
         vpc_peering.prepare(ctx, 'config', iface)
         self.assertEqual(
             ctx.instance.runtime_properties['resource_config'],
