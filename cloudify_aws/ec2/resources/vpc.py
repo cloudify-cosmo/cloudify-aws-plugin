@@ -17,16 +17,16 @@
     AWS EC2 VPC interface
 '''
 # Third Party imports
-from time import sleep
 import sys
+from time import sleep
 
-from botocore.exceptions import ClientError, ParamValidationError
 from cloudify.exceptions import NonRecoverableError
 from cloudify.utils import exception_to_error_cause
+from botocore.exceptions import ClientError, ParamValidationError
 
 # Local imports
-from cloudify_aws.common import decorators, utils
 from cloudify_aws.ec2 import EC2Base
+from cloudify_aws.common import decorators, utils
 
 RESOURCE_TYPE = 'EC2 Vpc'
 VPC = 'Vpc'
