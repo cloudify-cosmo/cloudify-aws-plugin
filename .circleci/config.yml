@@ -3,14 +3,6 @@ version: 2.1
 orbs:
   node: cloudify/unittest-orb@1.0.0 #orb version
 
-workflows:
-  tests:
-    jobs:
-      - node/unittests_job
-      - node/check_py3_compat_job
-      - node/validate_documentation_job
-      - node/validate_version_job
-
 checkout:
   post:
     - >
