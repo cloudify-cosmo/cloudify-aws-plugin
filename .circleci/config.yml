@@ -2,7 +2,7 @@ version: 2.1
 
 orbs:
 #  node: cloudify/unittest-orb@1.0.0 #orb version
-  node: cloudify/yaniv_orb@1.0.14 #orb version
+  node: cloudify/yaniv_orb@1.0.15 #orb version
 
 checkout:
   post:
