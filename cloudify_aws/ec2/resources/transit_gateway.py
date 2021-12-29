@@ -205,8 +205,7 @@ def request_vpc_attachment(ctx,
         constants.EXTERNAL_RESOURCE_ID)
     subnet_ids = subnet_ids or ctx.target.instance.runtime_properties.get(
         'subnets')
-    transit_gateway_attachment_id = \
-        get_attachment_id_from_runtime_props(ctx)
+    transit_gateway_attachment_id = get_attachment_id_from_runtime_props(ctx)
 
     if not transit_gateway_id or not vpc_id:
         raise NonRecoverableError(
@@ -240,9 +239,7 @@ def request_vpc_attachment(ctx,
                     r=TG_ATTACHMENT,
                     s=iface.status))
         else:
-            request = {
-               TG_ATTACHMENT_ID: transit_gateway_attachment_id
-            }
+            request = {TG_ATTACHMENT_ID: transit_gateway_attachment_id}
             try:
                 iface.accept(request)
             except (NonRecoverableError, ClientError) as e:

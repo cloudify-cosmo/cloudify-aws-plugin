@@ -768,6 +768,6 @@ def add_default_tag(_ctx, iface):
         {'Tags': [{'Key': 'Name', 'Value': "{}_{}".format(
             _ctx.node.name,
             _ctx.instance.id)}
-                  ], 'Resources': [iface.resource_id]}
+                 ], 'Resources': [iface.resource_id]}
     )
     ctx.logger.info("Added default cloudify_tagging.")
