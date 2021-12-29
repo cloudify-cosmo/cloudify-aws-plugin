@@ -52,11 +52,14 @@ class EC2InternetGateway(EC2Base):
         '''Gets the properties of an external resource'''
         params = {INTERNETGATEWAY_IDS: [self.resource_id]}
         try:
-            resources = \
-                self.client.describe_internet_gateways(**params)
-        except (ClientError, ParamValidationError):
+            resources = self.client.describe_internet_gateways(**params)
+        except (ClientError, ParamValidationError) as e:
+            self.logger.debug(
+                'Describe Internet Gateway failed: {}'.format(str(e)))
             pass
         else:
+            self.logger.debug('Describe Internet Gateway: {}'.format(
+                resources))
             return resources.get(INTERNETGATEWAYS)[0] if resources else None
 
     @property
@@ -71,7 +74,7 @@ class EC2InternetGateway(EC2Base):
 
     @property
     def check_status(self):
-        if self.status in ['attached']:
+        if self.status in ['available', 'attached']:
             return 'OK'
         return 'NOT OK'
 
