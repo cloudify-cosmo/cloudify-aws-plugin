@@ -2,7 +2,7 @@ plugins:
   aws:
     executor: central_deployment_agent
     package_name: cloudify-aws-plugin
-    package_version: '2.13.0'
+    package_version: '2.14.0'
 
 data_types:
 
@@ -3705,6 +3705,9 @@ node_types:
           it will store the kubernetes configuration into a runtime property ['kubeconf'] to
           use later to interact with the cluster
     interfaces:
+      cloudify.interfaces.validation:
+        check_status:
+          implementation: aws.cloudify_aws.workflows.check_status.check_status
       cloudify.interfaces.lifecycle:
         precreate:
           implementation: aws.cloudify_aws.eks.resources.cluster.prepare
@@ -3736,6 +3739,9 @@ node_types:
         type: cloudify.datatypes.aws.EKS.NodeGroup.config
         required: false
     interfaces:
+      cloudify.interfaces.validation:
+        check_status:
+          implementation: aws.cloudify_aws.workflows.check_status.check_status
       cloudify.interfaces.lifecycle:
         create:
           implementation: aws.cloudify_aws.eks.resources.node_group.prepare

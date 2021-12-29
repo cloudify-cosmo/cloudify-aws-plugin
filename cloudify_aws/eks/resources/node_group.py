@@ -67,6 +67,12 @@ class EKSNodeGroup(EKSBase):
             return None
         return props.get('status')
 
+    @property
+    def check_status(self):
+        if self.status in ['ACTIVE']:
+            return 'OK'
+        return 'NOT OK'
+
     def create(self, params):
         """
             Create a new AWS EKS Node Group.
@@ -190,3 +196,6 @@ def delete(ctx, iface, resource_config, **_):
     # wait for nodegroup to be deleted
     ctx.logger.info("Waiting for NodeGroup to be deleted")
     iface.wait_for_nodegroup(params, 'nodegroup_deleted')
+
+
+interface = EKSNodeGroup
