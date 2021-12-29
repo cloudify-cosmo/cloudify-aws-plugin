@@ -245,12 +245,10 @@ def prepare(ctx, iface, resource_config, **_):
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS EKS Cluster"""
     params = dict() if not resource_config else resource_config.copy()
-    resource_id = utils.get_resource_id(
-            ctx.node,
-            ctx.instance,
-            params.get(CLUSTER_NAME),
-            use_instance_id=True
-        )
+    resource_id = utils.get_resource_id(ctx.node,
+                                        ctx.instance,
+                                        params.get(CLUSTER_NAME),
+                                        use_instance_id=True)
 
     utils.update_resource_id(ctx.instance, resource_id)
     iface = prepare_describe_cluster_filter(resource_config.copy(), iface)
@@ -360,7 +358,7 @@ def refresh_kubeconfig(ctx,
                 params=resource_config)
 
 
-def discover_clusters(ctx=None,  client_config=None, **_):
+def discover_clusters(ctx=None, client_config=None, **_):
     client_config = client_config or {}
     clusters = {}
     clusters.update(client_config)

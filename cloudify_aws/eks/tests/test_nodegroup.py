@@ -201,9 +201,7 @@ class TestEKSNodeGroup(TestBase):
         valid_config = {
             node_group.CLUSTER_NAME: 'test_cluster_name',
             node_group.NODEGROUP_NAME: 'test_node_group_name',
-            "scalingConfig": {
-               "maxSize": 2
-            }
+            "scalingConfig": {"maxSize": 2}
         }
         extended_config = {"diskSize": 20}
         extended_config.update(**valid_config)

@@ -198,7 +198,9 @@ def request_vpc_attachment(ctx,
                            subnet_ids=None,
                            **_):
 
-    transit_gateway_id = transit_gateway_id or ctx.source.instance.runtime_properties.get(constants.EXTERNAL_RESOURCE_ID)
+    transit_gateway_id = transit_gateway_id or \
+                         ctx.source.instance.runtime_properties.get(
+                                constants.EXTERNAL_RESOURCE_ID)
     vpc_id = vpc_id or ctx.target.instance.runtime_properties.get(
         constants.EXTERNAL_RESOURCE_ID)
     subnet_ids = subnet_ids or ctx.target.instance.runtime_properties.get(
