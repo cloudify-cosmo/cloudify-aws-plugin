@@ -69,6 +69,12 @@ class EC2Subnet(EC2Base):
             return None
         return props['State']
 
+    @property
+    def check_status(self):
+        if self.status in ['available']:
+            return 'OK'
+        return 'NOT OK'
+
     def create(self, params):
         '''
             Create a new AWS EC2 Subnet.
@@ -246,3 +252,6 @@ def unset_subnet(ctx, iface, resource_config, **_):
         ctx.target.instance.runtime_properties[_SUBNETS] = []
     if subnet_id in ctx.target.instance.runtime_properties[_SUBNETS]:
         ctx.target.instance.runtime_properties[_SUBNETS].remove(subnet_id)
+
+
+interface = EC2Subnet

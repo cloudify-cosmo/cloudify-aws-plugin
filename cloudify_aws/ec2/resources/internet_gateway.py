@@ -62,10 +62,18 @@ class EC2InternetGateway(EC2Base):
     @property
     def status(self):
         '''Gets the status of an external resource'''
+        self.logger.error(
+            'Improvements are needed to Internet Gateway status property.')
         try:
             return self.properties['Attachments'][0]['State']
         except (IndexError, KeyError, TypeError):
             return None
+
+    @property
+    def check_status(self):
+        if self.status in ['attached']:
+            return 'OK'
+        return 'NOT OK'
 
     def create(self, params):
         '''
@@ -222,3 +230,6 @@ def detach(ctx, iface, resource_config, **_):
                                    params,
                                    ['Gateway.NotAttached',
                                     'InvalidInternetGatewayID.NotFound'])
+
+
+interface = EC2InternetGateway

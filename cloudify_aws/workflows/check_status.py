@@ -24,10 +24,28 @@ def node_interface(ctx):
         from ..eks.resources import cluster as module
     elif 'cloudify.nodes.aws.eks.NodeGroup' in ctx.node.type_hierarchy:
         from ..eks.resources import node_group as module
+    elif 'cloudify.nodes.aws.ec2.Vpc' in ctx.node.type_hierarchy:
+        from ..ec2.resources import vpc as module
+    elif 'cloudify.nodes.aws.ec2.Subnet' in ctx.node.type_hierarchy:
+        from ..ec2.resources import subnet as module
+    elif 'cloudify.nodes.aws.ec2.SecurityGroup' in ctx.node.type_hierarchy:
+        from ..ec2.resources import securitygroup as module
+    elif 'cloudify.nodes.aws.ec2.NATGateway' in ctx.node.type_hierarchy:
+        from ..ec2.resources import nat_gateway as module
+    elif 'cloudify.nodes.aws.ec2.Interface' in ctx.node.type_hierarchy:
+        from ..ec2.resources import eni as module
+    elif 'cloudify.nodes.aws.ec2.Instances' in ctx.node.type_hierarchy:
+        from ..ec2.resources import instances as module
+    elif 'cloudify.nodes.aws.ec2.ElasticIP' in ctx.node.type_hierarchy:
+        from ..ec2.resources import elasticip as module
+    elif 'cloudify.nodes.aws.ec2.InternetGateway' in ctx.node.type_hierarchy:
+        from ..ec2.resources import internet_gateway as module
+    elif 'cloudify.nodes.aws.ec2.RouteTable' in ctx.node.type_hierarchy:
+        from ..ec2.resources import routetable as module
     else:
         raise ValueError(
             'Check status is not supported on node type {_type}.'.format(
-                _type=ctx.node.type_hierarchy))
+                _type=ctx.node.type_hierarchy[-1]))
     yield initialize_node_interface(ctx, module.interface)
 
 

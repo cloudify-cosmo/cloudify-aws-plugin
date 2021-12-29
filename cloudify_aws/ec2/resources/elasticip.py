@@ -83,6 +83,12 @@ class EC2ElasticIP(EC2Base):
             return None
         return bool(props.get('AssociationId', False))
 
+    @property
+    def check_status(self):
+        if self.status:
+            return 'OK'
+        return 'NOT OK'
+
     def create(self, params):
         """
             Create a new AWS EC2 EC2ElasticIP.
@@ -305,3 +311,6 @@ def detach(ctx, iface, resource_config, **_):
     if skip_attach:
         return
     iface.detach(params)
+
+
+interface = EC2ElasticIP

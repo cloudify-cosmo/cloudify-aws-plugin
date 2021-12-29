@@ -65,6 +65,12 @@ class EC2Vpc(EC2Base):
             return None
         return props['State']
 
+    @property
+    def check_status(self):
+        if self.status in ['available']:
+            return 'OK'
+        return 'NOT OK'
+
     def create(self, params):
         '''
             Create a new AWS EC2 Vpc.
@@ -184,3 +190,6 @@ def modify_vpc_attribute(ctx, iface, resource_config, **_):
             VPC_ID, iface.resource_id)
     params[VPC_ID] = instance_id
     iface.modify_vpc_attribute(params)
+
+
+interface = EC2Vpc

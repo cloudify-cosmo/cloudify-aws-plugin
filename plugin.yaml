@@ -1310,6 +1310,11 @@ dsl_definitions:
       type: string
       default: ''
 
+  validation_interface: &validation_interface
+    cloudify.interfaces.validation:
+      check_status:
+        implementation: aws.cloudify_aws.workflows.check_status.check_status
+
 node_types:
 
   cloudify.nodes.aws.dynamodb.Table:
@@ -2340,6 +2345,7 @@ node_types:
         type: cloudify.datatypes.aws.ec2.Vpc.config
         required: false
     interfaces:
+      <<: *validation_interface
       cloudify.interfaces.lifecycle:
         create:
           implementation: aws.cloudify_aws.ec2.resources.vpc.prepare
@@ -2427,6 +2433,7 @@ node_types:
         description: A boolean to choose another available zone if the one provided is not available.
         required: false
     interfaces:
+      <<: *validation_interface
       cloudify.interfaces.lifecycle:
         create:
           implementation: aws.cloudify_aws.ec2.resources.subnet.prepare
@@ -2451,6 +2458,7 @@ node_types:
         type: cloudify.datatypes.aws.ec2.SecurityGroup.config
         required: false
     interfaces:
+      <<: *validation_interface
       cloudify.interfaces.lifecycle:
         create:
           implementation: aws.cloudify_aws.ec2.resources.securitygroup.prepare
@@ -2514,6 +2522,7 @@ node_types:
         type: cloudify.datatypes.aws.ec2.NATGateway.config
         required: false
     interfaces:
+      <<: *validation_interface
       cloudify.interfaces.lifecycle:
         create:
           implementation: aws.cloudify_aws.ec2.resources.nat_gateway.prepare
@@ -2535,6 +2544,7 @@ node_types:
         type: cloudify.datatypes.aws.ec2.Interface.config
         required: false
     interfaces:
+      <<: *validation_interface
       cloudify.interfaces.lifecycle:
         create:
           implementation: aws.cloudify_aws.ec2.resources.eni.prepare
@@ -2588,6 +2598,7 @@ node_types:
         description: Whether to use a password for agent communication.
         default: false
     interfaces:
+      <<: *validation_interface
       cloudify.interfaces.lifecycle:
         create:
           implementation: aws.cloudify_aws.ec2.resources.instances.prepare
@@ -2731,6 +2742,7 @@ node_types:
         description: If use_external_resource is true, and we do not want to try to attach the resource.
         default: false
     interfaces:
+      <<: *validation_interface
       cloudify.interfaces.lifecycle:
         create:
           implementation: aws.cloudify_aws.ec2.resources.elasticip.prepare
@@ -2941,6 +2953,7 @@ node_types:
         type: cloudify.datatypes.aws.ec2.InternetGateway.config
         required: false
     interfaces:
+      <<: *validation_interface
       cloudify.interfaces.lifecycle:
         create:
           implementation: aws.cloudify_aws.ec2.resources.internet_gateway.prepare
@@ -3040,6 +3053,7 @@ node_types:
         type: cloudify.datatypes.aws.ec2.RouteTable.config
         required: false
     interfaces:
+      <<: *validation_interface
       cloudify.interfaces.lifecycle:
         create:
           implementation: aws.cloudify_aws.ec2.resources.routetable.prepare
@@ -3705,9 +3719,7 @@ node_types:
           it will store the kubernetes configuration into a runtime property ['kubeconf'] to
           use later to interact with the cluster
     interfaces:
-      cloudify.interfaces.validation:
-        check_status:
-          implementation: aws.cloudify_aws.workflows.check_status.check_status
+      <<: *validation_interface
       cloudify.interfaces.lifecycle:
         precreate:
           implementation: aws.cloudify_aws.eks.resources.cluster.prepare
@@ -3739,9 +3751,7 @@ node_types:
         type: cloudify.datatypes.aws.EKS.NodeGroup.config
         required: false
     interfaces:
-      cloudify.interfaces.validation:
-        check_status:
-          implementation: aws.cloudify_aws.workflows.check_status.check_status
+      <<: *validation_interface
       cloudify.interfaces.lifecycle:
         create:
           implementation: aws.cloudify_aws.eks.resources.node_group.prepare

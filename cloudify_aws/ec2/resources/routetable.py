@@ -62,6 +62,22 @@ class EC2RouteTable(EC2Base):
         else:
             return None if not resources else resources.get(ROUTETABLES)[0]
 
+    @property
+    def status(self):
+        '''Gets the status of an external resource'''
+        self.logger.error(
+            'Improvements are needed to Internet Gateway status property.')
+        try:
+            return self.properties['Attachments'][0]['State']
+        except (IndexError, KeyError, TypeError):
+            return None
+
+    @property
+    def check_status(self):
+        if self.status in ['associated']:
+            return 'OK'
+        return 'NOT OK'
+
     def create(self, params):
         '''
             Create a new AWS EC2 Route Table.
@@ -202,3 +218,6 @@ def detach(ctx, iface, resource_config, **_):
                                            request=params,
                                            substrings='InvalidAssociationID'
                                                       '.NotFound')
+
+
+interface = EC2RouteTable
