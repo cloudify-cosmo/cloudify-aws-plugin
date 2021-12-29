@@ -69,9 +69,8 @@ class CodePipelinePipeline(CodePipelineBase):
             Deletes an existing Pipeline.
         """
         self.logger.debug('Deleting {resource_type} with parameters:'
-                          ' {params}'.format(
-                                            resource_type=self.type_name,
-                                            params=params))
+                          ' {params}'.format(resource_type=self.type_name,
+                                             params=params))
         self.client.delete_pipeline(**params)
 
     def execute(self, name=None, clientRequestToken=None):
@@ -82,9 +81,8 @@ class CodePipelinePipeline(CodePipelineBase):
         if clientRequestToken:
             params.update({"clientRequestToken": clientRequestToken})
         self.logger.debug('Executing {resource_type} with parameters:'
-                          ' {params}'.format(
-                                            resource_type=self.type_name,
-                                            params=params))
+                          ' {params}'.format(resource_type=self.type_name,
+                                             params=params))
 
         return self.client.start_pipeline_execution(**params)
 

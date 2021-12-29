@@ -41,7 +41,7 @@ class EC2Image(EC2Base):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
         image_filters = ctx_node.properties["resource_config"].get(
-                "kwargs", {}).get("Filters")
+            "kwargs", {}).get("Filters")
         self._describe_image_filters = None
         if resource_id:
             self.prepare_describe_image_filter({IMAGE_IDS: [resource_id]})
