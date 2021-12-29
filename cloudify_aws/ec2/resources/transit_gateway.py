@@ -270,7 +270,7 @@ def request_vpc_attachment(ctx,
 @decorators.aws_relationship(EC2TransitGatewayAttachment, RESOURCE_TYPE)
 def delete_vpc_attachment(ctx, iface, transit_gateway_attachment_id=None, **_):
     transit_gateway_attachment_id = transit_gateway_attachment_id or \
-                                    get_attachment_id_from_runtime_props(ctx)
+        get_attachment_id_from_runtime_props(ctx)
     if not transit_gateway_attachment_id:
         ctx.logger.error('No transit_gateway_attachment_id was provided. '
                          'Skipping delete attachment.')
