@@ -64,11 +64,19 @@ class EC2SecurityGroup(EC2Base):
     @property
     def status(self):
         '''Gets the status of an external resource'''
+        self.logger.error(
+            'Improvements are needed to Security Group status property.')
         props = self.properties
         try:
             return props['State']
         except (KeyError, TypeError):
             return
+
+    @property
+    def check_status(self):
+        if self.properties:
+            return 'OK'
+        return 'NOT OK'
 
     def create(self, params):
         '''
@@ -284,3 +292,6 @@ def revoke_egress_rules(ctx, iface, resource_config, **_):
                             params,
                             ['InvalidPermission.NotFound',
                              'InvalidGroup.NotFound'])
+
+
+interface = EC2SecurityGroup

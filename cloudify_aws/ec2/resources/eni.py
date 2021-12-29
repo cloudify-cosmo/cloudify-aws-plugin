@@ -69,6 +69,12 @@ class EC2NetworkInterface(EC2Base):
         return props['Status']
 
     @property
+    def check_status(self):
+        if self.status in ['available', 'associated', 'in-use']:
+            return 'OK'
+        return 'NOT OK'
+
+    @property
     def attachment(self):
         props = self.properties
         if not props:
@@ -319,3 +325,6 @@ def get_attached_instance_id(params):
                       'and no single existing EC2 Instance has a relationship '
                       'to the current ENI node. '
                       'Not performing attach operation.')
+
+
+interface = EC2NetworkInterface
