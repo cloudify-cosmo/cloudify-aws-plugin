@@ -24,10 +24,8 @@ from botocore.exceptions import ClientError, ParamValidationError
 # Cloudify
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.ec2 import EC2Base
-from cloudify_aws.common.constants import (
-    EXTERNAL_RESOURCE_ID,
-    TAG_SPECIFICATIONS_KWARG
-    )
+from cloudify_aws.common.constants import (EXTERNAL_RESOURCE_ID,
+                                           TAG_SPECIFICATIONS_KWARG)
 from cloudify.exceptions import OperationRetry
 
 RESOURCE_TYPE = 'EC2 Internet Gateway'
