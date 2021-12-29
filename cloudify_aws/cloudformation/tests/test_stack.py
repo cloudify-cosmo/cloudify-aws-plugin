@@ -409,15 +409,9 @@ class TestCloudFormationStack(TestBase):
         expected_runtime_properties = dict(RUNTIMEPROP_AFTER_START)
         expected_runtime_properties.pop(stack.SAVED_PROPERTIES)
         expected_runtime_properties.update(
-            {'outputs_items': {'URL': '10.0.0.0'},
-             'Outputs': [
-                 {'OutputKey': 'URL',
-                  'OutputValue': '10.0.0.0',
-                  'Description': 'IP Address of Server'
-                  }
-             ],
-             'is_drifted': False
-             })
+            {'outputs_items': {'URL': '10.0.0.0'}, 'Outputs': [
+                {'OutputKey': 'URL', 'OutputValue': '10.0.0.0',
+                 'Description': 'IP Address of Server'}], 'is_drifted': False})
         expected_saved_properties = ['StackName',
                                      'StackId',
                                      'Outputs',
