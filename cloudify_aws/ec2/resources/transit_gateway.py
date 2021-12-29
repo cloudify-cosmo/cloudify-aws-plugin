@@ -51,6 +51,7 @@ class EC2TransitGateway(EC2Base):
     '''
         EC2 Transit Gateway
     '''
+
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
@@ -93,7 +94,6 @@ class EC2TransitGateway(EC2Base):
 
 
 class EC2TransitGatewayAttachment(EC2Base):
-
     '''
         EC2 Transit Gateway Attachment
     '''
@@ -197,10 +197,9 @@ def request_vpc_attachment(ctx,
                            vpc_id=None,
                            subnet_ids=None,
                            **_):
-
     transit_gateway_id = transit_gateway_id or \
-                         ctx.source.instance.runtime_properties.get(
-                                constants.EXTERNAL_RESOURCE_ID)
+        ctx.source.instance.runtime_properties.get(
+            constants.EXTERNAL_RESOURCE_ID)
     vpc_id = vpc_id or ctx.target.instance.runtime_properties.get(
         constants.EXTERNAL_RESOURCE_ID)
     subnet_ids = subnet_ids or ctx.target.instance.runtime_properties.get(
@@ -271,7 +270,7 @@ def request_vpc_attachment(ctx,
 @decorators.aws_relationship(EC2TransitGatewayAttachment, RESOURCE_TYPE)
 def delete_vpc_attachment(ctx, iface, transit_gateway_attachment_id=None, **_):
     transit_gateway_attachment_id = transit_gateway_attachment_id or \
-        get_attachment_id_from_runtime_props(ctx)
+                                    get_attachment_id_from_runtime_props(ctx)
     if not transit_gateway_attachment_id:
         ctx.logger.error('No transit_gateway_attachment_id was provided. '
                          'Skipping delete attachment.')
