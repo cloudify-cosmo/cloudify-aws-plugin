@@ -54,9 +54,7 @@ class TestS3BucketObject(TestBase):
         }
         self.resource_config = RESOURCE_CONFIG
         self.resource_config['resource_config']['kwargs'] = \
-            _dump_dict_to_unicode(
-                bucket_config
-            )
+            _dump_dict_to_unicode(bucket_config)
         self.ctx = self.get_mock_ctx(test_name="Backet",
                                      test_properties=self.resource_config)
 

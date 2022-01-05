@@ -120,9 +120,8 @@ class AWSWorkflowTests(TestCase):
                  mock_ctx),
             call('foo', 'foo', ['foo-resource3'], [
                 {'resource_name': 'resource3', 'aws_region_name': 'region1'}],
-                 [{'csys-env-type': 'environment'},
-                  {'csys-obj-parent': 'foo'}],
-                 mock_ctx),
+                [{'csys-env-type': 'environment'},
+                    {'csys-obj-parent': 'foo'}], mock_ctx),
             call('foo', 'foo', ['foo-resource4'],
                  [{'resource_name': 'resource4',
                    'aws_region_name': 'region2'}],

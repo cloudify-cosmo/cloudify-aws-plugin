@@ -158,8 +158,10 @@ def _wait_for_status(kwargs,
 def aws_relationship(class_decl=None,
                      resource_type='AWS Resource'):
     '''AWS resource decorator'''
+
     def wrapper_outer(function):
         '''Outer function'''
+
         def wrapper_inner(**kwargs):
             '''Inner, worker function'''
             ctx = kwargs['ctx']
@@ -207,14 +209,18 @@ def aws_relationship(class_decl=None,
             ctx.source.instance.runtime_properties._set_changed()
             ctx.target.instance.runtime_properties._set_changed()
             return ret
+
         return wrapper_inner
+
     return operation(func=wrapper_outer, resumable=True)
 
 
 def aws_params(resource_name, params_priority=True):
     '''AWS resource decorator'''
+
     def wrapper_outer(function):
         '''Outer function'''
+
         def wrapper_inner(*argc, **kwargs):
             ctx = kwargs.get('ctx')
             iface = kwargs['iface']
@@ -250,7 +256,9 @@ def aws_params(resource_name, params_priority=True):
             utils.update_resource_id(ctx.instance, resource_id)
             kwargs['params'] = params
             return function(*argc, **kwargs)
+
         return wrapper_inner
+
     return wrapper_outer
 
 
@@ -302,7 +310,6 @@ def _aws_resource(function,
                   resource_type,
                   ignore_properties,
                   **kwargs):
-
     ctx = kwargs['ctx']
     _, _, _, operation_name = ctx.operation.name.split('.')
     create_operation = get_create_op(operation_name)
@@ -440,8 +447,10 @@ def aws_resource(class_decl=None,
                  ignore_properties=False,
                  waits_for_status=True):
     '''AWS resource decorator'''
+
     def wrapper_outer(function):
         '''Outer function'''
+
         def wrapper_inner(**kwargs):
             '''Inner, worker function'''
             kwargs['waits_for_status'] = waits_for_status
@@ -451,7 +460,9 @@ def aws_resource(class_decl=None,
                 resource_type,
                 ignore_properties,
                 **kwargs)
+
         return wrapper_inner
+
     return operation(func=wrapper_outer, resumable=True)
 
 
@@ -459,8 +470,10 @@ def multiple_aws_resource(class_decl=None,
                           resource_type='AWS Resource',
                           ignore_properties=False):
     '''AWS resource decorator'''
+
     def wrapper_outer(function):
         '''Outer function'''
+
         def wrapper_inner(**kwargs):
             '''Inner, worker function'''
             ctx = kwargs['ctx']
@@ -477,7 +490,9 @@ def multiple_aws_resource(class_decl=None,
                               resource_type,
                               ignore_properties,
                               **kwargs)
+
         return wrapper_inner
+
     return operation(func=wrapper_outer, resumable=True)
 
 
@@ -485,8 +500,10 @@ def wait_for_status(status_good=None,
                     status_pending=None,
                     fail_on_missing=True):
     '''AWS resource decorator'''
+
     def wrapper_outer(function):
         '''Outer function'''
+
         def wrapper_inner(**kwargs):
             '''Inner, worker function'''
             _ctx = kwargs['ctx']
@@ -498,15 +515,19 @@ def wait_for_status(status_good=None,
                              status_pending,
                              status_good,
                              fail_on_missing)
+
         return wrapper_inner
+
     return wrapper_outer
 
 
 def wait_on_relationship_unlink(status_deleted=None,
                                 status_pending=None):
     '''AWS resource decorator'''
+
     def wrapper_outer(function):
         '''Outer function'''
+
         def wrapper_inner(**kwargs):
             '''Inner, worker function'''
             _ctx = kwargs['ctx']
@@ -517,7 +538,9 @@ def wait_on_relationship_unlink(status_deleted=None,
                              function,
                              status_pending,
                              status_deleted)
+
         return wrapper_inner
+
     return wrapper_outer
 
 
@@ -525,8 +548,10 @@ def wait_on_relationship_status(status_good=None,
                                 status_pending=None,
                                 fail_on_missing=True):
     '''AWS resource decorator'''
+
     def wrapper_outer(function):
         '''Outer function'''
+
         def wrapper_inner(**kwargs):
             '''Inner, worker function'''
             _ctx = kwargs['ctx']
@@ -538,7 +563,9 @@ def wait_on_relationship_status(status_good=None,
                              status_pending,
                              status_good,
                              fail_on_missing)
+
         return wrapper_inner
+
     return wrapper_outer
 
 
@@ -550,6 +577,7 @@ def wait_for_delete(status_deleted=None, status_pending=None):
 
     def wrapper_outer(function):
         '''Outer function'''
+
         def wrapper_inner(**kwargs):
             '''Inner, worker function'''
             _ctx = kwargs['ctx']
@@ -560,7 +588,9 @@ def wait_for_delete(status_deleted=None, status_pending=None):
                              function,
                              status_pending,
                              status_deleted)
+
         return wrapper_inner
+
     return wrapper_outer
 
 
@@ -649,7 +679,7 @@ def check_swift_resource(func):
                     aws_config['aws_secret_access_key'] = token
                     aws_config['region_name'] = region_name
                     aws_config['endpoint_url'] = endpoint_url
-                    ctx.instance.runtime_properties['aws_config'] =\
+                    ctx.instance.runtime_properties['aws_config'] = \
                         aws_config
 
                     raise OperationRetry(
@@ -664,6 +694,7 @@ def check_swift_resource(func):
             return response
 
         return func(**kwargs)
+
     return operation(func=wrapper, resumable=True)
 
 
@@ -695,6 +726,7 @@ def tag_resources(fn):
                 'Tags': tags,
                 'Resources': resource_ids})
         return result
+
     return wrapper
 
 
@@ -718,6 +750,7 @@ def untag_resources(fn):
                 'Tags': tags,
                 'Resources': resource_ids})
         return fn(**kwargs)
+
     return wrapper
 
 
@@ -725,21 +758,16 @@ def add_default_tag(_ctx, iface):
     ctx.logger.info("Adding default cloudify_tagging.")
 
     iface.tag(
-        {'Tags': [
-            {'Key': 'CreatedBy', 'Value': "{}-{}-{}".format(
-                _ctx.tenant_name,
-                _ctx.deployment.id,
-                _ctx.instance.id)
-             }
-        ],
+        {'Tags': [{'Key': 'CreatedBy', 'Value': "{}-{}-{}".format(
+            _ctx.tenant_name,
+            _ctx.deployment.id,
+            _ctx.instance.id)}],
          'Resources': [iface.resource_id]}
     )
     iface.tag(
-        {'Tags': [
-            {'Key': 'Name', 'Value': "{}_{}".format(
-                _ctx.node.name, _ctx.instance.id)
-             }
-        ],
+        {'Tags': [{'Key': 'Name', 'Value': "{}_{}".format(
+            _ctx.node.name,
+            _ctx.instance.id)}],
          'Resources': [iface.resource_id]}
     )
     ctx.logger.info("Added default cloudify_tagging.")
