@@ -57,10 +57,31 @@ class EC2RouteTable(EC2Base):
         try:
             resources = \
                 self.client.describe_route_tables(**params)
-        except (ClientError, ParamValidationError):
+        except (ClientError, ParamValidationError) as e:
+            self.logger.debug(
+                'Describe Route Table failed: {}'.format(str(e)))
             pass
         else:
+            self.logger.debug('Describe Route Table: {}'.format(
+                resources))
             return None if not resources else resources.get(ROUTETABLES)[0]
+
+    @property
+    def status(self):
+        '''Gets the status of an external resource'''
+        self.logger.error(
+            'Improvements are needed to Route Table status property.')
+        try:
+            return \
+                self.properties['Associations'][0]['AssociationState']['State']
+        except (IndexError, KeyError, TypeError):
+            return None
+
+    @property
+    def check_status(self):
+        if self.status in ['associated']:
+            return 'OK'
+        return 'NOT OK'
 
     def create(self, params):
         '''
@@ -202,3 +223,6 @@ def detach(ctx, iface, resource_config, **_):
                                            request=params,
                                            substrings='InvalidAssociationID'
                                                       '.NotFound')
+
+
+interface = EC2RouteTable

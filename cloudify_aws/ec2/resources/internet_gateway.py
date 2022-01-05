@@ -50,20 +50,31 @@ class EC2InternetGateway(EC2Base):
         '''Gets the properties of an external resource'''
         params = {INTERNETGATEWAY_IDS: [self.resource_id]}
         try:
-            resources = \
-                self.client.describe_internet_gateways(**params)
-        except (ClientError, ParamValidationError):
+            resources = self.client.describe_internet_gateways(**params)
+        except (ClientError, ParamValidationError) as e:
+            self.logger.debug(
+                'Describe Internet Gateway failed: {}'.format(str(e)))
             pass
         else:
+            self.logger.debug('Describe Internet Gateway: {}'.format(
+                resources))
             return resources.get(INTERNETGATEWAYS)[0] if resources else None
 
     @property
     def status(self):
         '''Gets the status of an external resource'''
+        self.logger.error(
+            'Improvements are needed to Internet Gateway status property.')
         try:
             return self.properties['Attachments'][0]['State']
         except (IndexError, KeyError, TypeError):
             return None
+
+    @property
+    def check_status(self):
+        if self.status in ['available', 'attached']:
+            return 'OK'
+        return 'NOT OK'
 
     def create(self, params):
         '''
@@ -220,3 +231,6 @@ def detach(ctx, iface, resource_config, **_):
                                    params,
                                    ['Gateway.NotAttached',
                                     'InvalidInternetGatewayID.NotFound'])
+
+
+interface = EC2InternetGateway

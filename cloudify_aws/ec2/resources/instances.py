@@ -106,6 +106,12 @@ class EC2Instances(EC2Base):
             return None
         return props['State']['Code']
 
+    @property
+    def check_status(self):
+        if self.status in [RUNNING]:
+            return 'OK'
+        return 'NOT OK'
+
     def describe(self, params):
         try:
             return self.make_client_call('describe_instances', params)
@@ -609,3 +615,6 @@ def handle_tags(params):
     for cnt, tags_spec in enumerate(params.get(TAGS, [])):
         if 'ResourceType' not in tags_spec:
             params[TAGS][cnt]['ResourceType'] = 'instance'
+
+
+interface = EC2Instances

@@ -68,6 +68,12 @@ class EC2NatGateway(EC2Base):
             return None
         return props['State']
 
+    @property
+    def check_status(self):
+        if self.status in ['available']:
+            return 'OK'
+        return 'NOT OK'
+
     def create(self, params):
         """
             Create a new AWS EC2 NAT Gateway.
@@ -143,7 +149,7 @@ def create(ctx, iface, resource_config, **_):
                          ignore_properties=True)
 @decorators.wait_for_delete(
     status_deleted=['deleted'],
-    status_pending=['deleting', 'pending'])
+    status_pending=['deleting', 'pending', 'available'])
 @decorators.untag_resources
 def delete(iface, resource_config, **_):
     """Deletes an AWS EC2 NAT Gateway"""
@@ -158,3 +164,6 @@ def delete(iface, resource_config, **_):
 
     params.update({NATGATEWAY_ID: nat_gateway_id})
     iface.delete(params)
+
+
+interface = EC2NatGateway

@@ -180,3 +180,7 @@
 2.13.0:
     - RD-3635 Fix detach a disk.
     - Fixed security group attachment in rds.
+2.14.0:
+    - RD-3880: Support check status for EKS
+    - RD-3882: Support check status for EC2 Instances and Network
+

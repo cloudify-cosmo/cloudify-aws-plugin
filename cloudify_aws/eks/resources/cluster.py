@@ -95,6 +95,12 @@ class EKSCluster(EKSBase):
             return None
         return props.get('status')
 
+    @property
+    def check_status(self):
+        if self.status in ['ACTIVE']:
+            return 'OK'
+        return 'NOT OK'
+
     def describe(self, params=None):
         params = params or self.describe_param
         try:
@@ -372,3 +378,6 @@ def get_zones(ctx, subnets):
         availability_zone = subnet_iface.properties['AvailabilityZone']
         zones.append(availability_zone)
     return zones
+
+
+interface = EKSCluster
