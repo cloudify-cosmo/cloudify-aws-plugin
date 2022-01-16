@@ -272,12 +272,12 @@ def get_special_condition(external,
     if external and 'cloudify.nodes.aws.ec2.Image' in node_type and \
             op_name == 'create':
         return True
-    if external and 'cloudify.nodes.aws.ec2.Image' in node_type and \
+    elif external and 'cloudify.nodes.aws.ec2.Image' in node_type and \
             op_name == 'delete':
         return False
-    if waits_for_status:
+    elif waits_for_status and not external:
         return True
-    if create_op and 'cloudify.nodes.aws.ec2.VpcPeeringRequest' in node_type:
+    elif create_op and 'cloudify.nodes.aws.ec2.VpcPeeringRequest' in node_type:
         return True
     return not create_op and not delete_op or force
 
@@ -305,48 +305,22 @@ def get_delete_op(op_name):
     return 'delete' == op_name
 
 
-def _aws_resource(function,
-                  class_decl,
-                  resource_type,
-                  ignore_properties,
-                  **kwargs):
-    ctx = kwargs['ctx']
-    _, _, _, operation_name = ctx.operation.name.split('.')
-    create_operation = get_create_op(operation_name)
-    delete_operation = get_delete_op(operation_name)
-    if create_operation and '__deleted' in ctx.instance.runtime_properties:
-        del ctx.instance.runtime_properties['__deleted']
-    props = ctx.node.properties
-    runtime_instance_properties = ctx.instance.runtime_properties
-    # Override the resource ID if needed
-    resource_id = kwargs.get(EXT_RES_ID)
-    if resource_id and not ctx.instance.runtime_properties.get(EXT_RES_ID):
-        ctx.instance.runtime_properties[EXT_RES_ID] = resource_id
-    if resource_id and not ctx.instance.runtime_properties.get(EXT_RES_ARN):
-        ctx.instance.runtime_properties[EXT_RES_ARN] = resource_id
+def _put_resource_id_in_runtime_props(resource_id, runtime_props):
+    if resource_id and not runtime_props.get(EXT_RES_ID):
+        runtime_props[EXT_RES_ID] = resource_id
+    if resource_id and not runtime_props.get(EXT_RES_ARN):
+        runtime_props[EXT_RES_ARN] = resource_id
 
+
+def _put_values_from_kwargs_in_runtime_props(from_kwargs, runtime_props):
     # Override any runtime properties if needed
-    runtime_properties = kwargs.get('runtime_properties') or dict()
-    for key, val in runtime_properties.items():
-        ctx.instance.runtime_properties[key] = val
+    for key, val in from_kwargs.items():
+        runtime_props[key] = val
 
-    # Add new operation arguments
-    kwargs['resource_type'] = resource_type
 
-    # Check if "aws_config" is provided
-    # if "client_config" is empty, then the current node is a swift
-    # node and the "aws_config" will be taken as "aws_config" for
-    # boto3 config in order to use the S3 API
-    aws_config = ctx.instance.runtime_properties.get('aws_config')
-    aws_config_kwargs = kwargs.get('aws_config')
-
-    # Attribute needed for AWS resource class
-    class_decl_attr = {
-        'ctx_node': ctx.node,
-        'logger': ctx.logger,
-        'resource_id': utils.get_resource_id(
-            node=ctx.node, instance=ctx.instance),
-    }
+def _put_aws_config_in_class_decl(aws_config,
+                                  class_decl_attr,
+                                  aws_config_kwargs):
 
     # Check if "aws_config" is set and has a valid "dict" type because
     #  the expected data type for "aws_config" must be "dict"
@@ -372,29 +346,81 @@ def _aws_resource(function,
                 'The aws_config is invalid type: {0}, it must be '
                 'valid dict type'.format(type(aws_config)))
 
+
+def _get_resource_config_if_not_ignore_properties(
+        kwargs, props, runtime_instance_properties):
+    # Normalize resource_config property
+    resource_config = props.get('resource_config') or dict()
+    resource_config_kwargs = resource_config.get('kwargs') or dict()
+    if 'kwargs' in resource_config:
+        del resource_config['kwargs']
+    resource_config.update(resource_config_kwargs)
+    # Update the argument
+    kwargs['resource_config'] = kwargs.get(
+        'resource_config') or resource_config or dict()
+
+    # ``resource_config`` could be part of the runtime instance
+    # properties, If ``resource_config`` is empty then check if it
+    # exists on runtime instance properties
+    if not resource_config \
+            and runtime_instance_properties \
+            and runtime_instance_properties.get('resource_config'):
+        kwargs['resource_config'] = \
+            runtime_instance_properties['resource_config']
+        resource_config = kwargs['resource_config']
+    return resource_config
+
+
+def _aws_resource(function,
+                  class_decl,
+                  resource_type,
+                  ignore_properties,
+                  **kwargs):
+    ctx = kwargs['ctx']
+    _, _, _, operation_name = ctx.operation.name.split('.')
+    create_operation = get_create_op(operation_name)
+    delete_operation = get_delete_op(operation_name)
+    if create_operation and '__deleted' in ctx.instance.runtime_properties:
+        del ctx.instance.runtime_properties['__deleted']
+    props = ctx.node.properties
+    runtime_instance_properties = ctx.instance.runtime_properties
+    # Override the resource ID if needed
+    resource_id = kwargs.get(EXT_RES_ID)
+    _put_resource_id_in_runtime_props(
+        resource_id, ctx.instance.runtime_properties)
+    runtime_props_from_kwargs = kwargs.get('runtime_properties') or dict()
+    _put_values_from_kwargs_in_runtime_props(
+        runtime_props_from_kwargs, ctx.instance.runtime_properties)
+
+    # Add new operation arguments
+    kwargs['resource_type'] = resource_type
+
+    # Check if "aws_config" is provided
+    # if "client_config" is empty, then the current node is a swift
+    # node and the "aws_config" will be taken as "aws_config" for
+    # boto3 config in order to use the S3 API
+    aws_config = ctx.instance.runtime_properties.get('aws_config')
+    aws_config_kwargs = kwargs.get('aws_config')
+
+    # Attribute needed for AWS resource class
+    class_decl_attr = {
+        'ctx_node': ctx.node,
+        'logger': ctx.logger,
+        'resource_id': utils.get_resource_id(
+            node=ctx.node, instance=ctx.instance),
+    }
+
+    _put_aws_config_in_class_decl(
+        aws_config, class_decl_attr, aws_config_kwargs)
+
     kwargs['iface'] = class_decl(**class_decl_attr) if class_decl else None
 
-    resource_config = None
     if not ignore_properties:
-        # Normalize resource_config property
-        resource_config = props.get('resource_config') or dict()
-        resource_config_kwargs = resource_config.get('kwargs') or dict()
-        if 'kwargs' in resource_config:
-            del resource_config['kwargs']
-        resource_config.update(resource_config_kwargs)
-        # Update the argument
-        kwargs['resource_config'] = kwargs.get(
-            'resource_config') or resource_config or dict()
+        resource_config = _get_resource_config_if_not_ignore_properties(
+            kwargs, props, runtime_instance_properties)
+    else:
+        resource_config = None
 
-        # ``resource_config`` could be part of the runtime instance
-        # properties, If ``resource_config`` is empty then check if it
-        # exists on runtime instance properties
-        if not resource_config \
-                and runtime_instance_properties \
-                and runtime_instance_properties.get('resource_config'):
-            kwargs['resource_config'] = \
-                runtime_instance_properties['resource_config']
-            resource_config = kwargs['resource_config']
     resource_id = utils.get_resource_id(node=ctx.node, instance=ctx.instance)
 
     iface = kwargs.get('iface')
