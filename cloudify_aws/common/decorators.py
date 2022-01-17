@@ -141,6 +141,12 @@ def _wait_for_status(kwargs,
     elif not status:
         raise OperationRetry('Waiting for operation to succeed')
 
+    # TODO: Is it always "failed"?
+    elif status in ['failed']:
+        raise NonRecoverableError(
+            'Resource {r} ID# {n} is in a failed state.'.format(
+                r=resource_type, n=resource_id))
+
     elif status not in status_good + status_pending:
         result = function(**kwargs)
         ctx.logger.debug("The function result is %s" % result)
