@@ -195,6 +195,7 @@ def attach(ctx, iface, resource_config, **_):
     # Actually create the resource
     attach_params = params.copy()
     attach_params.pop(TAG_SPECIFICATIONS_KWARG, None)
+    # TODO: Handle conditionally if already attached.
     iface.attach(attach_params)
 
 
