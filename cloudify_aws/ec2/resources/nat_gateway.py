@@ -136,7 +136,8 @@ def create(ctx, iface, resource_config, **_):
 
     ctx.instance.runtime_properties['allocation_id'] = \
         allocation_id
-    if 'ConnectivityType' in params and params['ConnectivityType'] != 'private':
+    if 'ConnectivityType' in params and \
+            params['ConnectivityType'] != 'private':
         params[ALLOCATION_ID] = allocation_id
 
     # Actually create the resource
