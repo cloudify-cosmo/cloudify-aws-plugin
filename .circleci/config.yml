@@ -4,7 +4,7 @@ orbs:
   node: cloudify/public-unittest-orb@1.0.2 #orb version
   wagonorb: cloudify/wagon-bulder-orb@1.0.3 #orb version
   releaseorb: cloudify/release-orb@1.0.5 #orb version
-
+  managerorb: cloudify/manager-orb@1.0.0
 
 checkout:
   post:
@@ -139,7 +139,7 @@ jobs:
       CLOUDIFY_SSL_TRUST_ALL: true
     steps:
       - checkout
-      - create_manager_container_py3
+      - managerorb/create_manager_container_latest
       - prepare_test_manager
       - run_cf_test
 
@@ -149,7 +149,7 @@ jobs:
       CLOUDIFY_SSL_TRUST_ALL: true
     steps:
       - checkout
-      - create_manager_container_py3
+      - managerorb/create_manager_container_latest
       - prepare_test_manager
       - run_eks_test
 
@@ -299,7 +299,7 @@ jobs:
       CLOUDIFY_SSL_TRUST_ALL: true
     steps:
       - checkout
-      - create_manager_container_py3
+      - managerorb/create_manager_container_latest
       - prepare_test_manager
       - run_hello_world_test
 
@@ -337,27 +337,27 @@ workflows:
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
-          filters:
-            branches:
-              only: /([0-9\.]*\-build|master|dev)/
+#          filters:
+#            branches:
+#              only: /([0-9\.]*\-build|master|dev)/
       - eks_integration_tests_py3:
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
-          filters:
-            branches:
-              only: /([0-9\.]*\-build|master|dev)/
+#          filters:
+#            branches:
+#              only: /([0-9\.]*\-build|master|dev)/
       - hw_integration_tests_py3:
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
-          filters:
-            branches:
-              only: /([0-9\.]*\-build|master|dev)/
+#          filters:
+#            branches:
+#              only: /([0-9\.]*\-build|master|dev)/
       - releaseorb/release:
           filters:
             branches:
