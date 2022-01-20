@@ -2579,6 +2579,7 @@ node_types:
       <<: *client_config
       <<: *resource_id
       <<: *tags_property
+      <<: *resource_tags
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
