@@ -1315,6 +1315,13 @@ dsl_definitions:
       check_status:
         implementation: aws.cloudify_aws.workflows.check_status.check_status
 
+  resource_tags: &resource_tags
+    tenant: { get_sys: [ tenant, name ] }
+    deployment_id: { get_sys: [ deployment, id ] }
+    owner: { get_sys: [ deployment, owner ] }
+    description: Tags dicts.
+    required: false
+
 node_types:
 
   cloudify.nodes.aws.dynamodb.Table:
