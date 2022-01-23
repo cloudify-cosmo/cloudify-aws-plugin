@@ -2609,6 +2609,9 @@ node_types:
         start:
           implementation: aws.cloudify_aws.ec2.resources.instances.start
           inputs: *operation_inputs
+        poststart:
+          implementation: aws.cloudify_aws.ec2.resources.instances.poststart
+          inputs: *operation_inputs
         stop:
           implementation: aws.cloudify_aws.ec2.resources.instances.stop
           inputs: *operation_inputs
