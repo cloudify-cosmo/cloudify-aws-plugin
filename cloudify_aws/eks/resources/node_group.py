@@ -134,6 +134,8 @@ def prepare(ctx, resource_config, **_):
 
 
 @decorators.aws_resource(EKSNodeGroup, RESOURCE_TYPE, waits_for_status=False)
+@decorators.wait_for_status(status_pending=['CREATING', 'UPDATING'],
+                            status_good=['ACTIVE', 'available'])
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS EKS Node Group"""
     params = dict() if not resource_config else resource_config.copy()
