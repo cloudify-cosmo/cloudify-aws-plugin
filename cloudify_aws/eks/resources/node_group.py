@@ -22,7 +22,7 @@ from __future__ import unicode_literals
 
 # Boto
 
-from botocore.exceptions import ClientError, ParamValidationError
+from botocore.exceptions import ClientError, ParamValidationError, WaiterError
 
 from cloudify.exceptions import OperationRetry
 
@@ -84,14 +84,19 @@ class EKSNodeGroup(EKSBase):
             wait for AWS EKS Node Group.
         """
         waiter = self.client.get_waiter(status)
-        waiter.wait(
-            clusterName=params.get(CLUSTER_NAME),
-            nodegroupName=params.get(NODEGROUP_NAME),
-            WaiterConfig={
-                'Delay': 30,
-                'MaxAttempts': 40
-            }
-        )
+        try:
+            waiter.wait(
+                clusterName=params.get(CLUSTER_NAME),
+                nodegroupName=params.get(NODEGROUP_NAME),
+                WaiterConfig={
+                    'Delay': 30,
+                    'MaxAttempts': 40
+                }
+            )
+        except WaiterError:
+            self.logger.error('Tired of waiting {} {}'.format(
+                self.resource_id, self.status))
+            raise
 
     def start(self, params):
         """
@@ -150,6 +155,8 @@ def create(ctx, iface, resource_config, **_):
     if response and response.get(NODEGROUP):
         resource_arn = response.get(NODEGROUP).get(NODEGROUP_ARN)
         utils.update_resource_arn(ctx.instance, resource_arn)
+        resource_id = response.get(NODEGROUP).get(NODEGROUP_NAME)
+        utils.update_resource_id(ctx.instance, resource_id)
     # wait for nodegroup to be active
     ctx.logger.info("Waiting for NodeGroup to become Active")
     iface.wait_for_nodegroup(params, 'nodegroup_active')
