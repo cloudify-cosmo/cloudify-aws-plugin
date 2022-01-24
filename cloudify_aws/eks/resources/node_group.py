@@ -79,6 +79,12 @@ class EKSNodeGroup(EKSBase):
         """
         return self.make_client_call('create_nodegroup', params)
 
+    def describe(self, params):
+        """
+            Create a new AWS EKS Node Group.
+        """
+        return self.make_client_call('describe_nodegroup', params)
+
     def wait_for_nodegroup(self, params, status):
         """
             wait for AWS EKS Node Group.
@@ -90,7 +96,7 @@ class EKSNodeGroup(EKSBase):
                 nodegroupName=params.get(NODEGROUP_NAME),
                 WaiterConfig={
                     'Delay': 30,
-                    'MaxAttempts': 40
+                    'MaxAttempts': 3
                 }
             )
         except WaiterError:
@@ -133,7 +139,7 @@ def prepare(ctx, resource_config, **_):
     ctx.instance.runtime_properties['resource_config'] = resource_config
 
 
-@decorators.aws_resource(EKSNodeGroup, RESOURCE_TYPE, waits_for_status=False)
+@decorators.aws_resource(EKSNodeGroup, RESOURCE_TYPE)
 @decorators.wait_for_status(status_pending=['CREATING', 'UPDATING'],
                             status_good=['ACTIVE', 'available'])
 def create(ctx, iface, resource_config, **_):
@@ -149,16 +155,27 @@ def create(ctx, iface, resource_config, **_):
 
     utils.update_resource_id(ctx.instance, resource_id)
     iface = prepare_describe_node_group_filter(resource_config.copy(), iface)
-    try:
-        response = iface.create(params)
-    except ClientError as e:
-        raise OperationRetry(
-            'Waiting for cluster to be ready...{e}'.format(e=e))
+    if ctx.operation.retry_number > 0 or ctx.instance.runtime_properties.get(
+            "need_to_run", False):
+        try:
+            response = iface.create(params)
+        except ClientError as e:
+            ctx.instance.runtime_properties['need_to_run'] = True
+            raise OperationRetry(
+                'Waiting for cluster to be ready...{e}'.format(e=e))
+    else:
+        params["clusterName"] = ctx.instance.runtime_properties["cluster_name"]
+        params["nodegroupName"] = iface.resource_id
+        response = iface.describe(params)
     if response and response.get(NODEGROUP):
         resource_arn = response.get(NODEGROUP).get(NODEGROUP_ARN)
         utils.update_resource_arn(ctx.instance, resource_arn)
-        resource_id = response.get(NODEGROUP).get(NODEGROUP_NAME)
+        resource_id = "eks-" + response.get(NODEGROUP).get(NODEGROUP_NAME) + \
+                     "-" + resource_arn.split('/')[-1]
         utils.update_resource_id(ctx.instance, resource_id)
+        iface.update_resource_id(resource_id)
+        ctx.instance.runtime_properties["cluster_name"] = \
+            response.get(NODEGROUP).get("clusterName")
     # wait for nodegroup to be active
     ctx.logger.info("Waiting for NodeGroup to become Active")
     iface.wait_for_nodegroup(params, 'nodegroup_active')
