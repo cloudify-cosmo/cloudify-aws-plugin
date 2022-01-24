@@ -226,6 +226,13 @@ def start(ctx, iface, resource_config, **_):
 
 
 @decorators.multiple_aws_resource(EC2Instances, RESOURCE_TYPE)
+def poststart(ctx, iface, *_, **__):
+    '''Stores AWS EC2 Instances Details'''
+    ctx.instance.runtime_properties['resource'] = utils.JsonCleanuper(
+        iface.properties).to_dict()
+
+
+@decorators.multiple_aws_resource(EC2Instances, RESOURCE_TYPE)
 @decorators.wait_for_status(
     status_good=[STOPPED],
     status_pending=[PENDING, STOPPING, SHUTTING_DOWN])
