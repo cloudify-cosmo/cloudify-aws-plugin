@@ -50,10 +50,11 @@ class EKSNodeGroup(EKSBase):
     def properties(self):
         """Gets the properties of an external resource"""
         try:
-            properties = \
-                self.client.describe_nodegroup(
-                    **self.describe_param
-                )[NODEGROUP]
+            params = self.describe_param
+            self.logger.info('Describe params: {}'.format(params))
+            result = self.client.describe_nodegroup(**params)
+            self.logger.info('Describe result: {}'.format(result))
+            properties = result[NODEGROUP]
         except (ParamValidationError, ClientError):
             pass
         else:
@@ -170,12 +171,13 @@ def create(ctx, iface, resource_config, **_):
     if response and response.get(NODEGROUP):
         resource_arn = response.get(NODEGROUP).get(NODEGROUP_ARN)
         utils.update_resource_arn(ctx.instance, resource_arn)
-        resource_id = "eks-" + response.get(NODEGROUP).get(NODEGROUP_NAME) + \
-                     "-" + resource_arn.split('/')[-1]
+        resource_id = response.get(NODEGROUP).get(NODEGROUP_NAME)
         utils.update_resource_id(ctx.instance, resource_id)
         iface.update_resource_id(resource_id)
         ctx.instance.runtime_properties["cluster_name"] = \
             response.get(NODEGROUP).get("clusterName")
+        ctx.instance.runtime_properties['create_response'] = \
+            utils.JsonCleanuper(response).to_dict()
     # wait for nodegroup to be active
     ctx.logger.info("Waiting for NodeGroup to become Active")
     iface.wait_for_nodegroup(params, 'nodegroup_active')
