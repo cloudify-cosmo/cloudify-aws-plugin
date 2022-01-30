@@ -145,12 +145,12 @@ def create(ctx, iface, resource_config, **_):
         create_response = iface.create(params)['NatGateway']
     except ClientError as e:
         if 'MissingParameter' in str(e):
-            raise RuntimeError('If the NatGateway should be private try '
-                               'adding the following part into the node in '
-                               'the blueprint :\n'
-                               'resource_config:\n'
+            raise RuntimeError('AWS create_nat_gateway api has changed. '
+                               'it is now required for private gateways '
+                               'to specify in the blueprint:\n '
+                               '"resource_config:\n'
                                '    kwargs:\n'
-                               '        ConnectivityType: private')
+                               '        ConnectivityType: private"')
         raise e
     ctx.instance.runtime_properties['create_response'] = \
         utils.JsonCleanuper(create_response).to_dict()
