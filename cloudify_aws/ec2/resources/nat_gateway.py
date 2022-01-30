@@ -141,7 +141,17 @@ def create(ctx, iface, resource_config, **_):
         params[ALLOCATION_ID] = allocation_id
 
     # Actually create the resource
-    create_response = iface.create(params)['NatGateway']
+    try:
+        create_response = iface.create(params)['NatGateway']
+    except ClientError as e:
+        if 'MissingParameter' in str(e):
+            raise RuntimeError('If the NatGateway should be private try '
+                               'adding the following part into the node in '
+                               'the blueprint :\n'
+                               'resource_config:\n'
+                               '    kwargs:\n'
+                               '        ConnectivityType: private')
+        raise e
     ctx.instance.runtime_properties['create_response'] = \
         utils.JsonCleanuper(create_response).to_dict()
     utils.update_resource_id(
