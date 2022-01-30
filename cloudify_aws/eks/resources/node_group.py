@@ -44,7 +44,25 @@ class EKSNodeGroup(EKSBase):
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         EKSBase.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
-        self.describe_param = {}
+        self._describe_param = {}
+
+    @property
+    def describe_params(self):
+        if not self._describe_param:
+            cfg = self.ctx_node.properties['resource_config']
+            cluster_name = cfg.get(
+                CLUSTER_NAME) or cfg['kwargs'].get(CLUSTER_NAME)
+            node_group_name = cfg.get(
+                NODEGROUP_NAME) or cfg['kwargs'].get(NODEGROUP_NAME)
+            self._describe_param = {
+                CLUSTER_NAME: cluster_name,
+                NODEGROUP_NAME: node_group_name
+            }
+        return self._describe_param
+
+    @describe_params.setter
+    def describe_params(self, value):
+        self._describe_param = value
 
     @property
     def properties(self):
@@ -156,18 +174,13 @@ def create(ctx, iface, resource_config, **_):
 
     utils.update_resource_id(ctx.instance, resource_id)
     iface = prepare_describe_node_group_filter(resource_config.copy(), iface)
-    if ctx.operation.retry_number > 0 or ctx.instance.runtime_properties.get(
-            "need_to_run", False):
-        try:
-            response = iface.create(params)
-        except ClientError as e:
-            ctx.instance.runtime_properties['need_to_run'] = True
+    try:
+        response = iface.create(params)
+    except ClientError as e:
+        if 'duplicate' in str(e).lower():
             raise OperationRetry(
                 'Waiting for cluster to be ready...{e}'.format(e=e))
-    else:
-        params["clusterName"] = ctx.instance.runtime_properties["cluster_name"]
-        params["nodegroupName"] = iface.resource_id
-        response = iface.describe(params)
+        raise
     if response and response.get(NODEGROUP):
         resource_arn = response.get(NODEGROUP).get(NODEGROUP_ARN)
         utils.update_resource_arn(ctx.instance, resource_arn)
