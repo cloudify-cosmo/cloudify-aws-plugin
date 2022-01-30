@@ -77,7 +77,8 @@ class EKSNodeGroup(EKSBase):
     def properties(self):
         """Gets the properties of an external resource"""
         try:
-            self.logger.info('Describe params: {}'.format(self.describe_params))
+            self.logger.info(
+                'Describe params: {}'.format(self.describe_params))
             result = self.client.describe_nodegroup(**self.describe_params)
             self.logger.info('Describe result: {}'.format(result))
             properties = result[NODEGROUP]
