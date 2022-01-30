@@ -24,7 +24,7 @@ from __future__ import unicode_literals
 
 from botocore.exceptions import ClientError, ParamValidationError, WaiterError
 
-from cloudify.exceptions import OperationRetry
+from cloudify.exceptions import OperationRetry, NonRecoverableError
 
 # Cloudify
 from cloudify_aws.common import decorators, utils
@@ -64,13 +64,21 @@ class EKSNodeGroup(EKSBase):
     def describe_params(self, value):
         self._describe_param = value
 
+    def wait_for_status(self):
+        self.logger.info('Performing wait for node group.')
+        try:
+            self.wait_for_nodegroup(
+                self.describe_params, 'nodegroup_active',
+                max_attempt=30)
+        except WaiterError:
+            raise OperationRetry('Waiting for nodegroup...')
+
     @property
     def properties(self):
         """Gets the properties of an external resource"""
         try:
-            params = self.describe_param
-            self.logger.info('Describe params: {}'.format(params))
-            result = self.client.describe_nodegroup(**params)
+            self.logger.info('Describe params: {}'.format(self.describe_params))
+            result = self.client.describe_nodegroup(**self.describe_params)
             self.logger.info('Describe result: {}'.format(result))
             properties = result[NODEGROUP]
         except (ParamValidationError, ClientError):
@@ -104,10 +112,12 @@ class EKSNodeGroup(EKSBase):
         """
         return self.make_client_call('describe_nodegroup', params)
 
-    def wait_for_nodegroup(self, params, status):
+    def wait_for_nodegroup(self, params, status, max_attempt=None):
         """
             wait for AWS EKS Node Group.
         """
+
+        max_attempt = max_attempt or 30
         waiter = self.client.get_waiter(status)
         try:
             waiter.wait(
@@ -115,7 +125,7 @@ class EKSNodeGroup(EKSBase):
                 nodegroupName=params.get(NODEGROUP_NAME),
                 WaiterConfig={
                     'Delay': 30,
-                    'MaxAttempts': 3
+                    'MaxAttempts': max_attempt
                 }
             )
         except WaiterError:
@@ -176,12 +186,10 @@ def create(ctx, iface, resource_config, **_):
     iface = prepare_describe_node_group_filter(resource_config.copy(), iface)
     try:
         response = iface.create(params)
-    except ClientError as e:
-        if 'duplicate' in str(e).lower():
-            raise OperationRetry(
-                'Waiting for cluster to be ready...{e}'.format(e=e))
-        raise
-    if response and response.get(NODEGROUP):
+    except (NonRecoverableError, ClientError) as e:
+        if 'ResourceInUseException' not in str(e):
+            raise e
+    else:
         resource_arn = response.get(NODEGROUP).get(NODEGROUP_ARN)
         utils.update_resource_arn(ctx.instance, resource_arn)
         resource_id = response.get(NODEGROUP).get(NODEGROUP_NAME)

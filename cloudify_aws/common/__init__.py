@@ -52,6 +52,9 @@ class AWSResourceBase(object):
         '''Updates the resource_id value'''
         self._resource_id = resource_id
 
+    def wait_for_status(self, *args, **kwargs):
+        return False
+
     @property
     def properties(self):
         '''Gets the properties of an external resource'''
