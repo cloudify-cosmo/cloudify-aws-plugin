@@ -22,6 +22,7 @@ from botocore.exceptions import ClientError, ParamValidationError
 # Cloudify
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.ec2 import EC2Base
+from cloudify.exceptions import NonRecoverableError
 
 RESOURCE_TYPE = 'EC2 NAT Gateway'
 NATGATEWAY = 'NatGateway'
@@ -145,7 +146,7 @@ def create(ctx, iface, resource_config, **_):
         create_response = iface.create(params)['NatGateway']
     except ClientError as e:
         if 'MissingParameter' in str(e):
-            raise RuntimeError('AWS create_nat_gateway api has changed. '
+            raise NonRecoverableError('AWS create_nat_gateway api has changed. '
                                'it is now required for private gateways '
                                'to specify in the blueprint:\n '
                                '"resource_config:\n'

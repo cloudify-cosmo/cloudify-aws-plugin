@@ -22,12 +22,11 @@ import json
 
 # Boto
 import boto3
-from botocore.exceptions import ClientError, ParamValidationError
+from botocore.exceptions import ClientError, ParamValidationError, WaiterError
 
 from cloudify.decorators import operation
-from cloudify.exceptions import NonRecoverableError
+from cloudify.exceptions import OperationRetry, NonRecoverableError
 from cloudify_rest_client.exceptions import CloudifyClientError
-
 
 # Local imports
 from cloudify_aws.eks import EKSBase
@@ -144,13 +143,16 @@ class EKSCluster(EKSBase):
             wait for AWS EKS cluster.
         """
         waiter = self.client.get_waiter(status)
-        waiter.wait(
-            name=params.get(CLUSTER_NAME),
-            WaiterConfig={
-                'Delay': 30,
-                'MaxAttempts': 40
-            }
-        )
+        try:
+            waiter.wait(
+                name=params.get(CLUSTER_NAME),
+                WaiterConfig={
+                    'Delay': 30,
+                    'MaxAttempts': 40
+                }
+            )
+        except WaiterError:
+            raise OperationRetry('Waiting for cluster...')
 
     def get_kubeconf(self, client_config, params):
         """

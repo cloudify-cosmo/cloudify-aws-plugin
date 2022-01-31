@@ -21,14 +21,12 @@
 from __future__ import unicode_literals
 
 # Boto
-
 from botocore.exceptions import ClientError, ParamValidationError, WaiterError
-
-from cloudify.exceptions import OperationRetry, NonRecoverableError
 
 # Cloudify
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.eks import EKSBase
+from cloudify.exceptions import OperationRetry, NonRecoverableError
 
 RESOURCE_TYPE = 'EKS Node Group'
 CLUSTER_NAME = 'clusterName'
