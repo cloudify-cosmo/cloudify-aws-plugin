@@ -76,6 +76,15 @@ class EKSCluster(EKSBase):
         self.type_name = RESOURCE_TYPE
         self.describe_param = {'name': self.resource_id}
 
+    def wait_for_status(self):
+        self.logger.info('Performing wait for cluster.')
+        try:
+            self.wait_for_cluster(
+                self.describe_params, 'cluster_active',
+                max_attempt=30)
+        except WaiterError:
+            raise OperationRetry('Waiting for nodegroup...')
+
     @property
     def properties(self):
         """Gets the properties of an external resource"""
@@ -138,17 +147,18 @@ class EKSCluster(EKSBase):
         return self.client.list_nodegroups(
             clusterName=self.resource_id)['nodegroups']
 
-    def wait_for_cluster(self, params, status):
+    def wait_for_cluster(self, params, status, max_attempt=None):
         """
             wait for AWS EKS cluster.
         """
+        max_attempt = max_attempt or 30
         waiter = self.client.get_waiter(status)
         try:
             waiter.wait(
                 name=params.get(CLUSTER_NAME),
                 WaiterConfig={
                     'Delay': 30,
-                    'MaxAttempts': 40
+                    'MaxAttempts': max_attempt
                 }
             )
         except WaiterError:
