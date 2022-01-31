@@ -278,7 +278,10 @@ def get_special_condition(external,
                           delete_op,
                           force,
                           waits_for_status):
-    if external and 'cloudify.nodes.aws.ec2.Image' in node_type and \
+    if 'cloudify.nodes.aws.ec2.Instances' in node_type and \
+            op_name == 'poststart':
+        return True
+    elif external and 'cloudify.nodes.aws.ec2.Image' in node_type and \
             op_name == 'create':
         return True
     elif external and 'cloudify.nodes.aws.ec2.Image' in node_type and \
