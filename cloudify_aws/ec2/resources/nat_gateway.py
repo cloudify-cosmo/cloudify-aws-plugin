@@ -42,6 +42,7 @@ class EC2NatGateway(EC2Base):
     """
         EC2 NAT Gateway interface
     """
+
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
@@ -146,12 +147,13 @@ def create(ctx, iface, resource_config, **_):
         create_response = iface.create(params)['NatGateway']
     except ClientError as e:
         if 'MissingParameter' in str(e):
-            raise NonRecoverableError('AWS create_nat_gateway api has changed. '
-                               'it is now required for private gateways '
-                               'to specify in the blueprint:\n '
-                               '"resource_config:\n'
-                               '    kwargs:\n'
-                               '        ConnectivityType: private"')
+            raise NonRecoverableError(
+                'AWS create_nat_gateway api has changed. '
+                'it is now required for private gateways '
+                'to specify in the blueprint:\n '
+                '"resource_config:\n'
+                '    kwargs:\n'
+                '        ConnectivityType: private"')
         raise e
     ctx.instance.runtime_properties['create_response'] = \
         utils.JsonCleanuper(create_response).to_dict()
