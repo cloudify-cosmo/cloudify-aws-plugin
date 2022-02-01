@@ -22,12 +22,11 @@ import json
 
 # Boto
 import boto3
-from botocore.exceptions import ClientError, ParamValidationError
+from botocore.exceptions import ClientError, ParamValidationError, WaiterError
 
 from cloudify.decorators import operation
-from cloudify.exceptions import NonRecoverableError
+from cloudify.exceptions import OperationRetry, NonRecoverableError
 from cloudify_rest_client.exceptions import CloudifyClientError
-
 
 # Local imports
 from cloudify_aws.eks import EKSBase
@@ -76,6 +75,15 @@ class EKSCluster(EKSBase):
         EKSBase.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
         self.describe_param = {'name': self.resource_id}
+
+    def wait_for_status(self):
+        self.logger.info('Performing wait for cluster.')
+        try:
+            self.wait_for_cluster(
+                self.describe_params, 'cluster_active',
+                max_attempt=30)
+        except WaiterError:
+            raise OperationRetry('Waiting for nodegroup...')
 
     @property
     def properties(self):
@@ -139,18 +147,22 @@ class EKSCluster(EKSBase):
         return self.client.list_nodegroups(
             clusterName=self.resource_id)['nodegroups']
 
-    def wait_for_cluster(self, params, status):
+    def wait_for_cluster(self, params, status, max_attempt=None):
         """
             wait for AWS EKS cluster.
         """
+        max_attempt = max_attempt or 30
         waiter = self.client.get_waiter(status)
-        waiter.wait(
-            name=params.get(CLUSTER_NAME),
-            WaiterConfig={
-                'Delay': 30,
-                'MaxAttempts': 40
-            }
-        )
+        try:
+            waiter.wait(
+                name=params.get(CLUSTER_NAME),
+                WaiterConfig={
+                    'Delay': 30,
+                    'MaxAttempts': max_attempt
+                }
+            )
+        except WaiterError:
+            raise OperationRetry('Waiting for cluster...')
 
     def get_kubeconf(self, client_config, params):
         """

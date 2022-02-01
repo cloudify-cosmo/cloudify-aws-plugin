@@ -113,6 +113,9 @@ def _wait_for_status(kwargs,
     ctx.logger.debug('%s ID# "%s" reported status: %s.' % (
         resource_type, resource_id, status))
 
+    if kwargs['iface'].wait_for_status():
+        return
+
     if status in status_good:
         ctx_instance.runtime_properties['create_response'] = \
             utils.JsonCleanuper(kwargs['iface'].properties).to_dict()
