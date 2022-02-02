@@ -1952,10 +1952,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.elb.resources.load_balancer.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.elb.resources.load_balancer.create
           inputs: *operation_inputs
         start:
@@ -1983,10 +1983,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.elb.resources.classic.load_balancer.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.elb.resources.classic.load_balancer.create
           inputs: *operation_inputs
         start:
@@ -2014,10 +2014,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.elb.resources.classic.health_check.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.elb.resources.classic.health_check.create
           inputs: *operation_inputs
 
@@ -2039,10 +2039,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.elb.resources.listener.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.elb.resources.listener.create
           inputs: *operation_inputs
         delete:
@@ -2067,10 +2067,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.elb.resources.classic.listener.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.elb.resources.classic.listener.create
           inputs: *operation_inputs
         delete:
@@ -2095,10 +2095,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.elb.resources.rule.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.elb.resources.rule.create
           inputs: *operation_inputs
         delete:
@@ -2123,13 +2123,13 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.elb.resources.target_group.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.elb.resources.target_group.create
           inputs: *operation_inputs
-        start:
+        modify:
           implementation: aws.cloudify_aws.elb.resources.target_group.modify
           inputs: *operation_inputs
         delete:
@@ -2154,10 +2154,10 @@ node_types:
         required: true
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.elb.resources.classic.policy.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.elb.resources.classic.policy.create
           inputs: *operation_inputs
         delete:
@@ -2175,7 +2175,7 @@ node_types:
         required: true
     interfaces:
       cloudify.interfaces.lifecycle:
-        configure:
+        create:
           implementation: aws.cloudify_aws.elb.resources.classic.policy.create_sticky
           inputs: *operation_inputs
         start:
