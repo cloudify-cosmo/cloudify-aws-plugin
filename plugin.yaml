@@ -1787,10 +1787,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.route53.resources.hosted_zone.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.route53.resources.hosted_zone.create
           inputs: *operation_inputs
         delete:
@@ -1846,10 +1846,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.route53.resources.record_set.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.route53.resources.record_set.create
           inputs: *operation_inputs
         delete:
