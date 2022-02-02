@@ -1944,6 +1944,7 @@ node_types:
       <<: *external_resource
       <<: *client_config
       <<: *resource_id
+      <<: *resource_tags
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
@@ -1975,6 +1976,7 @@ node_types:
       <<: *external_resource
       <<: *client_config
       <<: *resource_id
+      <<: *resource_tags
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
@@ -2006,6 +2008,7 @@ node_types:
       <<: *external_resource
       <<: *client_config
       <<: *resource_id
+      <<: *resource_tags
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
@@ -2031,6 +2034,7 @@ node_types:
       <<: *external_resource
       <<: *client_config
       <<: *resource_id
+      <<: *resource_tags
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
@@ -2059,6 +2063,7 @@ node_types:
       <<: *external_resource
       <<: *client_config
       <<: *resource_id
+      <<: *resource_tags
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
@@ -2087,6 +2092,7 @@ node_types:
       <<: *external_resource
       <<: *client_config
       <<: *resource_id
+      <<: *resource_tags
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
@@ -2115,6 +2121,7 @@ node_types:
       <<: *external_resource
       <<: *client_config
       <<: *resource_id
+      <<: *resource_tags
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
@@ -2146,6 +2153,7 @@ node_types:
       <<: *external_resource
       <<: *client_config
       <<: *resource_id
+      <<: *resource_tags
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
@@ -2337,6 +2345,7 @@ node_types:
       <<: *client_config
       <<: *resource_id
       <<: *tags_property
+      <<: *resource_tags
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
@@ -2713,6 +2722,7 @@ node_types:
         description: >
           If "create_secret" property is true, and the secret name already exists, overwrite the secret.
         default: false
+      <<: *resource_tags
       cloudify_tagging:
         default: False
     interfaces:
@@ -3112,6 +3122,7 @@ node_types:
         description: indecates if external_resourc should be used
       <<: *client_config
       <<: *resource_id
+
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -3709,6 +3720,7 @@ node_types:
       <<: *external_resource
       <<: *client_config
       <<: *resource_id
+      <<: *resource_tags
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
@@ -3748,6 +3760,7 @@ node_types:
       <<: *external_resource
       <<: *client_config
       <<: *resource_id
+      <<: *resource_tags
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
