@@ -1627,10 +1627,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.rds.resources.instance.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.rds.resources.instance.create
           inputs: *operation_inputs
         start:
@@ -1654,10 +1654,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.rds.resources.instance_read_replica.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.rds.resources.instance_read_replica.create
           inputs: *operation_inputs
         delete:
@@ -1678,10 +1678,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.rds.resources.subnet_group.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.rds.resources.subnet_group.create
           inputs: *operation_inputs
         delete:
