@@ -1896,10 +1896,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.sns.resources.topic.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.sns.resources.topic.create
           inputs: *operation_inputs
         delete:
@@ -1920,10 +1920,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.sns.resources.subscription.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.sns.resources.subscription.create
           inputs: *operation_inputs
         start:
