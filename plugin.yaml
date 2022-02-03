@@ -2129,7 +2129,7 @@ node_types:
         create:
           implementation: aws.cloudify_aws.elb.resources.target_group.create
           inputs: *operation_inputs
-        modify:
+        start:
           implementation: aws.cloudify_aws.elb.resources.target_group.modify
           inputs: *operation_inputs
         delete:
@@ -2195,10 +2195,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.s3.resources.bucket.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.s3.resources.bucket.create
           inputs: *operation_inputs
         delete:
@@ -2234,10 +2234,10 @@ node_types:
         default: ''
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.s3.resources.bucket_object.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.s3.resources.bucket_object.create
           inputs: *operation_inputs
         delete:
@@ -2263,10 +2263,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.s3.resources.bucket_policy.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.s3.resources.bucket_policy.create
           inputs: *operation_inputs
         delete:
@@ -2287,10 +2287,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.s3.resources.lifecycle_configuration.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.s3.resources.lifecycle_configuration.create
           inputs: *operation_inputs
         delete:
@@ -2311,10 +2311,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.s3.resources.tagging.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.s3.resources.tagging.create
           inputs: *operation_inputs
         delete:
