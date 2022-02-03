@@ -2350,10 +2350,10 @@ node_types:
     interfaces:
       <<: *validation_interface
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.ec2.resources.vpc.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.ec2.resources.vpc.create
           inputs: *operation_inputs
         delete:
@@ -2374,10 +2374,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.ec2.resources.vpc_peering.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.ec2.resources.vpc_peering.create
           inputs: *operation_inputs
         start:
@@ -2404,7 +2404,7 @@ node_types:
     derived_from: cloudify.nodes.aws.ec2.VpcPeeringRequest
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        prepare:
           implementation: aws.cloudify_aws.ec2.resources.vpc_peering.prepare
           inputs: *operation_inputs
         configure:
@@ -2415,7 +2415,7 @@ node_types:
     derived_from: cloudify.nodes.aws.ec2.VpcPeeringRequest
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        prepare:
           implementation: aws.cloudify_aws.ec2.resources.vpc_peering.prepare
           inputs: *operation_inputs
         configure:
@@ -2438,10 +2438,10 @@ node_types:
     interfaces:
       <<: *validation_interface
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.ec2.resources.subnet.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.ec2.resources.subnet.create
           inputs: *operation_inputs
         delete:
@@ -2463,10 +2463,10 @@ node_types:
     interfaces:
       <<: *validation_interface
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.ec2.resources.securitygroup.prepare
 #          inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.ec2.resources.securitygroup.create
 #          inputs: *operation_inputs
         delete:
@@ -2527,10 +2527,10 @@ node_types:
     interfaces:
       <<: *validation_interface
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.ec2.resources.nat_gateway.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.ec2.resources.nat_gateway.create
           inputs: *operation_inputs
         delete:
@@ -2549,10 +2549,10 @@ node_types:
     interfaces:
       <<: *validation_interface
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.ec2.resources.eni.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.ec2.resources.eni.create
           inputs: *operation_inputs
         start:
@@ -2603,10 +2603,10 @@ node_types:
     interfaces:
       <<: *validation_interface
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.ec2.resources.instances.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.ec2.resources.instances.create
           inputs: *operation_inputs
         start:
@@ -2715,10 +2715,10 @@ node_types:
         default: False
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.ec2.resources.keypair.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.ec2.resources.keypair.create
           inputs: *operation_inputs
         delete:
@@ -2750,10 +2750,10 @@ node_types:
     interfaces:
       <<: *validation_interface
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.ec2.resources.elasticip.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.ec2.resources.elasticip.create
           inputs: *operation_inputs
         start:
@@ -2783,10 +2783,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.ec2.resources.networkacl.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.ec2.resources.networkacl.create
           inputs: *operation_inputs
         start:
@@ -2813,10 +2813,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.ec2.resources.networkaclentry.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.ec2.resources.networkaclentry.create
           inputs: *operation_inputs
         delete:
@@ -2837,10 +2837,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.ec2.resources.dhcp.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.ec2.resources.dhcp.create
           inputs: *operation_inputs
         start:
@@ -2864,10 +2864,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.ec2.resources.vpn_gateway.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.ec2.resources.vpn_gateway.create
           inputs: *operation_inputs
         start:
@@ -2894,10 +2894,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.ec2.resources.vpn_connection.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.ec2.resources.vpn_connection.create
           inputs: *operation_inputs
         delete:
@@ -2918,10 +2918,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.ec2.resources.vpn_connection_route.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.ec2.resources.vpn_connection_route.create
           inputs: *operation_inputs
         delete:
@@ -2939,10 +2939,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.ec2.resources.customer_gateway.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.ec2.resources.customer_gateway.create
           inputs: *operation_inputs
         delete:
@@ -2961,10 +2961,10 @@ node_types:
     interfaces:
       <<: *validation_interface
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.ec2.resources.internet_gateway.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.ec2.resources.internet_gateway.create
           inputs: *operation_inputs
         start:
@@ -2988,10 +2988,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.ec2.resources.transit_gateway.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.ec2.resources.transit_gateway.create
           inputs: *operation_inputs
         delete:
@@ -3009,10 +3009,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.ec2.resources.transit_gateway_routetable.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.ec2.resources.transit_gateway_routetable.create
           inputs: *operation_inputs
         start:
@@ -3039,10 +3039,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.ec2.resources.transit_gateway_route.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.ec2.resources.transit_gateway_route.create
           inputs: *operation_inputs
         delete:
@@ -3061,10 +3061,10 @@ node_types:
     interfaces:
       <<: *validation_interface
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.ec2.resources.routetable.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.ec2.resources.routetable.create
           inputs: *operation_inputs
         start:
@@ -3091,10 +3091,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.ec2.resources.route.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.ec2.resources.route.create
           inputs: *operation_inputs
         delete:
@@ -3118,10 +3118,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.ec2.resources.image.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.ec2.resources.image.create
           inputs: *operation_inputs
         delete:
@@ -3142,10 +3142,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.ec2.resources.tags.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.ec2.resources.tags.create
           inputs: *operation_inputs
         delete:
@@ -3171,10 +3171,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.ec2.resources.ebs.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.ec2.resources.ebs.create
           inputs: *operation_inputs
         delete:
@@ -3195,10 +3195,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        prepare:
           implementation: aws.cloudify_aws.ec2.resources.ebs.prepare
           inputs: *operation_inputs
-        configure:
+        attach:
           implementation: aws.cloudify_aws.ec2.resources.ebs.attach
           inputs: *operation_inputs
         delete:
