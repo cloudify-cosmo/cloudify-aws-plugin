@@ -982,7 +982,6 @@ data_types:
         type: list
         required: false
 
-
   cloudify.datatypes.aws.ec2.Tags.config:
     properties:
       kwargs:
@@ -3823,7 +3822,6 @@ node_types:
         delete:
           implementation: aws.cloudify_aws.workflows.resources.deinitialize
           inputs: *operation_inputs
-
 
 relationships:
 
