@@ -3435,10 +3435,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.efs.resources.file_system.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.efs.resources.file_system.create
           inputs: *operation_inputs
         delete:
@@ -3459,10 +3459,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.efs.resources.mount_target.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.efs.resources.mount_target.create
           inputs: *operation_inputs
         delete:
@@ -3483,10 +3483,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.efs.resources.tags.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.efs.resources.tags.create
           inputs: *operation_inputs
         delete:
