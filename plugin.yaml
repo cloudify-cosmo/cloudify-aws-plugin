@@ -1933,7 +1933,6 @@ node_types:
           implementation: aws.cloudify_aws.sns.resources.subscription.delete
           inputs: *operation_inputs
 
-
   cloudify.nodes.aws.elb.LoadBalancer:
     derived_from: cloudify.nodes.Root
     properties:
@@ -3507,10 +3506,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.kms.resources.key.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.kms.resources.key.create
           inputs: *operation_inputs
         start:
@@ -3537,10 +3536,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.kms.resources.alias.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.kms.resources.alias.create
           inputs: *operation_inputs
         delete:
@@ -3561,10 +3560,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.kms.resources.grant.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.kms.resources.grant.create
           inputs: *operation_inputs
         delete:
@@ -3585,10 +3584,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.cloudformation.resources.stack.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.cloudformation.resources.stack.create
           inputs:
             minimum_wait_time:
@@ -3626,10 +3625,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.ecs.resources.cluster.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.ecs.resources.cluster.create
           inputs: *operation_inputs
         delete:
@@ -3650,10 +3649,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.ecs.resources.service.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.ecs.resources.service.create
           inputs: *operation_inputs
         delete:
@@ -3674,10 +3673,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.ecs.resources.task_definition.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.ecs.resources.task_definition.create
           inputs: *operation_inputs
         delete:
@@ -3759,19 +3758,18 @@ node_types:
     interfaces:
       <<: *validation_interface
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.eks.resources.node_group.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.eks.resources.node_group.create
           inputs: *operation_inputs
         start:
           implementation: aws.cloudify_aws.eks.resources.node_group.start
           inputs: *operation_inputs
-        configure:
-          implementation: aws.cloudify_aws.eks.resources.node_group.create
-          inputs: *operation_inputs
         delete:
           implementation: aws.cloudify_aws.eks.resources.node_group.delete
           inputs: *operation_inputs
-
 
   cloudify.nodes.aws.codepipeline.Pipeline:
     derived_from: cloudify.nodes.Root
@@ -3787,10 +3785,10 @@ node_types:
 #        required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.codepipeline.resources.pipeline.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.codepipeline.resources.pipeline.create
           inputs: *operation_inputs
         delete:
