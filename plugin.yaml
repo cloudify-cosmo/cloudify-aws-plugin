@@ -3219,10 +3219,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.autoscaling.resources.autoscaling_group.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.autoscaling.resources.autoscaling_group.create
           inputs: *operation_inputs
         stop:
@@ -3246,10 +3246,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.autoscaling.resources.launch_configuration.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.autoscaling.resources.launch_configuration.create
           inputs: *operation_inputs
         delete:
@@ -3270,10 +3270,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.autoscaling.resources.policy.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.autoscaling.resources.policy.create
           inputs: *operation_inputs
         delete:
@@ -3294,10 +3294,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.autoscaling.resources.lifecycle_hook.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.autoscaling.resources.lifecycle_hook.create
           inputs: *operation_inputs
         delete:
@@ -3318,10 +3318,10 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.autoscaling.resources.notification_configuration.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.autoscaling.resources.notification_configuration.create
           inputs: *operation_inputs
         delete:
