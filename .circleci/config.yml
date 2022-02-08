@@ -44,7 +44,7 @@ commands:
 
   run_ec2_image_test:
       steps:
-        - run: ecosystem-test local-blueprint-test -b examples/ec2-image-feature-demo/blueprint.yaml --test-id=ec2_image -i ec2_region_name=us-east-1 -i ec2_region_endpoint=https://ec2.us-east-1.amazonaws.com -i availability_zone=us-east-1a --on-failure=uninstall-force --timeout=3000
+        - run: ecosystem-test local-blueprint-test  -b examples/ec2-image-feature-demo/blueprint.yaml --test-id=ec2_image -i aws_region_name=us-east-1 --on-failure=uninstall-force --timeout=3000
 
   run_autoscaling_test:
       steps:
@@ -62,8 +62,8 @@ commands:
       - run: ecosystem-test local-blueprint-test  -b examples/ebs-feature-demo/blueprint.yaml --test-id=ebs -i aws_region_name=eu-west-1 --on-failure=uninstall-force --timeout=3000
 
   run_ec2_instance_test:
-      steps:
-        - run: ecosystem-test local-blueprint-test  -b examples/ec2-instance-feature-demo/blueprint.yaml --test-id=ec2_instace -i aws_region_name=eu-west-1 -i availability_zone=eu-west-1a --on-failure=uninstall-force --timeout=3000
+    steps:
+      - run: ecosystem-test local-blueprint-test -b examples/ec2-instance-feature-demo/blueprint.yaml --test-id=ec2-instance --on-failure=uninstall-force --timeout=3000
 
   run_ec2_keys_test:
     steps:
