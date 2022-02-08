@@ -97,7 +97,6 @@ class EC2VolumeMixin(object):
         """
         self.logger.debug('Detaching {0} with: {1}'
                           .format(self.type_name, params.get(VOLUME_ID, None)))
-
         res = self.client.detach_volume(**params)
         self.logger.debug('Response: {0}'.format(res))
         return res
@@ -272,19 +271,19 @@ def create(ctx, iface, resource_config, **_):
                 "The Availability Zone chosen "
                 "{0} is not available".format(params['AvailabilityZone']))
     # Check if the resource created
-    if create_response:
-        ctx.instance.runtime_properties['eps_create'] =\
-            utils.JsonCleanuper(create_response).to_dict()
-
-        # Update the esp_id (volume_id)
-        esp_id = create_response.get(VOLUME_ID, '')
-        utils.update_resource_id(ctx.instance, esp_id)
-        iface.update_resource_id(esp_id)
-
-    else:
+    if not create_response:
         raise NonRecoverableError(
-            '{0} ID# "{1}" reported an empty response'
-            .format(RESOURCE_TYPE_VOLUME, iface.resource_id))
+            '{0} ID# "{1}" reported an empty response'.format(
+                RESOURCE_TYPE_VOLUME, iface.resource_id))
+
+    ctx.instance.runtime_properties['eps_create'] = \
+        utils.JsonCleanuper(create_response).to_dict()
+
+    # Update the esp_id (volume_id)
+    esp_id = create_response.get(VOLUME_ID, '')
+    utils.update_resource_id(ctx.instance, esp_id)
+    iface.update_resource_id(esp_id)
+
 
 
 @decorators.aws_resource(EC2Volume, RESOURCE_TYPE_VOLUME,
