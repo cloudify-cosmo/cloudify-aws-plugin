@@ -282,7 +282,7 @@ def get_special_condition(external,
             op_name == 'poststart':
         return True
     elif external and 'cloudify.nodes.aws.ec2.Image' in node_type and \
-            op_name == 'create':
+            op_name == 'precreate':
         return True
     elif external and 'cloudify.nodes.aws.ec2.Image' in node_type and \
             op_name == 'delete':
@@ -302,7 +302,7 @@ def get_create_op(op_name):
     :param op_name: ctx.operation.name.split('.')[-1].
     :return: bool
     """
-    return 'configure' == op_name
+    return 'create' == op_name
     # return 'create' in op or 'configure' in op
 
 
