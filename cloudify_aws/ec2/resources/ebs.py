@@ -285,7 +285,6 @@ def create(ctx, iface, resource_config, **_):
     iface.update_resource_id(esp_id)
 
 
-
 @decorators.aws_resource(EC2Volume, RESOURCE_TYPE_VOLUME,
                          ignore_properties=True)
 @decorators.untag_resources
