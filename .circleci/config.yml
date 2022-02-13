@@ -320,23 +320,108 @@ workflows:
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
-      - cf_integration_tests_py3
-      - hw_integration_tests_py3
-      - ebs_integration_tests_py3
-      - ec2_instance_integration_tests_py3
-      - ec2_vpc_integration_tests_py3
-      - sns_integration_tests_py3
-      - eks_integration_tests_py3
-      - ec2_image_integration_tests_py3
-      - autoscaleing_integration_tests_py3
-      - ec2_transit_gateway_integration_tests_py3
-      - s3_integration_tests_py3
-      - kms_integration_tests_py3
-      - cloudformation_integration_tests_py3
-      - dynamodb_integration_tests_py3
-      - ec2_keys_integration_tests_py3
-      - natgateway_integration_tests_py3
-      - sqs_integration_tests_py3
+#      - cf_integration_tests_py3:
+#          requires:
+#            - wagonorb/build_bundle
+#            - wagonorb/wagon
+#            - wagonorb/rhel_wagon
+#            - wagonorb/arch64_wagon
+#      - hw_integration_tests_py3:
+#          requires:
+#            - wagonorb/build_bundle
+#            - wagonorb/wagon
+#            - wagonorb/rhel_wagon
+#            - wagonorb/arch64_wagon
+#      - ebs_integration_tests_py3:
+#          requires:
+#            - wagonorb/build_bundle
+#            - wagonorb/wagon
+#            - wagonorb/rhel_wagon
+#            - wagonorb/arch64_wagon
+#      - ec2_instance_integration_tests_py3:
+#          requires:
+#            - wagonorb/build_bundle
+#            - wagonorb/wagon
+#            - wagonorb/rhel_wagon
+#            - wagonorb/arch64_wagon
+#      - ec2_vpc_integration_tests_py3:
+#          requires:
+#            - wagonorb/build_bundle
+#            - wagonorb/wagon
+#            - wagonorb/rhel_wagon
+#            - wagonorb/arch64_wagon
+#      - sns_integration_tests_py3:
+#          requires:
+#            - wagonorb/build_bundle
+#            - wagonorb/wagon
+#            - wagonorb/rhel_wagon
+#            - wagonorb/arch64_wagon
+#      - eks_integration_tests_py3:
+#          requires:
+#            - wagonorb/build_bundle
+#            - wagonorb/wagon
+#            - wagonorb/rhel_wagon
+#            - wagonorb/arch64_wagon
+#      - ec2_image_integration_tests_py3:
+#          requires:
+#            - wagonorb/build_bundle
+#            - wagonorb/wagon
+#            - wagonorb/rhel_wagon
+#            - wagonorb/arch64_wagon
+#      - autoscaleing_integration_tests_py3:
+#          requires:
+#            - wagonorb/build_bundle
+#            - wagonorb/wagon
+#            - wagonorb/rhel_wagon
+#            - wagonorb/arch64_wagon
+#      - ec2_transit_gateway_integration_tests_py3:
+#          requires:
+#            - wagonorb/build_bundle
+#            - wagonorb/wagon
+#            - wagonorb/rhel_wagon
+#            - wagonorb/arch64_wagon
+#      - s3_integration_tests_py3:
+#          requires:
+#            - wagonorb/build_bundle
+#            - wagonorb/wagon
+#            - wagonorb/rhel_wagon
+#            - wagonorb/arch64_wagon
+#      - kms_integration_tests_py3:
+#          requires:
+#            - wagonorb/build_bundle
+#            - wagonorb/wagon
+#            - wagonorb/rhel_wagon
+#            - wagonorb/arch64_wagon
+#      - cloudformation_integration_tests_py3:
+#          requires:
+#            - wagonorb/build_bundle
+#            - wagonorb/wagon
+#            - wagonorb/rhel_wagon
+#            - wagonorb/arch64_wagon
+#      - dynamodb_integration_tests_py3:
+#          requires:
+#            - wagonorb/build_bundle
+#            - wagonorb/wagon
+#            - wagonorb/rhel_wagon
+#            - wagonorb/arch64_wagon
+#      - ec2_keys_integration_tests_py3:
+#          requires:
+#            - wagonorb/build_bundle
+#            - wagonorb/wagon
+#            - wagonorb/rhel_wagon
+#            - wagonorb/arch64_wagon
+      - natgateway_integration_tests_py3:
+          requires:
+            - wagonorb/build_bundle
+            - wagonorb/wagon
+            - wagonorb/rhel_wagon
+            - wagonorb/arch64_wagon
+#      - sqs_integration_tests_py3:
+#          requires:
+#            - wagonorb/build_bundle
+#            - wagonorb/wagon
+#            - wagonorb/rhel_wagon
+#            - wagonorb/arch64_wagon
 #    jobs:
 #      - node/check_py3_compat_job
 #      - node/unittests_job
