@@ -14,9 +14,9 @@ inputs:
     description: YOUR AWS SECRET ACCESS KEY
     default: { get_secret: aws_secret_access_key }
 
-  ec2_region_name:
-    default: { get_secret: ec2_region_name }
-
+  aws_region_name:
+    type: string
+    default: { get_secret: aws_region_name }
 
 dsl_definitions:
 
