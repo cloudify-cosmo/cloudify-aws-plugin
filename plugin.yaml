@@ -2402,10 +2402,10 @@ node_types:
     derived_from: cloudify.nodes.aws.ec2.VpcPeeringRequest
     interfaces:
       cloudify.interfaces.lifecycle:
-        prepare:
+        precreate:
           implementation: aws.cloudify_aws.ec2.resources.vpc_peering.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.ec2.resources.vpc_peering.accept
           inputs: *operation_inputs
 
@@ -2413,10 +2413,10 @@ node_types:
     derived_from: cloudify.nodes.aws.ec2.VpcPeeringRequest
     interfaces:
       cloudify.interfaces.lifecycle:
-        prepare:
+        precreate:
           implementation: aws.cloudify_aws.ec2.resources.vpc_peering.prepare
           inputs: *operation_inputs
-        configure:
+        create:
           implementation: aws.cloudify_aws.ec2.resources.vpc_peering.reject
           inputs: *operation_inputs
 

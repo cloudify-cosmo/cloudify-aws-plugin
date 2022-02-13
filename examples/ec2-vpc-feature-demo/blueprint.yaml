@@ -332,7 +332,7 @@ node_templates:
       client_config: *client_config
     interfaces:
       cloudify.interfaces.lifecycle:
-         precreate:
+         create:
            inputs:
              resource_config:
                CustomerGatewayId: { get_attribute: [customer_gateway_vpc_requester, aws_resource_id] }
@@ -352,7 +352,7 @@ node_templates:
       client_config: *client_config
     interfaces:
       cloudify.interfaces.lifecycle:
-         precreate:
+         create:
            inputs:
              resource_config:
                VpnConnectionId: { get_attribute: [vpn_connection_vpc_requster,aws_resource_id] }
@@ -673,7 +673,7 @@ node_templates:
       client_config: *client_config
     interfaces:
       cloudify.interfaces.lifecycle:
-        precreate:
+        create:
           inputs:
             resource_config:
               CustomerGatewayId: { get_attribute: [customer_gateway_vpc_accepter, aws_resource_id] }
@@ -693,7 +693,7 @@ node_templates:
       client_config: *client_config
     interfaces:
       cloudify.interfaces.lifecycle:
-        precreate:
+        create:
           inputs:
             resource_config:
               VpnConnectionId: { get_attribute: [vpn_connection_vpc_accepter, aws_resource_id] }
@@ -716,7 +716,7 @@ node_templates:
       client_config: *client_config
     interfaces:
       cloudify.interfaces.lifecycle:
-        precreate:
+        create:
           inputs:
             resource_config:
               PeerVpcId: { get_attribute: [vpc_requester, aws_resource_id] }
@@ -735,7 +735,7 @@ node_templates:
       client_config: *client_config
     interfaces:
       cloudify.interfaces.lifecycle:
-        precreate:
+        create:
           inputs:
             resource_config:
               VpcPeeringConnectionId: { get_attribute: [vpc_peering, aws_resource_id] }
