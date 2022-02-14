@@ -25,7 +25,7 @@ from cloudify_aws.ec2 import EC2Base
 
 RESOURCE_TYPE = 'EC2 VPN Connection Route'
 VPN_CONNECTION_ID = 'VpnConnectionId'
-
+DESTINATION_CIDR_BLOCK = 'DestinationCidrBlock'
 
 class EC2VPNConnectionRoute(EC2Base):
     """
@@ -78,10 +78,20 @@ def create(ctx, iface, resource_config, **_):
     create_response = iface.create(params)
     ctx.instance.runtime_properties['create_response'] = \
         utils.JsonCleanuper(create_response).to_dict()
+    ctx.instance.runtime_properties['VPN_CONNECTION_ID'] = \
+        params.get(VPN_CONNECTION_ID)
+    ctx.instance.runtime_properties['DESTINATION_CIDR_BLOCK'] = \
+        params.get(DESTINATION_CIDR_BLOCK)
 
 
 @decorators.aws_resource(EC2VPNConnectionRoute, RESOURCE_TYPE)
 def delete(ctx, iface, resource_config, **_):
     """Deletes an AWS EC2 VPN Connection Route"""
-    params = dict() if not resource_config else resource_config.copy()
+    vpn_connection = ctx.instance.runtime_properties['VPN_CONNECTION_ID']
+    cider_block = ctx.instance.runtime_properties['DESTINATION_CIDR_BLOCK']
+
+    params = dict(VpnConnectionId=vpn_connection,
+                  DestinationCidrBlock=cider_block) \
+        if not resource_config else resource_config.copy()
+    ctx.logger.info("yaniv log 1 params = {}".format(params))
     iface.delete(params)

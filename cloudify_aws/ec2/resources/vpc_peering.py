@@ -202,9 +202,10 @@ def delete(ctx, iface, resource_config, **_):
         ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
 
     params = dict() if not resource_config else resource_config.copy()
-    if params and resource_id:
-        deleted_params[VPC_PEERING_CONNECTION_ID] = resource_id
+    if params:
         deleted_params['DryRun'] = params.get('DryRun') or False
+    if resource_id:
+        deleted_params[VPC_PEERING_CONNECTION_ID] = resource_id
 
     iface.delete(deleted_params)
 

@@ -386,12 +386,12 @@ workflows:
 #            - wagonorb/wagon
 #            - wagonorb/rhel_wagon
 #            - wagonorb/arch64_wagon
-#      - kms_integration_tests_py3:
-#          requires:
-#            - wagonorb/build_bundle
-#            - wagonorb/wagon
-#            - wagonorb/rhel_wagon
-#            - wagonorb/arch64_wagon
+      - kms_integration_tests_py3:
+          requires:
+            - wagonorb/build_bundle
+            - wagonorb/wagon
+            - wagonorb/rhel_wagon
+            - wagonorb/arch64_wagon
 #      - cloudformation_integration_tests_py3:
 #          requires:
 #            - wagonorb/build_bundle
