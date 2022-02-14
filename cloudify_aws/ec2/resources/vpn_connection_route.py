@@ -27,6 +27,7 @@ RESOURCE_TYPE = 'EC2 VPN Connection Route'
 VPN_CONNECTION_ID = 'VpnConnectionId'
 DESTINATION_CIDR_BLOCK = 'DestinationCidrBlock'
 
+
 class EC2VPNConnectionRoute(EC2Base):
     """
         EC2 VPN Connection Route interface
