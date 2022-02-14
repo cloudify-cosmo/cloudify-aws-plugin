@@ -88,8 +88,8 @@ def create(ctx, iface, resource_config, **_):
 @decorators.aws_resource(EC2VPNConnectionRoute, RESOURCE_TYPE)
 def delete(ctx, iface, resource_config, **_):
     """Deletes an AWS EC2 VPN Connection Route"""
-    vpn_connection = ctx.instance.runtime_properties['VPN_CONNECTION_ID']
-    cider_block = ctx.instance.runtime_properties['DESTINATION_CIDR_BLOCK']
+    vpn_connection = ctx.instance.runtime_properties.get('VPN_CONNECTION_ID')
+    cider_block = ctx.instance.runtime_properties.get('DESTINATION_CIDR_BLOCK')
 
     params = dict(VpnConnectionId=vpn_connection,
                   DestinationCidrBlock=cider_block) \
