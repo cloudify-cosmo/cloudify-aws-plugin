@@ -50,9 +50,9 @@ class EKSNodeGroup(EKSBase):
         if not self._describe_param:
             cfg = self.ctx_node.properties['resource_config']
             cluster_name = cfg.get(
-                CLUSTER_NAME) or cfg['kwargs'].get(CLUSTER_NAME)
+                CLUSTER_NAME) or cfg.get('kwargs').get(CLUSTER_NAME)
             node_group_name = cfg.get(
-                NODEGROUP_NAME) or cfg['kwargs'].get(NODEGROUP_NAME)
+                NODEGROUP_NAME) or cfg.get('kwargs').get(NODEGROUP_NAME)
             self._describe_param = {
                 CLUSTER_NAME: cluster_name,
                 NODEGROUP_NAME: node_group_name
