@@ -43,6 +43,7 @@ class EKSNodeGroup(EKSBase):
         EKSBase.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
         self._describe_param = {}
+        self.ctx_node = ctx_node
 
     @property
     def describe_params(self):

@@ -41,7 +41,7 @@ commands:
 
   run_eks_test:
     steps:
-      - run: ecosystem-test local-blueprint-test  -b examples/blueprint-examples/kubernetes/aws-eks/blueprint.yaml --test-id=aws-eks -i aws_region_name=us-east-1 -i eks_cluster_name=test-$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test  -b examples/blueprint-examples/kubernetes/aws-eks/blueprint.yaml --test-id=aws-eks -i eks_cluster_name=test-$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000
 
   run_ec2_image_test:
       steps:
@@ -341,15 +341,15 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-#      - eks_integration_tests_py3:
-#          requires:
-#            - wagonorb/build_bundle
-#            - wagonorb/wagon
-#            - wagonorb/rhel_wagon
-#            - wagonorb/arch64_wagon
-#          filters:
-#            branches:
-#              only: /([0-9\.]*\-build|master|dev)/
+      - eks_integration_tests_py3:
+          requires:
+            - wagonorb/build_bundle
+            - wagonorb/wagon
+            - wagonorb/rhel_wagon
+            - wagonorb/arch64_wagon
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - hw_integration_tests_py3:
           requires:
             - wagonorb/build_bundle
@@ -371,7 +371,7 @@ workflows:
             - node/validate_version_job
             - node/validate_documentation_job
             - cf_integration_tests_py3
-            # - eks_integration_tests_py3
+            - eks_integration_tests_py3
             - hw_integration_tests_py3
       - releaseorb/merge_docs_job:
           filters:
