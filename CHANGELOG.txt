@@ -1,3 +1,4 @@
+3.0.0: Moved all prepare to precreate and all create to prepare.
 1.4.2:
     - Moved EC2 and VPC to cloudify_aws package
     - Added an Instance-Subnet connected_to relationship
