@@ -460,15 +460,17 @@ class TestBase(unittest.TestCase):
                              return_value=None,
                              side_effect=None,
                              client=None):
+
         if client:
             fake_client = client
         else:
             fake_client = MagicMock()
         fun = getattr(fake_client, fun_name)
-        if side_effect is not None:
+        if side_effect:
             fun.side_effect = side_effect
         else:
             fun.return_value = return_value
+
         return fake_client
 
     def get_client_error_exception(self, name="Error"):
@@ -632,18 +634,6 @@ class TestBase(unittest.TestCase):
 class TestServiceBase(TestBase):
 
     base = None
-
-    def test_properties(self):
-        if not self.base:
-            return
-        with self.assertRaises(NotImplementedError):
-            self.base.properties()
-
-    def test_status(self):
-        if not self.base:
-            return
-        with self.assertRaises(NotImplementedError):
-            self.base.status()
 
     def test_create(self):
         if not self.base:

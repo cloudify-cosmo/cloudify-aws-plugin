@@ -433,6 +433,10 @@ def _aws_resource(function,
     else:
         resource_config = None
 
+    if kwargs['iface']:
+        kwargs['iface'].import_configuration(
+            resource_config, runtime_instance_properties)
+
     resource_id = utils.get_resource_id(node=ctx.node, instance=ctx.instance)
 
     iface = kwargs.get('iface')

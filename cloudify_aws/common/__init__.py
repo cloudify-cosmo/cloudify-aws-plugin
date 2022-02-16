@@ -29,6 +29,15 @@ from cloudify.logs import init_cloudify_logger
 from cloudify.utils import exception_to_error_cause
 from cloudify_aws.common._compat import text_type
 
+from deepdiff import DeepDiff
+
+from .utils import (
+    assign_remote_configuration,
+    assign_create_response,
+    assign_previous_configuration,
+    assign_current_configuration,
+)
+
 FATAL_EXCEPTIONS = (ClientError, ParamValidationError)
 NTP_NOTE = ". If you are positive that you are using the correct " \
            "credentials, " \
@@ -47,6 +56,94 @@ class AWSResourceBase(object):
                                                      'AWSResourceBase')
         self.client = client
         self._resource_id = text_type(resource_id) if resource_id else None
+        self._initial_configuration = None  # resource_config from node props
+        self._create_response = None  # create_response
+        self._remote_configuration = None  # Describe Result
+        self._current_configuration = None  # Current extrapolation
+        self._previous_configuration = None  # Previous extrapolation
+        self._describe_call = None
+
+    def get_describe_result(self, params):
+        try:
+            return self.make_client_call(self._describe_call, params)
+        except NonRecoverableError:
+            return {}
+
+    def compare_configuration(self):
+        return DeepDiff(self.current_configuration,
+                        self.remote_configuration)
+
+    def import_configuration(self, resource_config, runtime_props):
+        """ Read all of the various runtime properties where we store
+        state data into the current object.
+
+        :param resource_config: from node props
+        :param runtime_props: from ctx
+        :return:
+        """
+        assign_remote_configuration(self, runtime_props)
+        self.initial_configuration = resource_config
+        assign_create_response(self, runtime_props)
+        assign_previous_configuration(self, runtime_props)
+        assign_current_configuration(self, runtime_props)
+
+    def export_configuration(self, runtime_props):
+        """ Read all current state info into the runtime props for the next
+        object initialization.
+
+        :param runtime_props: from ctx
+        :return:
+        """
+        assign_remote_configuration(
+            self, runtime_props, self.remote_configuration)
+        assign_create_response(
+            self, runtime_props, self.create_response)
+        assign_previous_configuration(
+            self, runtime_props, self.previous_configuration)
+        assign_current_configuration(
+            self, runtime_props, self.current_configuration)
+
+    @property
+    def previous_configuration(self):
+        return self._previous_configuration or {}
+
+    @previous_configuration.setter
+    def previous_configuration(self, value):
+        self._previous_configuration = value
+
+    @property
+    def current_configuration(self):
+        return self._current_configuration or {}
+
+    @current_configuration.setter
+    def current_configuration(self, value):
+        self._current_configuration = value
+
+    @property
+    def remote_configuration(self):
+        if not self._remote_configuration:
+            self._remote_configuration = self.properties
+        return self._remote_configuration
+
+    @remote_configuration.setter
+    def remote_configuration(self, value):
+        self._remote_configuration = value
+
+    @property
+    def create_response(self):
+        return self._create_response or {}
+
+    @create_response.setter
+    def create_response(self, value):
+        self._create_response = value
+
+    @property
+    def initial_configuration(self):
+        return self._initial_configuration or {}
+
+    @initial_configuration.setter
+    def initial_configuration(self, value):
+        self._initial_configuration = value
 
     def update_resource_id(self, resource_id):
         '''Updates the resource_id value'''

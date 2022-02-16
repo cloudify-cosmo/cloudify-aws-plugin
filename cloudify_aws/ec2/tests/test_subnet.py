@@ -41,7 +41,7 @@ class TestEC2Subnet(TestBase):
 
     def setUp(self):
         super(TestEC2Subnet, self).setUp()
-        self.subnet = EC2Subnet("ctx_node", resource_id=True,
+        self.subnet = EC2Subnet("ctx_node", resource_id='test_name',
                                 client=True, logger=None)
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',
                       mock_decorator)
@@ -56,13 +56,13 @@ class TestEC2Subnet(TestBase):
         self.subnet.client = self.make_client_function('describe_subnets',
                                                        side_effect=effect)
         res = self.subnet.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
         value = {}
         self.subnet.client = self.make_client_function('describe_subnets',
                                                        return_value=value)
         res = self.subnet.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, value)
 
         value = {'Subnets': [{SUBNET_ID: 'test_name'}]}
         self.subnet.client = self.make_client_function('describe_subnets',

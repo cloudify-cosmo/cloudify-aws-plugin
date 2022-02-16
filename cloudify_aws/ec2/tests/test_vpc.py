@@ -39,7 +39,7 @@ class TestEC2Vpc(TestBase):
 
     def setUp(self):
         super(TestEC2Vpc, self).setUp()
-        self.vpc = EC2Vpc("ctx_node", resource_id=True,
+        self.vpc = EC2Vpc("ctx_node", resource_id='test_name',
                           client=True, logger=None)
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',
                       mock_decorator)
@@ -54,14 +54,15 @@ class TestEC2Vpc(TestBase):
         self.vpc.client = self.make_client_function('describe_vpcs',
                                                     side_effect=effect)
         res = self.vpc.properties
-        self.assertIsNone(res)
+        self.assertTrue(not res)
 
         value = {}
         self.vpc.client = self.make_client_function('describe_vpcs',
                                                     return_value=value)
         res = self.vpc.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, value)
 
+        self.vpc.resource_id = 'test_name'
         value = {'Vpcs': [{VPC_ID: 'test_name'}]}
         self.vpc.client = self.make_client_function('describe_vpcs',
                                                     return_value=value)

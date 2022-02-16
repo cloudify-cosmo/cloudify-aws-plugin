@@ -924,3 +924,28 @@ def clean_empty_vals(params):
             if val:
                 new_params.append(val)
         return new_params
+
+
+def assign_parameter(iface, param_name, runtime_props, prop):
+    prop = prop or {}
+    if prop:
+        runtime_props[param_name] = JsonCleanuper(prop).to_dict()  # noqa
+    elif isinstance(runtime_props, dict):
+        prop = runtime_props.get(param_name)
+    setattr(iface, param_name, prop)
+
+
+def assign_create_response(iface, runtime_props, prop=None):
+    assign_parameter(iface, 'create_response', runtime_props, prop)
+
+
+def assign_remote_configuration(iface, runtime_props, prop=None):
+    assign_parameter(iface, 'remote_configuration', runtime_props, prop)
+
+
+def assign_current_configuration(iface, runtime_props, prop=None):
+    assign_parameter(iface, 'current_configuration', runtime_props, prop)
+
+
+def assign_previous_configuration(iface, runtime_props, prop=None):
+    assign_parameter(iface, 'previous_configuration', runtime_props, prop)

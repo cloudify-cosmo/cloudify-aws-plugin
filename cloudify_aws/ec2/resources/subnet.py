@@ -17,7 +17,6 @@
     AWS EC2 Subnet interface
 '''
 # Boto
-from botocore.exceptions import ClientError, ParamValidationError
 from botocore.exceptions import CapacityNotAvailableError
 
 # Cloudify
@@ -48,26 +47,10 @@ class EC2Subnet(EC2Base):
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
-
-    @property
-    def properties(self):
-        '''Gets the properties of an external resource'''
-        params = {SUBNET_IDS: [self.resource_id]}
-        try:
-            resources = \
-                self.client.describe_subnets(**params)
-        except (ClientError, ParamValidationError):
-            pass
-        else:
-            return None if not resources else resources.get(SUBNETS)[0]
-
-    @property
-    def status(self):
-        '''Gets the status of an external resource'''
-        props = self.properties
-        if not props:
-            return None
-        return props['State']
+        self._describe_call = 'describe_subnets'
+        self._ids_key = SUBNET_IDS
+        self._type_key = SUBNETS
+        self._id_key = SUBNET_ID
 
     @property
     def check_status(self):

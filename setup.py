@@ -47,6 +47,7 @@ setup(
         'cloudify-common>=4.5',
         'cloudify-utilities-plugins-sdk-without-paramiko>=0.0.49',
         'botocore',
-        'pycryptodome==3.9.7'
+        'pycryptodome==3.9.7',
+        'deepdiff==3.3.0'
     ]
 )

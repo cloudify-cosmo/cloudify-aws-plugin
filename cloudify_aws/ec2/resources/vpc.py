@@ -22,7 +22,6 @@ from time import sleep
 
 from cloudify.exceptions import NonRecoverableError
 from cloudify.utils import exception_to_error_cause
-from botocore.exceptions import ClientError, ParamValidationError
 
 # Local imports
 from cloudify_aws.ec2 import EC2Base
@@ -43,27 +42,10 @@ class EC2Vpc(EC2Base):
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
-
-    @property
-    def properties(self):
-        '''Gets the properties of an external resource'''
-        params = {VPC_IDS: [self.resource_id]}
-        try:
-            resources = \
-                self.client.describe_vpcs(**params)
-        except (ClientError, ParamValidationError):
-            pass
-        else:
-            return None if not resources else resources.get(VPCS, [None])[0]
-        return None
-
-    @property
-    def status(self):
-        '''Gets the status of an external resource'''
-        props = self.properties
-        if not props:
-            return None
-        return props['State']
+        self._describe_call = 'describe_vpcs'
+        self._ids_key = VPC_IDS
+        self._type_key = VPCS
+        self._id_key = VPC_ID
 
     @property
     def check_status(self):
@@ -75,7 +57,9 @@ class EC2Vpc(EC2Base):
         '''
             Create a new AWS EC2 Vpc.
         '''
-        return self.make_client_call('create_vpc', params)
+        result = self.make_client_call('create_vpc', params)
+        self.create_response = result[VPC]
+        return result
 
     def delete(self, params=None):
         '''
