@@ -393,18 +393,18 @@ node_templates:
                 - Key: Second
                   Value: Second Volume
       client_config: *client_config
-#
-#  ebs_volume_attachment:
-#    type: cloudify.nodes.aws.ec2.EBSAttachment
-#    properties:
-#      resource_config:
-#        kwargs:
-#          Device: { get_input: ebs_volume_attachment_device }
-#          InstanceId: { get_attribute: [ cloudify_manager, aws_resource_id ] }
-#          VolumeId: { get_attribute: [ ebs_volume, aws_resource_id ] }
-#      client_config: *client_config
-#    relationships:
-#      - type: cloudify.relationships.depends_on
-#        target: ebs_volume
-#      - type: cloudify.relationships.depends_on
-#        target: cloudify_manager
+
+  ebs_volume_attachment:
+    type: cloudify.nodes.aws.ec2.EBSAttachment
+    properties:
+      resource_config:
+        kwargs:
+          Device: { get_input: ebs_volume_attachment_device }
+          InstanceId: { get_attribute: [ cloudify_manager, aws_resource_id ] }
+          VolumeId: { get_attribute: [ ebs_volume, aws_resource_id ] }
+      client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: ebs_volume
+      - type: cloudify.relationships.depends_on
+        target: cloudify_manager

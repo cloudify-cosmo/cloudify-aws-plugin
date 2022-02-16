@@ -1,4 +1,4 @@
-pyyaml>=4.2b4
+pyyaml===4.2b4
 cloudify-common>=5.1.0
 # decorator==4.4.2
 # boto3===1.20.15

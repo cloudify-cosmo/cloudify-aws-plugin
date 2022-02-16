@@ -3196,7 +3196,7 @@ node_types:
         prepare:
           implementation: aws.cloudify_aws.ec2.resources.ebs.prepare
           inputs: *operation_inputs
-        attach:
+        create:
           implementation: aws.cloudify_aws.ec2.resources.ebs.attach
           inputs: *operation_inputs
         delete:
