@@ -99,14 +99,14 @@ node_templates:
         target: vpc
       - type: cloudify.relationships.depends_on
         target: internet_gateway
-#    interfaces:
-#      cloudify.interfaces.lifecycle:
-#        configure:
-#          implementation: aws.cloudify_aws.ec2.resources.subnet.create
-#          inputs:
-#            modify_subnet_attribute_args:
-#              AssignIpv6AddressOnCreation:
-#                Value: True
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.cloudify_aws.ec2.resources.subnet.create
+          inputs:
+            modify_subnet_attribute_args:
+              AssignIpv6AddressOnCreation:
+                Value: True
 
   private_subnet:
     type: cloudify.nodes.aws.ec2.Subnet
