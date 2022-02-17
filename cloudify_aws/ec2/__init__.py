@@ -52,11 +52,10 @@ class EC2Base(AWSResourceBase):
         '''Gets the properties of an external resource'''
         if not self._properties:
             res = self.get_describe_result({self._ids_key: [self.resource_id]})
-            self.logger.error('See what we got: {}'.format(res))
             if self._type_key in res:
-                for subnet in res[self._type_key]:
-                    if subnet[self._id_key] == self.resource_id:
-                        self._properties = subnet
+                for n in res[self._type_key]:
+                    if n[self._id_key] == self.resource_id:
+                        self._properties = n
         return self._properties
 
     @property

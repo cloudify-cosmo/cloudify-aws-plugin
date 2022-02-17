@@ -58,7 +58,7 @@ DEFAULT_NODE_PROPERTIES = {
 
 DEFAULT_RUNTIME_PROPERTIES = {
     'aws_resource_id': 'aws_resource',
-    'resource_config': {}
+    'resource_config': {},
 }
 
 
@@ -99,7 +99,7 @@ class TestBase(unittest.TestCase):
     def _to_DirtyTrackingDict(self, origin):
         if not origin:
             origin = {}
-        dirty_dict = DirtyTrackingDict()
+        dirty_dict = DirtyTrackingDict(origin)
         for k in origin:
             dirty_dict[k] = copy.deepcopy(origin[k])
         return dirty_dict

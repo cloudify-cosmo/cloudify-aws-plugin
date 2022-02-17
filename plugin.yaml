@@ -2354,6 +2354,8 @@ node_types:
         create:
           implementation: aws.cloudify_aws.ec2.resources.vpc.create
           inputs: *operation_inputs
+        poststart:
+          implementation: aws.cloudify_aws.ec2.resources.vpc.poststart
         delete:
           implementation: aws.cloudify_aws.ec2.resources.vpc.delete
           inputs: *operation_inputs

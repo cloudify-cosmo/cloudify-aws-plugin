@@ -935,17 +935,50 @@ def assign_parameter(iface, param_name, runtime_props, prop):
     setattr(iface, param_name, prop)
 
 
+def assign_initial_configuration(iface, runtime_props, prop=None):
+    iface.initial_configuration = \
+        runtime_props['initial_configuration'] = \
+        runtime_props.get('initial_configuration', prop)
+
+
 def assign_create_response(iface, runtime_props, prop=None):
     assign_parameter(iface, 'create_response', runtime_props, prop)
 
 
 def assign_remote_configuration(iface, runtime_props, prop=None):
+    prop = prop or iface.properties
     assign_parameter(iface, 'remote_configuration', runtime_props, prop)
 
 
-def assign_current_configuration(iface, runtime_props, prop=None):
-    assign_parameter(iface, 'current_configuration', runtime_props, prop)
+def assign_expected_configuration(iface, runtime_props, prop=None):
+    assign_parameter(iface, 'expected_configuration', runtime_props, prop)
+
+
+def update_expected_configuration(iface, runtime_props):
+    assign_expected_configuration(iface, runtime_props, iface.properties)
 
 
 def assign_previous_configuration(iface, runtime_props, prop=None):
+    prop = prop or iface.expected_configuration
     assign_parameter(iface, 'previous_configuration', runtime_props, prop)
+
+
+def check_drift(resource_type, iface, logger):
+    logger.info(
+        'Checking if {resource_type} {resource_id} '
+        'configuration has drifted.'.format(
+            resource_type=resource_type, resource_id=iface.resource_id))
+    result = iface.compare_configuration()
+    if result:
+        logger.error(
+            'The {resource_type} {resource_id} '
+            'configuration has drifts: {res}.'.format(
+                resource_type=resource_type,
+                resource_id=iface.resource_id,
+                res=result))
+        return result
+    logger.info(
+        'The {resource_type} {resource_id} '
+        'configuration has not drifted.'.format(
+            resource_type=resource_type, resource_id=iface.resource_id))
+    return

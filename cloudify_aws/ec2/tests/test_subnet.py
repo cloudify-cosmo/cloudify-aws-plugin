@@ -84,11 +84,12 @@ class TestEC2Subnet(TestBase):
         self.assertEqual(res, 'available')
 
     def test_class_create(self):
-        value = {SUBNET: 'test'}
+        value = {SUBNET: {SUBNET_ID: 'test'}}
         self.subnet.client = self.make_client_function('create_subnet',
                                                        return_value=value)
-        res = self.subnet.create(value)
-        self.assertEqual(res, value)
+        self.subnet.resource_id = 'test'
+        self.subnet.create(value)
+        self.assertEqual(self.subnet.create_response, value)
 
     def test_class_delete(self):
         params = {}
@@ -152,6 +153,63 @@ class TestEC2Subnet(TestBase):
         except OperationRetry:
             pass
         self.assertTrue(iface.modify_subnet_attribute.called)
+
+    def test_check_drift(self):
+        original_value = {
+            SUBNET_ID: 'baz',
+            CIDR_BLOCK: '10.10.0.0/24',
+            'AvailabilityZone': 'aq-testzone-1',
+            VPC_ID: 'vpc',
+            'TagSpecifications': [
+                {
+                    'ResourceType': 'subnet',
+                    'Tags': [{'Key': 'Owner', 'Value': 'foo'}]
+                }
+            ]
+        }
+        next_value = {
+            SUBNET_ID: 'baz',
+            CIDR_BLOCK: '10.10.0.0/24',
+            'AvailabilityZone': 'aq-testzone-1',
+            VPC_ID: 'vpc',
+            'TagSpecifications': [
+                {
+                    'ResourceType': 'subnet',
+                    'Tags': [{'Key': 'Owner', 'Value': 'bar'}]
+                }
+            ]
+        }
+        ctx = self.get_mock_ctx(
+            "Subnet",
+            {
+                'client_config': {
+                    'region_name': 'aq-testzone-1'
+                }
+            }
+        )
+        self.subnet.resource_id = 'baz'
+        ctx.instance.runtime_properties.update({
+                'aws_resource_id': 'baz',
+                'expected_configuration': original_value,
+                'previous_configuration': {},
+                'create_response': original_value
+            })
+        self.subnet.import_configuration(
+            ctx.node.properties.get('resource_config', {}),
+            ctx.instance.runtime_properties
+        )
+        self.subnet.client = self.make_client_function(
+            'describe_subnets',
+            return_value={'Subnets': [next_value]})
+        output = subnet.check_drift(ctx=ctx, iface=self.subnet)
+        expected = {
+            'values_changed': {
+                "root['TagSpecifications'][0]['Tags'][0]['Value']": {
+                    'new_value': 'foo', 'old_value': 'bar'
+                }
+            }
+        }
+        self.assertEqual(output, expected)
 
 
 if __name__ == '__main__':
