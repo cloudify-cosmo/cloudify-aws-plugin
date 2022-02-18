@@ -18,9 +18,6 @@
 '''
 from time import sleep
 
-# Boto
-from botocore.exceptions import ClientError, ParamValidationError
-
 # Cloudify
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
@@ -47,30 +44,10 @@ class EC2SecurityGroup(EC2Base):
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
-
-    @property
-    def properties(self):
-        '''Gets the properties of an external resource'''
-        params = {GROUPIDS: [self.resource_id]}
-        try:
-            resources = \
-                self.client.describe_security_groups(**params)
-        except (ParamValidationError, ClientError):
-            pass
-        else:
-            return None if not resources else resources.get(GROUPS, [None])[0]
-        return None
-
-    @property
-    def status(self):
-        '''Gets the status of an external resource'''
-        self.logger.error(
-            'Improvements are needed to Security Group status property.')
-        props = self.properties
-        try:
-            return props['State']
-        except (KeyError, TypeError):
-            return
+        self._describe_call = 'describe_network_interfaces'
+        self._ids_key = GROUPIDS
+        self._type_key = GROUPS
+        self._id_key = GROUPID
 
     @property
     def check_status(self):
@@ -79,10 +56,13 @@ class EC2SecurityGroup(EC2Base):
         return 'NOT OK'
 
     def create(self, params):
-        '''
-            Create a new AWS EC2 Vpc.
-        '''
-        return self.make_client_call('create_security_group', params)
+        """
+            Create a new AWS EC2 NetworkInterface.
+        """
+        self.create_response = self.make_client_call(
+            'create_security_group', params)
+        self.update_resource_id(
+            self.create_response[GROUP].get(GROUPID, ''))
 
     def delete(self, params=None):
         '''
@@ -134,6 +114,16 @@ class EC2SecurityGroup(EC2Base):
         self.logger.debug('Response: %s' % res)
         return res
 
+    def wait(self):
+        max_wait = 5
+        counter = 0
+        while not self.properties:
+            self.logger.debug('Waiting for Route Table to be created.')
+            sleep(5)
+            if max_wait > counter:
+                break
+            counter += 1
+
 
 @decorators.aws_resource(EC2SecurityGroup, resource_type=RESOURCE_TYPE)
 def prepare(ctx, iface, resource_config, **_):
@@ -148,44 +138,12 @@ def create(ctx, iface, resource_config, **_):
     '''Creates an AWS EC2 Security Group'''
     params = utils.clean_params(
         dict() if not resource_config else resource_config.copy())
-
-    vpc_id = params.get(VPC_ID)
-
-    # Try to get the group_name and if it does not exits then try to
-    # generate new one based on instance_id
-    group_name = params.get(GROUP_NAME)
-    params[GROUP_NAME] = utils.get_ec2_vpc_resource_name(group_name)
-
-    if not vpc_id:
-        vpc = \
-            utils.find_rel_by_node_type(
-                ctx.instance,
-                VPC_TYPE) or utils.find_rel_by_node_type(
-                ctx.instance,
-                VPC_TYPE_DEPRECATED)
-
-    if vpc_id or vpc:
-        params[VPC_ID] = \
-            vpc_id or \
-            vpc.target.instance.runtime_properties.get(
-                EXTERNAL_RESOURCE_ID)
+    params = _create_group_params(params)
 
     # Actually create the resource
-    create_response = iface.create(params)
-    ctx.instance.runtime_properties['create_response'] = \
-        utils.JsonCleanuper(create_response).to_dict()
-    group_id = create_response.get(GROUPID, '')
-    iface.update_resource_id(group_id)
-    utils.update_resource_id(
-        ctx.instance, group_id)
-    max_wait = 5
-    counter = 0
-    while not iface.properties:
-        ctx.logger.debug('Waiting for Route Table to be created.')
-        sleep(5)
-        if max_wait > counter:
-            break
-        counter += 1
+    iface.create(params, ctx.instance)
+    utils.update_resource_id(ctx.instance, iface.resource_id)
+    iface.wait()
 
 
 @decorators.aws_resource(EC2SecurityGroup, RESOURCE_TYPE)
@@ -292,6 +250,30 @@ def revoke_egress_rules(ctx, iface, resource_config, **_):
                             params,
                             ['InvalidPermission.NotFound',
                              'InvalidGroup.NotFound'])
+
+
+def _create_group_params(params, ctx_instance):
+    vpc_id = params.get(VPC_ID)
+
+    # Try to get the group_name and if it does not exits then try to
+    # generate new one based on instance_id
+    group_name = params.get(GROUP_NAME)
+    params[GROUP_NAME] = utils.get_ec2_vpc_resource_name(group_name)
+    vpc = None
+    if not vpc_id:
+        vpc = \
+            utils.find_rel_by_node_type(
+                ctx_instance,
+                VPC_TYPE) or utils.find_rel_by_node_type(
+                ctx_instance,
+                VPC_TYPE_DEPRECATED)
+
+    if vpc_id or vpc:
+        params[VPC_ID] = \
+            vpc_id or \
+            vpc.target.instance.runtime_properties.get(
+                EXTERNAL_RESOURCE_ID)
+    return params
 
 
 interface = EC2SecurityGroup
