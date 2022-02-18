@@ -16,8 +16,6 @@
     ~~~~~~~~~~~~~~
     AWS EC2 NetworkInterface interface
 """
-# Boto
-from botocore.exceptions import ClientError, ParamValidationError
 
 from cloudify import ctx as _ctx
 from cloudify.exceptions import OperationRetry
@@ -49,14 +47,14 @@ class EC2NetworkInterface(EC2Base):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
         self._describe_call = 'describe_network_interfaces'
-        self._ids_key = 'NetworkInterface'
+        self._ids_key = NETWORKINTERFACE_IDS
         self._type_key = NETWORKINTERFACES
         self._id_key = NETWORKINTERFACE_ID
 
     @property
     def status(self):
         '''Gets the status of an external resource'''
-        return self.properties.get('State')
+        return self.properties.get('Status')
 
     @property
     def check_status(self):
@@ -154,7 +152,6 @@ def create(ctx, iface, resource_config, **_):
     params = _create_eni_params(params, ctx.instance)
     _create(iface, params, ctx.instance)
     _modify_attribute(iface, _.get('modify_network_interface_attribute_args'))
-
 
 
 @decorators.aws_resource(EC2NetworkInterface, RESOURCE_TYPE,
@@ -317,7 +314,7 @@ def _create(iface, params, ctx_instance):
     iface.create(params)
     utils.update_resource_id(ctx_instance, iface.resource_id)
     ctx_instance.runtime_properties['device_index'] = \
-        iface.create_response['NetworkInterfaces'].get(
+        iface.create_response['NetworkInterface'].get(
             'Attachment', {}).get(
             'DeviceIndex',
             ctx_instance.runtime_properties.get('device_index'))
