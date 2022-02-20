@@ -73,6 +73,10 @@ class EC2Instances(EC2Base):
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
+        self._describe_call = 'describe_instances'
+        self._ids_key = INSTANCE_IDS
+        self._type_key = INSTANCES
+        self._id_key = INSTANCE_ID
 
     def prepare_instance_ids_request(self, params=None):
         params = params or {}
@@ -622,6 +626,13 @@ def handle_tags(params):
     for cnt, tags_spec in enumerate(params.get(TAGS, [])):
         if 'ResourceType' not in tags_spec:
             params[TAGS][cnt]['ResourceType'] = 'instance'
+
+
+@decorators.aws_resource(class_decl=EC2Instances,
+                         resource_type=RESOURCE_TYPE,
+                         waits_for_status=False)
+def check_drift(ctx, iface=None, **_):
+    return utils.check_drift(RESOURCE_TYPE, iface, ctx.logger)
 
 
 interface = EC2Instances
