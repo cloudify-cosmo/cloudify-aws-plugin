@@ -2,7 +2,13 @@ plugins:
   aws:
     executor: central_deployment_agent
     package_name: cloudify-aws-plugin
-    package_version: '2.14.1'
+    package_version: '2.14.2'
+
+resource_tags:
+  tenant: { get_sys: [ tenant, name ] }
+  deployment_id: { get_sys: [ deployment, id ] }
+  owner: { get_sys: [ deployment, owner ] }
+
 
 data_types:
 
@@ -1316,11 +1322,13 @@ dsl_definitions:
         implementation: aws.cloudify_aws.workflows.check_status.check_status
 
   resource_tags: &resource_tags
-    tenant: { get_sys: [ tenant, name ] }
-    deployment_id: { get_sys: [ deployment, id ] }
-    owner: { get_sys: [ deployment, owner ] }
-    description: Tags dicts.
-    required: false
+    resource_tags:
+      default:
+        tenant: { get_sys: [ tenant, name ] }
+        deployment_id: { get_sys: [ deployment, id ] }
+        owner: { get_sys: [ deployment, owner ] }
+      description: Tags dicts.
+      required: false
 
 node_types:
 

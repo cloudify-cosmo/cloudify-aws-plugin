@@ -791,26 +791,33 @@ def untag_resources(fn):
 def add_default_tag(_ctx, iface):
     ctx.logger.info("Adding default cloudify_tagging.")
 
-    if v1_gteq_v2(get_cloudify_version(), "6.3.0"):
+    if v1_gteq_v2(get_cloudify_version(), "6.3.1"):
         ctx.logger.info("Adding tags using resource_tags.")
+        ctx.logger.info(f"Resource tags: {ctx.deployment.resource_tags}")
+        ctx.logger.info(f"tenant: {ctx.deployment.resource_tags['tenant']}")
+        ctx.logger.info(f"deployment: {ctx.deployment.resource_tags['deployment_id']}")
+        ctx.logger.info(f"owner: {ctx.deployment.resource_tags['owner']}")
         iface.tag(
             {
                 'Tags': [
                     {
                         'Key': 'tenant',
-                        'Value': ctx.deployment.resource_tags['tenant']
+                        'Value': "{}".format(
+                            ctx.deployment.resource_tags['tenant'])
                     }
-                ]
+                ],
+                'Resources': [iface.resource_id]
             }
         )
         iface.tag(
             {
                 'Tags': [
                     {
-                        'Key': 'deployment',
-                        'Value': ctx.deployment.resource_tags['deployment']
+                        'Key': 'deployment_id',
+                        'Value': ctx.deployment.resource_tags['deployment_id']
                     }
-                ]
+                ],
+                'Resources': [iface.resource_id]
             }
         )
         iface.tag(
@@ -818,9 +825,10 @@ def add_default_tag(_ctx, iface):
                 'Tags': [
                     {
                         'Key': 'owner',
-                        'Value': ctx.deployment.resource_tags['owner']
+                        'Value': _ctx.deployment.resource_tags['owner']
                     }
-                ]
+                ],
+                'Resources': [iface.resource_id]
             }
         )
     iface.tag(
