@@ -76,10 +76,10 @@ class AWSResourceBase(object):
         :param runtime_props: from ctx
         :return:
         """
-        utils.assign_initial_configuration(
-            self, runtime_props, resource_config)
-        utils.assign_create_response(self, runtime_props)
-        utils.assign_expected_configuration(self, runtime_props)
+        self.initial_configuration = resource_config
+        self.create_response = runtime_props.get('create_response')
+        self.expected_configuration = runtime_props.get(
+            'expected_configuration')
 
     @property
     def previous_configuration(self):
@@ -106,11 +106,12 @@ class AWSResourceBase(object):
         """This is the expected configuration.
         It should be the last modification made to the resource.
         """
-        return self._expected_configuration or {}
+        return utils.JsonCleanuper(
+            self._expected_configuration).to_dict() or {}
 
     @expected_configuration.setter
     def expected_configuration(self, value):
-        self._expected_configuration = value
+        self._expected_configuration = utils.JsonCleanuper(value).to_dict()
 
     @property
     def remote_configuration(self):
@@ -120,12 +121,13 @@ class AWSResourceBase(object):
         :return:
         """
         if not self._remote_configuration:
-            self._remote_configuration = self.properties
-        return self._remote_configuration
+            self._remote_configuration = utils.JsonCleanuper(
+                self.properties).to_dict()
+        return utils.JsonCleanuper(self._remote_configuration).to_dict() or {}
 
     @remote_configuration.setter
     def remote_configuration(self, value):
-        self._remote_configuration = value
+        self._remote_configuration = utils.JsonCleanuper(value).to_dict()
 
     @property
     def create_response(self):
@@ -138,7 +140,7 @@ class AWSResourceBase(object):
 
     @create_response.setter
     def create_response(self, value):
-        self._create_response = value
+        self._create_response = utils.JsonCleanuper(value).to_dict()
 
     @property
     def initial_configuration(self):
@@ -149,7 +151,7 @@ class AWSResourceBase(object):
 
     @initial_configuration.setter
     def initial_configuration(self, value):
-        self._initial_configuration = value
+        self._initial_configuration = utils.JsonCleanuper(value).to_dict()
 
     @property
     def resource_id(self):

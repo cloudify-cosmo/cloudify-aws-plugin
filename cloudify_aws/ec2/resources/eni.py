@@ -328,4 +328,10 @@ def _modify_attribute(iface,  modify_network_interface_attribute_args):
             modify_network_interface_attribute_args)
 
 
+@decorators.aws_resource(EC2NetworkInterface, RESOURCE_TYPE)
+def poststart(ctx, iface, *_, **__):
+    '''Stores AWS EC2 Instances Details'''
+    utils.update_expected_configuration(iface, ctx.instance.runtime_properties)
+
+
 interface = EC2NetworkInterface

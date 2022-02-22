@@ -19,6 +19,7 @@ import unittest
 from mock import patch, MagicMock
 
 # Local imports
+from cloudify.state import current_ctx
 from cloudify_aws.common._compat import reload_module
 from cloudify_aws.common.tests.test_base import (
     TestBase,
@@ -215,6 +216,7 @@ class TestEKSCluster(TestBase):
                 'previous_configuration': {},
                 'create_response': {'cluster': original_value}
             })
+        current_ctx.set(ctx)
         self.cluster.resource_id = 'test_name'
         self.cluster.client = self.make_client_function(
             'describe_cluster', return_value={'cluster': next_value})

@@ -19,6 +19,7 @@ import unittest
 from mock import patch, MagicMock
 
 # Local imports
+from cloudify.state import current_ctx
 from cloudify_aws.common._compat import reload_module
 from cloudify_aws.common.tests.test_base import (
     TestBase,
@@ -279,6 +280,7 @@ class TestEKSNodeGroup(TestBase):
                 'previous_configuration': {},
                 'create_response': {'nodegroup': original_value}
             })
+        current_ctx.set(ctx)
         self.node_group.resource_id = 'test_name'
         self.node_group.client = self.make_client_function(
             'describe_nodegroup', return_value={'nodegroup': next_value})

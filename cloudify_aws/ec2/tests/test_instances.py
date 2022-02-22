@@ -427,6 +427,7 @@ class TestEC2Instances(TestBase):
                 'previous_configuration': {},
                 'create_response': original_value
             })
+        current_ctx.set(ctx)
         self.instances.resource_id = 'baz'
         self.instances.import_configuration(
             ctx.node.properties.get('resource_config', {}),
