@@ -790,24 +790,23 @@ def untag_resources(fn):
 
 def add_default_tag(_ctx, iface):
     ctx.logger.info("Adding default cloudify_tagging.")
-
+    special_tags = {}
     if v1_gteq_v2(get_cloudify_version(), "6.3.1"):
         ctx.logger.info("Adding tags using resource_tags.")
-        special_tags = ctx.deployment.get("resource_tags", {})
-
-        for key in special_tags:
-            iface.tag(
-                {
-                    'Tags': [
-                        {
-                            'Key': key,
-                            'Value': "{}".format(
-                                special_tags[key])
-                        }
-                    ],
-                    'Resources': [iface.resource_id]
-                }
-            )
+        special_tags.update(ctx.deployment.get("resource_tags"))
+    for key in special_tags:
+        iface.tag(
+            {
+                'Tags': [
+                    {
+                        'Key': key,
+                        'Value': "{}".format(
+                            special_tags[key])
+                    }
+                ],
+                'Resources': [iface.resource_id]
+            }
+        )
     iface.tag(
         {
             'Tags':
