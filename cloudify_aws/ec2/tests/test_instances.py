@@ -16,7 +16,7 @@
 import unittest
 
 # Third party imports
-from mock import patch, MagicMock
+from mock import patch, MagicMock, PropertyMock
 
 from cloudify.state import current_ctx
 from cloudify.exceptions import OperationRetry
@@ -303,6 +303,28 @@ class TestEC2Instances(TestBase):
         except OperationRetry:
             pass
         self.assertTrue(iface.modify_instance_attribute.called)
+
+    def test_poststart(self):
+        ctx = self.get_mock_ctx(
+            "EC2Instances",
+            test_properties={'os_family': 'linux',
+                             'client_config': CLIENT_CONFIG},
+            test_runtime_properties={'aws_resource_ids': ['foo']},
+            type_hierarchy=['cloudify.nodes.Root',
+                            'cloudify.nodes.Compute',
+                            'cloudify.nodes.aws.ec2.Instances'],
+            ctx_operation_name='cloudify.interfaces.lifecyle.poststart')
+        current_ctx.set(ctx=ctx)
+        iface = MagicMock()
+        mock_properties = PropertyMock()
+        iface.properties = mock_properties
+        instances.poststart(ctx=ctx,
+                            iface=iface,
+                            resource_config={},
+                            other_garbage='foogly')
+        self.assertEqual(
+            ctx.instance.runtime_properties['resource'],
+            mock_properties.to_dict())
 
     def test_stop(self):
         ctx = self.get_mock_ctx(
