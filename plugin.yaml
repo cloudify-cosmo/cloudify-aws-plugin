@@ -9,7 +9,6 @@ resource_tags:
   deployment_id: { get_sys: [ deployment, id ] }
   owner: { get_sys: [ deployment, owner ] }
 
-
 data_types:
 
   cloudify.datatypes.swift.Connection:
@@ -1321,15 +1320,6 @@ dsl_definitions:
       check_status:
         implementation: aws.cloudify_aws.workflows.check_status.check_status
 
-  resource_tags: &resource_tags
-    resource_tags:
-      default:
-        tenant: { get_sys: [ tenant, name ] }
-        deployment_id: { get_sys: [ deployment, id ] }
-        owner: { get_sys: [ deployment, owner ] }
-      description: Tags dicts.
-      required: false
-
 node_types:
 
   cloudify.nodes.aws.dynamodb.Table:
@@ -1952,7 +1942,6 @@ node_types:
       <<: *external_resource
       <<: *client_config
       <<: *resource_id
-      <<: *resource_tags
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
@@ -1984,7 +1973,6 @@ node_types:
       <<: *external_resource
       <<: *client_config
       <<: *resource_id
-      <<: *resource_tags
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
@@ -2016,7 +2004,6 @@ node_types:
       <<: *external_resource
       <<: *client_config
       <<: *resource_id
-      <<: *resource_tags
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
@@ -2042,7 +2029,6 @@ node_types:
       <<: *external_resource
       <<: *client_config
       <<: *resource_id
-      <<: *resource_tags
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
@@ -2071,7 +2057,6 @@ node_types:
       <<: *external_resource
       <<: *client_config
       <<: *resource_id
-      <<: *resource_tags
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
@@ -2100,7 +2085,6 @@ node_types:
       <<: *external_resource
       <<: *client_config
       <<: *resource_id
-      <<: *resource_tags
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
@@ -2129,7 +2113,6 @@ node_types:
       <<: *external_resource
       <<: *client_config
       <<: *resource_id
-      <<: *resource_tags
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
@@ -2161,7 +2144,6 @@ node_types:
       <<: *external_resource
       <<: *client_config
       <<: *resource_id
-      <<: *resource_tags
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
@@ -2353,7 +2335,6 @@ node_types:
       <<: *client_config
       <<: *resource_id
       <<: *tags_property
-      <<: *resource_tags
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
@@ -2596,7 +2577,6 @@ node_types:
       <<: *client_config
       <<: *resource_id
       <<: *tags_property
-      <<: *resource_tags
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
@@ -2730,7 +2710,6 @@ node_types:
         description: >
           If "create_secret" property is true, and the secret name already exists, overwrite the secret.
         default: false
-      <<: *resource_tags
       cloudify_tagging:
         default: False
     interfaces:
@@ -3728,7 +3707,6 @@ node_types:
       <<: *external_resource
       <<: *client_config
       <<: *resource_id
-      <<: *resource_tags
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
@@ -3768,7 +3746,6 @@ node_types:
       <<: *external_resource
       <<: *client_config
       <<: *resource_id
-      <<: *resource_tags
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean

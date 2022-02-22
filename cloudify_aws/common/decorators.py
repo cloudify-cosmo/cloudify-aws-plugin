@@ -793,44 +793,21 @@ def add_default_tag(_ctx, iface):
 
     if v1_gteq_v2(get_cloudify_version(), "6.3.1"):
         ctx.logger.info("Adding tags using resource_tags.")
-        ctx.logger.info(f"Resource tags: {ctx.deployment.resource_tags}")
-        ctx.logger.info(f"tenant: {ctx.deployment.resource_tags['tenant']}")
-        ctx.logger.info(f"deployment: {ctx.deployment.resource_tags['deployment_id']}")
-        ctx.logger.info(f"owner: {ctx.deployment.resource_tags['owner']}")
-        iface.tag(
-            {
-                'Tags': [
-                    {
-                        'Key': 'tenant',
-                        'Value': "{}".format(
-                            ctx.deployment.resource_tags['tenant'])
-                    }
-                ],
-                'Resources': [iface.resource_id]
-            }
-        )
-        iface.tag(
-            {
-                'Tags': [
-                    {
-                        'Key': 'deployment_id',
-                        'Value': ctx.deployment.resource_tags['deployment_id']
-                    }
-                ],
-                'Resources': [iface.resource_id]
-            }
-        )
-        iface.tag(
-            {
-                'Tags': [
-                    {
-                        'Key': 'owner',
-                        'Value': _ctx.deployment.resource_tags['owner']
-                    }
-                ],
-                'Resources': [iface.resource_id]
-            }
-        )
+        special_tags = ctx.deployment.get("resource_tags", {})
+
+        for key in special_tags:
+            iface.tag(
+                {
+                    'Tags': [
+                        {
+                            'Key': key,
+                            'Value': "{}".format(
+                                special_tags[key])
+                        }
+                    ],
+                    'Resources': [iface.resource_id]
+                }
+            )
     iface.tag(
         {
             'Tags':
