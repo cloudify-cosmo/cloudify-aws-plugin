@@ -29,6 +29,10 @@ from cloudify.logs import init_cloudify_logger
 from cloudify.utils import exception_to_error_cause
 from cloudify_aws.common._compat import text_type
 
+from deepdiff import DeepDiff
+
+from . import utils
+
 FATAL_EXCEPTIONS = (ClientError, ParamValidationError)
 NTP_NOTE = ". If you are positive that you are using the correct " \
            "credentials, " \
@@ -47,6 +51,113 @@ class AWSResourceBase(object):
                                                      'AWSResourceBase')
         self.client = client
         self._resource_id = text_type(resource_id) if resource_id else None
+        self._initial_configuration = None  # resource_config from node props
+        self._create_response = None  # create_response
+        self._remote_configuration = None  # Describe Result
+        self._expected_configuration = None  # Current extrapolation
+        self._previous_configuration = None  # Previous extrapolation
+        self._describe_call = None
+
+    def get_describe_result(self, params):
+        try:
+            return self.make_client_call(self._describe_call, params)
+        except NonRecoverableError:
+            return {}
+
+    def compare_configuration(self):
+        return DeepDiff(self.remote_configuration,
+                        self.expected_configuration)
+
+    def import_configuration(self, resource_config, runtime_props):
+        """ Read all of the various runtime properties where we store
+        state data into the current object.
+
+        :param resource_config: from node props
+        :param runtime_props: from ctx
+        :return:
+        """
+        utils.assign_initial_configuration(
+            self, runtime_props, resource_config)
+        utils.assign_create_response(self, runtime_props)
+        utils.assign_expected_configuration(self, runtime_props)
+
+    @property
+    def previous_configuration(self):
+        """This is the configuration that used to be expected_configuration.
+        For example, if a VPC was created:
+            {'cidr': '10.10.0.0/24'}
+        Then it's current configuration is the same.
+        However if then we changed it to:
+            {'cidr': '10.11.0.0/32'}
+        Then it's current configuration is now that, and the previous one is:
+            {'cidr': '10.10.0.0/24'}
+        This is used for debug and no logic is here except after updates
+        to move current_configuration to this.
+        :return:
+        """
+        return self._previous_configuration or {}
+
+    @previous_configuration.setter
+    def previous_configuration(self, value):
+        self._previous_configuration = value
+
+    @property
+    def expected_configuration(self):
+        """This is the expected configuration.
+        It should be the last modification made to the resource.
+        """
+        return self._expected_configuration or {}
+
+    @expected_configuration.setter
+    def expected_configuration(self, value):
+        self._expected_configuration = value
+
+    @property
+    def remote_configuration(self):
+        """This is the current remote configuration. It is only used in
+        compare_configuration.
+
+        :return:
+        """
+        if not self._remote_configuration:
+            self._remote_configuration = self.properties
+        return self._remote_configuration
+
+    @remote_configuration.setter
+    def remote_configuration(self, value):
+        self._remote_configuration = value
+
+    @property
+    def create_response(self):
+        """This is the result from create. It should be assigned only once
+        during create.
+
+        :return:
+        """
+        return self._create_response or {}
+
+    @create_response.setter
+    def create_response(self, value):
+        self._create_response = value
+
+    @property
+    def initial_configuration(self):
+        """This is the original resource_config as it was resolved during
+        the create operation. This is kind of a pair with create_response.
+        """
+        return self._initial_configuration or {}
+
+    @initial_configuration.setter
+    def initial_configuration(self, value):
+        self._initial_configuration = value
+
+    @property
+    def resource_id(self):
+        return self._resource_id
+
+    @resource_id.setter
+    def resource_id(self, value):
+        self.update_resource_id(value)
 
     def update_resource_id(self, resource_id):
         '''Updates the resource_id value'''

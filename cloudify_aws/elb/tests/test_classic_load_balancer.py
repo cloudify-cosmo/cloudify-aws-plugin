@@ -168,6 +168,7 @@ class TestELBClassicLoadBalancer(TestBase):
         self.fake_client.describe_load_balancers = Mock(
             side_effect=[
                 {},
+                {},
             ])
 
         load_balancer.prepare(ctx=_ctx, resource_config=None, iface=None,
@@ -208,11 +209,7 @@ class TestELBClassicLoadBalancer(TestBase):
                 {},
                 {
                     'LoadBalancerDescriptions': [
-                        {
-                            'LoadBalancerDescriptions': [
-                                {'State': {'Code': 'ok'}}
-                            ]
-                        }
+                        {'State': {'Code': 'ok'}}
                     ]
                 },
             ])
@@ -250,7 +247,8 @@ class TestELBClassicLoadBalancer(TestBase):
         current_ctx.set(_ctx)
         self.fake_client.describe_load_balancers = Mock(
             side_effect=[
-                {}
+                {},
+                {},
             ])
         self.fake_client.modify_load_balancer_attributes = self.mock_return(
             DELETE_RESPONSE)
@@ -281,11 +279,7 @@ class TestELBClassicLoadBalancer(TestBase):
                 {},
                 {
                     'LoadBalancerDescriptions': [
-                        {
-                            'LoadBalancerDescriptions': [
-                                {'State': {'Code': 'ok'}}
-                            ]
-                        }
+                        {'State': {'Code': 'ok'}}
                     ]
                 },
             ])
@@ -313,7 +307,8 @@ class TestELBClassicLoadBalancer(TestBase):
 
         self.fake_client.describe_load_balancers = Mock(
             side_effect=[
-                {}
+                {},
+                {},
             ])
         self.fake_client.delete_load_balancer = self.mock_return(
             DELETE_RESPONSE)

@@ -36,6 +36,7 @@ from cloudify_common_sdk.utils import (
     v1_gteq_v2
 )
 # Local imports
+from .constants import SUPPORT_DRIFT
 from cloudify_aws.common import utils
 from cloudify_aws.common._compat import text_type
 from cloudify_common_sdk.utils import get_ctx_instance
@@ -285,7 +286,7 @@ def get_special_condition(external,
             op_name == 'poststart':
         return True
     elif external and 'cloudify.nodes.aws.ec2.Image' in node_type and \
-            op_name == 'create':
+            op_name == 'precreate':
         return True
     elif external and 'cloudify.nodes.aws.ec2.Image' in node_type and \
             op_name == 'delete':
@@ -305,7 +306,7 @@ def get_create_op(op_name):
     :param op_name: ctx.operation.name.split('.')[-1].
     :return: bool
     """
-    return 'configure' == op_name
+    return 'create' == op_name
     # return 'create' in op or 'configure' in op
 
 
@@ -438,6 +439,9 @@ def _aws_resource(function,
     resource_id = utils.get_resource_id(node=ctx.node, instance=ctx.instance)
 
     iface = kwargs.get('iface')
+    if iface and ctx.node.type_hierarchy in SUPPORT_DRIFT:
+        iface.import_configuration(
+            resource_config, runtime_instance_properties)
 
     try:
         exists = iface.status
@@ -479,6 +483,10 @@ def _aws_resource(function,
         for key in keys:
             if key != '__deleted':
                 del ctx.instance.runtime_properties[key]
+    if operation_name == 'poststart' and \
+            ctx.node.type_hierarchy in SUPPORT_DRIFT:
+        utils.assign_previous_configuration(
+            iface, ctx.instance.runtime_properties)
     return result
 
 

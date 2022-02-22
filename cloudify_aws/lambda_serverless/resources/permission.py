@@ -42,12 +42,12 @@ class LambdaPermission(LambdaBase):
     @property
     def properties(self):
         '''Gets the properties of an external resource'''
-        raise NotImplementedError()
+        raise NotImplementedError('permission')
 
     @property
     def status(self):
         '''Gets the status of an external resource'''
-        raise NotImplementedError()
+        raise NotImplementedError('permission')
 
     def create(self, params):
         '''

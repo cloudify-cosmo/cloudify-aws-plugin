@@ -39,7 +39,7 @@ class TestEC2Vpc(TestBase):
 
     def setUp(self):
         super(TestEC2Vpc, self).setUp()
-        self.vpc = EC2Vpc("ctx_node", resource_id=True,
+        self.vpc = EC2Vpc("ctx_node", resource_id='test_name',
                           client=True, logger=None)
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',
                       mock_decorator)
@@ -54,14 +54,15 @@ class TestEC2Vpc(TestBase):
         self.vpc.client = self.make_client_function('describe_vpcs',
                                                     side_effect=effect)
         res = self.vpc.properties
-        self.assertIsNone(res)
+        self.assertTrue(not res)
 
         value = {}
         self.vpc.client = self.make_client_function('describe_vpcs',
                                                     return_value=value)
         res = self.vpc.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, value)
 
+        self.vpc.resource_id = 'test_name'
         value = {'Vpcs': [{VPC_ID: 'test_name'}]}
         self.vpc.client = self.make_client_function('describe_vpcs',
                                                     return_value=value)
@@ -82,11 +83,11 @@ class TestEC2Vpc(TestBase):
         self.assertEqual(res, 'available')
 
     def test_class_create(self):
-        value = {VPC: 'test'}
-        self.vpc.client = self.make_client_function('create_vpc',
-                                                    return_value=value)
-        res = self.vpc.create(value)
-        self.assertEqual(res[VPC], value[VPC])
+        value = {VPC: {VPC_ID: 'test'}}
+        self.vpc.client = self.make_client_function(
+            'create_vpc', return_value=value)
+        self.vpc.create(dict(CidrBlock='string'))
+        self.assertEqual(self.vpc.resource_id, value[VPC][VPC_ID])
 
     def test_class_delete(self):
         params = {}
@@ -122,6 +123,56 @@ class TestEC2Vpc(TestBase):
         iface = MagicMock()
         vpc.delete(ctx=ctx, iface=iface, resource_config={})
         self.assertTrue(iface.delete.called)
+
+    def test_check_drift(self):
+        original_value = dict(
+            CidrBlock='10.11.0.0/24',
+            State='available',
+            VpcId='test_name',
+            Tags=[
+                {
+                    'Key': 'Owner',
+                    'Value': 'foo'
+                },
+            ]
+        )
+        next_value = {
+            'Vpcs': [
+                {
+                    'CidrBlock': '10.11.0.0/24',
+                    'State': 'available',
+                    'VpcId': 'test_name',
+                    'Tags': [
+                        {
+                            'Key': 'Owner',
+                            'Value': 'baz'
+                        },
+                    ]
+                },
+            ],
+        }
+        ctx = self.get_mock_ctx("Vpc")
+        ctx.instance.runtime_properties.update({
+                'aws_resource_id': 'test_name',
+                'expected_configuration': original_value,
+                'previous_configuration': {},
+                'create_response': original_value
+            })
+        self.vpc.client = self.make_client_function(
+            'describe_vpcs', return_value=next_value)
+        self.vpc.import_configuration(
+            ctx.node.properties.get('resource_config', {}),
+            ctx.instance.runtime_properties
+        )
+        output = vpc.check_drift(ctx=ctx, iface=self.vpc)
+        expected = {
+            'values_changed': {
+                "root['Tags'][0]['Value']": {
+                    'new_value': 'foo', 'old_value': 'baz'
+                }
+            }
+        }
+        self.assertEqual(output, expected)
 
     def test_modify_vpc_attribute(self):
         ctx = self.get_mock_ctx("Vpc")

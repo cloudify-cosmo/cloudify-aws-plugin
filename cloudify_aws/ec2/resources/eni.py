@@ -16,8 +16,6 @@
     ~~~~~~~~~~~~~~
     AWS EC2 NetworkInterface interface
 """
-# Boto
-from botocore.exceptions import ClientError, ParamValidationError
 
 from cloudify import ctx as _ctx
 from cloudify.exceptions import OperationRetry
@@ -48,25 +46,15 @@ class EC2NetworkInterface(EC2Base):
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
-
-    @property
-    def properties(self):
-        """Gets the properties of an external resource"""
-        params = {NETWORKINTERFACE_IDS: [self.resource_id]}
-        try:
-            resources = \
-                self.client.describe_network_interfaces(**params)
-        except (ClientError, ParamValidationError):
-            return
-        return resources.get(NETWORKINTERFACES)[0] if resources else None
+        self._describe_call = 'describe_network_interfaces'
+        self._ids_key = NETWORKINTERFACE_IDS
+        self._type_key = NETWORKINTERFACES
+        self._id_key = NETWORKINTERFACE_ID
 
     @property
     def status(self):
         '''Gets the status of an external resource'''
-        props = self.properties
-        if not props:
-            return None
-        return props['Status']
+        return self.properties.get('Status')
 
     @property
     def check_status(self):
@@ -96,7 +84,11 @@ class EC2NetworkInterface(EC2Base):
         """
             Create a new AWS EC2 NetworkInterface.
         """
-        return self.make_client_call('create_network_interface', params)
+        self.create_response = self.make_client_call(
+            'create_network_interface', params)
+        self.update_resource_id(
+            self.create_response['NetworkInterface'].get(
+                NETWORKINTERFACE_ID, ''))
 
     def delete(self, params=None):
         """
@@ -157,49 +149,9 @@ def create(ctx, iface, resource_config, **_):
     # Create a copy of the resource config for clean manipulation.
     params = \
         dict() if not resource_config else resource_config.copy()
-
-    subnet_id = params.get(SUBNET_ID)
-    if not subnet_id:
-        targ = \
-            utils.find_rel_by_node_type(ctx.instance, SUBNET_TYPE) or \
-            utils.find_rel_by_node_type(ctx.instance, SUBNET_TYPE_DEPRECATED)
-
-        # Attempt to use the VPC ID from parameters.
-        # Fallback to connected VPC.
-        params[SUBNET_ID] = \
-            subnet_id or \
-            targ.target.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
-
-    groups = params.get(SEC_GROUPS, [])
-    for targ in utils.find_rels_by_node_type(ctx.instance, SEC_GROUP_TYPE):
-        group_id = \
-            targ.target.instance.runtime_properties.get(
-                EXTERNAL_RESOURCE_ID)
-        if group_id and group_id not in groups:
-            groups.append(group_id)
-    params[SEC_GROUPS] = groups
-
-    # Actually create the resource
-    create_response = iface.create(params)['NetworkInterface']
-    cleaned_create_response = utils.JsonCleanuper(create_response).to_dict()
-    ctx.instance.runtime_properties['create_response'] = \
-        utils.JsonCleanuper(cleaned_create_response).to_dict()
-    eni_id = cleaned_create_response.get(NETWORKINTERFACE_ID, '')
-    iface.update_resource_id(eni_id)
-    utils.update_resource_id(ctx.instance, eni_id)
-    ctx.instance.runtime_properties['device_index'] = \
-        cleaned_create_response.get(
-            'Attachment', {}).get(
-                'DeviceIndex',
-                ctx.instance.runtime_properties.get('device_index'))
-
-    modify_network_interface_attribute_args = \
-        _.get('modify_network_interface_attribute_args')
-    if modify_network_interface_attribute_args:
-        modify_network_interface_attribute_args[NETWORKINTERFACE_ID] = \
-            eni_id
-        iface.modify_network_interface_attribute(
-            modify_network_interface_attribute_args)
+    params = _create_eni_params(params, ctx.instance)
+    _create(iface, params, ctx.instance)
+    _modify_attribute(iface, _.get('modify_network_interface_attribute_args'))
 
 
 @decorators.aws_resource(EC2NetworkInterface, RESOURCE_TYPE,
@@ -325,6 +277,55 @@ def get_attached_instance_id(params):
                       'and no single existing EC2 Instance has a relationship '
                       'to the current ENI node. '
                       'Not performing attach operation.')
+
+
+@decorators.aws_resource(class_decl=EC2NetworkInterface,
+                         resource_type=RESOURCE_TYPE,
+                         waits_for_status=False)
+def check_drift(ctx, iface=None, **_):
+    return utils.check_drift(RESOURCE_TYPE, iface, ctx.logger)
+
+
+def _create_eni_params(params, ctx_instance):
+    subnet_id = params.get(SUBNET_ID)
+    if not subnet_id:
+        targ = \
+            utils.find_rel_by_node_type(ctx_instance, SUBNET_TYPE) or \
+            utils.find_rel_by_node_type(ctx_instance, SUBNET_TYPE_DEPRECATED)
+
+        # Attempt to use the VPC ID from parameters.
+        # Fallback to connected VPC.
+        params[SUBNET_ID] = \
+            subnet_id or \
+            targ.target.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
+
+    groups = params.get(SEC_GROUPS, [])
+    for targ in utils.find_rels_by_node_type(ctx_instance, SEC_GROUP_TYPE):
+        group_id = \
+            targ.target.instance.runtime_properties.get(
+                EXTERNAL_RESOURCE_ID)
+        if group_id and group_id not in groups:
+            groups.append(group_id)
+    params[SEC_GROUPS] = groups
+    return params
+
+
+def _create(iface, params, ctx_instance):
+    iface.create(params)
+    utils.update_resource_id(ctx_instance, iface.resource_id)
+    ctx_instance.runtime_properties['device_index'] = \
+        iface.create_response['NetworkInterface'].get(
+            'Attachment', {}).get(
+            'DeviceIndex',
+            ctx_instance.runtime_properties.get('device_index'))
+
+
+def _modify_attribute(iface,  modify_network_interface_attribute_args):
+    if modify_network_interface_attribute_args:
+        modify_network_interface_attribute_args[NETWORKINTERFACE_ID] = \
+            iface.resource_id
+        iface.modify_network_interface_attribute(
+            modify_network_interface_attribute_args)
 
 
 interface = EC2NetworkInterface

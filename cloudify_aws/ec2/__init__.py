@@ -41,16 +41,27 @@ class EC2Base(AWSResourceBase):
         AWSResourceBase.__init__(
             self, client or Boto3Connection(ctx_node).client('ec2'),
             resource_id=resource_id, logger=logger)
+        self.type_name = None
+        self._properties = {}
+        self._ids_key = None
+        self._type_key = None
+        self._id_key = None
 
     @property
     def properties(self):
-        """Gets the properties of an external resource"""
-        raise NotImplementedError()
+        '''Gets the properties of an external resource'''
+        if not self._properties:
+            res = self.get_describe_result({self._ids_key: [self.resource_id]})
+            if self._type_key in res:
+                for n in res[self._type_key]:
+                    if n[self._id_key] == self.resource_id:
+                        self._properties = n
+        return self._properties
 
     @property
     def status(self):
-        """Gets the status of an external resource"""
-        raise NotImplementedError()
+        '''Gets the status of an external resource'''
+        return self.properties.get('State')
 
     def create(self, params):
         """Creates a resource"""
