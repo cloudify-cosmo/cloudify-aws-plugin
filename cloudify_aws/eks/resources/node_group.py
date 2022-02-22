@@ -266,7 +266,7 @@ def check_drift(ctx, iface=None, **_):
                          resource_type=RESOURCE_TYPE,
                          waits_for_status=False)
 def poststart(ctx, iface=None, **_):
-    utils.update_expected_configuration(iface, ctx.instance)
+    utils.update_expected_configuration(iface, ctx.instance.runtime_properties)
 
 
 interface = EKSNodeGroup
