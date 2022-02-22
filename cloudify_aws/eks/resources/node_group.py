@@ -261,6 +261,7 @@ def delete(ctx, iface, resource_config, **_):
 def check_drift(ctx, iface=None, **_):
     return utils.check_drift(RESOURCE_TYPE, iface, ctx.logger)
 
+
 @decorators.aws_resource(class_decl=EKSNodeGroup,
                          resource_type=RESOURCE_TYPE,
                          waits_for_status=False)
