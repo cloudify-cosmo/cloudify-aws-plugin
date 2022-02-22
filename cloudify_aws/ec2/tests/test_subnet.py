@@ -205,7 +205,7 @@ class TestEC2Subnet(TestBase):
         expected = {
             'values_changed': {
                 "root['TagSpecifications'][0]['Tags'][0]['Value']": {
-                    'new_value': 'foo', 'old_value': 'bar'
+                    'new_value': 'bar', 'old_value': 'foo'
                 }
             }
         }

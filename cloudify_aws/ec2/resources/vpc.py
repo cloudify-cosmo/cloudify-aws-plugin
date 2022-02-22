@@ -122,6 +122,13 @@ def create(ctx, iface, resource_config, **_):
 @decorators.aws_resource(class_decl=EC2Vpc,
                          resource_type=RESOURCE_TYPE,
                          waits_for_status=False)
+def poststart(ctx, iface=None, **_):
+    utils.update_expected_configuration(iface, ctx.instance)
+
+
+@decorators.aws_resource(class_decl=EC2Vpc,
+                         resource_type=RESOURCE_TYPE,
+                         waits_for_status=False)
 def check_drift(ctx, iface=None, **_):
     return utils.check_drift(RESOURCE_TYPE, iface, ctx.logger)
 
@@ -154,7 +161,7 @@ def modify_vpc_attribute(ctx, iface, resource_config, **_):
 def _create(iface, params):
     # Actually create the resource
     try:
-        iface.create(params)[VPC]
+        iface.create(params)
     except NonRecoverableError as ex:
         if 'VpcLimitExceeded' in str(ex):
             _, _, tb = sys.exc_info()

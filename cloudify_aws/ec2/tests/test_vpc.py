@@ -168,7 +168,7 @@ class TestEC2Vpc(TestBase):
         expected = {
             'values_changed': {
                 "root['Tags'][0]['Value']": {
-                    'new_value': 'foo', 'old_value': 'baz'
+                    'new_value': 'baz', 'old_value': 'foo'
                 }
             }
         }

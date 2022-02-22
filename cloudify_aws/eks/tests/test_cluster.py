@@ -51,7 +51,7 @@ class TestEKSCluster(TestBase):
         effect = self.get_client_error_exception(name=cluster.RESOURCE_TYPE)
         self.cluster.client = self.make_client_function('describe_cluster',
                                                         side_effect=effect)
-        self.assertIsNone(self.cluster.properties)
+        self.assertEqual(self.cluster.properties, {})
 
         response = \
             {
@@ -66,9 +66,9 @@ class TestEKSCluster(TestBase):
         self.cluster.describe_param = {
             cluster.CLUSTER_NAME: 'test_cluster_name'
         }
+        self.cluster.resource_id = 'test_cluster_name'
         self.cluster.client = self.make_client_function('describe_cluster',
                                                         return_value=response)
-
         self.assertEqual(
             self.cluster.properties[cluster.CLUSTER_NAME],
             'test_cluster_name'
@@ -82,9 +82,9 @@ class TestEKSCluster(TestBase):
                 'status': 'test_status',
             },
         }
-        self.cluster.client = self.make_client_function('describe_cluster',
-                                                        return_value=response)
-
+        self.cluster.resource_id = 'test_cluster_name'
+        self.cluster.client = self.make_client_function(
+            'describe_cluster', return_value=response)
         self.assertEqual(self.cluster.status, 'test_status')
 
     def test_class_status_empty(self):
@@ -106,9 +106,9 @@ class TestEKSCluster(TestBase):
             }
         self.cluster.client = self.make_client_function(
             'create_cluster', return_value=response)
-
+        self.cluster.create(params)
         self.assertEqual(
-            self.cluster.create(params)[cluster.CLUSTER],
+            self.cluster.create_response[cluster.CLUSTER],
             response.get(cluster.CLUSTER))
 
     def test_class_delete(self):
@@ -195,6 +195,42 @@ class TestEKSCluster(TestBase):
 
         cluster.refresh_kubeconfig(_ctx)
         store_kube_conf_mock.assert_called()
+
+    def test_check_drift(self):
+        original_value = {
+            'name': 'test_name',
+            'status': 'ACTIVE',
+            'certificateAuthority': 'foo'
+        }
+        next_value = {
+            'name': 'test_name',
+            'status': 'ACTIVE',
+            'certificateAuthority': 'bar'
+        }
+
+        ctx = self.get_mock_ctx("Cluster")
+        ctx.instance.runtime_properties.update({
+                'aws_resource_id': 'test_name',
+                'expected_configuration': original_value,
+                'previous_configuration': {},
+                'create_response': {'cluster': original_value}
+            })
+        self.cluster.resource_id = 'test_name'
+        self.cluster.client = self.make_client_function(
+            'describe_cluster', return_value={'cluster': next_value})
+        self.cluster.import_configuration(
+            ctx.node.properties.get('resource_config', {}),
+            ctx.instance.runtime_properties
+        )
+        output = cluster.check_drift(ctx=ctx, iface=self.cluster)
+        expected = {
+            'values_changed': {
+                "root['certificateAuthority']": {
+                    'new_value': 'bar', 'old_value': 'foo'
+                }
+            }
+        }
+        self.assertEqual(output, expected)
 
 
 if __name__ == '__main__':

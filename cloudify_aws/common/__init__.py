@@ -65,8 +65,8 @@ class AWSResourceBase(object):
             return {}
 
     def compare_configuration(self):
-        return DeepDiff(self.remote_configuration,
-                        self.expected_configuration)
+        return DeepDiff(self.expected_configuration,
+                        self.remote_configuration)
 
     def import_configuration(self, resource_config, runtime_props):
         """ Read all of the various runtime properties where we store

@@ -37,7 +37,13 @@ class EKSBase(AWSResourceBase):
     @property
     def properties(self):
         """Gets the properties of an external resource"""
-        raise NotImplementedError()
+        if not self._properties:
+            res = self.describe()
+            if self._type_key in res:
+                if self._id_key in res[self._type_key]:
+                    if self.resource_id == res[self._type_key][self._id_key]:
+                        self._properties = res[self._type_key]
+        return self._properties
 
     @property
     def status(self):

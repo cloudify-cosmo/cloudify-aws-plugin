@@ -116,4 +116,5 @@ SUPPORT_DRIFT = [
     'cloudify.nodes.aws.ec2.SecurityGroup',
     'cloudify.nodes.aws.ec2.Instances',
     'cloudify.nodes.aws.eks.Cluster',
+    'cloudify.nodes.aws.eks.NodeGroup',
 ]

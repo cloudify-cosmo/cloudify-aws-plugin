@@ -173,6 +173,13 @@ def check_drift(ctx, iface=None, **_):
     return utils.check_drift(RESOURCE_TYPE, iface, ctx.logger)
 
 
+@decorators.aws_resource(class_decl=EC2Subnet,
+                         resource_type=RESOURCE_TYPE,
+                         waits_for_status=False)
+def poststart(ctx, iface=None, **_):
+    utils.update_expected_configuration(iface, ctx.instance)
+
+
 def _create(ctx_node, iface, params, logger):
     # Actually create the resource
     region_name = ctx_node.properties['client_config']['region_name']
