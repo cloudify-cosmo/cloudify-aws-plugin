@@ -186,4 +186,6 @@
 2.14.1:
     - RD-3922: refactor _aws_resource decorator
     - RD-3922: updated natgateway create for new aws requirements
-
+3.0.0:
+    - Moved all prepare to precreate and all create to prepare.
+    - RD-3921 added resource tagging
