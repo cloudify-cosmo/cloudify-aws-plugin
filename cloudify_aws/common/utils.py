@@ -968,6 +968,9 @@ def check_drift(resource_type, iface, logger):
         'Checking if {resource_type} {resource_id} '
         'configuration has drifted.'.format(
             resource_type=resource_type, resource_id=iface.resource_id))
+    ctx.instance.refresh()
+    iface.expected_configuration = ctx.instance.runtime_properties.get(
+        'expected_configuration')
     result = iface.compare_configuration()
     if result:
         logger.error(
@@ -976,6 +979,10 @@ def check_drift(resource_type, iface, logger):
                 resource_type=resource_type,
                 resource_id=iface.resource_id,
                 res=result))
+        logger.error('Expected configuration: {}'.format(
+            iface.expected_configuration))
+        logger.error('Remote configuration: {}'.format(
+            iface.remote_configuration))
         return result
     logger.info(
         'The {resource_type} {resource_id} '

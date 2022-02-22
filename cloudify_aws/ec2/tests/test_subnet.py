@@ -18,6 +18,7 @@ import unittest
 # Third party imports
 from mock import patch, MagicMock
 
+from cloudify.state import current_ctx
 from cloudify.exceptions import OperationRetry
 
 # Local imports
@@ -194,6 +195,7 @@ class TestEC2Subnet(TestBase):
                 'previous_configuration': {},
                 'create_response': original_value
             })
+        current_ctx.set(ctx)
         self.subnet.import_configuration(
             ctx.node.properties.get('resource_config', {}),
             ctx.instance.runtime_properties
@@ -205,7 +207,7 @@ class TestEC2Subnet(TestBase):
         expected = {
             'values_changed': {
                 "root['TagSpecifications'][0]['Tags'][0]['Value']": {
-                    'new_value': 'foo', 'old_value': 'bar'
+                    'new_value': 'bar', 'old_value': 'foo'
                 }
             }
         }

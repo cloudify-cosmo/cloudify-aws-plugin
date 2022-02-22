@@ -148,6 +148,7 @@ class TestBase(unittest.TestCase):
 
         ctx.node._type = type_node
         ctx.node.type_hierarchy = type_hierarchy or ['cloudify.nodes.Root']
+        ctx.instance.refresh = MagicMock()
 
         return ctx
 

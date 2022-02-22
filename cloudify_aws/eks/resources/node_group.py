@@ -21,7 +21,7 @@
 from __future__ import unicode_literals
 
 # Boto
-from botocore.exceptions import ClientError, ParamValidationError, WaiterError
+from botocore.exceptions import ClientError, WaiterError
 
 # Cloudify
 from cloudify_aws.common import decorators, utils
@@ -42,6 +42,10 @@ class EKSNodeGroup(EKSBase):
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         EKSBase.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
+        self._id_key = NODEGROUP_NAME
+        self._type_key = NODEGROUP
+        self._properties = {}
+        self._describe_call = 'describe_nodegroup'
         self._describe_param = {}
         self.ctx_node = ctx_node
 
@@ -54,7 +58,7 @@ class EKSNodeGroup(EKSBase):
         return self.initial_configuration.get(NODEGROUP_NAME)
 
     @property
-    def describe_params(self):
+    def describe_param(self):
         if not self._describe_param:
             self._describe_param = {
                 CLUSTER_NAME: self.cluster_name,
@@ -62,32 +66,32 @@ class EKSNodeGroup(EKSBase):
             }
         return self._describe_param
 
-    @describe_params.setter
-    def describe_params(self, value):
+    @describe_param.setter
+    def describe_param(self, value):
         self._describe_param = value
 
     def wait_for_status(self):
         self.logger.info('Performing wait for node group.')
         try:
             self.wait_for_nodegroup(
-                self.describe_params, 'nodegroup_active',
+                self.describe_param, 'nodegroup_active',
                 max_attempt=30)
         except WaiterError:
             raise OperationRetry('Waiting for nodegroup...')
 
-    @property
-    def properties(self):
-        """Gets the properties of an external resource"""
-        try:
-            self.logger.info(
-                'Describe params: {}'.format(self.describe_params))
-            result = self.client.describe_nodegroup(**self.describe_params)
-            self.logger.info('Describe result: {}'.format(result))
-            properties = result[NODEGROUP]
-        except (ParamValidationError, ClientError):
-            pass
-        else:
-            return None if not properties else properties
+    # @property
+    # def properties(self):
+    #     """Gets the properties of an external resource"""
+    #     try:
+    #         self.logger.info(
+    #             'Describe params: {}'.format(self.describe_params))
+    #         result = self.client.describe_nodegroup(**self.describe_params)
+    #         self.logger.info('Describe result: {}'.format(result))
+    #         properties = result[NODEGROUP]
+    #     except (ParamValidationError, ClientError):
+    #         pass
+    #     else:
+    #         return None if not properties else properties
 
     @property
     def status(self):
@@ -109,11 +113,12 @@ class EKSNodeGroup(EKSBase):
         """
         return self.make_client_call('create_nodegroup', params)
 
-    def describe(self, params):
+    def describe(self, params=None):
         """
             Create a new AWS EKS Node Group.
         """
-        return self.make_client_call('describe_nodegroup', params)
+        params = params or self.describe_param
+        return self.get_describe_result(params)
 
     def wait_for_nodegroup(self, params, status, max_attempt=None):
         """
@@ -248,6 +253,20 @@ def delete(ctx, iface, resource_config, **_):
     # wait for nodegroup to be deleted
     ctx.logger.info("Waiting for NodeGroup to be deleted")
     iface.wait_for_nodegroup(params, 'nodegroup_deleted')
+
+
+@decorators.aws_resource(class_decl=EKSNodeGroup,
+                         resource_type=RESOURCE_TYPE,
+                         waits_for_status=False)
+def check_drift(ctx, iface=None, **_):
+    return utils.check_drift(RESOURCE_TYPE, iface, ctx.logger)
+
+
+@decorators.aws_resource(class_decl=EKSNodeGroup,
+                         resource_type=RESOURCE_TYPE,
+                         waits_for_status=False)
+def poststart(ctx, iface=None, **_):
+    utils.update_expected_configuration(iface, ctx.instance.runtime_properties)
 
 
 interface = EKSNodeGroup

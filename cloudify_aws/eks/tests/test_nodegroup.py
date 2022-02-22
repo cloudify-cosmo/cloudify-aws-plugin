@@ -19,6 +19,7 @@ import unittest
 from mock import patch, MagicMock
 
 # Local imports
+from cloudify.state import current_ctx
 from cloudify_aws.common._compat import reload_module
 from cloudify_aws.common.tests.test_base import (
     TestBase,
@@ -70,7 +71,7 @@ class TestEKSNodeGroup(TestBase):
         #             },
         #     }
 
-        self.assertIsNone(self.node_group.properties)
+        self.assertEqual(self.node_group.properties, {})
 
         response = \
             {
@@ -90,7 +91,7 @@ class TestEKSNodeGroup(TestBase):
         self.node_group.client = \
             self.make_client_function('describe_nodegroup',
                                       return_value=response)
-
+        self.node_group.resource_id = 'test_node_group_name'
         self.assertEqual(
             self.node_group.properties[node_group.CLUSTER_NAME],
             'test_cluster_name'
@@ -109,6 +110,7 @@ class TestEKSNodeGroup(TestBase):
                 'status': 'test_status',
             },
         }
+        self.node_group.resource_id = 'test_node_group_name'
         self.node_group.client = \
             self.make_client_function('describe_nodegroup',
                                       return_value=response)
@@ -248,6 +250,55 @@ class TestEKSNodeGroup(TestBase):
         ctx = self.get_mock_ctx("NodeGroup")
         node_group.delete(ctx, iface, {})
         self.assertTrue(iface.delete.called)
+
+    def test_check_drift(self):
+        original_value = {
+            'nodegroupName': 'test_name',
+            'clusterName': 'test_cluster_name',
+            'health': {
+                'issues': []
+            },
+        }
+        next_value = {
+            'nodegroupName': 'test_name',
+            'clusterName': 'test_cluster_name',
+            'health': {
+                'issues': [
+                    {
+                        'code': 'IamLimitExceeded',
+                        'message': 'something',
+                        'resourceIds': ['test_name']
+                    }
+                ]
+            },
+        }
+
+        ctx = self.get_mock_ctx("NodeGroup")
+        ctx.instance.runtime_properties.update({
+                'aws_resource_id': 'test_name',
+                'expected_configuration': original_value,
+                'previous_configuration': {},
+                'create_response': {'nodegroup': original_value}
+            })
+        current_ctx.set(ctx)
+        self.node_group.resource_id = 'test_name'
+        self.node_group.client = self.make_client_function(
+            'describe_nodegroup', return_value={'nodegroup': next_value})
+        self.node_group.import_configuration(
+            ctx.node.properties.get('resource_config', {}),
+            ctx.instance.runtime_properties
+        )
+        output = node_group.check_drift(ctx=ctx, iface=self.node_group)
+        expected = {
+            'iterable_item_added': {
+                "root['health']['issues'][0]": {
+                    'code': 'IamLimitExceeded',
+                    'message': 'something',
+                    'resourceIds': ['test_name']
+                }
+            }
+        }
+        self.assertEqual(output, expected)
 
 
 if __name__ == '__main__':

@@ -18,6 +18,7 @@ import unittest
 # Third party imports
 from mock import patch, MagicMock
 
+from cloudify.state import current_ctx
 from cloudify.exceptions import OperationRetry
 
 # Local imports
@@ -158,6 +159,7 @@ class TestEC2Vpc(TestBase):
                 'previous_configuration': {},
                 'create_response': original_value
             })
+        current_ctx.set(ctx)
         self.vpc.client = self.make_client_function(
             'describe_vpcs', return_value=next_value)
         self.vpc.import_configuration(
@@ -168,7 +170,7 @@ class TestEC2Vpc(TestBase):
         expected = {
             'values_changed': {
                 "root['Tags'][0]['Value']": {
-                    'new_value': 'foo', 'old_value': 'baz'
+                    'new_value': 'baz', 'old_value': 'foo'
                 }
             }
         }

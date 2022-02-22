@@ -44,7 +44,7 @@ class EC2SecurityGroup(EC2Base):
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
-        self._describe_call = 'describe_network_interfaces'
+        self._describe_call = 'describe_security_groups'
         self._ids_key = GROUPIDS
         self._type_key = GROUPS
         self._id_key = GROUPID
@@ -61,8 +61,7 @@ class EC2SecurityGroup(EC2Base):
         """
         self.create_response = self.make_client_call(
             'create_security_group', params)
-        self.update_resource_id(
-            self.create_response[GROUP].get(GROUPID, ''))
+        self.update_resource_id(self.create_response.get(GROUPID, ''))
 
     def delete(self, params=None):
         '''
@@ -138,11 +137,13 @@ def create(ctx, iface, resource_config, **_):
     '''Creates an AWS EC2 Security Group'''
     params = utils.clean_params(
         dict() if not resource_config else resource_config.copy())
-    params = _create_group_params(params)
+    params = _create_group_params(params, ctx.instance)
 
     # Actually create the resource
-    iface.create(params, ctx.instance)
+    iface.create(params)
     utils.update_resource_id(ctx.instance, iface.resource_id)
+    utils.assign_create_response(
+        iface, ctx.instance.runtime_properties, iface.create_response)
     iface.wait()
 
 
@@ -274,6 +275,20 @@ def _create_group_params(params, ctx_instance):
             vpc.target.instance.runtime_properties.get(
                 EXTERNAL_RESOURCE_ID)
     return params
+
+
+@decorators.aws_resource(class_decl=EC2SecurityGroup,
+                         resource_type=RESOURCE_TYPE,
+                         waits_for_status=False)
+def check_drift(ctx, iface=None, **_):
+    return utils.check_drift(RESOURCE_TYPE, iface, ctx.logger)
+
+
+@decorators.aws_resource(class_decl=EC2SecurityGroup,
+                         resource_type=RESOURCE_TYPE,
+                         waits_for_status=False)
+def poststart(ctx, iface=None, **_):
+    utils.update_expected_configuration(iface, ctx.instance.runtime_properties)
 
 
 interface = EC2SecurityGroup

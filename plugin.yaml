@@ -2356,12 +2356,17 @@ node_types:
           inputs: *operation_inputs
         poststart:
           implementation: aws.cloudify_aws.ec2.resources.vpc.poststart
+          inputs: *operation_inputs
         delete:
           implementation: aws.cloudify_aws.ec2.resources.vpc.delete
           inputs: *operation_inputs
         modify_vpc_attribute:
           implementation: aws.cloudify_aws.ec2.resources.vpc.modify_vpc_attribute
           inputs: *operation_inputs
+        check_drift:
+          implementation: aws.cloudify_aws.ec2.resources.vpc.check_drift
+          inputs: {}
+
 
   cloudify.nodes.aws.ec2.VpcPeering:
     derived_from: cloudify.nodes.aws.ec2.BaseType
@@ -2444,12 +2449,18 @@ node_types:
         create:
           implementation: aws.cloudify_aws.ec2.resources.subnet.create
           inputs: *operation_inputs
+        poststart:
+          implementation: aws.cloudify_aws.ec2.resources.subnet.poststart
+          inputs: *operation_inputs
         delete:
           implementation: aws.cloudify_aws.ec2.resources.subnet.delete
           inputs: *operation_inputs
         modify_subnet_attribute:
           implementation: aws.cloudify_aws.ec2.resources.subnet.modify_subnet_attribute
           inputs: *operation_inputs
+        check_drift:
+          implementation: aws.cloudify_aws.ec2.resources.subnet.check_drift
+          inputs: {}
 
   cloudify.nodes.aws.ec2.SecurityGroup:
     derived_from: cloudify.nodes.aws.ec2.BaseType
@@ -2469,9 +2480,15 @@ node_types:
         create:
           implementation: aws.cloudify_aws.ec2.resources.securitygroup.create
 #          inputs: *operation_inputs
+        poststart:
+          implementation: aws.cloudify_aws.ec2.resources.securitygroup.poststart
+#          inputs: *operation_inputs
         delete:
           implementation: aws.cloudify_aws.ec2.resources.securitygroup.delete
 #          inputs: *operation_inputs
+        check_drift:
+          implementation: aws.cloudify_aws.ec2.resources.securitygroup.check_drift
+          inputs: {}
 
   cloudify.nodes.aws.ec2.SecurityGroupRuleIngress:
     derived_from: cloudify.nodes.Root
@@ -2558,6 +2575,8 @@ node_types:
         start:
           implementation: aws.cloudify_aws.ec2.resources.eni.attach
           inputs: *operation_inputs
+        poststart:
+          implementation: aws.cloudify_aws.ec2.resources.eni.poststart
         stop:
           implementation: aws.cloudify_aws.ec2.resources.eni.detach
           inputs: *operation_inputs
@@ -2567,6 +2586,9 @@ node_types:
         modify_network_interface_attribute:
           implementation: aws.cloudify_aws.ec2.resources.eni.modify_network_interface_attribute
           inputs: *operation_inputs
+        check_drift:
+          implementation: aws.cloudify_aws.ec2.resources.eni.check_drift
+          inputs: {}
 
   cloudify.nodes.aws.ec2.Instances:
     derived_from: cloudify.nodes.Compute
@@ -2624,6 +2646,9 @@ node_types:
         modify_instance_attribute:
           implementation: aws.cloudify_aws.ec2.resources.instances.modify_instance_attribute
           inputs: *operation_inputs
+        check_drift:
+          implementation: aws.cloudify_aws.ec2.resources.instances.check_drift
+          inputs: {}
 
   cloudify.nodes.aws.ec2.SpotInstances:
     derived_from: cloudify.nodes.Compute
@@ -3739,6 +3764,9 @@ node_types:
         delete:
           implementation: aws.cloudify_aws.eks.resources.cluster.delete
           inputs: *operation_inputs
+        check_drift:
+          implementation: aws.cloudify_aws.eks.resources.cluster.check_drift
+          inputs: {}
 
   cloudify.nodes.aws.eks.NodeGroup:
     derived_from: cloudify.nodes.Root
@@ -3768,9 +3796,13 @@ node_types:
         start:
           implementation: aws.cloudify_aws.eks.resources.node_group.start
           inputs: *operation_inputs
+        poststart:
+          implementation: aws.cloudify_aws.eks.resources.node_group.poststart
         delete:
           implementation: aws.cloudify_aws.eks.resources.node_group.delete
           inputs: *operation_inputs
+        check_drift:
+          implementation: aws.cloudify_aws.eks.resources.node_group.check_drift
 
   cloudify.nodes.aws.codepipeline.Pipeline:
     derived_from: cloudify.nodes.Root

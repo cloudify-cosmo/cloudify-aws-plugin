@@ -234,6 +234,7 @@ def poststart(ctx, iface, *_, **__):
     '''Stores AWS EC2 Instances Details'''
     ctx.instance.runtime_properties['resource'] = utils.JsonCleanuper(
         iface.properties).to_dict()
+    utils.update_expected_configuration(iface, ctx.instance.runtime_properties)
 
 
 @decorators.multiple_aws_resource(EC2Instances, RESOURCE_TYPE)

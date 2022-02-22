@@ -427,6 +427,7 @@ class TestEC2Instances(TestBase):
                 'previous_configuration': {},
                 'create_response': original_value
             })
+        current_ctx.set(ctx)
         self.instances.resource_id = 'baz'
         self.instances.import_configuration(
             ctx.node.properties.get('resource_config', {}),
@@ -445,14 +446,12 @@ class TestEC2Instances(TestBase):
         output = instances.check_drift(ctx=ctx, iface=self.instances)
         expected = {
             'values_changed': {
-                "root['StateCode']": {
-                    'new_value': 80, 'old_value': 64
-                },
                 "root['NetworkInterfaces'][0]['NetworkInterfaceId']": {
-                    'new_value': 'foo', 'old_value': 'bar'
+                    'new_value': 'bar', 'old_value': 'foo'
                 },
+                "root['StateCode']": {'new_value': 64, 'old_value': 80},
                 "root['NetworkInterfaces'][0]['Association']['PublicIp']": {
-                    'new_value': '1.1.1.1', 'old_value': '2.2.2.2'
+                    'new_value': '2.2.2.2', 'old_value': '1.1.1.1'
                 }
             }
         }
