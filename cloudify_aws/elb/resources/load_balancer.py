@@ -17,9 +17,6 @@
     AWS ELB load balancer interface
 '''
 
-# Third Party imports
-from botocore.exceptions import ClientError, ParamValidationError
-
 from cloudify.exceptions import NonRecoverableError
 
 # Local imports
@@ -56,27 +53,32 @@ class ELBLoadBalancer(ELBBase):
             client or Boto3Connection(ctx_node).client('elbv2'),
             logger)
         self.type_name = RESOURCE_TYPE
+        self._properties = {}
+        self._describe_call = 'describe_load_balancers'
 
     @property
     def properties(self):
         '''Gets the properties of an external resource'''
-        try:
-            resources = self.client.describe_load_balancers(
-                Names=[self.resource_id])
-        except (ClientError, ParamValidationError) as e:
-            self.logger.warn('Ignoring error: {0}'.format(text_type(e)))
-        else:
-            if resources:
-                return resources['LoadBalancers'][0]
-        return {}
+        if not self._properties:
+            res = self.get_describe_result(
+                {'LoadBalancerNames': [self.resource_id]})
+            if 'LoadBalancers' in res:
+                for elb in res['LoadBalancers']:
+                    lb_name = elb.get('LoadBalancerName')
+                    name = elb.get('Name')
+                    names = []
+                    if lb_name:
+                        names.append(lb_name)
+                    if name:
+                        names.append(name)
+                    if self.resource_id in names:
+                        self._properties = elb
+        return self._properties
 
     @property
     def status(self):
         '''Gets the status of an external resource'''
-        props = self.properties
-        if not props:
-            return None
-        return props['State']['Code']
+        return self.properties.get('State', {}).get('Code')
 
     def create(self, params):
         '''

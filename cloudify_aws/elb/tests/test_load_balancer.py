@@ -64,8 +64,11 @@ class TestELBLoadBalancer(TestBase):
 
     def setUp(self):
         super(TestELBLoadBalancer, self).setUp()
-        self.load_balancer = ELBLoadBalancer("ctx_node", resource_id=True,
-                                             client=MagicMock(), logger=None)
+        self.load_balancer = ELBLoadBalancer(
+            "ctx_node",
+            resource_id=True,
+            client=MagicMock(),
+            logger=None)
         self.fake_boto, self.fake_client = self.fake_boto_client('elb')
 
         self.mock_patch = patch('boto3.client', self.fake_boto)
@@ -92,12 +95,13 @@ class TestELBLoadBalancer(TestBase):
         res = self.load_balancer.properties
         self.assertEqual(res, {})
 
-        value = {'LoadBalancers': ['test']}
+        result = {'LoadBalancerName': 'True'}
+        value = {'LoadBalancers': [result]}
         self.load_balancer.client = self.make_client_function(
             'describe_load_balancers',
             return_value=value)
         res = self.load_balancer.properties
-        self.assertEqual(res, 'test')
+        self.assertEqual(res, result)
 
     def test_class_status(self):
         value = []
@@ -107,7 +111,10 @@ class TestELBLoadBalancer(TestBase):
         res = self.load_balancer.status
         self.assertIsNone(res)
 
-        value = {'LoadBalancers': [{'State': {'Code': 'ok'}}]}
+        value = {'LoadBalancers': [{
+            'LoadBalancerName': 'True',
+            'State': {'Code': 'ok'}
+        }]}
         self.load_balancer.client = self.make_client_function(
             'describe_load_balancers',
             return_value=value)
@@ -224,7 +231,12 @@ class TestELBLoadBalancer(TestBase):
             Name='aws_resource', SecurityGroups=['sec_id'],
             Subnets=['subnet_id'])
         self.fake_client.describe_load_balancers.assert_called_with(
-            Names=['abc'])
+            LoadBalancerNames=['abc'])
+
+        # This is just because I'm not interested in the content
+        # of remote_configuration right now.
+        # If it doesn't exist, this test will fail, and that's good.
+        _ctx.instance.runtime_properties.pop('remote_configuration')
 
         self.assertEqual(
             _ctx.instance.runtime_properties,
@@ -262,14 +274,40 @@ class TestELBLoadBalancer(TestBase):
         _ctx.instance.runtime_properties['resource_config'] = {}
         self.fake_client.describe_load_balancers = MagicMock(side_effect=[
             {
-                'LoadBalancers': [{'State': {'Code': 'active'}}]
+                'LoadBalancers': [
+                    {
+                        'LoadBalancerName': 'abc',
+                        'State': {'Code': 'active'}
+                    }]
             },
             {
-                'LoadBalancers': [{'State': {'Code': 'active'}}]
+                'LoadBalancers': [
+                    {
+                        'LoadBalancerName': 'abc',
+                        'State': {'Code': 'active'}
+                    }]
             },
             {
-                'LoadBalancers': [{'State': {'Code': 'active'}}]
-            }
+                'LoadBalancers': [
+                    {
+                        'LoadBalancerName': 'abc',
+                        'State': {'Code': 'active'}
+                    }]
+            },
+            {
+                'LoadBalancers': [
+                    {
+                        'LoadBalancerName': 'abc',
+                        'State': {'Code': 'active'}
+                    }]
+            },
+            {
+                'LoadBalancers': [
+                    {
+                        'LoadBalancerName': 'abc',
+                        'State': {'Code': 'active'}
+                    }]
+            },
         ])
 
         load_balancer.modify(ctx=_ctx, resource_config=None, iface=None,
@@ -380,7 +418,7 @@ class TestELBLoadBalancer(TestBase):
             LoadBalancerArn='def'
         )
         self.fake_client.describe_load_balancers.assert_called_with(
-            Names=['abc'])
+            LoadBalancerNames=['abc'])
 
 
 if __name__ == '__main__':

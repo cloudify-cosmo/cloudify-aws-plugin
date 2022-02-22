@@ -154,6 +154,10 @@ class testIfaceRequirement(TestBase):
     def perform_operation(self, operation_callable, args, kwargs):
         try:
             operation_callable(*args, **kwargs)
+        except NotImplementedError as e:
+            if 'permission' in str(e):
+                return
+            raise
         except NonRecoverableError as e:
             if 'must provide a relationship' in str(e):
                 return

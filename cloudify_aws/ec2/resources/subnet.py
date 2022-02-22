@@ -17,7 +17,6 @@
     AWS EC2 Subnet interface
 '''
 # Boto
-from botocore.exceptions import ClientError, ParamValidationError
 from botocore.exceptions import CapacityNotAvailableError
 
 # Cloudify
@@ -48,26 +47,10 @@ class EC2Subnet(EC2Base):
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
-
-    @property
-    def properties(self):
-        '''Gets the properties of an external resource'''
-        params = {SUBNET_IDS: [self.resource_id]}
-        try:
-            resources = \
-                self.client.describe_subnets(**params)
-        except (ClientError, ParamValidationError):
-            pass
-        else:
-            return None if not resources else resources.get(SUBNETS)[0]
-
-    @property
-    def status(self):
-        '''Gets the status of an external resource'''
-        props = self.properties
-        if not props:
-            return None
-        return props['State']
+        self._describe_call = 'describe_subnets'
+        self._ids_key = SUBNET_IDS
+        self._type_key = SUBNETS
+        self._id_key = SUBNET_ID
 
     @property
     def check_status(self):
@@ -79,7 +62,9 @@ class EC2Subnet(EC2Base):
         '''
             Create a new AWS EC2 Subnet.
         '''
-        return self.make_client_call('create_subnet', params)
+        self.create_response = self.make_client_call('create_subnet', params)
+        self.update_resource_id(
+            self.create_response[SUBNET].get(SUBNET_ID, ''))
 
     def delete(self, params=None):
         '''
@@ -120,83 +105,10 @@ def create(ctx, iface, resource_config, **_):
     '''Creates an AWS EC2 Subnet'''
     params = utils.clean_params(
         dict() if not resource_config else resource_config.copy())
-
-    vpc_id = params.get(VPC_ID)
-    cidr_block = params.get(CIDR_BLOCK)
-    ipv6_cidr_block = params.get(IPV6_CIDR_BLOCK)
-
-    # If either of these values is missing,
-    # they must be filled from a connected VPC.
-    if not vpc_id or not cidr_block:
-        targ = \
-            utils.find_rel_by_node_type(
-                ctx.instance,
-                VPC_TYPE) or utils.find_rel_by_node_type(
-                ctx.instance,
-                VPC_TYPE_DEPRECATED)
-
-        # Attempt to use the VPC ID from parameters.
-        # Fallback to connected VPC.
-        params[VPC_ID] = \
-            vpc_id or \
-            targ.target.instance.runtime_properties.get(
-                EXTERNAL_RESOURCE_ID)
-        # Attempt to use the CIDR Block from parameters.
-        # Fallback to connected VPC.
-        params[CIDR_BLOCK] = \
-            cidr_block or \
-            targ.instance.runtime_properties.get(
-                'resource_config', {}).get(CIDR_BLOCK)
-
-    # If ipv6 cidr block is provided by user, then we need to make sure that
-    # The subnet size must use a /64 prefix length
-    if ipv6_cidr_block:
-        ipv6_cidr_block = ipv6_cidr_block[:-2] + '64'
-        params[IPV6_CIDR_BLOCK] = ipv6_cidr_block
-
-    # Actually create the resource
-    region_name = ctx.node.properties['client_config']['region_name']
-    use_available_zones = ctx.node.properties.get('use_available_zones', False)
-    try:
-        create_response = iface.create(params)[SUBNET]
-    except CapacityNotAvailableError:
-        if use_available_zones:
-            ctx.logger.warn(
-                "The Availability Zone chosen {0} "
-                "is not available".format(params['AvailabilityZone']))
-            valid_zone = \
-                iface.get_available_zone({
-                    'Filters': [
-                        {'Name': 'region-name', 'Values': [region_name]}
-                    ]
-                })
-            if valid_zone:
-                ctx.logger.info(
-                    "using {0} Availability Zone instead".format(valid_zone))
-                params['AvailabilityZone'] = valid_zone
-                create_response = iface.create(params)[SUBNET]
-            else:
-                raise NonRecoverableError(
-                    "no available Availability Zones "
-                    "in region {0}".format(region_name))
-        else:
-            raise NonRecoverableError(
-                "The Availability Zone chosen "
-                "{0} is not available".format(params['AvailabilityZone']))
-
-    ctx.instance.runtime_properties['create_response'] = \
-        utils.JsonCleanuper(create_response).to_dict()
-    subnet_id = create_response.get(SUBNET_ID)
-    iface.update_resource_id(subnet_id)
-    utils.update_resource_id(ctx.instance, subnet_id)
-
-    modify_subnet_attribute_args = \
-        _.get('modify_subnet_attribute_args')
-    if modify_subnet_attribute_args:
-        modify_subnet_attribute_args[SUBNET_ID] = \
-            subnet_id
-        iface.modify_subnet_attribute(
-            modify_subnet_attribute_args)
+    params = _create_subnet_params(params, ctx.instance)
+    _create(ctx.node, iface, params, ctx.logger)
+    utils.update_resource_id(ctx.instance, iface.resource_id)
+    _modify_attribute(iface, _.get('modify_subnet_attribute_args'))
 
 
 @decorators.aws_resource(EC2Subnet, RESOURCE_TYPE,
@@ -252,6 +164,88 @@ def unset_subnet(ctx, iface, resource_config, **_):
         ctx.target.instance.runtime_properties[_SUBNETS] = []
     if subnet_id in ctx.target.instance.runtime_properties[_SUBNETS]:
         ctx.target.instance.runtime_properties[_SUBNETS].remove(subnet_id)
+
+
+@decorators.aws_resource(class_decl=EC2Subnet,
+                         resource_type=RESOURCE_TYPE,
+                         waits_for_status=False)
+def check_drift(ctx, iface=None, **_):
+    return utils.check_drift(RESOURCE_TYPE, iface, ctx.logger)
+
+
+def _create(ctx_node, iface, params, logger):
+    # Actually create the resource
+    region_name = ctx_node.properties['client_config']['region_name']
+    use_available_zones = ctx_node.properties.get('use_available_zones', False)
+    try:
+        iface.create(params)
+    except CapacityNotAvailableError:
+        if use_available_zones:
+            logger.error(
+                "The Availability Zone chosen {0} "
+                "is not available".format(params['AvailabilityZone']))
+            valid_zone = \
+                iface.get_available_zone({
+                    'Filters': [
+                        {'Name': 'region-name', 'Values': [region_name]}
+                    ]
+                })
+            if valid_zone:
+                logger.error(
+                    "using {0} Availability Zone instead".format(valid_zone))
+                params['AvailabilityZone'] = valid_zone
+                iface.create(params)
+            else:
+                raise NonRecoverableError(
+                    "no available Availability Zones "
+                    "in region {0}".format(region_name))
+        else:
+            raise NonRecoverableError(
+                "The Availability Zone chosen "
+                "{0} is not available".format(params['AvailabilityZone']))
+
+
+def _modify_attribute(iface,  modify_subnet_attribute_args):
+    if modify_subnet_attribute_args:
+        modify_subnet_attribute_args[SUBNET_ID] = \
+            iface.resource_id
+        iface.modify_subnet_attribute(
+            modify_subnet_attribute_args)
+
+
+def _create_subnet_params(params, ctx_instance):
+    vpc_id = params.get(VPC_ID)
+    cidr_block = params.get(CIDR_BLOCK)
+    ipv6_cidr_block = params.get(IPV6_CIDR_BLOCK)
+    # If either of these values is missing,
+    # they must be filled from a connected VPC.
+    if not vpc_id or not cidr_block:
+        targ = \
+            utils.find_rel_by_node_type(
+                ctx_instance,
+                VPC_TYPE) or utils.find_rel_by_node_type(
+                ctx_instance,
+                VPC_TYPE_DEPRECATED)
+
+        # Attempt to use the VPC ID from parameters.
+        # Fallback to connected VPC.
+        params[VPC_ID] = \
+            vpc_id or \
+            targ.target.instance.runtime_properties.get(
+                EXTERNAL_RESOURCE_ID)
+        # Attempt to use the CIDR Block from parameters.
+        # Fallback to connected VPC.
+        params[CIDR_BLOCK] = \
+            cidr_block or \
+            targ.instance.runtime_properties.get(
+                'resource_config', {}).get(CIDR_BLOCK)
+
+    # If ipv6 cidr block is provided by user, then we need to make sure that
+    # The subnet size must use a /64 prefix length
+    if ipv6_cidr_block:
+        ipv6_cidr_block = ipv6_cidr_block[:-2] + '64'
+        params[IPV6_CIDR_BLOCK] = ipv6_cidr_block
+    return params
 
 
 interface = EC2Subnet

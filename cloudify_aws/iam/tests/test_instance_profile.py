@@ -91,6 +91,11 @@ class TestIAMInstanceProfile(TestBase):
 
         self.fake_boto.assert_called_with('iam', **CLIENT_CONFIG)
 
+        # This is just because I'm not interested in the content
+        # of remote_configuration right now.
+        # If it doesn't exist, this test will fail, and that's good.
+        _ctx.instance.runtime_properties.pop('remote_configuration')
+
         self.assertEqual(
             _ctx.instance.runtime_properties,
             {'aws_resource_id': 'name',
@@ -121,10 +126,13 @@ class TestIAMInstanceProfile(TestBase):
 
         self.fake_boto.assert_called_with('iam', **CLIENT_CONFIG)
 
+        # This is just because I'm not interested in the content
+        # of remote_configuration right now.
+        # If it doesn't exist, this test will fail, and that's good.
+        _ctx.instance.runtime_properties.pop('remote_configuration')
         self.assertEqual(
             _ctx.instance.runtime_properties,
-            {'aws_resource_id': 'name',
-             'aws_resource_arn': "arn"}
+            {'aws_resource_id': 'name', 'aws_resource_arn': "arn"}
         )
 
     def test_delete(self):

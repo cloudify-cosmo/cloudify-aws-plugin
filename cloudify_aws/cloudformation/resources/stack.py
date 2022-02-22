@@ -22,7 +22,7 @@ import json
 from datetime import datetime
 
 # Third party imports
-from botocore.exceptions import ClientError, ParamValidationError
+from botocore.exceptions import ClientError
 
 # Local imports
 from cloudify_aws.common._compat import text_type
@@ -58,26 +58,24 @@ class CloudFormationStack(AWSCloudFormationBase):
         AWSCloudFormationBase.__init__(self, ctx_node, resource_id, client,
                                        logger)
         self.type_name = RESOURCE_TYPE
+        self._properties = {}
+        self._describe_call = 'describe_stacks'
 
     @property
     def properties(self):
-        """Gets the properties of an external resource"""
-        params = {RESOURCE_NAME: self.resource_id}
-        try:
-            resources = \
-                self.client.describe_stacks(**params)
-        except (ParamValidationError, ClientError):
-            pass
-        else:
-            return resources.get(STACKS, [None])[0]
+        '''Gets the properties of an external resource'''
+        if not self._properties:
+            res = self.get_describe_result({RESOURCE_NAME: self.resource_id})
+            if STACKS in res:
+                for stack in res[STACKS]:
+                    if self.resource_id == stack[RESOURCE_NAME]:
+                        self._properties = stack
+        return self._properties
 
     @property
     def status(self):
-        """Gets the status of an external resource"""
-        props = self.properties
-        if not props:
-            return None
-        return props.get(STATUS)
+        '''Gets the status of an external resource'''
+        return self.properties.get(STATUS)
 
     @property
     def exists(self):

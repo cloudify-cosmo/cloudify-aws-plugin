@@ -135,6 +135,10 @@ class TestDynamoDBTable(TestBase):
         updated_runtime_prop = copy.deepcopy(RUNTIME_PROPERTIES_AFTER_CREATE)
         updated_runtime_prop['create_response'] = {'TableStatus': 'ACTIVE'}
 
+        # This is just because I'm not interested in the content
+        # of remote_configuration right now.
+        # If it doesn't exist, this test will fail, and that's good.
+        _ctx.instance.runtime_properties.pop('remote_configuration')
         self.assertEqual(_ctx.instance.runtime_properties,
                          updated_runtime_prop)
 
