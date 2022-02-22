@@ -31,7 +31,10 @@ from cloudify.utils import exception_to_error_cause
 from cloudify.exceptions import OperationRetry, NonRecoverableError
 from cloudify_common_sdk.utils import \
     skip_creative_or_destructive_operation as skip
-
+from cloudify_common_sdk.utils import (
+    get_cloudify_version,
+    v1_gteq_v2
+)
 # Local imports
 from .constants import SUPPORT_DRIFT
 from cloudify_aws.common import utils
@@ -334,7 +337,6 @@ def _put_values_from_kwargs_in_runtime_props(from_kwargs, runtime_props):
 def _put_aws_config_in_class_decl(aws_config,
                                   class_decl_attr,
                                   aws_config_kwargs):
-
     # Check if "aws_config" is set and has a valid "dict" type because
     #  the expected data type for "aws_config" must be "dict"
     if aws_config:
@@ -802,18 +804,41 @@ def untag_resources(fn):
 
 def add_default_tag(_ctx, iface):
     ctx.logger.info("Adding default cloudify_tagging.")
-
+    special_tags = {}
+    if v1_gteq_v2(get_cloudify_version(), "6.3.1"):
+        ctx.logger.info("Adding tags using resource_tags.")
+        special_tags.update(ctx.deployment.get("resource_tags"))
+    for key in special_tags:
+        iface.tag(
+            {
+                'Tags': [
+                    {
+                        'Key': key,
+                        'Value': "{}".format(
+                            special_tags[key])
+                    }
+                ],
+                'Resources': [iface.resource_id]
+            }
+        )
     iface.tag(
-        {'Tags': [{'Key': 'CreatedBy', 'Value': "{}-{}-{}".format(
-            _ctx.tenant_name,
-            _ctx.deployment.id,
-            _ctx.instance.id)}],
-         'Resources': [iface.resource_id]}
+        {
+            'Tags':
+                [
+                    {'Key': 'CreatedBy', 'Value': "{}-{}-{}".format(
+                        _ctx.tenant_name,
+                        _ctx.deployment.id,
+                        _ctx.instance.id)}],
+            'Resources': [iface.resource_id]
+        }
     )
     iface.tag(
-        {'Tags': [{'Key': 'Name', 'Value': "{}_{}".format(
-            _ctx.node.name,
-            _ctx.instance.id)}],
-         'Resources': [iface.resource_id]}
+        {
+            'Tags': [
+                {'Key': 'Name', 'Value': "{}_{}".format(
+                    _ctx.node.name,
+                    _ctx.instance.id)}],
+            'Resources': [iface.resource_id]
+        }
     )
     ctx.logger.info("Added default cloudify_tagging.")

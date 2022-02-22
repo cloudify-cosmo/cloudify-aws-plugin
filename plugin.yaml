@@ -3135,6 +3135,7 @@ node_types:
         description: indecates if external_resourc should be used
       <<: *client_config
       <<: *resource_id
+
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
