@@ -36,6 +36,13 @@ class TestEKSNodeGroup(TestBase):
 
         self.node_group = EKSNodeGroup("ctx_node", resource_id=True,
                                        client=True, logger=None)
+        self.node_group.ctx_node = self.get_mock_ctx("NodeGroup")
+        self.node_group.ctx_node.properties = MagicMock()
+        self.node_group.ctx_node.properties['resource_config'] = {
+            'clusterName': 'clusterNameTest',
+            'nodegroupName': 'nodegroupNameTest'
+        }
+
         self.mock_resource = patch(
             'cloudify_aws.common.decorators.aws_resource', mock_decorator
         )
@@ -51,6 +58,18 @@ class TestEKSNodeGroup(TestBase):
         effect = self.get_client_error_exception(name=node_group.RESOURCE_TYPE)
         self.node_group.client = \
             self.make_client_function('describe_nodegroup', side_effect=effect)
+
+        # response = \
+        #     {
+        #         node_group.NODEGROUP:
+        #             {
+        #                 'nodegroupArn': 'test_node_group_arn',
+        #                 'nodegroupName': 'test_node_group_name',
+        #                 'clusterName': 'test_cluster_name',
+        #                 'status': 'test_status',
+        #             },
+        #     }
+
         self.assertIsNone(self.node_group.properties)
 
         response = \

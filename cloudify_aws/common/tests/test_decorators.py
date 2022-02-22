@@ -98,11 +98,14 @@ class TestDecorators(TestBase):
         def test_ok(*agrs, **kwargs):
             pass
 
+        def wait_for_status(*args, **kwargs):
+            return False
         # pending
         mock_interface = MagicMock()
         mock_interface.status = 'pending'
         mock_interface.properties = {'status': 'pending'}
         mock_interface.resource_id = 'foo'
+        mock_interface.wait_for_status = wait_for_status
 
         with self.assertRaises(OperationRetry):
             test_ok(ctx=_ctx, iface=mock_interface)
@@ -112,9 +115,9 @@ class TestDecorators(TestBase):
         mock_interface.status = 'ok'
         mock_interface.properties = {'status': 'ok'}
         mock_interface.resource_id = 'foo'
+        mock_interface.wait_for_status = wait_for_status
 
         test_ok(ctx=_ctx, iface=mock_interface)
-
         self.assertEqual(_ctx.instance.runtime_properties, {
             'resource_config': {},
             'aws_resource_id': 'foo',
@@ -134,6 +137,7 @@ class TestDecorators(TestBase):
         mock_interface.status = None
         mock_interface.properties = {'status': None}
         mock_interface.resource_id = 'foo'
+        mock_interface.wait_for_status = wait_for_status
 
         with self.assertRaises(NonRecoverableError):
             test_ok(ctx=_ctx, iface=mock_interface)
@@ -143,6 +147,7 @@ class TestDecorators(TestBase):
         mock_interface.status = None
         mock_interface.properties = {'status': None}
         mock_interface.resource_id = 'foo'
+        mock_interface.wait_for_status = wait_for_status
 
         @decorators.wait_for_status(status_pending=['pending'],
                                     fail_on_missing=False)

@@ -21,14 +21,12 @@
 from __future__ import unicode_literals
 
 # Boto
-
-from botocore.exceptions import ClientError, ParamValidationError
-
-from cloudify.exceptions import OperationRetry
+from botocore.exceptions import ClientError, ParamValidationError, WaiterError
 
 # Cloudify
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.eks import EKSBase
+from cloudify.exceptions import OperationRetry, NonRecoverableError
 
 RESOURCE_TYPE = 'EKS Node Group'
 CLUSTER_NAME = 'clusterName'
@@ -44,16 +42,44 @@ class EKSNodeGroup(EKSBase):
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         EKSBase.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
-        self.describe_param = {}
+        self._describe_param = {}
+
+    @property
+    def describe_params(self):
+        if not self._describe_param:
+            cfg = self.ctx_node.properties['resource_config']
+            cluster_name = cfg.get(
+                CLUSTER_NAME) or cfg['kwargs'].get(CLUSTER_NAME)
+            node_group_name = cfg.get(
+                NODEGROUP_NAME) or cfg['kwargs'].get(NODEGROUP_NAME)
+            self._describe_param = {
+                CLUSTER_NAME: cluster_name,
+                NODEGROUP_NAME: node_group_name
+            }
+        return self._describe_param
+
+    @describe_params.setter
+    def describe_params(self, value):
+        self._describe_param = value
+
+    def wait_for_status(self):
+        self.logger.info('Performing wait for node group.')
+        try:
+            self.wait_for_nodegroup(
+                self.describe_params, 'nodegroup_active',
+                max_attempt=30)
+        except WaiterError:
+            raise OperationRetry('Waiting for nodegroup...')
 
     @property
     def properties(self):
         """Gets the properties of an external resource"""
         try:
-            properties = \
-                self.client.describe_nodegroup(
-                    **self.describe_param
-                )[NODEGROUP]
+            self.logger.info(
+                'Describe params: {}'.format(self.describe_params))
+            result = self.client.describe_nodegroup(**self.describe_params)
+            self.logger.info('Describe result: {}'.format(result))
+            properties = result[NODEGROUP]
         except (ParamValidationError, ClientError):
             pass
         else:
@@ -79,19 +105,32 @@ class EKSNodeGroup(EKSBase):
         """
         return self.make_client_call('create_nodegroup', params)
 
-    def wait_for_nodegroup(self, params, status):
+    def describe(self, params):
+        """
+            Create a new AWS EKS Node Group.
+        """
+        return self.make_client_call('describe_nodegroup', params)
+
+    def wait_for_nodegroup(self, params, status, max_attempt=None):
         """
             wait for AWS EKS Node Group.
         """
+
+        max_attempt = max_attempt or 30
         waiter = self.client.get_waiter(status)
-        waiter.wait(
-            clusterName=params.get(CLUSTER_NAME),
-            nodegroupName=params.get(NODEGROUP_NAME),
-            WaiterConfig={
-                'Delay': 30,
-                'MaxAttempts': 40
-            }
-        )
+        try:
+            waiter.wait(
+                clusterName=params.get(CLUSTER_NAME),
+                nodegroupName=params.get(NODEGROUP_NAME),
+                WaiterConfig={
+                    'Delay': 30,
+                    'MaxAttempts': max_attempt
+                }
+            )
+        except WaiterError:
+            self.logger.error('Tired of waiting {} {}'.format(
+                self.resource_id, self.status))
+            raise
 
     def start(self, params):
         """
@@ -128,7 +167,9 @@ def prepare(ctx, resource_config, **_):
     ctx.instance.runtime_properties['resource_config'] = resource_config
 
 
-@decorators.aws_resource(EKSNodeGroup, RESOURCE_TYPE, waits_for_status=False)
+@decorators.aws_resource(EKSNodeGroup, RESOURCE_TYPE)
+@decorators.wait_for_status(status_pending=['CREATING', 'UPDATING'],
+                            status_good=['ACTIVE', 'available'])
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS EKS Node Group"""
     params = dict() if not resource_config else resource_config.copy()
@@ -144,12 +185,19 @@ def create(ctx, iface, resource_config, **_):
     iface = prepare_describe_node_group_filter(resource_config.copy(), iface)
     try:
         response = iface.create(params)
-    except ClientError as e:
-        raise OperationRetry(
-            'Waiting for cluster to be ready...{e}'.format(e=e))
-    if response and response.get(NODEGROUP):
+    except (NonRecoverableError, ClientError) as e:
+        if 'ResourceInUseException' not in str(e):
+            raise e
+    else:
         resource_arn = response.get(NODEGROUP).get(NODEGROUP_ARN)
         utils.update_resource_arn(ctx.instance, resource_arn)
+        resource_id = response.get(NODEGROUP).get(NODEGROUP_NAME)
+        utils.update_resource_id(ctx.instance, resource_id)
+        iface.update_resource_id(resource_id)
+        ctx.instance.runtime_properties["cluster_name"] = \
+            response.get(NODEGROUP).get("clusterName")
+        ctx.instance.runtime_properties['create_response'] = \
+            utils.JsonCleanuper(response).to_dict()
     # wait for nodegroup to be active
     ctx.logger.info("Waiting for NodeGroup to become Active")
     iface.wait_for_nodegroup(params, 'nodegroup_active')

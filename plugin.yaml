@@ -706,6 +706,9 @@ data_types:
 
   cloudify.datatypes.aws.ec2.NATGateway.config:
     properties:
+      ConnectivityType:
+        type: string
+        required: false
       kwargs:
         description: http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.create_nat_gateway
         default: {}
@@ -2609,6 +2612,9 @@ node_types:
           inputs: *operation_inputs
         start:
           implementation: aws.cloudify_aws.ec2.resources.instances.start
+          inputs: *operation_inputs
+        poststart:
+          implementation: aws.cloudify_aws.ec2.resources.instances.poststart
           inputs: *operation_inputs
         stop:
           implementation: aws.cloudify_aws.ec2.resources.instances.stop
