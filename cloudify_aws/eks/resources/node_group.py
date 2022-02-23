@@ -48,14 +48,32 @@ class EKSNodeGroup(EKSBase):
         self._describe_call = 'describe_nodegroup'
         self._describe_param = {}
         self.ctx_node = ctx_node
+        self._cluster_name = None or self.initial_configuration.get(
+            CLUSTER_NAME)
+        self._node_group_name = None or self.initial_configuration.get(
+            self._id_key)
 
     @property
     def cluster_name(self):
-        return self.initial_configuration.get(CLUSTER_NAME)
+        if not self._cluster_name:
+            self._cluster_name = self.initial_configuration.get(CLUSTER_NAME)
+        return self._cluster_name
+
+    @cluster_name.setter
+    def cluster_name(self, value):
+        self._cluster_name = value
 
     @property
     def node_group_name(self):
-        return self.initial_configuration.get(NODEGROUP_NAME)
+        if not self.resource_id and not self._node_group_name:
+            return self.initial_configuration.get(self._id_key)
+        if self._node_group_name:
+            return self._node_group_name
+        return self.resource_id
+
+    @node_group_name.setter
+    def node_group_name(self, value):
+        self._node_group_name = value
 
     @property
     def describe_param(self):
@@ -71,7 +89,6 @@ class EKSNodeGroup(EKSBase):
         self._describe_param = value
 
     def wait_for_status(self):
-        self.logger.info('Performing wait for node group.')
         try:
             self.wait_for_nodegroup(
                 self.describe_param, 'nodegroup_active',
@@ -137,8 +154,11 @@ class EKSNodeGroup(EKSBase):
                 }
             )
         except WaiterError:
-            self.logger.error('Tired of waiting {} {}'.format(
+            self.logger.error('Timed out waiting {} {}'.format(
                 self.resource_id, self.status))
+            if self.status == 'CREATE_FAILED':
+                raise NonRecoverableError(
+                    'Create nodegroup failed: {}'.format(self.resource_id))
             raise
 
     def start(self, params):
@@ -191,7 +211,8 @@ def create(ctx, iface, resource_config, **_):
         )
 
     utils.update_resource_id(ctx.instance, resource_id)
-    iface = prepare_describe_node_group_filter(resource_config.copy(), iface)
+    iface.node_group_name = resource_config.get(NODEGROUP_NAME)
+    iface.cluster_name = resource_config.get(CLUSTER_NAME)
     try:
         response = iface.create(params)
     except (NonRecoverableError, ClientError) as e:

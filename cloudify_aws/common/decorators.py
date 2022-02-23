@@ -439,7 +439,8 @@ def _aws_resource(function,
     resource_id = utils.get_resource_id(node=ctx.node, instance=ctx.instance)
 
     iface = kwargs.get('iface')
-    if iface and ctx.node.type_hierarchy in SUPPORT_DRIFT:
+    if iface and ctx.node.type in SUPPORT_DRIFT:
+        iface.initial_configuration = resource_config
         iface.import_configuration(
             resource_config, runtime_instance_properties)
 
