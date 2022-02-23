@@ -71,7 +71,8 @@ def _wait_for_status(kwargs,
 
     resource_type = kwargs.get('resource_type', 'AWS Resource')
 
-    _, _, _, operation_name = _operation.name.split('.')
+    operation_name = _operation.name.split(
+        'cloudify.interfaces.lifecycle.')[-1]
     creation_phase = operation_name in [
         'precreate', 'create', 'configure']
     resource_id = kwargs['iface'].resource_id
@@ -392,7 +393,8 @@ def _aws_resource(function,
                   ignore_properties,
                   **kwargs):
     ctx = kwargs['ctx']
-    _, _, _, operation_name = ctx.operation.name.split('.')
+    operation_name = ctx.operation.name.split(
+        'cloudify.interfaces.lifecycle.')[-1]
     create_operation = get_create_op(operation_name)
     delete_operation = get_delete_op(operation_name)
     if create_operation and '__deleted' in ctx.instance.runtime_properties:
@@ -485,7 +487,7 @@ def _aws_resource(function,
             if key != '__deleted':
                 del ctx.instance.runtime_properties[key]
     if operation_name == 'poststart' and \
-            ctx.node.type_hierarchy in SUPPORT_DRIFT:
+            ctx.node.type in SUPPORT_DRIFT:
         utils.assign_previous_configuration(
             iface, ctx.instance.runtime_properties)
     return result
@@ -654,7 +656,8 @@ def _wait_for_delete(kwargs,
     iface = kwargs['iface']
     ctx_instance = get_ctx_instance()
     # Run the operation if this is the first pass
-    delete_operation = 'delete' == operation.name.split('.')[-1]
+    delete_operation = 'delete' == operation.name.split(
+        'cloudify.interfaces.lifecycle.')[-1]
     deleted_already = ctx_instance.runtime_properties.get(
         '__deleted', False)
     if delete_operation and not deleted_already or not delete_operation:

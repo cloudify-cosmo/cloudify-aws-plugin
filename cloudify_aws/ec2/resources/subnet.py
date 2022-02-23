@@ -142,6 +142,7 @@ def modify_subnet_attribute(ctx, iface, resource_config, **_):
             SUBNET_ID, iface.resource_id)
     params[SUBNET_ID] = instance_id
     iface.modify_subnet_attribute(params)
+    utils.update_expected_configuration(iface, ctx.instance.runtime_properties)
 
 
 @decorators.aws_relationship(EC2Subnet, RESOURCE_TYPE)

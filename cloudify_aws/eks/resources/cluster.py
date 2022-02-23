@@ -330,6 +330,7 @@ def poststart(ctx, iface, resource_config, **_):
                         'incompatible Cloudify version.')
     ctx.instance.runtime_properties['resource'] = utils.JsonCleanuper(
         iface.properties).to_dict()
+    utils.update_expected_configuration(iface, ctx.instance.runtime_properties)
 
 
 @decorators.aws_resource(EKSCluster, RESOURCE_TYPE, waits_for_status=False)

@@ -156,9 +156,6 @@ class EKSNodeGroup(EKSBase):
         except WaiterError:
             self.logger.error('Timed out waiting {} {}'.format(
                 self.resource_id, self.status))
-            if self.status == 'CREATE_FAILED':
-                raise NonRecoverableError(
-                    'Create nodegroup failed: {}'.format(self.resource_id))
             raise
 
     def start(self, params):
