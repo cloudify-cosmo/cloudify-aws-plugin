@@ -31,8 +31,12 @@ from cloudify.utils import exception_to_error_cause
 from cloudify.exceptions import OperationRetry, NonRecoverableError
 from cloudify_common_sdk.utils import \
     skip_creative_or_destructive_operation as skip
-
+from cloudify_common_sdk.utils import (
+    get_cloudify_version,
+    v1_gteq_v2
+)
 # Local imports
+from .constants import SUPPORT_DRIFT
 from cloudify_aws.common import utils
 from cloudify_aws.common._compat import text_type
 from cloudify_common_sdk.utils import get_ctx_instance
@@ -67,7 +71,8 @@ def _wait_for_status(kwargs,
 
     resource_type = kwargs.get('resource_type', 'AWS Resource')
 
-    _, _, _, operation_name = _operation.name.split('.')
+    operation_name = _operation.name.split(
+        'cloudify.interfaces.lifecycle.')[-1]
     creation_phase = operation_name in [
         'precreate', 'create', 'configure']
     resource_id = kwargs['iface'].resource_id
@@ -282,7 +287,7 @@ def get_special_condition(external,
             op_name == 'poststart':
         return True
     elif external and 'cloudify.nodes.aws.ec2.Image' in node_type and \
-            op_name == 'create':
+            op_name == 'precreate':
         return True
     elif external and 'cloudify.nodes.aws.ec2.Image' in node_type and \
             op_name == 'delete':
@@ -302,7 +307,7 @@ def get_create_op(op_name):
     :param op_name: ctx.operation.name.split('.')[-1].
     :return: bool
     """
-    return 'configure' == op_name
+    return 'create' == op_name
     # return 'create' in op or 'configure' in op
 
 
@@ -333,7 +338,6 @@ def _put_values_from_kwargs_in_runtime_props(from_kwargs, runtime_props):
 def _put_aws_config_in_class_decl(aws_config,
                                   class_decl_attr,
                                   aws_config_kwargs):
-
     # Check if "aws_config" is set and has a valid "dict" type because
     #  the expected data type for "aws_config" must be "dict"
     if aws_config:
@@ -389,7 +393,8 @@ def _aws_resource(function,
                   ignore_properties,
                   **kwargs):
     ctx = kwargs['ctx']
-    _, _, _, operation_name = ctx.operation.name.split('.')
+    operation_name = ctx.operation.name.split(
+        'cloudify.interfaces.lifecycle.')[-1]
     create_operation = get_create_op(operation_name)
     delete_operation = get_delete_op(operation_name)
     if create_operation and '__deleted' in ctx.instance.runtime_properties:
@@ -436,6 +441,10 @@ def _aws_resource(function,
     resource_id = utils.get_resource_id(node=ctx.node, instance=ctx.instance)
 
     iface = kwargs.get('iface')
+    if iface and ctx.node.type in SUPPORT_DRIFT:
+        iface.initial_configuration = resource_config
+        iface.import_configuration(
+            resource_config, runtime_instance_properties)
 
     try:
         exists = iface.status
@@ -477,6 +486,10 @@ def _aws_resource(function,
         for key in keys:
             if key != '__deleted':
                 del ctx.instance.runtime_properties[key]
+    if operation_name == 'poststart' and \
+            ctx.node.type in SUPPORT_DRIFT:
+        utils.assign_previous_configuration(
+            iface, ctx.instance.runtime_properties)
     return result
 
 
@@ -643,7 +656,8 @@ def _wait_for_delete(kwargs,
     iface = kwargs['iface']
     ctx_instance = get_ctx_instance()
     # Run the operation if this is the first pass
-    delete_operation = 'delete' == operation.name.split('.')[-1]
+    delete_operation = 'delete' == operation.name.split(
+        'cloudify.interfaces.lifecycle.')[-1]
     deleted_already = ctx_instance.runtime_properties.get(
         '__deleted', False)
     if delete_operation and not deleted_already or not delete_operation:
@@ -794,18 +808,41 @@ def untag_resources(fn):
 
 def add_default_tag(_ctx, iface):
     ctx.logger.info("Adding default cloudify_tagging.")
-
+    special_tags = {}
+    if v1_gteq_v2(get_cloudify_version(), "6.3.1"):
+        ctx.logger.info("Adding tags using resource_tags.")
+        special_tags.update(ctx.deployment.get("resource_tags"))
+    for key in special_tags:
+        iface.tag(
+            {
+                'Tags': [
+                    {
+                        'Key': key,
+                        'Value': "{}".format(
+                            special_tags[key])
+                    }
+                ],
+                'Resources': [iface.resource_id]
+            }
+        )
     iface.tag(
-        {'Tags': [{'Key': 'CreatedBy', 'Value': "{}-{}-{}".format(
-            _ctx.tenant_name,
-            _ctx.deployment.id,
-            _ctx.instance.id)}],
-         'Resources': [iface.resource_id]}
+        {
+            'Tags':
+                [
+                    {'Key': 'CreatedBy', 'Value': "{}-{}-{}".format(
+                        _ctx.tenant_name,
+                        _ctx.deployment.id,
+                        _ctx.instance.id)}],
+            'Resources': [iface.resource_id]
+        }
     )
     iface.tag(
-        {'Tags': [{'Key': 'Name', 'Value': "{}_{}".format(
-            _ctx.node.name,
-            _ctx.instance.id)}],
-         'Resources': [iface.resource_id]}
+        {
+            'Tags': [
+                {'Key': 'Name', 'Value': "{}_{}".format(
+                    _ctx.node.name,
+                    _ctx.instance.id)}],
+            'Resources': [iface.resource_id]
+        }
     )
     ctx.logger.info("Added default cloudify_tagging.")

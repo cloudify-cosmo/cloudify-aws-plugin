@@ -22,7 +22,6 @@ from time import sleep
 
 from cloudify.exceptions import NonRecoverableError
 from cloudify.utils import exception_to_error_cause
-from botocore.exceptions import ClientError, ParamValidationError
 
 # Local imports
 from cloudify_aws.ec2 import EC2Base
@@ -43,27 +42,10 @@ class EC2Vpc(EC2Base):
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
-
-    @property
-    def properties(self):
-        '''Gets the properties of an external resource'''
-        params = {VPC_IDS: [self.resource_id]}
-        try:
-            resources = \
-                self.client.describe_vpcs(**params)
-        except (ClientError, ParamValidationError):
-            pass
-        else:
-            return None if not resources else resources.get(VPCS, [None])[0]
-        return None
-
-    @property
-    def status(self):
-        '''Gets the status of an external resource'''
-        props = self.properties
-        if not props:
-            return None
-        return props['State']
+        self._describe_call = 'describe_vpcs'
+        self._ids_key = VPC_IDS
+        self._type_key = VPCS
+        self._id_key = VPC_ID
 
     @property
     def check_status(self):
@@ -75,7 +57,8 @@ class EC2Vpc(EC2Base):
         '''
             Create a new AWS EC2 Vpc.
         '''
-        return self.make_client_call('create_vpc', params)
+        self.create_response = self.make_client_call('create_vpc', params)
+        self.update_resource_id(self.create_response[VPC].get(VPC_ID, ''))
 
     def delete(self, params=None):
         '''
@@ -131,40 +114,23 @@ def create(ctx, iface, resource_config, **_):
     params = utils.clean_params(
         dict() if not resource_config else resource_config.copy())
 
-    # Actually create the resource
-    try:
-        create_response = iface.create(params)[VPC]
-    except NonRecoverableError as ex:
-        if 'VpcLimitExceeded' in str(ex):
-            _, _, tb = sys.exc_info()
-            raise NonRecoverableError(
-                "Please add quota vpc or delete unused vpc and try again.",
-                causes=[exception_to_error_cause(ex, tb)])
-        else:
-            raise ex
-    ctx.instance.runtime_properties['create_response'] = \
-        utils.JsonCleanuper(create_response).to_dict()
+    _create(iface, params)
+    utils.update_resource_id(ctx.instance, iface.resource_id)
+    _modify_attribute(iface, _.get('modify_vpc_attribute_args'))
 
-    vpc_id = create_response.get(VPC_ID, '')
-    iface.update_resource_id(vpc_id)
-    utils.update_resource_id(
-        ctx.instance, vpc_id)
 
-    modify_vpc_attribute_args = \
-        _.get('modify_vpc_attribute_args')
-    if modify_vpc_attribute_args:
-        modify_vpc_attribute_args[VPC_ID] = \
-            vpc_id
-        iface.modify_vpc_attribute(
-            modify_vpc_attribute_args)
-    max_wait = 5
-    counter = 0
-    while not iface.properties:
-        ctx.logger.debug('Waiting for VPC to be created.')
-        sleep(5)
-        if max_wait > counter:
-            break
-        counter += 1
+@decorators.aws_resource(class_decl=EC2Vpc,
+                         resource_type=RESOURCE_TYPE,
+                         waits_for_status=False)
+def poststart(ctx, iface=None, **_):
+    utils.update_expected_configuration(iface, ctx.instance.runtime_properties)
+
+
+@decorators.aws_resource(class_decl=EC2Vpc,
+                         resource_type=RESOURCE_TYPE,
+                         waits_for_status=False)
+def check_drift(ctx, iface=None, **_):
+    return utils.check_drift(RESOURCE_TYPE, iface, ctx.logger)
 
 
 @decorators.aws_resource(EC2Vpc, RESOURCE_TYPE,
@@ -190,6 +156,34 @@ def modify_vpc_attribute(ctx, iface, resource_config, **_):
             VPC_ID, iface.resource_id)
     params[VPC_ID] = instance_id
     iface.modify_vpc_attribute(params)
+
+
+def _create(iface, params):
+    # Actually create the resource
+    try:
+        iface.create(params)
+    except NonRecoverableError as ex:
+        if 'VpcLimitExceeded' in str(ex):
+            _, _, tb = sys.exc_info()
+            raise NonRecoverableError(
+                "Please add quota vpc or delete unused vpc and try again.",
+                causes=[exception_to_error_cause(ex, tb)])
+        else:
+            raise ex
+
+
+def _modify_attribute(iface,  modify_vpc_attribute_args):
+    if modify_vpc_attribute_args:
+        modify_vpc_attribute_args[VPC_ID] = iface.resource_id
+        iface.modify_vpc_attribute(modify_vpc_attribute_args)
+    max_wait = 5
+    counter = 0
+    while not iface.properties:
+        iface.logger.debug('Waiting for VPC to be created.')
+        sleep(5)
+        if max_wait > counter:
+            break
+        counter += 1
 
 
 interface = EC2Vpc

@@ -53,25 +53,22 @@ class TestEC2NetworkInterface(TestBase):
 
     def test_class_properties(self):
         effect = self.get_client_error_exception(name='EC2 Network Interface')
-        self.eni.client = \
-            self.make_client_function('describe_network_interfaces',
-                                      side_effect=effect)
+        self.eni.client = self.make_client_function(
+            'describe_network_interfaces', side_effect=effect)
         res = self.eni.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
         value = {}
-        self.eni.client = \
-            self.make_client_function('describe_network_interfaces',
-                                      return_value=value)
+        self.eni.client = self.make_client_function(
+            'describe_network_interfaces', return_value=value)
         res = self.eni.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
+        self.eni.resource_id = 'test_name'
         value = {NETWORKINTERFACES: [{NETWORKINTERFACE_ID: 'test_name'}]}
-        self.eni.client = \
-            self.make_client_function('describe_network_interfaces',
-                                      return_value=value)
-        res = self.eni.properties
-        self.assertEqual(res[NETWORKINTERFACE_ID], 'test_name')
+        self.eni.client = self.make_client_function(
+            'describe_network_interfaces', return_value=value)
+        self.assertEqual(self.eni.properties[NETWORKINTERFACE_ID], 'test_name')
 
     def test_class_status(self):
         value = {}
@@ -81,22 +78,25 @@ class TestEC2NetworkInterface(TestBase):
         res = self.eni.status
         self.assertIsNone(res)
 
-        value = {NETWORKINTERFACES: [{NETWORKINTERFACE_ID: 'test_name',
-                                      'Status': 'available'}]}
-        self.eni.client = \
-            self.make_client_function('describe_network_interfaces',
-                                      return_value=value)
-        res = self.eni.status
-        self.assertEqual(res, 'available')
+        value = {
+            NETWORKINTERFACES: [
+                {
+                    NETWORKINTERFACE_ID: 'test_name',
+                    'Status': 'available'
+                }
+            ]
+        }
+        self.eni.resource_id = 'test_name'
+        self.eni.client = self.make_client_function(
+            'describe_network_interfaces', return_value=value)
+        self.assertEqual(self.eni.status, 'available')
 
     def test_class_create(self):
-        value = {'NetworkInterface': 'test'}
-        self.eni.client = \
-            self.make_client_function('create_network_interface',
-                                      return_value=value)
-        res = self.eni.create(value)
-        self.assertEqual(
-            res['NetworkInterface'], value['NetworkInterface'])
+        value = {'NetworkInterface': {'NetworkInterfaceId': 'test'}}
+        self.eni.client = self.make_client_function(
+            'create_network_interface', return_value=value)
+        self.eni.create(value)
+        self.assertEqual(self.eni.create_response, value)
 
     def test_class_delete(self):
         params = {}
@@ -164,15 +164,20 @@ class TestEC2NetworkInterface(TestBase):
         }
         expected = copy.deepcopy(config[SEC_GROUPS])
         expected.append('group3')
-        self.eni.resource_id = 'eni'
-        iface = MagicMock()
-        iface.create = self.mock_return({'NetworkInterface': config})
-        eni.create(ctx=ctx, iface=iface, resource_config=config)
-        self.assertEqual(self.eni.resource_id,
-                         'eni')
+        create_response = {
+            'NetworkInterface': {
+                'NetworkInterfaceId': 'eni',
+            }
+        }
+        create_response['NetworkInterface'].update(config)
+        self.eni.client = self.make_client_function(
+            'create_network_interface',
+            return_value=create_response
+        )
+        eni.create(ctx=ctx, iface=self.eni, resource_config=config)
+        self.assertEqual(self.eni.resource_id, 'eni')
         self.assertEqual(
-            ctx.instance.runtime_properties['create_response'][SEC_GROUPS],
-            expected)
+            self.eni.create_response['NetworkInterface'][SEC_GROUPS], expected)
 
     def test_create_wth_modify(self):
         ctx = self.get_mock_ctx("NetworkInterface")

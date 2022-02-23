@@ -388,6 +388,75 @@ class TestEC2Instances(TestBase):
                           instances.sort_devices(test_devices)]
         self.assertEqual(['0', '1', '2', '3'], sorted_devices)
 
+    def test_check_drift(self):
+        original_value = {
+            'InstanceId': 'baz',
+            'ImageId': 'foo',
+            'StateCode': 80,
+            'NetworkInterfaces': [
+                {
+                    'NetworkInterfaceId': 'foo',
+                    'Association': {
+                        'PublicIp': '1.1.1.1',
+                    }
+                }
+            ]
+        }
+        next_value = {
+            'InstanceId': 'baz',
+            'ImageId': 'foo',
+            'StateCode': 64,
+            'NetworkInterfaces': [
+                {
+                    'NetworkInterfaceId': 'bar',
+                    'Association': {
+                        'PublicIp': '2.2.2.2',
+                    }
+                }
+            ]
+        }
+        ctx = self.get_mock_ctx(
+            "EC2Instances",
+            test_properties={'os_family': 'linux',
+                             'client_config': CLIENT_CONFIG},
+            test_runtime_properties={'aws_resource_ids': ['baz']},
+            type_hierarchy=['cloudify.nodes.Root', 'cloudify.nodes.Compute'])
+        ctx.instance.runtime_properties.update({
+                'aws_resource_id': 'baz',
+                'expected_configuration': original_value,
+                'previous_configuration': {},
+                'create_response': original_value
+            })
+        current_ctx.set(ctx)
+        self.instances.resource_id = 'baz'
+        self.instances.import_configuration(
+            ctx.node.properties.get('resource_config', {}),
+            ctx.instance.runtime_properties
+        )
+        describe_result = {
+            'Reservations': [
+                {
+                    'Instances': [next_value]
+                }
+            ]
+        }
+        self.instances.client = self.make_client_function(
+            'describe_instances',
+            return_value=describe_result)
+        output = instances.check_drift(ctx=ctx, iface=self.instances)
+        expected = {
+            'values_changed': {
+                "root['NetworkInterfaces'][0]['NetworkInterfaceId']": {
+                    'new_value': 'bar', 'old_value': 'foo'
+                },
+                "root['StateCode']": {'new_value': 64, 'old_value': 80},
+                "root['NetworkInterfaces'][0]['Association']['PublicIp']": {
+                    'new_value': '2.2.2.2', 'old_value': '1.1.1.1'
+                }
+            }
+        }
+        self.assertEqual(output, expected)
+
 
 if __name__ == '__main__':
     unittest.main()

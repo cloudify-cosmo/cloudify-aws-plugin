@@ -58,7 +58,7 @@ DEFAULT_NODE_PROPERTIES = {
 
 DEFAULT_RUNTIME_PROPERTIES = {
     'aws_resource_id': 'aws_resource',
-    'resource_config': {}
+    'resource_config': {},
 }
 
 
@@ -99,7 +99,7 @@ class TestBase(unittest.TestCase):
     def _to_DirtyTrackingDict(self, origin):
         if not origin:
             origin = {}
-        dirty_dict = DirtyTrackingDict()
+        dirty_dict = DirtyTrackingDict(origin)
         for k in origin:
             dirty_dict[k] = copy.deepcopy(origin[k])
         return dirty_dict
@@ -148,6 +148,7 @@ class TestBase(unittest.TestCase):
 
         ctx.node._type = type_node
         ctx.node.type_hierarchy = type_hierarchy or ['cloudify.nodes.Root']
+        ctx.instance.refresh = MagicMock()
 
         return ctx
 
@@ -460,15 +461,17 @@ class TestBase(unittest.TestCase):
                              return_value=None,
                              side_effect=None,
                              client=None):
+
         if client:
             fake_client = client
         else:
             fake_client = MagicMock()
         fun = getattr(fake_client, fun_name)
-        if side_effect is not None:
+        if side_effect:
             fun.side_effect = side_effect
         else:
             fun.return_value = return_value
+
         return fake_client
 
     def get_client_error_exception(self, name="Error"):
@@ -632,18 +635,6 @@ class TestBase(unittest.TestCase):
 class TestServiceBase(TestBase):
 
     base = None
-
-    def test_properties(self):
-        if not self.base:
-            return
-        with self.assertRaises(NotImplementedError):
-            self.base.properties()
-
-    def test_status(self):
-        if not self.base:
-            return
-        with self.assertRaises(NotImplementedError):
-            self.base.status()
 
     def test_create(self):
         if not self.base:

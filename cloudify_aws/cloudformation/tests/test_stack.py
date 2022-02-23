@@ -96,17 +96,25 @@ class TestCloudFormationStack(TestBase):
         self.fake_client.describe_stacks = MagicMock(side_effect=[
             {},
             {
-                'Stacks': [{'StackName': 'Stack',
+                'Stacks': [{'StackName': 'test-cloudformation1',
                             'StackStatus': 'CREATE_COMPLETE'}]
             },
             {
-                'Stacks': [{'StackName': 'Stack',
+                'Stacks': [{'StackName': 'test-cloudformation1',
+                            'StackStatus': 'CREATE_COMPLETE'}]
+            },
+            {
+                'Stacks': [{'StackName': 'test-cloudformation1',
+                            'StackStatus': 'CREATE_COMPLETE'}]
+            },
+            {
+                'Stacks': [{'StackName': 'test-cloudformation1',
                             'StackStatus': 'CREATE_COMPLETE'}]
             }
         ])
 
         self.fake_client.create_stack = MagicMock(return_value={
-            'StackId': 'stack'
+            'StackId': 'test-cloudformation1'
         })
         stack.create(ctx=_ctx, resource_config=None, iface=None)
 
@@ -128,9 +136,14 @@ class TestCloudFormationStack(TestBase):
 
         updated_runtime_prop = copy.deepcopy(RUNTIMEPROP_AFTER_CREATE)
         updated_runtime_prop['create_response'] = {
-            'StackName': 'Stack',
+            'StackName': 'test-cloudformation1',
             'StackStatus': 'CREATE_COMPLETE'
         }
+
+        # This is just because I'm not interested in the content
+        # of remote_configuration right now.
+        # If it doesn't exist, this test will fail, and that's good.
+        _ctx.instance.runtime_properties.pop('remote_configuration')
         self.assertEqual(_ctx.instance.runtime_properties,
                          updated_runtime_prop)
 
@@ -145,6 +158,10 @@ class TestCloudFormationStack(TestBase):
 
         current_ctx.set(_ctx)
         self.fake_client.describe_stacks = MagicMock(side_effect=[
+            {
+                'Stacks': [{'StackName': 'Stack',
+                            'StackStatus': 'CREATE_COMPLETE'}]
+            },
             {
                 'Stacks': [{'StackName': 'Stack',
                             'StackStatus': 'CREATE_COMPLETE'}]
@@ -231,7 +248,7 @@ class TestCloudFormationStack(TestBase):
 
     def test_CloudFormationStackClass_properties_empty(self):
         self.fake_client.describe_stacks = MagicMock(return_value={
-            'Stacks': [None]
+            'Stacks': []
         })
 
         test_instance = stack.CloudFormationStack("ctx_node",
@@ -239,7 +256,7 @@ class TestCloudFormationStack(TestBase):
                                                   client=self.fake_client,
                                                   logger=None)
 
-        self.assertEqual(test_instance.properties, None)
+        self.assertEqual(test_instance.properties, {})
 
         self.fake_client.describe_stacks.assert_called_with(StackName='Stack')
 
@@ -260,7 +277,7 @@ class TestCloudFormationStack(TestBase):
 
     def test_CloudFormationStackClass_status_empty(self):
         self.fake_client.describe_stacks = MagicMock(return_value={
-            'Stacks': [None]
+            'Stacks': []
         })
 
         test_instance = stack.CloudFormationStack("ctx_node",

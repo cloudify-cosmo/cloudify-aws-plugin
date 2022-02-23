@@ -70,7 +70,7 @@ RUNTIME_PROPERTIES = {
 RUNTIME_PROPERTIES_AFTER_CREATE = {
     'aws_resource_arn': 'fake_QueueArn',
     'aws_resource_id': 'fake_QueueUrl',
-    'resource_config': {}
+    'resource_config': {},
 }
 
 POLICY_STRING = (
@@ -151,7 +151,7 @@ class TestSQSQueue(TestBase):
             {
                 'aws_resource_arn': 'None',
                 'aws_resource_id': 'fake_QueueUrl',
-                'resource_config': {}
+                'resource_config': {},
             }
         )
 

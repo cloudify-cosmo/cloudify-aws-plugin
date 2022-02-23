@@ -74,7 +74,11 @@ class EKSCluster(EKSBase):
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         EKSBase.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
-        self.describe_param = {'name': self.resource_id}
+        self._id_key = CLUSTER_NAME
+        self._type_key = CLUSTER
+        self._properties = {}
+        self._describe_call = 'describe_cluster'
+        self.describe_param = {self._id_key: self.resource_id}
 
     def wait_for_status(self):
         self.logger.info('Performing wait for cluster.')
@@ -84,16 +88,6 @@ class EKSCluster(EKSBase):
                 max_attempt=30)
         except WaiterError:
             raise OperationRetry('Waiting for nodegroup...')
-
-    @property
-    def properties(self):
-        """Gets the properties of an external resource"""
-        try:
-            properties = self.describe()
-        except (ParamValidationError, ClientError):
-            pass
-        else:
-            return None if not properties else properties
 
     @property
     def status(self):
@@ -111,10 +105,7 @@ class EKSCluster(EKSBase):
 
     def describe(self, params=None):
         params = params or self.describe_param
-        try:
-            return self.client.describe_cluster(**params)[CLUSTER]
-        except (ParamValidationError, ClientError):
-            return {}
+        return self.get_describe_result(params)
 
     def describe_all(self):
         clusters = []
@@ -135,7 +126,9 @@ class EKSCluster(EKSBase):
         """
             Create a new AWS EKS cluster.
         """
-        return self.make_client_call('create_cluster', params)
+        self.create_response = self.make_client_call('create_cluster', params)
+        self.update_resource_id(self.create_response[CLUSTER].get(
+            CLUSTER_NAME, ''))
 
     @property
     def fargate_profiles(self):
@@ -270,10 +263,10 @@ def create(ctx, iface, resource_config, **_):
 
     utils.update_resource_id(ctx.instance, resource_id)
     iface = prepare_describe_cluster_filter(resource_config.copy(), iface)
-    response = iface.create(params)
-    if response and response.get(CLUSTER):
-        resource_arn = response.get(CLUSTER).get(CLUSTER_ARN)
-        utils.update_resource_arn(ctx.instance, resource_arn)
+    iface.create(params)
+    if iface.create_response.get(CLUSTER):
+        utils.update_resource_arn(
+            ctx.instance, iface.create_response.get(CLUSTER).get(CLUSTER_ARN))
 
 
 @decorators.aws_resource(EKSCluster, RESOURCE_TYPE, waits_for_status=False)
@@ -337,6 +330,7 @@ def poststart(ctx, iface, resource_config, **_):
                         'incompatible Cloudify version.')
     ctx.instance.runtime_properties['resource'] = utils.JsonCleanuper(
         iface.properties).to_dict()
+    utils.update_expected_configuration(iface, ctx.instance.runtime_properties)
 
 
 @decorators.aws_resource(EKSCluster, RESOURCE_TYPE, waits_for_status=False)
@@ -390,6 +384,13 @@ def get_zones(ctx, subnets):
         availability_zone = subnet_iface.properties['AvailabilityZone']
         zones.append(availability_zone)
     return zones
+
+
+@decorators.aws_resource(class_decl=EKSCluster,
+                         resource_type=RESOURCE_TYPE,
+                         waits_for_status=False)
+def check_drift(ctx, iface=None, **_):
+    return utils.check_drift(RESOURCE_TYPE, iface, ctx.logger)
 
 
 interface = EKSCluster

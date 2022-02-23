@@ -108,3 +108,13 @@ LOCATIONS = {
         'town': 'Boardman, OR'
     }
 }
+
+SUPPORT_DRIFT = [
+    'cloudify.nodes.aws.ec2.Vpc',
+    'cloudify.nodes.aws.ec2.Subnet',
+    'cloudify.nodes.aws.ec2.Interface',
+    'cloudify.nodes.aws.ec2.SecurityGroup',
+    'cloudify.nodes.aws.ec2.Instances',
+    'cloudify.nodes.aws.eks.Cluster',
+    'cloudify.nodes.aws.eks.NodeGroup',
+]

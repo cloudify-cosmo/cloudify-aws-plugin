@@ -46,6 +46,9 @@ class EC2Route(EC2Base):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
 
+    def properties(self):
+        return {}
+
     def create(self, params):
         '''
             Create a new AWS EC2 Route.
