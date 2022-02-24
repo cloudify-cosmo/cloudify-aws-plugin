@@ -811,7 +811,7 @@ def add_default_tag(_ctx, iface):
     special_tags = {}
     if v1_gteq_v2(get_cloudify_version(), "6.3.1"):
         ctx.logger.info("Adding tags using resource_tags.")
-        special_tags.update(ctx.deployment.get("resource_tags"))
+        special_tags.update(ctx.deployment.resource_tags)
     for key in special_tags:
         iface.tag(
             {
