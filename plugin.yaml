@@ -4,6 +4,11 @@ plugins:
     package_name: cloudify-aws-plugin
     package_version: '3.0.0'
 
+resource_tags:
+  tenant: { get_sys: [ tenant, name ] }
+  deployment_id: { get_sys: [ deployment, id ] }
+  owner: { get_sys: [ deployment, owner ] }
+
 data_types:
 
   cloudify.datatypes.swift.Connection:
