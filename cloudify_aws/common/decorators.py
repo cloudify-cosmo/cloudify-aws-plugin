@@ -19,6 +19,7 @@
 """
 
 # Standard Imports
+import logging
 import sys
 from time import sleep
 
@@ -182,7 +183,9 @@ def aws_relationship(class_decl=None,
             # Add new operation arguments
             kwargs['resource_type'] = resource_type
             iface = kwargs.get('iface')
+            ctx.logger.info("yaniv log1")
             if not iface and class_decl:
+                ctx.logger.info("yaniv log1.1")
                 kwargs['iface'] = class_decl(
                     ctx.source.node, logger=ctx.logger,
                     resource_id=utils.get_resource_id(
@@ -190,8 +193,10 @@ def aws_relationship(class_decl=None,
                         instance=ctx.source.instance,
                         raise_on_missing=True))
             else:
+                ctx.logger.info("yaniv log1.2")
                 kwargs['iface'] = iface
             kwargs['resource_config'] = kwargs.get('resource_config') or dict()
+            ctx.logger.info("yaniv log2")
             # Check if using external
             if ctx.source.node.properties.get('use_external_resource', False):
                 resource_id = utils.get_resource_id(
@@ -214,7 +219,9 @@ def aws_relationship(class_decl=None,
                 ctx.logger.warn('%s ID# "%s" has force_operation set.'
                                 % (resource_type, resource_id))
             # Execute the function
+            ctx.logger.info("yaniv log3")
             ret = function(**kwargs)
+            ctx.logger.info("yaniv log4")
             # When modifying nested runtime properties, the internal
             # "dirty checking" mechanism will not know of our changes.
             # This forces the internal tracking to mark the properties as
@@ -295,6 +302,16 @@ def get_special_condition(external,
     elif waits_for_status and not external:
         return True
     elif create_op and 'cloudify.nodes.aws.ec2.VpcPeeringRequest' in node_type:
+        return True
+    elif 'cloudify.relationships.aws.iam.login_profile' \
+            in node_type:
+        logger = logging.getLogger(__name__)
+        logger.info("yaniv login")
+        return True
+    elif 'cloudify.relationships.aws.iam.access_key.connected_to' \
+            in node_type and op_name == 'establish':
+        logger = logging.getLogger(__name__)
+        logger.info("yaniv key")
         return True
     return not create_op and not delete_op or force
 

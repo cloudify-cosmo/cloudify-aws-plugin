@@ -39,6 +39,11 @@ class IAMUser(IAMBase):
     @property
     def properties(self):
         '''Gets the properties of an external resource'''
+        self.logger.info("yaniv resource2")
+
+        if not self.resource_id:
+            self.logger.info("yaniv resource3")
+            return {}
         resource = None
         try:
             resource = self.client.get_user(UserName=self.resource_id)
@@ -51,6 +56,7 @@ class IAMUser(IAMBase):
     @property
     def status(self):
         '''Gets the status of an external resource'''
+        self.logger.info("yaniv resource1")
         if self.properties:
             return 'available'
         return None
