@@ -429,7 +429,6 @@ def _aws_resource(function,
 
     _put_aws_config_in_class_decl(
         aws_config, class_decl_attr, aws_config_kwargs)
-
     kwargs['iface'] = class_decl(**class_decl_attr) if class_decl else None
 
     if not ignore_properties:

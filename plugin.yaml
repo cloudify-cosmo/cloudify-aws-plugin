@@ -33,6 +33,10 @@ data_types:
 
   cloudify.datatypes.aws.ConnectionConfig:
     properties:
+      aws_session_token:
+        description: Session token.
+        type: string
+        required: false
       aws_access_key_id:
         description: >
           The ID of your AWS ACCESS KEY ID.
@@ -60,6 +64,10 @@ data_types:
             then ``use_ssl`` is ignored.
         type: string
         required: false
+      api_version:
+        type: string
+        required: false
+        description: The API Version to use, if not latest.
       additional_config:
         required: false
         description: >

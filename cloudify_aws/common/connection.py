@@ -23,6 +23,7 @@ from botocore.config import Config
 # Local imports
 from .utils import desecretize_client_config
 from cloudify_aws.common.constants import AWS_CONFIG_PROPERTY
+
 # pylint: disable=R0903
 
 
@@ -35,7 +36,12 @@ class Boto3Connection(object):
     '''
     def __init__(self, node, aws_config=None):
         aws_config_whitelist = [
-            'aws_access_key_id', 'aws_secret_access_key', 'region_name']
+            'aws_access_key_id',
+            'aws_secret_access_key',
+            'region_name']
+        aws_config_options = [
+            'aws_session_token',
+            'api_version']
 
         config_from_props = node.properties.get(AWS_CONFIG_PROPERTY, dict())
         # Get additional config from node configuration.
@@ -50,8 +56,9 @@ class Boto3Connection(object):
         self.aws_config['region_name'] = self.aws_config.get('region_name')
 
         # This it check if "aws_config" contains "endpoint_url" or not
-        if self.aws_config.get('endpoint_url'):
-            aws_config_whitelist.append('endpoint_url')
+        for option in aws_config_options:
+            if self.aws_config.get(option):
+                aws_config_whitelist.append(option)
 
         # Delete all non-whitelisted keys
         self.aws_config = {k: v for k, v in self.aws_config.items()
