@@ -22,8 +22,28 @@ from cloudify_aws.iam.resources.user import IAMUser
 
 RESOURCE_TYPE = 'IAM User Access Key'
 
+class IAMUserAccessKey(IAMUser):
+    '''
+        AWS IAM User interface
+    '''
+    def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
+        IAMUser.__init__(self, ctx_node, resource_id, client, logger)
+        self.type_name = RESOURCE_TYPE
 
-@decorators.aws_resource(IAMUser,
+    @property
+    def properties(self):
+        '''Gets the properties of an external resource'''
+        self.logger.info("yanivn new class properties")
+        return True
+
+    @property
+    def status(self):
+        '''Gets the status of an external resource'''
+        self.logger.info("yanivn new class status")
+        return 'available'
+
+
+@decorators.aws_resource(IAMUserAccessKey,
                          RESOURCE_TYPE,
                          waits_for_status=False)
 def configure(ctx, resource_config, **_):

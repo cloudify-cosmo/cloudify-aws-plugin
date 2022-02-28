@@ -56,9 +56,11 @@ class IAMUser(IAMBase):
     @property
     def status(self):
         '''Gets the status of an external resource'''
-        self.logger.info("yaniv resource1")
-        if self.properties:
+        self.logger.info("yaniv resource0")
+        if self.properties: # or (self.properties == {} and operation_name == "establish"):
+            self.logger.info("yaniv resource1.5")
             return 'available'
+        self.logger.info("yaniv resource1.6")
         return None
 
     def create(self, params):

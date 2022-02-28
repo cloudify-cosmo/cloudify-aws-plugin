@@ -290,6 +290,8 @@ def get_special_condition(external,
                           delete_op,
                           force,
                           waits_for_status):
+    logger = logging.getLogger(__name__)
+    logger.info("yaniv get_special_condition")
     if 'cloudify.nodes.aws.ec2.Instances' in node_type and \
             op_name == 'poststart':
         return True
@@ -305,12 +307,10 @@ def get_special_condition(external,
         return True
     elif 'cloudify.relationships.aws.iam.login_profile' \
             in node_type:
-        logger = logging.getLogger(__name__)
         logger.info("yaniv login")
         return True
     elif 'cloudify.relationships.aws.iam.access_key.connected_to' \
             in node_type and op_name == 'establish':
-        logger = logging.getLogger(__name__)
         logger.info("yaniv key")
         return True
     return not create_op and not delete_op or force
