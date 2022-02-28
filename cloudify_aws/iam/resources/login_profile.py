@@ -22,27 +22,8 @@ from cloudify_aws.iam.resources.user import IAMUser
 
 RESOURCE_TYPE = 'IAM User Login Profile'
 
-class IAMUserProfile(IAMUser):
-    '''
-        AWS IAM User interface
-    '''
-    def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
-        IAMUser.__init__(self, ctx_node, resource_id, client, logger)
-        self.type_name = RESOURCE_TYPE
 
-    @property
-    def properties(self):
-        '''Gets the properties of an external resource'''
-        self.logger.info("yanivn new class properties")
-        return True
-
-    @property
-    def status(self):
-        '''Gets the status of an external resource'''
-        self.logger.info("yanivn new class status")
-        return 'available'
-
-@decorators.aws_resource(IAMUserProfile,
+@decorators.aws_resource(IAMUser,
                          RESOURCE_TYPE,
                          waits_for_status=False)
 def configure(ctx, resource_config, **_):
@@ -50,6 +31,7 @@ def configure(ctx, resource_config, **_):
     # Save the parameters
     ctx.instance.runtime_properties['resource_config'] = \
         utils.clean_params(resource_config)
+    utils.update_resource_id(ctx.instance, utils.get_parent_resource_id(ctx.instance, 'cloudify.relationships.aws.iam.login_profile.connected_to'))
 
 
 @decorators.aws_relationship(IAMUser, RESOURCE_TYPE)

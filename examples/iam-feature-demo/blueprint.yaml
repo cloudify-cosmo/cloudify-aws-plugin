@@ -82,7 +82,7 @@ node_templates:
     properties:
       resource_config:
         UserName: !!str PMCfy=,.@-User
-        Password: !!str Cl0ud1fy2017
+        Password: !!str Cl0ud1fy2017!
     relationships:
       - type: cloudify.relationships.aws.iam.login_profile.connected_to
         target: pmcfy_iam_user
