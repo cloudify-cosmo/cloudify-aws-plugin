@@ -7,7 +7,7 @@ from ..eks.resources import cluster
 from ..common.connection import Boto3Connection
 
 TYPES_MATRIX = {
-    'AWS::EKS::CLUSTER': (cluster.EKSCluster, 'eks', 'name')
+    'AWS::EKS::CLUSTER': (cluster.EKSCluster, 'eks', 'cluster', 'name')
 }
 
 
@@ -79,8 +79,8 @@ def get_resources(node, regions, resource_types, logger):
             elif resource_type not in resources[region]:
                 resources[region][resource_type] = {}
             # Get the class callable, the service name, and resource_id key.
-            class_decl, service_name, resource_key = TYPES_MATRIX.get(
-                resource_type)
+            class_decl, service_name, type_key, resource_key = \
+                TYPES_MATRIX.get(resource_type)
             # Note that the service_name needs to be updated in the Cloudify
             # AWS plugin resource module class for supporting new types.
             if not class_decl:
@@ -95,7 +95,8 @@ def get_resources(node, regions, resource_types, logger):
             result = utils.JsonCleanuper(iface.describe_all()).to_dict()
             # Add this stuff to the resources dict.
             for resource in result:
-                resource_id = resource[resource_key]
+                logger.debug('Checking this resource: {}'.format(resource))
+                resource_id = resource[type_key][resource_key]
                 resources[region][resource_type][resource_id] = resource
     return resources
 
