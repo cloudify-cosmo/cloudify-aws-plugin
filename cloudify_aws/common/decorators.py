@@ -776,7 +776,12 @@ def tag_resources(fn):
                 iface.update_resource_id(resource_id)
             resource_ids = [iface.resource_id]
         if ctx.node.properties.get('cloudify_tagging', False):
-            add_default_tag(ctx, iface)
+            try:
+                add_default_tag(ctx, iface)
+            except ClientError:
+                raise OperationRetry(
+                    'Waiting for {} to be provisioned before tagging.'.format(
+                        iface.resource_id))
         else:
             ctx.logger.info("Not adding default Cloudify tags.")
         tags = utils.get_tags_list(
