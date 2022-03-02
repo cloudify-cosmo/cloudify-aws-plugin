@@ -619,11 +619,14 @@ def wait_on_relationship_status(status_good=None,
     return wrapper_outer
 
 
-def wait_for_delete(status_deleted=None, status_pending=None):
+def wait_for_delete(status_deleted=None,
+                    status_pending=None,
+                    status_not_deleted=None):
     '''AWS resource decorator'''
 
     status_deleted = status_deleted or []
     status_pending = status_pending or []
+    status_not_deleted = status_not_deleted or []
 
     def wrapper_outer(function):
         '''Outer function'''
@@ -637,7 +640,8 @@ def wait_for_delete(status_deleted=None, status_pending=None):
                              _operation,
                              function,
                              status_pending,
-                             status_deleted)
+                             status_deleted,
+                             status_not_deleted)
 
         return wrapper_inner
 
@@ -649,7 +653,9 @@ def _wait_for_delete(kwargs,
                      operation,
                      function,
                      status_pending,
-                     status_deleted):
+                     status_deleted,
+                     status_not_deleted=None):
+    status_not_deleted = status_not_deleted or []
     print('This is the operation: {}'.format(operation))
     resource_type = kwargs.get('resource_type', 'AWS Resource')
     iface = kwargs['iface']
@@ -674,6 +680,11 @@ def _wait_for_delete(kwargs,
                     del ctx_instance.runtime_properties[key]
         return
     elif status in status_pending:
+        raise OperationRetry(
+            '%s ID# "%s" is still in a pending state.'
+            % (resource_type, iface.resource_id))
+    elif status in status_not_deleted:
+        ctx_instance.runtime_properties['__deleted'] = False
         raise OperationRetry(
             '%s ID# "%s" is still in a pending state.'
             % (resource_type, iface.resource_id))
