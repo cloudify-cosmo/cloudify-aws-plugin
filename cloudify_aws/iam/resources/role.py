@@ -40,15 +40,12 @@ class IAMRole(IAMBase):
 
     @property
     def properties(self):
-        '''Gets the properties of an external resource'''
-        resource = None
-        try:
-            resource = self.client.get_role(RoleName=self.resource_id)
-        except ClientError:
-            pass
-        if not resource or not resource.get('Role', dict()):
-            return None
-        return resource['Role']
+        if not self.resource_id:
+            return
+        params = {'RoleName': self.resource_id}
+        result = self.make_client_call('get_role', params)
+        if 'Role' in result:
+            return result['Role']
 
     @property
     def status(self):
