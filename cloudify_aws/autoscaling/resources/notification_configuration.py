@@ -42,6 +42,8 @@ class AutoscalingNotification(AutoscalingBase):
     @property
     def properties(self):
         """Gets the properties of an external resource"""
+        if not self.resource_id:
+            return
         params = {DESCRIBE_KEY: [self.resource_id]}
         try:
             resources = \

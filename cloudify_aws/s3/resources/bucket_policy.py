@@ -49,6 +49,8 @@ class S3BucketPolicy(S3Base):
     @property
     def properties(self):
         """Gets the properties of an external resource"""
+        if not self.resource_id:
+            return
         try:
             resource = \
                 self.client.get_bucket_policy(

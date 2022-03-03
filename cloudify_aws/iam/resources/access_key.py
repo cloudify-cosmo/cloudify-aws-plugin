@@ -31,9 +31,10 @@ def configure(ctx, resource_config, **_):
     # Save the parameters
     ctx.instance.runtime_properties['resource_config'] = \
         utils.clean_params(resource_config)
-    utils.update_resource_id(ctx.instance,
-                             utils.get_parent_resource_id(ctx.instance,
-                                                          'cloudify.relationships.aws.iam.access_key.connected_to'))
+    utils.update_resource_id(
+        ctx.instance, utils.get_parent_resource_id(
+            ctx.instance, 'cloudify.relationships.aws.iam.access_key.'
+                          'connected_to'))
 
 
 @decorators.aws_relationship(IAMUser, RESOURCE_TYPE)

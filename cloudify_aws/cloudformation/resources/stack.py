@@ -64,6 +64,8 @@ class CloudFormationStack(AWSCloudFormationBase):
     @property
     def properties(self):
         '''Gets the properties of an external resource'''
+        if not self.resource_id:
+            return
         if not self._properties:
             res = self.get_describe_result({RESOURCE_NAME: self.resource_id})
             if STACKS in res:

@@ -37,6 +37,8 @@ class OptionGroup(RDSBase):
     @property
     def properties(self):
         '''Gets the properties of an external resource'''
+        if not self.resource_id:
+            return
         resources = None
         try:
             resources = self.client.describe_option_groups(

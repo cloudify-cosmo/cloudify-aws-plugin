@@ -43,6 +43,8 @@ class Route53HostedZone(Route53Base):
     @property
     def properties(self):
         '''Gets the properties of an external resource'''
+        if not self.resource_id:
+            return
         try:
             return self.client.get_hosted_zone(Id=self.resource_id)
         except (ParamValidationError, ClientError):

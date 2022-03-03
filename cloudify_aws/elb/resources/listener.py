@@ -55,6 +55,8 @@ class ELBListener(ELBBase):
     @property
     def properties(self):
         '''Gets the properties of an external resource'''
+        if not self.resource_id:
+            return
         try:
             resources = self.client.describe_listeners(
                 ListenerArns=[self.resource_id])
