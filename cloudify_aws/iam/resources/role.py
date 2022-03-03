@@ -19,7 +19,7 @@
 from json import dumps as json_dumps
 
 # Boto
-from botocore.exceptions import ClientError
+#from botocore.exceptions import ClientError
 
 # Cloudify
 from cloudify.exceptions import NonRecoverableError
