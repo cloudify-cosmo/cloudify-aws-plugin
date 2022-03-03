@@ -19,7 +19,7 @@
 # Third Party imports
 from botocore.exceptions import ClientError, ParamValidationError
 
-from cloudify.exceptions import OperationRetry
+from cloudify.exceptions import OperationRetry, NonRecoverableError
 
 # Local imports
 from cloudify_aws.ec2 import EC2Base
@@ -41,7 +41,7 @@ class EC2SpotFleetRequest(EC2Base):
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
-        self._properties = None
+        self._properties = {}
 
     def get(self, spot_fleet_request_ids=None):
         self.logger.debug(
@@ -53,7 +53,7 @@ class EC2SpotFleetRequest(EC2Base):
         try:
             return self.make_client_call(
                 'describe_spot_fleet_requests', params)
-        except (ParamValidationError, ClientError):
+        except (NonRecoverableError):
             return
 
     @property
@@ -61,16 +61,20 @@ class EC2SpotFleetRequest(EC2Base):
         '''Gets the properties of an external resource'''
         if not self._properties:
             resources = self.get()
-            if len(resources):
+            if resources and 'SpotFleetRequestConfigs' in resources:
                 self._properties = resources[SpotFleetRequestConfigs][0]
         return self._properties
 
     @property
     def status(self):
         '''Gets the status of an external resource'''
-        if self.properties:
-            config = self.properties[SpotFleetRequestConfig]
-            return config['SpotFleetRequestState']
+        return self.properties.get('SpotFleetRequestState')
+
+    @property
+    def check_status(self):
+        if self.status in ['active']:
+            return 'OK'
+        return 'NOT OK'
 
     @property
     def active_instances(self):
