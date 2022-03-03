@@ -142,7 +142,6 @@ def create(ctx, iface, resource_config, params, **_):
 
 @decorators.aws_resource(IAMRole, RESOURCE_TYPE,
                          ignore_properties=True)
-@decorators.wait_for_delete()
 def delete(ctx, iface, resource_config, **_):
     '''Deletes an AWS IAM Role'''
 
