@@ -67,6 +67,8 @@ class EC2VolumeMixin(object):
         Gets the properties of an external resource
         :return: dict of selected volume
         """
+        if not self.resource_id:
+            return
         params = {VOLUME_IDS: [self.resource_id]}
         try:
             resources = \

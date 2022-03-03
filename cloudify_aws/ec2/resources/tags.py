@@ -37,6 +37,8 @@ class EC2Tags(EC2Base):
     @property
     def properties(self):
         '''Gets the properties of an external resource'''
+        if not self.resource_id:
+            return
         params = {'Filters': [{'resource-id': self.resource_id}]}
         try:
             resources = \

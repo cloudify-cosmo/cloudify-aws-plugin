@@ -52,6 +52,8 @@ class EC2TransitGatewayRouteTable(EC2Base):
     @property
     def properties(self):
         '''Gets the properties of an external resource'''
+        if not self.resource_id:
+            return
         params = {ROUTETABLE_IDS: [self.resource_id]}
         resources = self.describe(params)
         return None if not resources else resources.get(ROUTETABLES)[0]
