@@ -149,7 +149,10 @@ class TestIAMRole(TestBase):
             }
         })
 
-        role.create(ctx=_ctx, resource_config=None, iface=None, params=None)
+        mock_iface = MagicMock()
+        mock_iface.status = 'available'
+        role.create(ctx=_ctx, resource_config=None, iface=mock_iface,
+                    params=None)
 
         self.fake_boto.assert_called_with('iam', **CLIENT_CONFIG)
 

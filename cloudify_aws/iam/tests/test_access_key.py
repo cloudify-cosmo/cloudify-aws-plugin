@@ -35,6 +35,11 @@ NODE_PROPERTIES = {
     'client_config': CLIENT_CONFIG
 }
 
+RUNTIME_PROPERTIES = {
+    'aws_resource_id': 'aws_resource',
+    'resource_config': {},
+}
+
 
 class TestIAMAccessKey(TestBase):
 
