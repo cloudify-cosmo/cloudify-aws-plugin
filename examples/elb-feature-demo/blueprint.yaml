@@ -13,12 +13,12 @@ inputs:
   availability_zone1:
     type: string
     description: The availability zone in the AWS Region.
-    default: { concat: [ { get_input: aws_region_name }, 'a' ] }
+    default: { concat: [ { get_input: aws_region_name }, 'c' ] }
 
   availability_zone2:
     type: string
     description: The availability zone in the AWS Region.
-    default: { concat: [ { get_input: aws_region_name }, 'b' ] }
+    default: { concat: [ { get_input: aws_region_name }, 'd' ] }
 
 dsl_definitions:
 
@@ -66,7 +66,7 @@ node_templates:
         target: classic_elb
     interfaces:
       cloudify.interfaces.lifecycle:
-        configure:
+        create:
           implementation: aws.cloudify_aws.ec2.resources.instances.create
           inputs:
             resource_config:
@@ -98,7 +98,7 @@ node_templates:
         target: classic_elb
     interfaces:
       cloudify.interfaces.lifecycle:
-        configure:
+        create:
           implementation: aws.cloudify_aws.ec2.resources.instances.create
           inputs:
             resource_config:

@@ -123,5 +123,5 @@ def delete(ctx, iface, resource_config, **_):
         lb = ctx.instance.runtime_properties[LB_NAME]
 
     for listener in params.get(LISTENERS, []):
-        ports = listener.get(LB_PORT)
+        ports = [listener.get(LB_PORT)]
         iface.delete({LB_NAME: lb, LB_PORTS: ports})

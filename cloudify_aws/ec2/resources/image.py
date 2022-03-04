@@ -80,7 +80,7 @@ class EC2Image(EC2Base):
                 raise e
         if not props:
             return None
-        return props['State']
+        return props.get('State')
 
     def create(self, params):
         """

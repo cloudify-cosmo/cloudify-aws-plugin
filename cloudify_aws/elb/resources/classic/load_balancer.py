@@ -68,7 +68,7 @@ class ELBClassicLoadBalancer(ELBBase):
         props = self.properties
         if not props:
             return None
-        return props['State']['Code']
+        return props.get('State', {}).get('Code')
 
     def create(self, params):
         """
