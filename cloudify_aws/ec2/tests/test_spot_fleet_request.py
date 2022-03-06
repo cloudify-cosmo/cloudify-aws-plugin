@@ -54,7 +54,7 @@ class TestEC2SpotFleetRequest(TestBase):
         self.spot_fleet_request.client = self.make_client_function(
             'describe_spot_fleet_requests', return_value=value)
         res = self.spot_fleet_request.properties
-        self.assertIsNone(res)
+        self.assertEqual({}, res)
 
         value = {
             'SpotFleetRequestConfigs': [
@@ -72,13 +72,14 @@ class TestEC2SpotFleetRequest(TestBase):
             res['SpotFleetRequestConfig'][SpotFleetRequestId],
             'foo')
 
-    def test_class_status(self):
+    def test_class_status_none(self):
         value = {}
         self.spot_fleet_request.client = self.make_client_function(
             'describe_spot_fleet_requests', return_value=value)
         res = self.spot_fleet_request.status
         self.assertIsNone(res)
 
+    def test_class_status_active(self):
         value = {
             'SpotFleetRequestConfigs': [
                 {
@@ -89,6 +90,7 @@ class TestEC2SpotFleetRequest(TestBase):
                 }
             ]
         }
+        self.spot_fleet_request.resource_id = 'foo'
         self.spot_fleet_request.client = self.make_client_function(
             'describe_spot_fleet_requests', return_value=value)
         res = self.spot_fleet_request.status
@@ -134,6 +136,34 @@ class TestEC2SpotFleetRequest(TestBase):
         with self.assertRaises(OperationRetry):
             spot_fleet_request.delete(
                 ctx=ctx, iface=iface, resource_config={})
+
+    def test_poststart(self):
+        ctx = self.get_mock_ctx(SpotFleetRequest)
+        config = {'SpotFleetRequestConfig': {SpotFleetRequestId: 'foo'}}
+        self.spot_fleet_request.resource_id = \
+            config['SpotFleetRequestConfig'][SpotFleetRequestId]
+        iface = MagicMock()
+        iface.list_spot_fleet_instances = self.mock_return(
+            {
+                'ActiveInstances': [
+                    {
+                        'InstanceId': 'foo',
+                        'InstanceType': 'bar',
+                        'SpotInstanceRequestId': 'foo',
+                        'InstanceHealth': 'baz'
+                    },
+                ],
+                'NextToken': 'string',
+                'SpotFleetRequestId': 'foo'
+            }
+        )
+
+        spot_fleet_request.poststart(ctx=ctx, iface=iface, resource_config={
+            'TargetCapacity': 1
+        })
+        self.assertTrue(
+            'foo' in ctx.instance.runtime_properties['aws_resource_ids']
+        )
 
 
 if __name__ == '__main__':
