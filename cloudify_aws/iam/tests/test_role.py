@@ -101,6 +101,44 @@ class TestIAMRole(TestBase):
             type_class=role
         )
 
+    def _prepare_create_raises_UnknownServiceError(
+        self, type_hierarchy, type_name, type_class,
+        type_node='cloudify.nodes.Root', operation_name=None,
+    ):
+        _ctx = self.get_mock_ctx(
+            'test_create',
+            test_properties=DEFAULT_NODE_PROPERTIES,
+            test_runtime_properties=DEFAULT_RUNTIME_PROPERTIES,
+            type_hierarchy=type_hierarchy,
+            type_node=type_node,
+            ctx_operation_name=operation_name,
+        )
+
+        current_ctx.set(_ctx)
+        self.fake_client.get_role = MagicMock(return_value={
+            'Role': {
+                'RoleName': "role_name_id",
+                'Arn': "arn_id"
+            }
+        })
+
+        fake_boto, fake_client = self.fake_boto_client(type_name)
+
+        with patch('boto3.client', fake_boto):
+            with self.assertRaises(UnknownServiceError) as error:
+                type_class.create(ctx=_ctx, resource_config=None, iface=None)
+
+            self.assertEqual(
+                text_type(error.exception),
+                (
+                    "Unknown service: '" +
+                    type_name +
+                    "'. Valid service names are: ['rds']"
+                )
+            )
+
+            fake_boto.assert_called_with(type_name, **CLIENT_CONFIG)
+
     def test_create(self):
         _ctx = self.get_mock_ctx(
             'test_create',
