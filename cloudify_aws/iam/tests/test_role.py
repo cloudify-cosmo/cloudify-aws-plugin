@@ -18,14 +18,16 @@ import collections
 
 # Third party imports
 from mock import patch, MagicMock
-
+from botocore.exceptions import UnknownServiceError
 from cloudify.state import current_ctx
 
 # Local imports
 from cloudify_aws.iam.resources import role
+from cloudify_aws.common._compat import text_type
 from cloudify_aws.common.tests.test_base import TestBase, CLIENT_CONFIG
 from cloudify_aws.common.tests.test_base import DELETE_RESPONSE
 from cloudify_aws.common.tests.test_base import DEFAULT_RUNTIME_PROPERTIES
+from cloudify_aws.common.tests.test_base import DEFAULT_NODE_PROPERTIES
 
 
 # Constants
@@ -115,15 +117,15 @@ class TestIAMRole(TestBase):
         )
 
         current_ctx.set(_ctx)
-        self.fake_client.get_role = MagicMock(return_value={
+
+        fake_boto, fake_client = self.fake_boto_client(type_name)
+
+        fake_client.get_role = MagicMock(return_value={
             'Role': {
                 'RoleName': "role_name_id",
                 'Arn': "arn_id"
             }
         })
-
-        fake_boto, fake_client = self.fake_boto_client(type_name)
-
         with patch('boto3.client', fake_boto):
             with self.assertRaises(UnknownServiceError) as error:
                 type_class.create(ctx=_ctx, resource_config=None, iface=None)
