@@ -71,7 +71,9 @@ class EC2SpotFleetRequest(EC2Base):
     @property
     def status(self):
         '''Gets the status of an external resource'''
-        return self.properties.get('SpotFleetRequestState')
+        props = self.properties
+        if SpotFleetRequestConfig in props:
+            return props[SpotFleetRequestConfig].get('SpotFleetRequestState')
 
     @property
     def check_status(self):
