@@ -178,6 +178,13 @@ class TestIAMRole(TestBase):
 
         current_ctx.set(_ctx)
 
+        self.fake_client.get_role = MagicMock(return_value={
+            'Role': {
+                'RoleName': "role_name_id",
+                'Arn': "arn_id"
+            }
+        })
+
         self.fake_client.delete_role = self.mock_return(DELETE_RESPONSE)
 
         role.delete(ctx=_ctx, resource_config=None, iface=None)
