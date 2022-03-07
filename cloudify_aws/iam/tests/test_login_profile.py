@@ -70,6 +70,9 @@ class TestIAMLoginProfile(TestBase):
                                        'cloudify.nodes.Compute'],
                 target_type_hierarchy=['cloudify.nodes.Root',
                                        'cloudify.nodes.aws.iam.LoginProfile'])
+        _login_profile.type_hierarchy = [
+            'cloudify.relationships.depends_on',
+            'cloudify.relationships.aws.iam.login_profile.connected_to']
         _ctx = self.get_mock_ctx(
             'test_configure',
             test_properties=NODE_PROPERTIES,
@@ -86,7 +89,7 @@ class TestIAMLoginProfile(TestBase):
 
             self.assertEqual(
                 _ctx.instance.runtime_properties, {
-                    'aws_resource_id': 'aws_resource',
+                    'aws_resource_id': 'aws_target_mock_id',
                     'resource_config': {}
                 }
             )
