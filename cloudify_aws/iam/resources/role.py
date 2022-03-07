@@ -43,7 +43,13 @@ class IAMRole(IAMBase):
         if not self.resource_id:
             return
         params = {'RoleName': self.resource_id}
-        result = self.make_client_call('get_role', params)
+        try:
+            result = self.make_client_call('get_role', params)
+        except NonRecoverableError as e:
+            if 'An error occurred (NoSuchEntity)' in str(e):
+                return None
+            else:
+                raise e
         if 'Role' in result:
             return result['Role']
 
@@ -142,6 +148,7 @@ def create(ctx, iface, resource_config, params, **_):
 
 @decorators.aws_resource(IAMRole, RESOURCE_TYPE,
                          ignore_properties=True)
+@decorators.wait_for_delete()
 def delete(ctx, iface, resource_config, **_):
     '''Deletes an AWS IAM Role'''
 
