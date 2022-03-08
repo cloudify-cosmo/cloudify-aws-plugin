@@ -39,6 +39,7 @@ RUNTIME_PROPERTIES = {
     'resource_config': {},
 }
 
+
 class TestIAMLoginProfile(TestBase):
 
     def setUp(self):
