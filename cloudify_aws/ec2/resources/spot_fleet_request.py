@@ -17,13 +17,16 @@
     AWS EC2 VPC interface
 '''
 # Third Party imports
-from botocore.exceptions import ClientError, ParamValidationError
+from botocore.exceptions import ClientError
 
-from cloudify.exceptions import OperationRetry
+from cloudify.exceptions import OperationRetry, NonRecoverableError
 
 # Local imports
 from cloudify_aws.ec2 import EC2Base
 from cloudify_aws.common import decorators, utils
+from cloudify_aws.ec2.resources.instances import INSTANCE_ID
+from cloudify_aws.common.constants import (
+    EXTERNAL_RESOURCE_ID_MULTIPLE as MULTI_ID)
 
 RESOURCE_TYPE = 'EC2 Spot Fleet Request'
 SpotFleetRequest = 'SpotFleetRequest'
@@ -41,7 +44,7 @@ class EC2SpotFleetRequest(EC2Base):
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
-        self._properties = None
+        self._properties = {}
 
     def get(self, spot_fleet_request_ids=None):
         self.logger.debug(
@@ -53,7 +56,7 @@ class EC2SpotFleetRequest(EC2Base):
         try:
             return self.make_client_call(
                 'describe_spot_fleet_requests', params)
-        except (ParamValidationError, ClientError):
+        except (NonRecoverableError):
             return
 
     @property
@@ -61,16 +64,22 @@ class EC2SpotFleetRequest(EC2Base):
         '''Gets the properties of an external resource'''
         if not self._properties:
             resources = self.get()
-            if len(resources):
+            if resources and 'SpotFleetRequestConfigs' in resources:
                 self._properties = resources[SpotFleetRequestConfigs][0]
         return self._properties
 
     @property
     def status(self):
         '''Gets the status of an external resource'''
-        if self.properties:
-            config = self.properties[SpotFleetRequestConfig]
-            return config['SpotFleetRequestState']
+        props = self.properties
+        if SpotFleetRequestConfig in props:
+            return props[SpotFleetRequestConfig].get('SpotFleetRequestState')
+
+    @property
+    def check_status(self):
+        if self.status in ['active']:
+            return 'OK'
+        return 'NOT OK'
 
     @property
     def active_instances(self):
@@ -92,10 +101,11 @@ class EC2SpotFleetRequest(EC2Base):
         '''
         return self.make_client_call('cancel_spot_fleet_requests', params)
 
-    def list_spot_fleet_instances(self, params):
+    def list_spot_fleet_instances(self, params=None):
         '''
             Checks current instances of AWS EC2 Spot Fleet Request.
         '''
+        params = params or {SpotFleetRequestIds: [self.resource_id]}
         return self.make_client_call('describe_spot_fleet_instances', params)
 
 
@@ -125,6 +135,26 @@ def create(ctx, iface, resource_config, **_):
     spot_fleed_request_id = create_response.get(SpotFleetRequestId, '')
     iface.update_resource_id(spot_fleed_request_id)
     utils.update_resource_id(ctx.instance, spot_fleed_request_id)
+
+
+@decorators.aws_resource(EC2SpotFleetRequest,
+                         RESOURCE_TYPE,
+                         ignore_properties=True,
+                         waits_for_status=False)
+def poststart(ctx, iface, resource_config, wait_for_target_capacity=True, **_):
+    if not wait_for_target_capacity:
+        return
+    target_capacity = resource_config.get('TargetCapacity')
+    spot_fleet_instances = iface.list_spot_fleet_instances()
+    active = spot_fleet_instances.get('ActiveInstances')
+    if not len(active) == target_capacity:
+        raise OperationRetry(
+            'Waiting for active instance number to match target capacity.')
+    if MULTI_ID not in ctx.instance.runtime_properties:
+        ctx.instance.runtime_properties[MULTI_ID] = []
+    for instance in active:
+        instance_id = instance.get(INSTANCE_ID, '')
+        ctx.instance.runtime_properties[MULTI_ID].append(instance_id)
 
 
 @decorators.aws_resource(EC2SpotFleetRequest,

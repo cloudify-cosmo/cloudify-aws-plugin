@@ -55,6 +55,11 @@ class EC2SecurityGroup(EC2Base):
             return 'OK'
         return 'NOT OK'
 
+    @property
+    def status(self):
+        '''Gets the status of an external resource'''
+        return self.properties
+
     def create(self, params):
         """
             Create a new AWS EC2 NetworkInterface.
