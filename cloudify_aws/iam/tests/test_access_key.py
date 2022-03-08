@@ -35,6 +35,11 @@ NODE_PROPERTIES = {
     'client_config': CLIENT_CONFIG
 }
 
+RUNTIME_PROPERTIES = {
+    'aws_resource_id': 'aws_resource',
+    'resource_config': {},
+}
+
 
 class TestIAMAccessKey(TestBase):
 
@@ -58,6 +63,38 @@ class TestIAMAccessKey(TestBase):
             type_hierarchy=ACCESS_KEY_TH,
             type_name='iam',
             type_class=access_key)
+
+    def _prepare_configure(self, type_hierarchy, type_name, type_class):
+        _source_ctx, _target_ctx, _login_profile = \
+            self._create_common_relationships(
+                'test_node',
+                source_type_hierarchy=['cloudify.nodes.Root',
+                                       'cloudify.nodes.Compute'],
+                target_type_hierarchy=['cloudify.nodes.Root',
+                                       'cloudify.nodes.aws.iam.AccessKey'])
+        _login_profile.type_hierarchy = [
+            'cloudify.relationships.depends_on',
+            'cloudify.relationships.aws.iam.access_key.connected_to']
+        _ctx = self.get_mock_ctx(
+            'test_configure',
+            test_properties=NODE_PROPERTIES,
+            test_runtime_properties=RUNTIME_PROPERTIES,
+            test_relationships=[_login_profile],
+            type_hierarchy=type_hierarchy
+        )
+
+        current_ctx.set(_ctx)
+        fake_boto, fake_client = self.fake_boto_client(type_name)
+
+        with patch('boto3.client', fake_boto):
+            type_class.configure(ctx=_ctx, resource_config=None, iface=None)
+
+            self.assertEqual(
+                _ctx.instance.runtime_properties, {
+                    'aws_resource_id': 'aws_target_mock_id',
+                    'resource_config': {}
+                }
+            )
 
     def test_attach_to_User(self):
         _source_ctx, _target_ctx, _ctx = self._create_common_relationships(

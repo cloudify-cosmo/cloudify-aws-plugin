@@ -94,5 +94,4 @@ def delete(ctx, iface, resource_config, **_):
     params = dict(VpnConnectionId=vpn_connection,
                   DestinationCidrBlock=cider_block) \
         if not resource_config else resource_config.copy()
-    ctx.logger.info("yaniv log 1 params = {}".format(params))
     iface.delete(params)

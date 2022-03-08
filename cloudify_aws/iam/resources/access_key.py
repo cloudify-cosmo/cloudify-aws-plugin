@@ -31,6 +31,10 @@ def configure(ctx, resource_config, **_):
     # Save the parameters
     ctx.instance.runtime_properties['resource_config'] = \
         utils.clean_params(resource_config)
+    utils.update_resource_id(
+        ctx.instance, utils.get_parent_resource_id(
+            ctx.instance,
+            'cloudify.relationships.aws.iam.access_key.connected_to'))
 
 
 @decorators.aws_relationship(IAMUser, RESOURCE_TYPE)
@@ -45,7 +49,7 @@ def attach_to(ctx, resource_config, **_):
                 node=ctx.target.node,
                 instance=ctx.target.instance,
                 raise_on_missing=True)).create_access_key(
-                    resource_config or rtprops.get('resource_config'))
+            resource_config or rtprops.get('resource_config'))
         utils.update_resource_id(ctx.source.instance, resp['AccessKeyId'])
         ctx.source.instance.runtime_properties['SecretAccessKey'] = \
             resp['SecretAccessKey']

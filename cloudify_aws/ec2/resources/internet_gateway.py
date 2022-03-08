@@ -48,6 +48,8 @@ class EC2InternetGateway(EC2Base):
     @property
     def properties(self):
         '''Gets the properties of an external resource'''
+        if not self.resource_id:
+            return
         params = {INTERNETGATEWAY_IDS: [self.resource_id]}
         try:
             resources = self.client.describe_internet_gateways(**params)

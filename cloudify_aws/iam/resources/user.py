@@ -39,6 +39,9 @@ class IAMUser(IAMBase):
     @property
     def properties(self):
         '''Gets the properties of an external resource'''
+
+        if not self.resource_id:
+            return {}
         resource = None
         try:
             resource = self.client.get_user(UserName=self.resource_id)

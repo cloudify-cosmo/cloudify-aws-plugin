@@ -19,7 +19,7 @@ inputs:
 
   aws_region_name:
     type: string
-    default: { get_secret: ec2_region_name }
+    default: us-east-1
 
   aws_cloudwatch_log_arn:
     type: string
@@ -82,7 +82,7 @@ node_templates:
     properties:
       resource_config:
         UserName: !!str PMCfy=,.@-User
-        Password: !!str Cl0ud1fy2017
+        Password: !!str Cl0ud1fy2017!
     relationships:
       - type: cloudify.relationships.aws.iam.login_profile.connected_to
         target: pmcfy_iam_user

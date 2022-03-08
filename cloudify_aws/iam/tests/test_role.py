@@ -18,14 +18,16 @@ import collections
 
 # Third party imports
 from mock import patch, MagicMock
-
+from botocore.exceptions import UnknownServiceError
 from cloudify.state import current_ctx
 
 # Local imports
 from cloudify_aws.iam.resources import role
+from cloudify_aws.common._compat import text_type
 from cloudify_aws.common.tests.test_base import TestBase, CLIENT_CONFIG
 from cloudify_aws.common.tests.test_base import DELETE_RESPONSE
 from cloudify_aws.common.tests.test_base import DEFAULT_RUNTIME_PROPERTIES
+from cloudify_aws.common.tests.test_base import DEFAULT_NODE_PROPERTIES
 
 
 # Constants
@@ -101,6 +103,44 @@ class TestIAMRole(TestBase):
             type_class=role
         )
 
+    def _prepare_create_raises_UnknownServiceError(
+        self, type_hierarchy, type_name, type_class,
+        type_node='cloudify.nodes.Root', operation_name=None,
+    ):
+        _ctx = self.get_mock_ctx(
+            'test_create',
+            test_properties=DEFAULT_NODE_PROPERTIES,
+            test_runtime_properties=DEFAULT_RUNTIME_PROPERTIES,
+            type_hierarchy=type_hierarchy,
+            type_node=type_node,
+            ctx_operation_name=operation_name,
+        )
+
+        current_ctx.set(_ctx)
+
+        fake_boto, fake_client = self.fake_boto_client(type_name)
+
+        fake_client.get_role = MagicMock(return_value={
+            'Role': {
+                'RoleName': "role_name_id",
+                'Arn': "arn_id"
+            }
+        })
+        with patch('boto3.client', fake_boto):
+            with self.assertRaises(UnknownServiceError) as error:
+                type_class.create(ctx=_ctx, resource_config=None, iface=None)
+
+            self.assertEqual(
+                text_type(error.exception),
+                (
+                    "Unknown service: '" +
+                    type_name +
+                    "'. Valid service names are: ['rds']"
+                )
+            )
+
+            fake_boto.assert_called_with(type_name, **CLIENT_CONFIG)
+
     def test_create(self):
         _ctx = self.get_mock_ctx(
             'test_create',
@@ -110,6 +150,12 @@ class TestIAMRole(TestBase):
         )
 
         current_ctx.set(_ctx)
+        self.fake_client.get_role = MagicMock(return_value={
+            'Role': {
+                'RoleName': "role_name_id",
+                'Arn': "arn_id"
+            }
+        })
 
         self.fake_client.create_role = MagicMock(return_value={
             'Role': {
@@ -142,6 +188,13 @@ class TestIAMRole(TestBase):
 
         current_ctx.set(_ctx)
 
+        self.fake_client.get_role = MagicMock(return_value={
+            'Role': {
+                'RoleName': "role_name_id",
+                'Arn': "arn_id"
+            }
+        })
+
         self.fake_client.create_role = MagicMock(return_value={
             'Role': {
                 'RoleName': "role_name_id",
@@ -149,7 +202,10 @@ class TestIAMRole(TestBase):
             }
         })
 
-        role.create(ctx=_ctx, resource_config=None, iface=None, params=None)
+        mock_iface = MagicMock()
+        mock_iface.status = 'available'
+        role.create(ctx=_ctx, resource_config=None, iface=mock_iface,
+                    params=None)
 
         self.fake_boto.assert_called_with('iam', **CLIENT_CONFIG)
 
@@ -175,8 +231,16 @@ class TestIAMRole(TestBase):
 
         current_ctx.set(_ctx)
 
+        self.fake_client.get_role = MagicMock(return_value={
+            'Role': {
+                'RoleName': "role_name_id",
+                'Arn': "arn_id"
+            }
+        })
+
         self.fake_client.delete_role = self.mock_return(DELETE_RESPONSE)
 
+        self.fake_client.get_role = MagicMock(return_value={})
         role.delete(ctx=_ctx, resource_config=None, iface=None)
 
         self.fake_boto.assert_called_with('iam', **CLIENT_CONFIG)

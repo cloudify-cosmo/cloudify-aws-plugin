@@ -381,8 +381,9 @@ def get_zones(ctx, subnets):
     zones = []
     for subnet in subnets:
         subnet_iface = EC2Subnet(ctx.node, subnet, logger=ctx.logger)
-        availability_zone = subnet_iface.properties['AvailabilityZone']
-        zones.append(availability_zone)
+        availability_zone = subnet_iface.properties.get('AvailabilityZone')
+        if availability_zone:
+            zones.append(availability_zone)
     return zones
 
 

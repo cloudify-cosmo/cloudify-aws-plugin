@@ -71,6 +71,8 @@ class EC2ElasticIP(EC2Base):
     @property
     def properties(self):
         """Gets the properties of an external resource"""
+        if not self.resource_id:
+            return
         params = {ELASTICIP_IDS: [self.resource_id]}
         resources = self.list(params)
         return resources[0] if resources else None

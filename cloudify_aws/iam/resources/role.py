@@ -19,7 +19,7 @@
 from json import dumps as json_dumps
 
 # Boto
-from botocore.exceptions import ClientError
+# from botocore.exceptions import ClientError
 
 # Cloudify
 from cloudify.exceptions import NonRecoverableError
@@ -40,15 +40,18 @@ class IAMRole(IAMBase):
 
     @property
     def properties(self):
-        '''Gets the properties of an external resource'''
-        resource = None
+        if not self.resource_id:
+            return
+        params = {'RoleName': self.resource_id}
         try:
-            resource = self.client.get_role(RoleName=self.resource_id)
-        except ClientError:
-            pass
-        if not resource or not resource.get('Role', dict()):
-            return None
-        return resource['Role']
+            result = self.make_client_call('get_role', params)
+        except NonRecoverableError as e:
+            if 'An error occurred (NoSuchEntity)' in str(e):
+                return None
+            else:
+                raise e
+        if 'Role' in result:
+            return result['Role']
 
     @property
     def status(self):

@@ -42,6 +42,8 @@ class AutoscalingLifecycleHook(AutoscalingBase):
     @property
     def properties(self):
         """Gets the properties of an external resource"""
+        if not self.resource_id:
+            return
         params = {RESOURCE_NAMES: [self.resource_id]}
         try:
             resources = \

@@ -37,6 +37,8 @@ class DBInstanceReadReplica(RDSBase):
     @property
     def properties(self):
         '''Gets the properties of an external resource'''
+        if not self.resource_id:
+            return
         resources = None
         try:
             resources = self.client.describe_db_instances(

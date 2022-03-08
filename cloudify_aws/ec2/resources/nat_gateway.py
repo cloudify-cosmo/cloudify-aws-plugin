@@ -50,6 +50,8 @@ class EC2NatGateway(EC2Base):
     @property
     def properties(self):
         """Gets the properties of a resource"""
+        if not self.resource_id:
+            return
         params = \
             {
                 NATGATEWAY_IDS: [self.resource_id]

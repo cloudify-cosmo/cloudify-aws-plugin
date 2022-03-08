@@ -73,9 +73,22 @@ def mock_decorator(*args, **kwargs):
 
 class MockRelationshipContext(MockCloudifyContext):
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._type = RELATIONSHIP_INSTANCE
+        self._type_hierarchy = []
+
     @property
     def type(self):
-        return RELATIONSHIP_INSTANCE
+        return 'relationship-instance'
+
+    @property
+    def type_hierarchy(self):
+        return self._type_hierarchy
+
+    @type_hierarchy.setter
+    def type_hierarchy(self, value):
+        self._type_hierarchy = value
 
 
 class TestBase(unittest.TestCase):

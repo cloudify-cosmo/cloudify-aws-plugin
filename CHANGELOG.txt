@@ -1,11 +1,178 @@
-3.0.0: Moved all prepare to precreate and all create to prepare.
-1.4.2:
-    - Moved EC2 and VPC to cloudify_aws package
-    - Added an Instance-Subnet connected_to relationship
-1.4.3:
-    - Add Subnet create retry operation
-    - Improvements to ELB creation
-    - Fix bug that delete External Resource keypairs
+3.0.1:
+    - RD-3458 fix iam blueprint & iam status
+3.0.0:
+    - Moved all prepare to precreate and all create to prepare.
+    - RD-3921 added resource tagging
+2.14.1:
+    - RD-3922: refactor _aws_resource decorator
+    - RD-3922: updated natgateway create for new aws requirements
+2.14.0:
+    - RD-3880: Support check status for EKS
+    - RD-3882: Support check status for EC2 Instances and Network
+2.13.0:
+    - RD-3635 Fix detach a disk.
+    - Fixed security group attachment in rds.
+2.12.14:
+    - RD-3358: Added option to create an EC2 ami image.
+2.12.13:
+    - RD-3565: Fix Populate Resource issue.
+2.12.12:
+    - RD-3369-Return Aarch64 Wagons to Bundle
+2.12.11:
+    - RD-586 Timeout for CloudFormation stack creation/deletion needs to be increased (add minimum_wait_time)
+2.12.10:
+    - RD-3159:fixed wait for status decorator
+2.12.9:
+    - RD-2909: ARN policies can be added as a property at the creation of a deployment.
+    - RD-2945: Subnet on delete will exit of the substring contains "NotFound", and will retry if the substring contains "DependencyViolation".
+2.12.8:
+    - RD-2921: Detach ENI instances on scale down from single instance.
+2.12.7:
+    - RD-2921: Attach ENI instances on scale to single unscaled instance.
+2.12.6:
+    - RD-3082: Handle multiple ec2 instances per node instance.
+2.12.5:
+    - RD-3070: Handle Throttled Instances
+2.12.4:
+    - Add tagging option for nodes create in aws.
+2.12.3:
+    - RD-2927: Upload local files to S3.
+2.12.2:
+    - Fix issue introduced in the detach ebs change.
+2.12.1:
+    - Support group deployment creation for 5.2.4.
+    - Support passing fn arguments to detach ebs.
+2.12.0:
+    - Add spot fleet requests.
+    - Correct image configuration notes.
+2.11.1:
+    - Support IPv6 Routes.
+2.11.0:
+    - Add start op to node group for update.
+2.10.0:
+    - Add site assignment to EKS cluster.
+2.9.2:
+    - Add back AWS Account that was overwritten.
+2.9.1:
+    - Fix issue in Node Group start up.
+2.9.0:
+    - RD-2115 Discover and Deploy workflow for EKS cluster.
+    - CYBL-1151 Update Route53 resources to follow requirement of specifying class definition.
+    - RD-2124 Refactor cloudify.nodes.aws.eks.Cluster to expose existing clusters connection information.
+    - RD-2127 Provide external cluster blueprint.
+2.8.0:
+    - RD-1802 Support Spot Instances
+2.7.0:
+    - Add pull operation for cloudformation.
+2.6.0:
+    - Add support for Transit Gateway create, delete, vpc attach.
+2.5.14:
+    - Add debug logs - botocore responses, for RD-810.
+2.5.13:
+    - Fix Device index for case when using device index per relationship order.
+2.5.12:
+    - Handle resources that don't provide iface.
+    - Add iface to lambda invoke.
+2.5.11:
+    - Fix bug in attach from 2.5.10
+2.5.10:
+    - Fix bug in attach from 2.5.9
+2.5.9:
+    - Allow resources with null state to retry before fatal error in order to compensate for async lag.
+2.5.8:
+    - Permit skip attach on existing address
+2.5.7:
+    - Store Lambda payload as valid JSON
+2.5.6:
+    - Fixed bug causing failure when Tag Specifications are passed to an Elastic IP.
+2.5.5:
+    - Cloudformation stacks' outputs are now also returned as a dictionary via a runtime property.
+    - Fixed bug causing problems when using an existing internet gateway.
+2.5.4:
+    - Better implementation of RD-815 (main route table).
+2.5.3:
+    - Fix bug causing routing tables with no associations to fail on deletion.
+    - Fix bug causing internet gateways created with tag to fail on attachments.
+    - Added ability to have a RouteTable node, representing a VPC's main route table.
+2.5.2:
+    - Fix bug causing API error messages to not print properly.
+2.5.1:
+    - Fix bug that mandated providing S3 LocationConstraint.
+2.5.0:
+    - Added AWS codepipeline support.
+2.4.4:
+    - Handle non string tags.
+2.4.3:
+    - Correct build system bug.
+2.4.2:
+    - Handle Issue with Exception with no message attribute.
+2.4.1:
+    - Allow users to use already allocated IPs.
+2.4.0:
+    - Add AvailabilityZone Retry logic if the zone selected is not available
+2.3.5:
+    - Update wagon builder to py2py3 wagon.
+    - Add 5.1.0 integration tests.
+2.3.4:
+    - Update AZ regex.
+2.3.3:
+    - Python 3 Compatibility.
+2.3.2:
+    - Notify users of possible NTP sync issue when authentication error occurs.
+2.3.1:
+    - Upgrade Boto3 version
+    - Add EKS Support
+2.3.0:
+    - Add new EBS relationship to attach ebs volume to EC2 instance
+2.2.1:
+    - Fix bug when delete EC2 instance
+2.2.0:
+    - Add resumable support to operations
+2.1.0:
+    - Make Resource Naming Resolution consistent across the plugin.
+2.0.2:
+    - Support multiple subnet attachments to network acl.
+2.0.1:
+    - Support attach external address to nic.
+2.0.0:
+    - Update aws plugin node types
+    - Update python aws boto to boto3
+    - Add blueprint examples that covers all node types for the plugin
+    - Update integration tests
+1.5.1.2:
+    - Execute user-provided user data before agent install user data.
+1.5.1.1:
+    - Fix bug when init_script is empty string.
+1.5.1:
+    - Support Windows instances with init_script agent installation method.
+1.5:
+    - Associate ElasticIP to resources base on ip property instead of base on resource type
+    - Fix the need for an operations name to be in the format <something>.<create/start/stop/delete> (Aria Tosca)
+    - Add connect Security Groups to Instance via InstanceConnectedToSecurityGroup relationship
+    - Support adding VPC Peering Connection + Use external routes
+    - Fix bug that disassociate the wrong elastic ip from its instance
+1.4.13:
+    - Fixed bug that instance get resource returns something when no id was provided
+1.4.12:
+    - Fixed error message when unlinking route table from gateway
+    - Support passing runtime properties to create operation
+1.4.11:
+    - Fixed bug that attempt to delete external security group
+1.4.10:
+    - Add delete security group retry operation
+1.4.9:
+    - Add revoke rules from security group retry operation
+    - Added handling for missing provider_context and missing homedir issues in 4.0.1
+1.4.8:
+    - Support attaching existing volume to instance
+1.4.7:
+    - Support circular dependency of security groups
+1.4.6:
+    - Fix random EIP disassociated
+1.4.5:
+    - Support Security Group rules creation by ID
+    - Fix validation errors
+    - Fix duplicated mapping key
 1.4.4:
     - Improve Test Coverage
     - Improve function naming
@@ -17,176 +184,10 @@
     - Support Security Group rules as a node type
     - Support resource state verification
     - Clearer log messages
-1.4.5:
-    - Support Security Group rules creation by ID
-    - Fix validation errors
-    - Fix duplicated mapping key
-1.4.6:
-    - Fix random EIP disassociated
-1.4.7:
-    - Support circular dependency of security groups
-1.4.8:
-    - Support attaching existing volume to instance
-1.4.9:
-    - Add revoke rules from security group retry operation
-    - Added handling for missing provider_context and missing homedir issues in 4.0.1
-1.4.10:
-    - Add delete security group retry operation
-1.4.11:
-    - Fixed bug that attempt to delete external security group
-1.4.12:
-    - Fixed error message when unlinking route table from gateway
-    - Support passing runtime properties to create operation
-1.4.13:
-    - Fixed bug that instance get resource returns something when no id was provided
-1.5:
-    - Associate ElasticIP to resources base on ip property instead of base on resource type
-    - Fix the need for an operations name to be in the format <something>.<create/start/stop/delete> (Aria Tosca)
-    - Add connect Security Groups to Instance via InstanceConnectedToSecurityGroup relationship
-    - Support adding VPC Peering Connection + Use external routes
-    - Fix bug that disassociate the wrong elastic ip from its instance
-1.5.1:
-    - Support Windows instances with init_script agent installation method.
-1.5.1.1:
-    - Fix bug when init_script is empty string.
-1.5.1.2:
-    - Execute user-provided user data before agent install user data.
-2.0.0:
-    - Update aws plugin node types
-    - Update python aws boto to boto3
-    - Add blueprint examples that covers all node types for the plugin
-    - Update integration tests
-2.0.1:
-    - Support attach external address to nic.
-2.0.2:
-    - Support multiple subnet attachments to network acl.
-2.1.0:
-    - Make Resource Naming Resolution consistent across the plugin.
-2.2.0:
-    - Add resumable support to operations
-2.2.1:
-    - Fix bug when delete EC2 instance
-2.3.0:
-    - Add new EBS relationship to attach ebs volume to EC2 instance
-2.3.1:
-    - Upgrade Boto3 version
-    - Add EKS Support
-2.3.2:
-    - Notify users of possible NTP sync issue when authentication error occurs.
-2.3.3:
-    - Python 3 Compatibility.
-2.3.4:
-    - Update AZ regex.
-2.3.5:
-    - Update wagon builder to py2py3 wagon.
-    - Add 5.1.0 integration tests.
-2.4.0:
-    - Add AvailabilityZone Retry logic if the zone selected is not available
-2.4.1:
-    - Allow users to use already allocated IPs.
-2.4.2:
-    - Handle Issue with Exception with no message attribute.
-2.4.3:
-    - Correct build system bug.
-2.4.4:
-    - Handle non string tags.
-2.5.0:
-    - Added AWS codepipeline support.
-2.5.1:
-    - Fix bug that mandated providing S3 LocationConstraint.
-2.5.2:
-    - Fix bug causing API error messages to not print properly.
-2.5.3:
-    - Fix bug causing routing tables with no associations to fail on deletion.
-    - Fix bug causing internet gateways created with tag to fail on attachments.
-    - Added ability to have a RouteTable node, representing a VPC's main route table.
-2.5.4:
-    - Better implementation of RD-815 (main route table).
-2.5.5:
-    - Cloudformation stacks' outputs are now also returned as a dictionary via a runtime property.
-    - Fixed bug causing problems when using an existing internet gateway.
-2.5.6:
-    - Fixed bug causing failure when Tag Specifications are passed to an Elastic IP.
-2.5.7:
-    - Store Lambda payload as valid JSON
-2.5.8:
-    - Permit skip attach on existing address
-2.5.9:
-    - Allow resources with null state to retry before fatal error in order to compensate for async lag.
-2.5.10:
-    - Fix bug in attach from 2.5.9
-2.5.11:
-    - Fix bug in attach from 2.5.10
-2.5.12:
-    - Handle resources that don't provide iface.
-    - Add iface to lambda invoke.
-2.5.13:
-    - Fix Device index for case when using device index per relationship order.
-2.5.14:
-    - Add debug logs - botocore responses, for RD-810.
-2.6.0:
-    - Add support for Transit Gateway create, delete, vpc attach.
-2.7.0:
-    - Add pull operation for cloudformation.
-2.8.0:
-    - RD-1802 Support Spot Instances
-2.9.0:
-    - RD-2115 Discover and Deploy workflow for EKS cluster.
-    - CYBL-1151 Update Route53 resources to follow requirement of specifying class definition.
-    - RD-2124 Refactor cloudify.nodes.aws.eks.Cluster to expose existing clusters connection information.
-    - RD-2127 Provide external cluster blueprint.
-2.9.1:
-    - Fix issue in Node Group start up.
-2.9.2:
-    - Add back AWS Account that was overwritten.
-2.10.0:
-    - Add site assignment to EKS cluster.
-2.11.0:
-    - Add start op to node group for update.
-2.11.1:
-    - Support IPv6 Routes.
-2.12.0:
-    - Add spot fleet requests.
-    - Correct image configuration notes.
-2.12.1:
-    - Support group deployment creation for 5.2.4.
-    - Support passing fn arguments to detach ebs.
-2.12.2:
-    - Fix issue introduced in the detach ebs change.
-2.12.3:
-    - RD-2927: Upload local files to S3.
-2.12.4:
-    - Add tagging option for nodes create in aws.
-2.12.5:
-    - RD-3070: Handle Throttled Instances
-2.12.6:
-    - RD-3082: Handle multiple ec2 instances per node instance.
-2.12.7:
-    - RD-2921: Attach ENI instances on scale to single unscaled instance.
-2.12.8:
-    - RD-2921: Detach ENI instances on scale down from single instance.
-2.12.9:
-    - RD-2909: ARN policies can be added as a property at the creation of a deployment.
-    - RD-2945: Subnet on delete will exit of the substring contains "NotFound", and will retry if the substring contains "DependencyViolation".
-2.12.10:
-    - RD-3159:fixed wait for status decorator
-2.12.11:
-    - RD-586 Timeout for CloudFormation stack creation/deletion needs to be increased (add minimum_wait_time)
-2.12.12:
-    - RD-3369-Return Aarch64 Wagons to Bundle
-2.12.13:
-    - RD-3565: Fix Populate Resource issue.
-2.12.14:
-    - RD-3358: Added option to create an EC2 ami image.
-2.13.0:
-    - RD-3635 Fix detach a disk.
-    - Fixed security group attachment in rds.
-2.14.0:
-    - RD-3880: Support check status for EKS
-    - RD-3882: Support check status for EC2 Instances and Network
-2.14.1:
-    - RD-3922: refactor _aws_resource decorator
-    - RD-3922: updated natgateway create for new aws requirements
-3.0.0:
-    - Moved all prepare to precreate and all create to prepare.
-    - RD-3921 added resource tagging
+1.4.3:
+    - Add Subnet create retry operation
+    - Improvements to ELB creation
+    - Fix bug that delete External Resource keypairs
+1.4.2:
+    - Moved EC2 and VPC to cloudify_aws package
+    - Added an Instance-Subnet connected_to relationship

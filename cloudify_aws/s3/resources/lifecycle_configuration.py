@@ -45,6 +45,8 @@ class S3BucketLifecycleConfiguration(S3Base):
     @property
     def properties(self):
         """Gets the properties of an external resource"""
+        if not self.resource_id:
+            return
         try:
             resources = \
                 self.client.get_bucket_lifecycle_configuration(

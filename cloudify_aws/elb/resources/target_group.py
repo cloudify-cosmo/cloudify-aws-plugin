@@ -49,6 +49,8 @@ class ELBTargetGroup(ELBBase):
     @property
     def properties(self):
         '''Gets the properties of an external resource'''
+        if not self.resource_id:
+            return
         try:
             resources = self.client.describe_target_groups(
                 TargetGroupArns=[self.resource_id])

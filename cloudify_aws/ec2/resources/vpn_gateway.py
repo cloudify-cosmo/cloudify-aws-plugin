@@ -44,6 +44,8 @@ class EC2VPNGateway(EC2Base):
     @property
     def properties(self):
         """Gets the properties of an external resource"""
+        if not self.resource_id:
+            return
         params = {VPNGATEWAY_IDS: [self.resource_id]}
         try:
             resources = \

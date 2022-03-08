@@ -296,6 +296,12 @@ def get_special_condition(external,
         return True
     elif create_op and 'cloudify.nodes.aws.ec2.VpcPeeringRequest' in node_type:
         return True
+    elif 'cloudify.relationships.aws.iam.login_profile' \
+            in node_type and op_name == 'establish':
+        return True
+    elif 'cloudify.relationships.aws.iam.access_key.connected_to' \
+            in node_type and op_name == 'establish':
+        return True
     return not create_op and not delete_op or force
 
 

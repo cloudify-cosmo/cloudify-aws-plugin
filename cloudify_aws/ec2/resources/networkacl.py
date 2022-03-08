@@ -52,6 +52,8 @@ class EC2NetworkAcl(EC2Base):
     @property
     def properties(self):
         """Gets the properties of an external resource"""
+        if not self.resource_id:
+            return
         return self.get_properties_by_filter(
             NETWORKACL_IDS, [self.resource_id])
 
