@@ -11,12 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import unittest
+
 import copy
-from cloudify_aws.common.tests.test_base import TestBase, CLIENT_CONFIG
+import unittest
+
 from mock import patch, MagicMock
 
 from cloudify_aws.common.connection import Boto3Connection
+from cloudify_aws.common.tests.test_base import TestBase, CLIENT_CONFIG
 
 
 class TestConnection(TestBase):
@@ -63,6 +65,31 @@ class TestConnection(TestBase):
         )
 
         self.assertEqual(connection.aws_config, CLIENT_CONFIG)
+
+    def test_client_session_token(self):
+
+        node = MagicMock()
+        node.properties = {
+            'client_config': {
+                'aws_session_token': 'foo',
+                'region_name': 'bar'
+            }
+        }
+
+        connection = Boto3Connection(node, {'a': 'b'})
+        connection.client('abc')
+
+        self.fake_boto.assert_called_with(
+            'abc', **{
+                'aws_session_token': 'foo',
+                'region_name': 'bar'
+            }
+        )
+
+        self.assertEqual(connection.aws_config, {
+                'aws_session_token': 'foo',
+                'region_name': 'bar'
+            })
 
 
 if __name__ == '__main__':

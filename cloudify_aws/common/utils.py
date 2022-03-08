@@ -965,8 +965,7 @@ def assign_previous_configuration(iface, runtime_props, prop=None):
 
 def check_drift(resource_type, iface, logger):
     logger.info(
-        'Checking if {resource_type} {resource_id} '
-        'configuration has drifted.'.format(
+        'Checking drift state for {resource_type} {resource_id}.'.format(
             resource_type=resource_type, resource_id=iface.resource_id))
     ctx.instance.refresh()
     iface.expected_configuration = ctx.instance.runtime_properties.get(
