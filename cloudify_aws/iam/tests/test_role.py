@@ -240,12 +240,20 @@ class TestIAMRole(TestBase):
 
         self.fake_client.delete_role = self.mock_return(DELETE_RESPONSE)
 
+        self.fake_client.get_role = MagicMock(return_value={})
         role.delete(ctx=_ctx, resource_config=None, iface=None)
 
         self.fake_boto.assert_called_with('iam', **CLIENT_CONFIG)
 
         self.fake_client.delete_role.assert_called_with(
             RoleName='role_name_id'
+        )
+
+        self.assertEqual(
+            _ctx.instance.runtime_properties,
+            {
+                '__deleted': True,
+            }
         )
 
     def test_IAMRoleClass_properties(self):
