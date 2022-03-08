@@ -211,6 +211,7 @@ data_types:
         type: string
         description: The name of the instance profile to create.
         required: true
+        default: 'cfy_iam_user_instance_profile'
       Path:
         type: string
         description: The path to the instance profile.
