@@ -435,7 +435,6 @@ def _aws_resource(function,
 
     _put_aws_config_in_class_decl(
         aws_config, class_decl_attr, aws_config_kwargs)
-
     kwargs['iface'] = class_decl(**class_decl_attr) if class_decl else None
 
     if not ignore_properties:
@@ -626,11 +625,14 @@ def wait_on_relationship_status(status_good=None,
     return wrapper_outer
 
 
-def wait_for_delete(status_deleted=None, status_pending=None):
+def wait_for_delete(status_deleted=None,
+                    status_pending=None,
+                    status_not_deleted=None):
     '''AWS resource decorator'''
 
     status_deleted = status_deleted or []
     status_pending = status_pending or []
+    status_not_deleted = status_not_deleted or []
 
     def wrapper_outer(function):
         '''Outer function'''
@@ -644,7 +646,8 @@ def wait_for_delete(status_deleted=None, status_pending=None):
                              _operation,
                              function,
                              status_pending,
-                             status_deleted)
+                             status_deleted,
+                             status_not_deleted)
 
         return wrapper_inner
 
@@ -656,7 +659,9 @@ def _wait_for_delete(kwargs,
                      operation,
                      function,
                      status_pending,
-                     status_deleted):
+                     status_deleted,
+                     status_not_deleted=None):
+    status_not_deleted = status_not_deleted or []
     print('This is the operation: {}'.format(operation))
     resource_type = kwargs.get('resource_type', 'AWS Resource')
     iface = kwargs['iface']
@@ -681,6 +686,11 @@ def _wait_for_delete(kwargs,
                     del ctx_instance.runtime_properties[key]
         return
     elif status in status_pending:
+        raise OperationRetry(
+            '%s ID# "%s" is still in a pending state.'
+            % (resource_type, iface.resource_id))
+    elif status in status_not_deleted:
+        ctx_instance.runtime_properties['__deleted'] = False
         raise OperationRetry(
             '%s ID# "%s" is still in a pending state.'
             % (resource_type, iface.resource_id))
@@ -772,7 +782,12 @@ def tag_resources(fn):
                 iface.update_resource_id(resource_id)
             resource_ids = [iface.resource_id]
         if ctx.node.properties.get('cloudify_tagging', False):
-            add_default_tag(ctx, iface)
+            try:
+                add_default_tag(ctx, iface)
+            except ClientError:
+                raise OperationRetry(
+                    'Waiting for {} to be provisioned before tagging.'.format(
+                        iface.resource_id))
         else:
             ctx.logger.info("Not adding default Cloudify tags.")
         tags = utils.get_tags_list(
