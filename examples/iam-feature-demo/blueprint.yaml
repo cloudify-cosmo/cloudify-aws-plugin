@@ -19,7 +19,7 @@ inputs:
 
   aws_region_name:
     type: string
-    default: { get_secret: ec2_region_name }
+    default: us-east-1
 
   aws_cloudwatch_log_arn:
     type: string
