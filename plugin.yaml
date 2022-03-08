@@ -173,12 +173,19 @@ data_types:
     properties:
       AssumeRolePolicyDocument:
         description: The trust relationship policy document that grants an entity permission to assume the role.
-        type: string
         required: true
+        default:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Principal:
+              Service: 'lambda.amazonaws.com'
+            Action: 'sts:AssumeRole'
       RoleName:
         description: The name of the role to create.
         type: string
         required: true
+        default: 'cfy_lambdarole'
       Path:
         description: The path to the role.
         type: string
@@ -192,15 +199,15 @@ data_types:
       RoleName:
         type: string
         description: The name of the role to associate the policy with. Required if no relationship to a Role was provided.
-        required: false
+        required: true
       PolicyName:
         type: string
         description: The name of the policy document.
-        required: false
+        required: true
       PolicyDocument:
         type: string
         description: The policy document.
-        required: false
+        required: true
       kwargs:
         description: http://boto3.readthedocs.io/en/latest/reference/services/iam.html#IAM.Client.put_role_policy
         default: {}
