@@ -21,7 +21,10 @@ import boto3
 from botocore.config import Config
 
 # Local imports
-from .utils import desecretize_client_config
+from .utils import (
+    get_uuid,
+    desecretize_client_config
+)
 from cloudify_aws.common.constants import AWS_CONFIG_PROPERTY
 
 # pylint: disable=R0903
@@ -67,6 +70,20 @@ class Boto3Connection(object):
         # Add additional config after whitelist filter.
         if additional_config and isinstance(additional_config, dict):
             self.aws_config['config'] = Config(**additional_config)
+
+    def get_sts_credentials(self, role):
+        sts_client = boto3.client("sts")
+
+        sts_credentials = sts_client.assume_role(
+            RoleArn=role,
+            RoleSessionName="cloudify-" + get_uuid())["Credentials"]
+
+        return {
+            "aws_access_key_id": sts_credentials["AccessKeyId"],
+            "aws_secret_access_key": sts_credentials["SecretAccessKey"],
+            "aws_session_token": sts_credentials["SessionToken"],
+            "region_name": self.aws_config["region_name"]
+        }
 
     def client(self, service_name):
         '''

@@ -6,6 +6,7 @@
     - RD-2009 EC2 base properties improvement
     - Fix for EFS
     - Fix for ECS
+    - Add assume role to the client configuration
 3.0.1:
     - RD-3458 fix iam blueprint & iam status
 3.0.0:
