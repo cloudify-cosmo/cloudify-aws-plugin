@@ -76,7 +76,7 @@ class Boto3Connection(object):
 
         sts_credentials = sts_client.assume_role(
             RoleArn=role,
-            RoleSessionName=get_uuid())["Credentials"]
+            RoleSessionName="cloudify-" + get_uuid())["Credentials"]
 
         return {
             "aws_access_key_id": sts_credentials["AccessKeyId"],
