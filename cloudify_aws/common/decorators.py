@@ -393,6 +393,16 @@ def _get_resource_config_if_not_ignore_properties(
     return resource_config
 
 
+def _log_assume_role(aws_config, aws_config_kwargs, ctx):
+    assume_role = None
+    if aws_config:
+        assume_role = aws_config.get('assume_role')
+    elif aws_config_kwargs:
+        assume_role = aws_config_kwargs.get('assume_role')
+    if assume_role:
+        ctx.logger.info('Assuming provided role: {}'.format(assume_role))
+
+
 def _aws_resource(function,
                   class_decl,
                   resource_type,
@@ -435,6 +445,7 @@ def _aws_resource(function,
 
     _put_aws_config_in_class_decl(
         aws_config, class_decl_attr, aws_config_kwargs)
+    _log_assume_role(aws_config, aws_config_kwargs, ctx)
     kwargs['iface'] = class_decl(**class_decl_attr) if class_decl else None
 
     if not ignore_properties:
