@@ -137,7 +137,7 @@ def create(ctx, iface, resource_config, **_):
     utils.update_resource_id(ctx.instance, spot_fleed_request_id)
 
 
-def postcreate(ctx, iface, resource_config, **_):
+def start(ctx, iface, resource_config, **_):
     '''Creates an AWS EC2 Spot Fleet Request'''
     ctx.instance.runtime_properties['describe'] = \
         iface.list_spot_fleet_instances(
