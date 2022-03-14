@@ -45,23 +45,10 @@ class EC2Keypair(EC2Base):
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
-
-    @property
-    def properties(self):
-        '''Gets the properties of an external resource'''
-        if not self.resource_id:
-            return
-        params = {KEYNAMES: [self.resource_id]}
-        try:
-            resources = \
-                self.client.describe_key_pairs(**params)
-        except (ClientError, ParamValidationError):
-            pass
-        else:
-            keypairs = resources.get(KEYPAIRS, [])
-            if len(keypairs) == 1:
-                return keypairs[0]
-        return None
+        self._describe_call = 'describe_key_pairs'
+        self._ids_key = KEYNAMES
+        self._type_key = KEYPAIRS
+        self._id_key = KEYNAME
 
     @property
     def status(self):
