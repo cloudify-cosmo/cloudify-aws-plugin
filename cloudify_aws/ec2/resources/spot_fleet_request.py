@@ -18,6 +18,7 @@
 '''
 # Third Party imports
 from botocore.exceptions import ClientError
+import time
 
 from cloudify.exceptions import OperationRetry, NonRecoverableError
 
@@ -119,8 +120,8 @@ def prepare(ctx, iface, resource_config, **_):
 
 
 @decorators.aws_resource(EC2SpotFleetRequest, RESOURCE_TYPE)
-@decorators.wait_for_status(status_good=['active'],
-                            status_pending=['submitted'])
+#@decorators.wait_for_status(status_good=['active', 'fulfilled'],
+#                            status_pending=['submitted', 'pending_fulfillment'])
 @decorators.tag_resources
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS EC2 Spot Fleet Request'''
@@ -129,19 +130,24 @@ def create(ctx, iface, resource_config, **_):
 
     # Actually create the resource
     create_response = iface.create(params)
+    ctx.logger.info("yaniv log response = {}".format(create_response))
     ctx.instance.runtime_properties['create_response'] = \
         utils.JsonCleanuper(create_response).to_dict()
 
     spot_fleed_request_id = create_response.get(SpotFleetRequestId, '')
     iface.update_resource_id(spot_fleed_request_id)
     utils.update_resource_id(ctx.instance, spot_fleed_request_id)
-
-
-def start(ctx, iface, resource_config, **_):
-    '''Creates an AWS EC2 Spot Fleet Request'''
+    time.sleep(15)
     ctx.instance.runtime_properties['describe'] = \
         iface.list_spot_fleet_instances(
             {'SpotFleetRequestId': iface.resource_id})
+
+
+# def postcreate(ctx, iface, resource_config, **_):
+#     '''Creates an AWS EC2 Spot Fleet Request'''
+#     ctx.instance.runtime_properties['describe'] = \
+#         iface.list_spot_fleet_instances(
+#             {'SpotFleetRequestId': iface.resource_id})
 
 @decorators.aws_resource(EC2SpotFleetRequest,
                          RESOURCE_TYPE,

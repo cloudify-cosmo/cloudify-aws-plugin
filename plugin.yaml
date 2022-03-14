@@ -2715,9 +2715,9 @@ node_types:
         create:
           implementation: aws.cloudify_aws.ec2.resources.spot_fleet_request.create
           inputs: *operation_inputs
-        start:
-          implementation: aws.cloudify_aws.ec2.resources.spot_fleet_request.start
-          inputs: *operation_inputs
+#        postcreate:
+#          implementation: aws.cloudify_aws.ec2.resources.spot_fleet_request.postcreate
+#          inputs: *operation_inputs
         delete:
           implementation: aws.cloudify_aws.ec2.resources.spot_fleet_request.delete
           inputs:
