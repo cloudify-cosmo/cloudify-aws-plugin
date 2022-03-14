@@ -43,6 +43,10 @@ class EC2Image(EC2Base):
         image_filters = ctx_node.properties["resource_config"].get(
             "kwargs", {}).get("Filters")
         self._describe_image_filters = None
+        self._describe_call = "describe_images"
+        self._ids_key = IMAGE_IDS
+        self._type_key = IMAGES
+        self._id_key = IMAGE_ID
         if resource_id:
             self.prepare_describe_image_filter({IMAGE_IDS: [resource_id]})
         elif image_filters:
