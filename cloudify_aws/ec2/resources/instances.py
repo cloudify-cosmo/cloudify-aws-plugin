@@ -89,18 +89,17 @@ class EC2Instances(EC2Base):
     @property
     def properties(self):
         '''Gets the properties of an external resource'''
-        return self.get_instances(self.instance_ids_request)
+        if not self._properties:
+            self._properties = self.get(self.instance_ids_request)
+        if self._type_key in self._properties:
+            for obj in self._properties[self._type_key]:
+                if obj[self._id_key] == self.resource_id:
+                    return obj
+        return {}
 
-    def get_instances(self, request):
+    def get(self, request):
         resources = self.describe(request)
-        reservations = resources.get(RESERVATIONS, [])
-        instances = []
-        for r in reservations:
-            for i in r.get(INSTANCES, []):
-                instances.append(i)
-        if len(instances) == 1:
-            return instances[0]
-        return []
+        return resources.get(RESERVATIONS, [{}])[0]
 
     @property
     def status(self):
