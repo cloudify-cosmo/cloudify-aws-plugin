@@ -50,16 +50,20 @@ class EC2ElasticIP(EC2Base):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
         self.allocation_id = None
+        self._describe_call = 'describe_addresses'
+        self._type_key = ADDRESSES
+        self._ids_key = ELASTICIP_ID
+        self._id_key = ELASTICIP_IDS
 
-    def list(self, params=None):
+    def get(self, params=None):
         try:
             if params:
                 resources = self.client.describe_addresses(**params)
             else:
                 resources = self.client.describe_addresses()
         except (ParamValidationError, ClientError):
-            return []
-        return resources.get(ADDRESSES, [])
+            return {}
+        return resources.get(ADDRESSES, {})
 
     def update_allocation_id(self, allocation_id):
         self.allocation_id = allocation_id
@@ -72,10 +76,11 @@ class EC2ElasticIP(EC2Base):
     def properties(self):
         """Gets the properties of an external resource"""
         if not self.resource_id:
-            return
+            return {}
         params = {ELASTICIP_IDS: [self.resource_id]}
-        resources = self.list(params)
-        return resources[0] if resources else None
+        if not self._properties:
+            self._properties = self.get(params)
+        return self._properties[0] if self._properties else {}
 
     @property
     def status(self):
@@ -155,7 +160,7 @@ def create(ctx, iface, resource_config, **_):
     # Actually create the resource
     create_response = None
     if ctx.node.properties.get('use_unassociated_addresses', False):
-        create_response = get_already_allocated_ip(iface.list())
+        create_response = get_already_allocated_ip(iface.get())
     if not create_response:
         create_response = iface.create(params)
     else:
