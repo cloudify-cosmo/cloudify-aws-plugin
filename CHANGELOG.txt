@@ -1,3 +1,5 @@
+3.0.2:
+    - Add assume role to the client configuration
 3.0.1:
     - RD-3458 fix iam blueprint & iam status
 3.0.0:

@@ -16,12 +16,14 @@
     ~~~~~~~~~~
     AWS connection
 """
+import os
+
 # Third party imports
 import boto3
 from botocore.config import Config
 
 # Local imports
-from .utils import desecretize_client_config
+from .utils import desecretize_client_config, get_uuid
 from cloudify_aws.common.constants import AWS_CONFIG_PROPERTY
 
 # pylint: disable=R0903
@@ -38,7 +40,8 @@ class Boto3Connection(object):
         aws_config_whitelist = [
             'aws_access_key_id',
             'aws_secret_access_key',
-            'region_name']
+            'region_name',
+            'assume_role']
         aws_config_options = [
             'aws_session_token',
             'api_version']
@@ -68,6 +71,20 @@ class Boto3Connection(object):
         if additional_config and isinstance(additional_config, dict):
             self.aws_config['config'] = Config(**additional_config)
 
+    def get_sts_credentials(self, role):
+        sts_client = boto3.client("sts")
+
+        sts_credentials = sts_client.assume_role(
+            RoleArn=role,
+            RoleSessionName="cloudify-" + get_uuid())["Credentials"]
+
+        return {
+            "aws_access_key_id": sts_credentials["AccessKeyId"],
+            "aws_secret_access_key": sts_credentials["SecretAccessKey"],
+            "aws_session_token": sts_credentials["SessionToken"],
+            "region_name": self.aws_config["region_name"]
+        }
+
     def client(self, service_name):
         '''
             Builds an AWS connection client
@@ -76,5 +93,12 @@ class Boto3Connection(object):
         :returns: An AWS service Boto3 client
         :raises: :exc:`cloudify.exceptions.NonRecoverableError`
         '''
-        resource = boto3.client(service_name, **self.aws_config)
+        config = self.aws_config
+        assume_role = self.aws_config.get('assume_role') \
+            or os.environ.get("AWS_ASSUME_ROLE_ARN")
+
+        if assume_role:
+            config = self.get_sts_credentials(assume_role)
+
+        resource = boto3.client(service_name, **config)
         return resource
