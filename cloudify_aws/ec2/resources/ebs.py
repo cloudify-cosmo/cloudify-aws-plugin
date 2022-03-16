@@ -65,23 +65,6 @@ class EC2VolumeMixin(object):
         self._id_key = VOLUME_ID
         self._ids_key = VOLUME_IDS
 
-    # @property
-    # def properties(self):
-    #     """
-    #     Gets the properties of an external resource
-    #     :return: dict of selected volume
-    #     """
-    #     if not self.resource_id:
-    #         return
-    #     params = {VOLUME_IDS: [self.resource_id]}
-    #     try:
-    #         resources = \
-    #             self.client.describe_volumes(**params)
-    #     except (ClientError, ParamValidationError):
-    #         pass
-    #     else:
-    #         return resources.get(VOLUMES)[0] if resources else None
-
     @property
     def status(self):
         """
