@@ -49,24 +49,10 @@ class EC2RouteTable(EC2Base):
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
-
-    @property
-    def properties(self):
-        '''Gets the properties of an external resource'''
-        if not self.resource_id:
-            return
-        params = {ROUTETABLE_IDS: [self.resource_id]}
-        try:
-            resources = \
-                self.client.describe_route_tables(**params)
-        except (ClientError, ParamValidationError) as e:
-            self.logger.debug(
-                'Describe Route Table failed: {}'.format(str(e)))
-            pass
-        else:
-            self.logger.debug('Describe Route Table: {}'.format(
-                resources))
-            return None if not resources else resources.get(ROUTETABLES)[0]
+        self._describe_call = 'describe_route_tables'
+        self._type_key = ROUTETABLE
+        self._ids_key = ROUTETABLE_ID
+        self._id_key = ROUTETABLE_IDS
 
     @property
     def status(self):
