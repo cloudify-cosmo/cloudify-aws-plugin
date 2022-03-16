@@ -100,10 +100,14 @@ def prepare(ctx, resource_config, **_):
 def create(ctx, iface, resource_config, params, **_):
     """Creates an AWS S3 Bucket"""
 
+    if 'CreateBucketConfiguration' in params:
+        if params['CreateBucketConfiguration'].get(
+                'LocationConstraint') == 'us-east-1':
+            del params['CreateBucketConfiguration']['LocationConstraint']
+
     # Actually create the resource
     bucket = iface.create(params)
-    ctx.instance.runtime_properties[LOCATION] = \
-        bucket.get(LOCATION)
+    ctx.instance.runtime_properties[LOCATION] = bucket.get(LOCATION)
 
 
 @decorators.check_swift_resource
