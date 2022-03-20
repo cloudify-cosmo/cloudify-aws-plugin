@@ -24,6 +24,7 @@ from cloudify_aws.ec2 import EC2Base
 from botocore.exceptions import ClientError, ParamValidationError
 
 RESOURCE_TYPE = 'EC2 Tags'
+TAGS = 'Tags'
 
 
 class EC2Tags(EC2Base):
@@ -33,21 +34,20 @@ class EC2Tags(EC2Base):
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
+        self._describe_call = 'describe_tags'
+        self._type_key = TAGS
 
     @property
     def properties(self):
         '''Gets the properties of an external resource'''
         if not self.resource_id:
-            return
+            return {}
         params = {'Filters': [{'resource-id': self.resource_id}]}
-        try:
-            resources = \
-                self.client.client.describe_tags(**params)
-        except (ClientError, ParamValidationError):
-            pass
-        else:
-            return None if not resources else resources.get('Tags', [None])[0]
-        return None
+        if not self._properties:
+            self._properties = self.get_describe_result(params).get(
+                self._type_key, [{}])[0]
+
+        return self._properties
 
     @property
     def status(self):
