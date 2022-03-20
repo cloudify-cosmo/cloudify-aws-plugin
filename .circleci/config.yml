@@ -98,6 +98,10 @@ commands:
     steps:
       - run: ecosystem-test local-blueprint-test  -b examples/kms-feature-demo/blueprint.yaml --test-id=kms -i aws_region_name=eu-west-1 -i iam_arn=arn:aws:iam::919239153674:user/plugins_test_user --on-failure=uninstall-force --timeout=3000
 
+  run_cloudwatch_test:
+    steps:
+      - run: ecosystem-test local-blueprint-test  -b examples/cloudwatch-feature-demo/blueprint.yaml --test-id=cloudwatch -i aws_region_name=eu-west-1 -i aws_instance_id=cloudwatch --on-failure=uninstall-force --timeout=3000
+
 jobs:
 
   cf_integration_tests_py3:
@@ -303,6 +307,18 @@ jobs:
       - managerorb/create_manager_container_latest
       - prepare_test_manager
       - run_hello_world_test
+
+  cloudwatch_integration_tests_py3:
+    executor: cloudify-machine-py3
+    environment:
+      CLOUDIFY_SSL_TRUST_ALL: true
+    steps:
+      - checkout
+      - attach_workspace:
+          at: workspace
+      - managerorb/create_manager_container_latest
+      - prepare_test_manager
+      - run_cloudwatch_test
 
 workflows:
   version: 2
@@ -538,6 +554,15 @@ workflows:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - kms_integration_tests_py3:
+          requires:
+            - wagonorb/build_bundle
+            - wagonorb/wagon
+            - wagonorb/rhel_wagon
+            - wagonorb/arch64_wagon
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+      - cloudwatch_integration_tests_py3:
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
