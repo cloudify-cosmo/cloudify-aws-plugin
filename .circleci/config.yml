@@ -331,19 +331,19 @@ workflows:
       - wagonorb/rhel_wagon:
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
+              only: /([0-9\.]*\-build|master|dev|RD-3472-cloudwatch-into-weekly-tests)/
       - wagonorb/wagon:
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
+              only: /([0-9\.]*\-build|master|dev|RD-3472-cloudwatch-into-weekly-tests)/
       - wagonorb/arch64_wagon:
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
+              only: /([0-9\.]*\-build|master|dev|RD-3472-cloudwatch-into-weekly-tests)/
       - wagonorb/build_bundle:
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
+              only: /([0-9\.]*\-build|master|dev|RD-3472-cloudwatch-into-weekly-tests)/
           requires:
             - wagonorb/wagon
             - wagonorb/rhel_wagon
@@ -396,6 +396,15 @@ workflows:
           requires:
             - releaseorb/release
             - node/validate_documentation_job
+      - cloudwatch_integration_tests_py3:
+          requires:
+            - wagonorb/build_bundle
+            - wagonorb/wagon
+            - wagonorb/rhel_wagon
+            - wagonorb/arch64_wagon
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev|RD-3472-cloudwatch-into-weekly-tests)/
 
   sunday_wednesday:
     triggers:
