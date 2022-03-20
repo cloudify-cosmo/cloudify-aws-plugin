@@ -21,8 +21,6 @@ from cloudify_aws.common import decorators, utils
 from cloudify_aws.ec2 import EC2Base
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
 
-# Boto
-from botocore.exceptions import ClientError, ParamValidationError
 
 RESOURCE_TYPE = 'EC2 VPN Gateway'
 VPNGATEWAYS = 'VpnGateways'

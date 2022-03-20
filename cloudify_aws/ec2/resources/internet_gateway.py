@@ -18,8 +18,6 @@
 '''
 from time import sleep
 
-# Boto
-from botocore.exceptions import ClientError, ParamValidationError
 
 # Cloudify
 from cloudify_aws.common import decorators, utils

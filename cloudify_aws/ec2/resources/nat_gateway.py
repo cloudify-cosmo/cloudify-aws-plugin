@@ -17,7 +17,7 @@
     AWS EC2 NAT Gateway interface
 """
 # Boto
-from botocore.exceptions import ClientError, ParamValidationError
+from botocore.exceptions import ClientError
 
 # Cloudify
 from cloudify_aws.common import decorators, utils

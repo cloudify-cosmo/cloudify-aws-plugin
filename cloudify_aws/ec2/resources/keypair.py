@@ -17,8 +17,6 @@
     AWS EC2 Keypair interface
 '''
 
-# Third Party imports
-from botocore.exceptions import ClientError, ParamValidationError
 
 # Cloudify
 from cloudify import ctx

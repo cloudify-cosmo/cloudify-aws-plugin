@@ -18,8 +18,6 @@
 """
 from __future__ import unicode_literals
 
-# Boto
-from botocore.exceptions import ClientError, ParamValidationError
 
 # Cloudify
 from cloudify_aws.common import decorators, utils

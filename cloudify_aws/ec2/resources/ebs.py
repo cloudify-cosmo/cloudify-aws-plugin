@@ -17,7 +17,6 @@
     AWS EC2 EBS Volume
 """
 # Boto
-from botocore.exceptions import ClientError, ParamValidationError
 from botocore.exceptions import CapacityNotAvailableError
 
 # Cloudify
