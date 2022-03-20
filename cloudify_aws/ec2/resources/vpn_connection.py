@@ -52,26 +52,14 @@ class EC2VPNConnection(EC2Base):
             }
         else:
             self._describe_vpn_connection_filter = {}
+        self._describe_call = 'describe_vpn_connections'
+        self._type_key = VPN_CONNECTIONS
+        self._id_key = VPN_CONNECTION_ID
+        self._ids_key = VPN_CONNECTION_IDS
 
     @property
     def describe_vpn_connection_filter(self):
         return self._describe_vpn_connection_filter
-
-    @property
-    def properties(self):
-        """Gets the properties of an external resource"""
-        try:
-            self.logger.debug("filter = {}".format(
-                self.describe_vpn_connection_filter))
-            resources = \
-                self.client.describe_vpn_connections(
-                    **self.describe_vpn_connection_filter
-                )
-        except (ClientError, ParamValidationError):
-            resources = {}
-        for resource in resources.get(VPN_CONNECTIONS, []):
-            if resource['VpnConnectionId'] == self.resource_id:
-                return resource
 
     @property
     def status(self):
