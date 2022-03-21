@@ -33,8 +33,11 @@ class TestEC2VpcPeering(TestBase):
 
     def setUp(self):
         super(TestEC2VpcPeering, self).setUp()
-        self.vpc_peering = EC2VpcPeering("ctx_node", resource_id=True,
-                                         client=True, logger=None)
+        self.vpc_peering = EC2VpcPeering(
+            "ctx_node",
+            resource_id='test_peering_connection_id',
+            client=True,
+            logger=None)
         mock1 = patch(
             'cloudify_aws.common.decorators.aws_resource', mock_decorator)
 
