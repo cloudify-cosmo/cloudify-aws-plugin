@@ -39,7 +39,7 @@ from cloudify_aws.common import constants
 class TestEC2Volume(TestBase):
 
     def setUp(self):
-        self.ebs_volume = EC2Volume("ctx_node", resource_id='foo',
+        self.ebs_volume = EC2Volume("ctx_node", resource_id='test_name',
                                     client=True, logger=None)
 
         mock1 = patch(
@@ -72,7 +72,6 @@ class TestEC2Volume(TestBase):
 
         self.ebs_volume.client = \
             self.make_client_function('describe_volumes', return_value=value)
-
         res = self.ebs_volume.properties
         self.assertEqual(res[VOLUME_ID], 'test_volume_id')
 
@@ -85,7 +84,7 @@ class TestEC2Volume(TestBase):
         self.assertIsNone(res)
 
         value = {VOLUMES: [{'AvailabilityZone': 'test_zone',
-                            VOLUME_ID: 'foo',
+                            VOLUME_ID: 'test_name',
                             VOLUME_STATE: AVAILABLE}]}
 
         self.ebs_volume.client = \
@@ -207,10 +206,11 @@ class TestEC2Volume(TestBase):
 class TestEC2VolumeAttachment(TestBase):
 
     def setUp(self):
-        self.ebs_volume_attachment = EC2VolumeAttachment("ctx_node",
-                                                         resource_id='foo',
-                                                         client=True,
-                                                         logger=None)
+        self.ebs_volume_attachment = EC2VolumeAttachment(
+            "ctx_node",
+            resource_id='test_name',
+            client=True,
+            logger=None)
 
         mock1 = patch(
             'cloudify_aws.common.decorators.aws_resource', mock_decorator
@@ -281,7 +281,7 @@ class TestEC2VolumeAttachment(TestBase):
                     [
                         {
                             'AvailabilityZone': 'test_zone',
-                            'VolumeId': 'foo',
+                            'VolumeId': 'test_name',
                             'Attachments':
                                 [
                                     {
