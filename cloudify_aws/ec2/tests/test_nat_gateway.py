@@ -39,7 +39,7 @@ from cloudify_aws.ec2.resources.nat_gateway import (
 class TestEC2NatGateway(TestBase):
 
     def setUp(self):
-        self.nat_gateway = EC2NatGateway("ctx_node", resource_id=True,
+        self.nat_gateway = EC2NatGateway("ctx_node", resource_id='test_name',
                                          client=True, logger=None)
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',
                       mock_decorator)
