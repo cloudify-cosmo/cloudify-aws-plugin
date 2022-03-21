@@ -53,7 +53,7 @@ def test_cloudwatch(*_, **__):
             # Upload Cloud Watch Blueprint
             logging.info('4')
             blueprints_upload(
-                'examples/cloudwatch-feature-blueprint/blueprint.yaml',
+                'examples/cloudwatch-feature-demo/blueprint.yaml',
                 deployment_id)
             logging.info('5')
             # Create Cloud Watch Deployment with Instance ID input
