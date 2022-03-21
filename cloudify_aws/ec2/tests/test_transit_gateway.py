@@ -49,7 +49,7 @@ class TestEC2TransitGateway(TestBase):
         self.transit_gateway.client = self.make_client_function(
             'describe_transit_gateways', side_effect=effect)
         res = self.transit_gateway.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
         value = {}
         self.transit_gateway.client = self.make_client_function(

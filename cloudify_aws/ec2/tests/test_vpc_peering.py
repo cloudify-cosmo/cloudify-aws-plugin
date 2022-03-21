@@ -48,7 +48,7 @@ class TestEC2VpcPeering(TestBase):
         self.vpc_peering.client = \
             self.make_client_function('describe_vpc_peering_connections',
                                       side_effect=effect)
-        self.assertIsNone(self.vpc_peering.properties)
+        self.assertEqual(self.vpc_peering.properties, {})
 
         response = \
             {

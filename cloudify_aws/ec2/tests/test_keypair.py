@@ -55,14 +55,14 @@ class TestEC2Keypair(TestBase):
             self.make_client_function('describe_key_pairs',
                                       side_effect=effect)
         res = self.keypair.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
         value = {}
         self.keypair.client = \
             self.make_client_function('describe_key_pairs',
                                       return_value=value)
         res = self.keypair.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
         value = {KEYPAIRS: [{KEYNAME: 'test_name'}]}
         self.keypair.client = \

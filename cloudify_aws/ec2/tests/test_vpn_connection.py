@@ -48,7 +48,7 @@ class TestEC2VPNConnection(TestBase):
         self.vpn_connection.client = \
             self.make_client_function('describe_vpn_connections',
                                       side_effect=effect)
-        self.assertIsNone(self.vpn_connection.properties)
+        self.assertEqual(self.vpn_connection.properties, {})
 
         response = \
             {

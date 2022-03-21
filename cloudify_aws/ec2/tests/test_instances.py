@@ -63,14 +63,14 @@ class TestEC2Instances(TestBase):
             self.make_client_function('describe_instances',
                                       side_effect=effect)
         res = self.instances.properties
-        self.assertEqual(res, [])
+        self.assertEqual(res, {})
 
         value = {}
         self.instances.client = \
             self.make_client_function('describe_instances',
                                       return_value=value)
         res = self.instances.properties
-        self.assertEqual(res, [])
+        self.assertEqual(res, {})
 
         value = {RESERVATIONS: [{INSTANCES: [{INSTANCE_ID: 'test_name'}]}]}
         self.instances.client = self.make_client_function(
@@ -87,7 +87,7 @@ class TestEC2Instances(TestBase):
         self.assertIsNone(res)
 
         value = {RESERVATIONS: [{INSTANCES: [{
-            INSTANCE_ID: 'test_name', 'State': {'Code': 16}}]}]}
+            INSTANCE_ID: 'ec2 instance', 'State': {'Code': 16}}]}]}
         self.instances.client = \
             self.make_client_function('describe_instances',
                                       return_value=value)

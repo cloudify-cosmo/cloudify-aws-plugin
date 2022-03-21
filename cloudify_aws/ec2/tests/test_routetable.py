@@ -57,14 +57,14 @@ class TestEC2RouteTable(TestBase):
             self.make_client_function('describe_route_tables',
                                       side_effect=effect)
         res = self.routetable.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
         value = {}
         self.routetable.client = \
             self.make_client_function('describe_route_tables',
                                       return_value=value)
         res = self.routetable.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
         value = {ROUTETABLES: [{ROUTETABLE_ID: 'test_name'}]}
         self.routetable.client = \

@@ -55,14 +55,14 @@ class TestEC2InternetGateway(TestBase):
             self.make_client_function('describe_internet_gateways',
                                       side_effect=effect)
         res = self.internet_gateway.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
         value = {}
         self.internet_gateway.client = \
             self.make_client_function('describe_internet_gateways',
                                       return_value=value)
         res = self.internet_gateway.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
         value = {INTERNETGATEWAYS: [{INTERNETGATEWAY_ID: 'test_name'}]}
         self.internet_gateway.client = \

@@ -58,7 +58,7 @@ class TestEC2NatGateway(TestBase):
                                                             '_gateways',
                                                             side_effect=effect)
         res = self.nat_gateway.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
         value = {}
         self.nat_gateway.client = self.make_client_function('describe_nat'

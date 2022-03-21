@@ -39,7 +39,7 @@ from cloudify_aws.common import constants
 class TestEC2Volume(TestBase):
 
     def setUp(self):
-        self.ebs_volume = EC2Volume("ctx_node", resource_id=True,
+        self.ebs_volume = EC2Volume("ctx_node", resource_id='foo',
                                     client=True, logger=None)
 
         mock1 = patch(
@@ -58,14 +58,14 @@ class TestEC2Volume(TestBase):
             self.make_client_function('describe_volumes', side_effect=effect)
 
         res = self.ebs_volume.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
         value = {}
         self.ebs_volume.client = \
             self.make_client_function('describe_volumes',
                                       return_value=value)
         res = self.ebs_volume.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
         value = {VOLUMES: [{'AvailabilityZone': 'test_zone',
                             VOLUME_ID: 'test_volume_id'}]}
@@ -85,7 +85,7 @@ class TestEC2Volume(TestBase):
         self.assertIsNone(res)
 
         value = {VOLUMES: [{'AvailabilityZone': 'test_zone',
-                            VOLUME_ID: 'test_volume_id',
+                            VOLUME_ID: 'foo',
                             VOLUME_STATE: AVAILABLE}]}
 
         self.ebs_volume.client = \
@@ -208,7 +208,7 @@ class TestEC2VolumeAttachment(TestBase):
 
     def setUp(self):
         self.ebs_volume_attachment = EC2VolumeAttachment("ctx_node",
-                                                         resource_id=True,
+                                                         resource_id='foo',
                                                          client=True,
                                                          logger=None)
 
@@ -229,14 +229,14 @@ class TestEC2VolumeAttachment(TestBase):
             self.make_client_function('describe_volumes', side_effect=effect)
 
         res = self.ebs_volume_attachment.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
         value = {}
         self.ebs_volume_attachment.client = \
             self.make_client_function('describe_volumes',
                                       return_value=value)
         res = self.ebs_volume_attachment.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
         value =\
             {
@@ -281,7 +281,7 @@ class TestEC2VolumeAttachment(TestBase):
                     [
                         {
                             'AvailabilityZone': 'test_zone',
-                            'VolumeId': 'test_volume_id',
+                            'VolumeId': 'foo',
                             'Attachments':
                                 [
                                     {
@@ -295,7 +295,6 @@ class TestEC2VolumeAttachment(TestBase):
                         }
                     ]
             }
-
         self.ebs_volume_attachment.client = \
             self.make_client_function('describe_volumes', return_value=value)
 

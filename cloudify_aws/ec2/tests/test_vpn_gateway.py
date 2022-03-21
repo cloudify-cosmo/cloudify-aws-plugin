@@ -57,14 +57,14 @@ class TestEC2VPNGateway(TestBase):
             self.make_client_function('describe_vpn_gateways',
                                       side_effect=effect)
         res = self.vpn_gateway.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
         value = {}
         self.vpn_gateway.client = \
             self.make_client_function('describe_vpn_gateways',
                                       return_value=value)
         res = self.vpn_gateway.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
         value = {VPNGATEWAYS: [{VPNGATEWAY_ID: 'test_name'}]}
         self.vpn_gateway.client = \

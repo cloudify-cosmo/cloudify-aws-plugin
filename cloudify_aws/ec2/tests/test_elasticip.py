@@ -54,14 +54,14 @@ class TestEC2NetworkInterface(TestBase):
             self.make_client_function('describe_addresses',
                                       side_effect=effect)
         res = self.elasticip.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
         value = {}
         self.elasticip.client = \
             self.make_client_function('describe_addresses',
                                       return_value=value)
         res = self.elasticip.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
         value = {ADDRESSES: [{NETWORKINTERFACE_ID: 'test_name'}]}
         self.elasticip.client = \

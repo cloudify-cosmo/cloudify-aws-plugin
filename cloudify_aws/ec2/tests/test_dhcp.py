@@ -49,14 +49,14 @@ class TestEC2DHCPOptions(TestBase):
             self.make_client_function('describe_dhcp_options',
                                       side_effect=effect)
         res = self.dhcp.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
         value = {}
         self.dhcp.client = \
             self.make_client_function('describe_dhcp_options',
                                       return_value=value)
         res = self.dhcp.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
         value = {DHCPOPTIONS: [{DHCPOPTIONS_ID: 'test_name'}]}
         self.dhcp.client = \
