@@ -68,12 +68,12 @@ class TestEC2Volume(TestBase):
         self.assertEqual(res, {})
 
         value = {VOLUMES: [{'AvailabilityZone': 'test_zone',
-                            VOLUME_ID: 'test_volume_id'}]}
+                            VOLUME_ID: 'test_name'}]}
 
         self.ebs_volume.client = \
             self.make_client_function('describe_volumes', return_value=value)
         res = self.ebs_volume.properties
-        self.assertEqual(res[VOLUME_ID], 'test_volume_id')
+        self.assertEqual(res[VOLUME_ID], 'test_name')
 
     def test_class_status(self):
         value = {}
