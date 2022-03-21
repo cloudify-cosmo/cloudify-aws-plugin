@@ -41,7 +41,7 @@ from cloudify_aws.ec2.resources.networkacl import (
 class TestEC2NetworkAcl(TestBase):
 
     def setUp(self):
-        self.networkacl = EC2NetworkAcl("ctx_node", resource_id=True,
+        self.networkacl = EC2NetworkAcl("ctx_node", resource_id='test_name',
                                         client=True, logger=None)
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',
                       mock_decorator)
@@ -54,14 +54,14 @@ class TestEC2NetworkAcl(TestBase):
             self.make_client_function('describe_network_acls',
                                       side_effect=effect)
         res = self.networkacl.properties
-        self.assertIsNone(res)
+        self.assertEquals(res, {})
 
         value = {}
         self.networkacl.client = \
             self.make_client_function('describe_network_acls',
                                       return_value=value)
         res = self.networkacl.properties
-        self.assertIsNone(res)
+        self.assertEquals(res, {})
 
         value = {NETWORKACLS: [{NETWORKACL_ID: 'test_name'}]}
         self.networkacl.client = \
