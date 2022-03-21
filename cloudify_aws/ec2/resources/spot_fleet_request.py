@@ -24,7 +24,11 @@ from cloudify.exceptions import OperationRetry, NonRecoverableError
 # Local imports
 from cloudify_aws.ec2 import EC2Base
 from cloudify_aws.common import decorators, utils
-from cloudify_aws.ec2.resources.instances import INSTANCE_ID
+from cloudify_aws.ec2.resources.instances import (
+    INSTANCE_ID,
+    sort_devices,
+    get_nics_from_rels,
+    get_groups_from_rels)
 from cloudify_aws.common.constants import (
     EXTERNAL_RESOURCE_ID_MULTIPLE as MULTI_ID)
 
@@ -35,6 +39,7 @@ SpotFleetRequestId = 'SpotFleetRequestId'
 SpotFleetRequestIds = 'SpotFleetRequestIds'
 SpotFleetRequestConfig = 'SpotFleetRequestConfig'
 SpotFleetRequestConfigs = 'SpotFleetRequestConfigs'
+LaunchSpecifications = 'LaunchSpecifications'
 
 
 class EC2SpotFleetRequest(EC2Base):
@@ -131,6 +136,8 @@ def create(ctx, iface, resource_config, **_):
     params = utils.clean_params(
         dict() if not resource_config else resource_config.copy())
 
+    update_launch_spec_from_rels(params)
+
     # Actually create the resource
     create_response = iface.create(params)
     ctx.instance.runtime_properties['create_response'] = \
@@ -179,3 +186,39 @@ def delete(iface, resource_config, terminate_instances=False, **_):
         if iface.active_instances:
             raise OperationRetry(
                 'Waiting while all spot fleet instances are terminated.')
+
+
+def update_launch_spec_security_groups(groups):
+    group_ids = get_groups_from_rels()
+    for g in groups:
+        g_id = g.get('GroupId')
+        if g_id and g_id in group_ids:
+            group_ids.remove(g_id)
+    for g in group_ids:
+        groups.append({'GroupId': g})
+    return groups
+
+
+def update_launch_spec_interfaces(nics):
+    nic_from_rels = get_nics_from_rels()
+    new_nic_dict = {}
+    for nic in nic_from_rels:
+        description = nic.get('Description')
+        if description:
+            new_nic_dict[description] = nic
+    for nic in nics:
+        description = nic.get('Description')
+        if description in new_nic_dict:
+            nic.update(new_nic_dict[description])
+    return sort_devices(nics)
+
+
+def update_launch_spec_from_rels(params):
+    for i in range(0, len(params.get(LaunchSpecifications, []))):
+        launch_spec = params[LaunchSpecifications][i]
+        params[LaunchSpecifications][i]['SecurityGroups'] = \
+            update_launch_spec_security_groups(
+                launch_spec.get('SecurityGroups'))
+        params[LaunchSpecifications][i]['NetworkInterfaces'] = \
+            update_launch_spec_interfaces(
+                launch_spec.get('NetworkInterfaces', []))
