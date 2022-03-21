@@ -45,6 +45,10 @@ class EC2SpotFleetRequest(EC2Base):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
         self._properties = {}
+        self._describe_call = 'describe_spot_fleet_requests'
+        self._type_key = SpotFleetRequests
+        self._id_key = SpotFleetRequestIds
+        self._ids_key = SpotFleetRequestIds
 
     def get(self, spot_fleet_request_ids=None):
         self.logger.debug(

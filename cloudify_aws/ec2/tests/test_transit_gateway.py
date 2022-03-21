@@ -33,7 +33,7 @@ class TestEC2TransitGateway(TestBase):
     def setUp(self):
         self.transit_gateway = mod.EC2TransitGateway(
             "ctx_node",
-            resource_id=True,
+            resource_id='test_name',
             client=True,
             logger=None)
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',

@@ -38,7 +38,7 @@ class TestEC2InternetGateway(TestBase):
 
     def setUp(self):
         self.internet_gateway = EC2InternetGateway("ctx_node",
-                                                   resource_id=True,
+                                                   resource_id='test_name',
                                                    client=True, logger=None)
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',
                       mock_decorator)

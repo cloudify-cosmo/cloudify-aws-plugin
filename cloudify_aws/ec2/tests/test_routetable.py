@@ -41,7 +41,7 @@ from cloudify_aws.ec2.resources.routetable import (
 class TestEC2RouteTable(TestBase):
 
     def setUp(self):
-        self.routetable = EC2RouteTable("ctx_node", resource_id=True,
+        self.routetable = EC2RouteTable("ctx_node", resource_id='test_name',
                                         client=MagicMock(), logger=None)
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',
                       mock_decorator)

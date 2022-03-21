@@ -49,13 +49,13 @@ class TestEC2SpotInstances(TestBase):
         self.spot_instances.client = self.make_client_function(
             'describe_spot_instance_requests', side_effect=effect)
         res = self.spot_instances.properties
-        self.assertIsNone(res)
+        self.assertEquals(res, {})
 
         value = {}
         self.spot_instances.client = self.make_client_function(
             'describe_spot_instance_requests', return_value=value)
         res = self.spot_instances.properties
-        self.assertIsNone(res)
+        self.assertEquals(res, {})
 
         value = {mod.REQUESTS: [{mod.REQUEST_ID: 'test_name'}]}
         self.spot_instances.resource_id = 'test_name'
