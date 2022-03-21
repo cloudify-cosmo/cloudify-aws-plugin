@@ -73,12 +73,15 @@ class TestEC2TransitGateway(TestBase):
         res = self.transit_gateway.status
         self.assertIsNone(res)
 
+    def test_class_status_positive(self):
+
         value = {
             mod.TGS: [
                 {mod.TG_ID: 'test_name', 'State': 'available'}]
         }
+        se = [value, value, value]
         self.transit_gateway.client = self.make_client_function(
-            'describe_transit_gateways', return_value=value)
+            'describe_transit_gateways', side_effect=se)
         res = self.transit_gateway.status
         self.assertEqual(res, 'available')
 
