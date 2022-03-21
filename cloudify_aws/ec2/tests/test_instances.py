@@ -44,7 +44,7 @@ from cloudify_aws.ec2.resources.instances import (
 class TestEC2Instances(TestBase):
 
     def setUp(self):
-        self.instances = EC2Instances("ctx_node", resource_id='ec2 instance',
+        self.instances = EC2Instances("ctx_node", resource_id='test_name',
                                       client=True, logger=None)
         mock0 = patch('cloudify_aws.common.decorators.multiple_aws_resource',
                       mock_decorator)
@@ -87,7 +87,7 @@ class TestEC2Instances(TestBase):
         self.assertIsNone(res)
 
         value = {RESERVATIONS: [{INSTANCES: [{
-            INSTANCE_ID: 'ec2 instance', 'State': {'Code': 16}}]}]}
+            INSTANCE_ID: 'test_name', 'State': {'Code': 16}}]}]}
         self.instances.client = \
             self.make_client_function('describe_instances',
                                       return_value=value)
