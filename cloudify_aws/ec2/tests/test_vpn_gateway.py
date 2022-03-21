@@ -37,7 +37,7 @@ from cloudify_aws.ec2.resources.vpn_gateway import (
 class TestEC2VPNGateway(TestBase):
 
     def setUp(self):
-        self.vpn_gateway = EC2VPNGateway("ctx_node", resource_id=True,
+        self.vpn_gateway = EC2VPNGateway("ctx_node", resource_id='test_name',
                                          client=True, logger=None)
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',
                       mock_decorator)
