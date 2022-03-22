@@ -44,30 +44,22 @@ def test_cleaner_upper():
 def test_cloudwatch(*_, **__):
     with test_cleaner_upper():
         vm_props = cloud_resources_node_instance_runtime_properties()
-        logging.info('1')
         instance_id = vm_props.get('aws_resource_id')
-        logging.info('2')
         deployment_id = TEST_ID + 'cloudwatch'
-        logging.info('3')
         try:
             # Upload Cloud Watch Blueprint
-            logging.info('4')
             blueprints_upload(
                 'examples/cloudwatch-feature-demo/blueprint.yaml',
                 deployment_id)
-            logging.info('5')
             # Create Cloud Watch Deployment with Instance ID input
             deployments_create(deployment_id,
                                {"aws_instance_id": str(instance_id),
                                 "aws_region_name": "us-west-2"})
-            logging.info('6')
             # Install Cloud Watch Deployment
             executions_start('install', deployment_id)
-            logging.info('7')
             # Uninstall Cloud Watch Deployment
             executions_start('uninstall', deployment_id)
         except:
-            logging.info('8')
             cleanup_on_failure(deployment_id)
 
 
