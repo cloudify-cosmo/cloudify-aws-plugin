@@ -19,8 +19,6 @@
 # Third Party imports
 from botocore.exceptions import ClientError, ParamValidationError
 
-from cloudify.exceptions import OperationRetry
-
 # Local imports
 from cloudify_aws.efs import EFSBase
 from cloudify_aws.common import decorators, utils
@@ -117,7 +115,4 @@ def delete(ctx, iface, resource_config, **_):
         params[FILESYSTEM_ID] = iface.resource_id
 
     # Actually delete the resource
-    try:
-        iface.delete(params)
-    except ClientError as e:
-        raise OperationRetry(str(e))
+    utils.handle_response(iface, 'delete', params, raise_substrings='')

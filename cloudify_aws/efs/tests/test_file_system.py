@@ -19,6 +19,7 @@ import unittest
 from mock import MagicMock, patch
 
 from cloudify.state import current_ctx
+from cloudify.exceptions import OperationRetry
 
 # Local imports
 from cloudify_aws.efs.resources import file_system
@@ -140,21 +141,17 @@ class TestEFSFileSystem(TestBase):
 
         _ctx.operation.retry = MagicMock(return_value="Retry")
 
-        self.assertEqual(
-            file_system.delete(ctx=_ctx, resource_config=None, iface=None),
-            "Retry"
-        )
+        self.assertRaises(
+            OperationRetry,
+            file_system.delete,
+            ctx=_ctx,
+            resource_config=None,
+            iface=None)
 
         self.fake_boto.assert_called_with('efs', **CLIENT_CONFIG)
 
         self.fake_client.delete_file_system.assert_called_with(
             FileSystemId='fs_id'
-        )
-
-        _ctx.operation.retry.assert_called_with(
-            'An error occurred (InvalidOptionGroupStateFault) when calling ' +
-            'the client_error_delete_file_system operation: ' +
-            'SomeThingIsGoingWrong'
         )
 
         self.assertEqual(
