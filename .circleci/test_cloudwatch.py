@@ -58,7 +58,8 @@ def test_cloudwatch(*_, **__):
             logging.info('5')
             # Create Cloud Watch Deployment with Instance ID input
             deployments_create(deployment_id,
-                               {"aws_instance_id": str(instance_id)})
+                               {"aws_instance_id": str(instance_id),
+                                "ec2_region_name": "us-west-2"})
             logging.info('6')
             # Install Cloud Watch Deployment
             executions_start('install', deployment_id)
