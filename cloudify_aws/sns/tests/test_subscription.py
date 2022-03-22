@@ -18,7 +18,7 @@ import unittest
 # Third party imports
 from mock import patch, MagicMock
 
-from cloudify.exceptions import NonRecoverableError
+from cloudify.exceptions import OperationRetry, NonRecoverableError
 
 # local imports
 from cloudify_aws.common._compat import reload_module
@@ -153,22 +153,24 @@ class TestSNSSubscription(TestBase):
         config = {SUB_ARN: 'arn'}
         iface = MagicMock()
         iface.confirm = self.mock_return([])
-        subscription.start(ctx, iface, config)
-        self.assertTrue(ctx.operation.retry.called)
+        self.assertRaises(
+            OperationRetry,
+            subscription.start,
+            ctx,
+            iface,
+            config)
 
         config = {SUB_ARN: 'arn'}
         iface = MagicMock()
         iface.confirm = self.mock_return([CONFIRM_AUTHENTICATED])
         ctx.operation.retry = MagicMock()
         subscription.start(ctx, iface, config)
-        self.assertFalse(ctx.operation.retry.called)
 
         config = {}
         iface = MagicMock()
         iface.confirm = self.mock_return([CONFIRM_AUTHENTICATED])
         ctx.operation.retry = MagicMock()
         subscription.start(ctx, iface, config)
-        self.assertFalse(ctx.operation.retry.called)
 
     def test_delete(self):
         ctx = self.get_mock_ctx("SNS")
