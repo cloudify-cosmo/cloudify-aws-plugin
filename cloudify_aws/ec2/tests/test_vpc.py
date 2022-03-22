@@ -22,8 +22,8 @@ from cloudify.state import current_ctx
 from cloudify.exceptions import OperationRetry
 
 # Local imports
-from cloudify_aws.common._compat import reload_module
 from cloudify_aws.ec2.resources import vpc
+from cloudify_aws.common._compat import reload_module
 from cloudify_aws.common.tests.test_base import (
     TestBase,
     mock_decorator
@@ -124,6 +124,16 @@ class TestEC2Vpc(TestBase):
         iface = MagicMock()
         vpc.delete(ctx=ctx, iface=iface, resource_config={})
         self.assertTrue(iface.delete.called)
+
+    def test_delete_with_cleanup(self):
+        ctx = self.get_mock_ctx("Vpc")
+        self.vpc.resource_id = 'test_name'
+        self.vpc.cleanup_vpc = MagicMock()
+        effect = self.get_client_error_exception(name='DependencyViolation')
+        self.vpc.client = self.make_client_function(
+            'delete_vpc', side_effect=effect)
+        vpc.delete(ctx=ctx, iface=self.vpc, resource_config={})
+        self.assertTrue(self.vpc.cleanup_vpc.called)
 
     def test_check_drift(self):
         original_value = dict(

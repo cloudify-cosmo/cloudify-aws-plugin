@@ -234,6 +234,7 @@ class TestEC2Instances(TestBase):
                 target_type_hierarchy=['cloudify.nodes.Root',
                                        NETWORK_INTERFACE_TYPE])
         _target_ctx1.instance.runtime_properties['aws_resource_id'] = 'eni-0'
+        _target_ctx1.instance.runtime_properties['resource_config'] = {}
         _target_ctx1.instance.runtime_properties['device_index'] = 0
 
         _source_ctx2, _target_ctx2, _nic_type2 = \
@@ -245,6 +246,7 @@ class TestEC2Instances(TestBase):
                 target_type_hierarchy=['cloudify.nodes.Root',
                                        NETWORK_INTERFACE_TYPE])
         _target_ctx2.instance.runtime_properties['aws_resource_id'] = 'eni-1'
+        _target_ctx2.instance.runtime_properties['resource_config'] = {}
         _target_ctx2.instance.runtime_properties['device_index'] = 1
 
         _ctx = self.get_mock_ctx(

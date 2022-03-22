@@ -52,8 +52,8 @@ class EC2ElasticIP(EC2Base):
         self.allocation_id = None
         self._describe_call = 'describe_addresses'
         self._type_key = ADDRESSES
-        self._ids_key = ELASTICIP_ID
-        self._id_key = ELASTICIP_IDS
+        self._ids_key = ELASTICIP_IDS
+        self._id_key = ELASTICIP_ID
 
     def get(self, params=None):
         try:

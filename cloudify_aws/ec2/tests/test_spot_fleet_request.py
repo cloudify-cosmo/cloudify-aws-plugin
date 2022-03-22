@@ -59,18 +59,15 @@ class TestEC2SpotFleetRequest(TestBase):
         value = {
             'SpotFleetRequestConfigs': [
                 {
-                    'SpotFleetRequestConfig': {
-                        SpotFleetRequestId: 'foo'
-                    }
+                    SpotFleetRequestId: 'foo',
+                    'SpotFleetRequestConfig': {}
                 }
             ]
         }
         self.spot_fleet_request.client = self.make_client_function(
             'describe_spot_fleet_requests', return_value=value)
         res = self.spot_fleet_request.properties
-        self.assertEqual(
-            res['SpotFleetRequestConfig'][SpotFleetRequestId],
-            'foo')
+        self.assertEqual(res[SpotFleetRequestId], 'foo')
 
     def test_class_status_none(self):
         value = {}
@@ -83,10 +80,9 @@ class TestEC2SpotFleetRequest(TestBase):
         value = {
             'SpotFleetRequestConfigs': [
                 {
-                    'SpotFleetRequestConfig': {
-                        SpotFleetRequestId: 'foo',
-                        'SpotFleetRequestState': 'active'
-                    }
+                    SpotFleetRequestId: 'foo',
+                    'SpotFleetRequestState': 'active',
+                    'SpotFleetRequestConfig': {}
                 }
             ]
         }

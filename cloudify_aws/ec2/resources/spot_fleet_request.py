@@ -16,6 +16,8 @@
     ~~~~~~~~~~~~~~
     AWS EC2 VPC interface
 '''
+import time
+
 # Third Party imports
 from botocore.exceptions import ClientError
 
@@ -24,7 +26,11 @@ from cloudify.exceptions import OperationRetry, NonRecoverableError
 # Local imports
 from cloudify_aws.ec2 import EC2Base
 from cloudify_aws.common import decorators, utils
-from cloudify_aws.ec2.resources.instances import INSTANCE_ID
+from cloudify_aws.ec2.resources.instances import (
+    INSTANCE_ID,
+    sort_devices,
+    get_nics_from_rels,
+    get_groups_from_rels)
 from cloudify_aws.common.constants import (
     EXTERNAL_RESOURCE_ID_MULTIPLE as MULTI_ID)
 
@@ -35,6 +41,7 @@ SpotFleetRequestId = 'SpotFleetRequestId'
 SpotFleetRequestIds = 'SpotFleetRequestIds'
 SpotFleetRequestConfig = 'SpotFleetRequestConfig'
 SpotFleetRequestConfigs = 'SpotFleetRequestConfigs'
+LaunchSpecifications = 'LaunchSpecifications'
 
 
 class EC2SpotFleetRequest(EC2Base):
@@ -47,7 +54,7 @@ class EC2SpotFleetRequest(EC2Base):
         self._properties = {}
         self._describe_call = 'describe_spot_fleet_requests'
         self._type_key = SpotFleetRequests
-        self._id_key = SpotFleetRequestIds
+        self._id_key = SpotFleetRequestId
         self._ids_key = SpotFleetRequestIds
 
     def get(self, spot_fleet_request_ids=None):
@@ -68,16 +75,18 @@ class EC2SpotFleetRequest(EC2Base):
         '''Gets the properties of an external resource'''
         if not self._properties:
             resources = self.get()
-            if resources and 'SpotFleetRequestConfigs' in resources:
-                self._properties = resources[SpotFleetRequestConfigs][0]
+            if resources and SpotFleetRequestConfigs in resources:
+                for cfg in resources[SpotFleetRequestConfigs]:
+                    if cfg[SpotFleetRequestId] == self.resource_id:
+                        self._properties = cfg
         return self._properties
 
     @property
     def status(self):
         '''Gets the status of an external resource'''
-        props = self.properties
-        if SpotFleetRequestConfig in props:
-            return props[SpotFleetRequestConfig].get('SpotFleetRequestState')
+        if self.properties:
+            return self.properties.get('SpotFleetRequestState') or \
+                   self.properties.get('ActivityStatus')
 
     @property
     def check_status(self):
@@ -131,14 +140,25 @@ def create(ctx, iface, resource_config, **_):
     params = utils.clean_params(
         dict() if not resource_config else resource_config.copy())
 
+    update_launch_spec_from_rels(params)
+
     # Actually create the resource
     create_response = iface.create(params)
     ctx.instance.runtime_properties['create_response'] = \
         utils.JsonCleanuper(create_response).to_dict()
 
     spot_fleed_request_id = create_response.get(SpotFleetRequestId, '')
-    iface.update_resource_id(spot_fleed_request_id)
-    utils.update_resource_id(ctx.instance, spot_fleed_request_id)
+    iface.resource_id = spot_fleed_request_id
+    utils.update_resource_id(ctx.instance, iface.resource_id)
+    c = 0
+    while not iface.status:
+        if c >= 15:
+            raise NonRecoverableError(
+                'Timed out waiting for request to show up in AWS service.')
+        iface._properties = None  # So that properties will refresh
+        iface.logger.info('Clearing properties, trying again.')
+        time.sleep(2.5)
+        c += 1
 
 
 @decorators.aws_resource(EC2SpotFleetRequest,
@@ -179,3 +199,41 @@ def delete(iface, resource_config, terminate_instances=False, **_):
         if iface.active_instances:
             raise OperationRetry(
                 'Waiting while all spot fleet instances are terminated.')
+
+
+def update_launch_spec_security_groups(groups):
+    groups = groups or []
+    group_ids = get_groups_from_rels()
+    for g in groups:
+        g_id = g.get('GroupId')
+        if g_id and g_id in group_ids:
+            group_ids.remove(g_id)
+    for g in group_ids:
+        groups.append({'GroupId': g})
+    return groups
+
+
+def update_launch_spec_interfaces(nics):
+    nics = nics or []
+    nic_from_rels = get_nics_from_rels()
+    new_nic_dict = {}
+    for nic in nic_from_rels:
+        description = nic.get('Description')
+        if description:
+            new_nic_dict[description] = nic
+    for nic in nics:
+        description = nic.get('Description')
+        if description in new_nic_dict:
+            nic.update(new_nic_dict[description])
+    return sort_devices(nics)
+
+
+def update_launch_spec_from_rels(params):
+    configs = params.get(
+        'SpotFleetRequestConfig', {}).get(LaunchSpecifications, [])
+    for i in range(0, len(configs)):
+        launch_spec = params['SpotFleetRequestConfig'][LaunchSpecifications][i]
+        params['SpotFleetRequestConfig'][
+            LaunchSpecifications][i]['SecurityGroups'] = \
+            update_launch_spec_security_groups(
+                launch_spec.get('SecurityGroups', []))

@@ -60,14 +60,16 @@ class EC2SpotInstances(EC2Instances):
         params = params or {}
         return {REQUEST_IDS: params.get(REQUEST_ID, [self.resource_id])}
 
-    # @property
-    # def properties(self):
-    #     """Gets the properties of an external resource"""
-    #     resources = self.describe()
-    #     if REQUESTS in resources:
-    #         for request in resources[REQUESTS]:
-    #             if request[REQUEST_ID] == self.resource_id:
-    #                 return request
+    @property
+    def properties(self):
+        """Gets the properties of an external resource"""
+        if not self._properties:
+            resources = self.describe()
+            if REQUESTS in resources:
+                for request in resources[REQUESTS]:
+                    if request[REQUEST_ID] == self.resource_id:
+                        self._properties = request
+        return self._properties
 
     def describe(self, params=None):
         params = params or self.prepare_request_id_param
@@ -84,12 +86,6 @@ class EC2SpotInstances(EC2Instances):
         props = self.properties
         if not props:
             return None
-        self.logger.info(props['State'])
-        self.logger.bug(props['State'])
-        self.logger.info(props['State'])
-        self.logger.info(props['State'])
-        self.logger.bug(props['State'])
-        self.logger.info(props['State'])
         return props['State']
 
     def create(self, params):

@@ -74,22 +74,45 @@ node_templates:
                 KeyName: { get_input: key_name }
                 Placement:
                   AvailabilityZone: { get_input: availability_zone }
-                SubnetId: { get_attribute: [ subnet, aws_resource_id ] }
-                SecurityGroups:
-                  - GroupId: { get_attribute: [ security_group, aws_resource_id ] }
+                NetworkInterfaces:
+                  - Description: "Nic1"
+                    DeviceIndex: 0
+                    AssociatePublicIpAddress: true
+                    SubnetId: { get_attribute: [ subnet, aws_resource_id ] }
             SpotPrice: '0.04'
             TargetCapacity: 4
     relationships:
     - type: cloudify.relationships.depends_on
       target: ami
-    - type: cloudify.relationships.depends_on
-      target: security_group
+    # - type: cloudify.relationships.depends_on
+    #   target: security_group
     - type: cloudify.relationships.depends_on
       target: route_public_subnet_internet_gateway
     - type: cloudify.relationships.depends_on
       target: subnet
     - type: cloudify.relationships.depends_on
       target: cfy_fleet_profile
+    # - type: cloudify.relationships.depends_on
+    #   target: nic
+
+#  nic:
+#    type: cloudify.nodes.aws.ec2.Interface
+#    properties:
+#      client_config: *client_config
+#      resource_config:
+#        kwargs:
+#          Description: "Nic1"
+#    relationships:
+#      - type: cloudify.relationships.depends_on
+#        target: subnet
+
+#  eip:
+#    type: cloudify.nodes.aws.ec2.ElasticIP
+#    properties:
+#      client_config: *client_config
+#    relationships:
+#      - type: cloudify.relationships.depends_on
+#        target: nic
 
   cfy_fleet_profile:
     type: cloudify.nodes.aws.iam.InstanceProfile
