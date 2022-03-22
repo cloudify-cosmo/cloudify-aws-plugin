@@ -121,4 +121,3 @@ def delete(ctx, iface, resource_config, **_):
         iface.delete(params)
     except ClientError as e:
         raise OperationRetry(str(e))
-
