@@ -21,7 +21,6 @@ import time
 # Third Party imports
 from botocore.exceptions import ClientError
 
-from cloudify import ctx
 from cloudify.exceptions import OperationRetry, NonRecoverableError
 
 # Local imports
@@ -231,11 +230,10 @@ def update_launch_spec_interfaces(nics):
 
 def update_launch_spec_from_rels(params):
     configs = params.get(
-        'SpotFleetRequestConfig' , {}).get(LaunchSpecifications, [])
+        'SpotFleetRequestConfig', {}).get(LaunchSpecifications, [])
     for i in range(0, len(configs)):
         launch_spec = params['SpotFleetRequestConfig'][LaunchSpecifications][i]
         params['SpotFleetRequestConfig'][
             LaunchSpecifications][i]['SecurityGroups'] = \
             update_launch_spec_security_groups(
                 launch_spec.get('SecurityGroups', []))
-        # params['SpotFleetRequestConfig'][LaunchSpecifications][i]['NetworkInterfaces'] = update_launch_spec_interfaces(launch_spec.get('NetworkInterfaces', []))  # noqa
