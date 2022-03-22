@@ -1,6 +1,7 @@
 3.0.2:
     - RD-4434 Nics for Spot Fleet Requests
     - RD-2009 EC2 base properties improvement
+    - Fix for EFS
 3.0.1:
     - RD-3458 fix iam blueprint & iam status
 3.0.0:
