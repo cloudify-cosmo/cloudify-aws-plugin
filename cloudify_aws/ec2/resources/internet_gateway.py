@@ -44,8 +44,8 @@ class EC2InternetGateway(EC2Base):
         self.type_name = RESOURCE_TYPE
         self._describe_call = 'describe_internet_gateways'
         self._type_key = INTERNETGATEWAYS
-        self._ids_key = INTERNETGATEWAY_ID
-        self._id_key = INTERNETGATEWAY_IDS
+        self._ids_key = INTERNETGATEWAY_IDS
+        self._id_key = INTERNETGATEWAY_ID
 
     @property
     def status(self):

@@ -244,7 +244,7 @@ class TestEC2VolumeAttachment(TestBase):
                     [
                         {
                             'AvailabilityZone': 'test_zone',
-                            'VolumeId': 'test_volume_id',
+                            'VolumeId': 'test_name',
                             'Attachments':
                                 [
                                     {
@@ -263,7 +263,7 @@ class TestEC2VolumeAttachment(TestBase):
             self.make_client_function('describe_volumes', return_value=value)
 
         res = self.ebs_volume_attachment.properties
-        self.assertEqual(res[VOLUME_ID], 'test_volume_id')
+        self.assertEqual(res[VOLUME_ID], 'test_name')
         self.assertEqual(res[VOLUME_STATE], 'in-use')
         self.assertEquals(len(res['Attachments']), 1)
 

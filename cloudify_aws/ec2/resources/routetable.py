@@ -49,9 +49,9 @@ class EC2RouteTable(EC2Base):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
         self._describe_call = 'describe_route_tables'
-        self._type_key = ROUTETABLE
-        self._ids_key = ROUTETABLE_ID
-        self._id_key = ROUTETABLE_IDS
+        self._type_key = ROUTETABLES
+        self._ids_key = ROUTETABLE_IDS
+        self._id_key = ROUTETABLE_ID
 
     @property
     def status(self):

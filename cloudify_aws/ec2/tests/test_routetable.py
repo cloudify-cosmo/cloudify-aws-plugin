@@ -66,12 +66,13 @@ class TestEC2RouteTable(TestBase):
         res = self.routetable.properties
         self.assertEqual(res, {})
 
+    def test_class_properties_not_empty(self):
+
         value = {ROUTETABLES: [{ROUTETABLE_ID: 'test_name'}]}
-        self.routetable.client = \
-            self.make_client_function('describe_route_tables',
-                                      return_value=value)
-        res = self.routetable.properties
-        self.assertEqual(res[ROUTETABLE_ID], 'test_name')
+        self.routetable.client = self.make_client_function(
+            'describe_route_tables', return_value=value)
+        self.assertEqual(
+            self.routetable.properties[ROUTETABLE_ID], 'test_name')
 
     def test_class_create(self):
         value = {'RouteTable': 'test'}
