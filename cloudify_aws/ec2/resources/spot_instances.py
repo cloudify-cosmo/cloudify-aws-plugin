@@ -164,13 +164,9 @@ def create(ctx, iface, resource_config, **_):
 @decorators.wait_for_status(status_good=GOOD)
 def configure(ctx, iface, resource_config, **_):
     '''Waits for an AWS EC2 Spot Instance Request to be ready'''
-    ctx.logger.info("yaniv log 1")
     if INSTANCE_IDS not in ctx.instance.runtime_properties:
-        ctx.logger.info("yaniv log 2")
         ctx.instance.runtime_properties[INSTANCE_IDS] = []
-    ctx.logger.info("yaniv log 3")
     ctx.instance.runtime_properties[INSTANCE_IDS] = iface.get_instance_ids()
-    ctx.logger.info("yaniv log 4")
 
 
 @decorators.aws_resource(EC2SpotInstances,
