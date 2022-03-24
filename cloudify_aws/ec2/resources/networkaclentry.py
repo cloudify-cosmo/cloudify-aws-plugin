@@ -94,13 +94,9 @@ def prepare(ctx, resource_config, **_):
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS EC2 NetworkAcl Entry"""
 
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
-    network_acl_id = params.get(NETWORKACL_ID)
-    rule_number = params.get(RULE_NUMBER)
-    egress = params.get(EGRESS)
+    network_acl_id = resource_config.get(NETWORKACL_ID)
+    rule_number = resource_config.get(RULE_NUMBER)
+    egress = resource_config.get(EGRESS)
 
     if not network_acl_id:
         targ = \
@@ -110,23 +106,24 @@ def create(ctx, iface, resource_config, **_):
 
         # Attempt to use the NETWORKACL ID from parameters.
         # Fallback to connected NETWORKACL.
-        params[NETWORKACL_ID] = \
+        resource_config[NETWORKACL_ID] = \
             network_acl_id or \
             targ.target.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
 
-    ctx.instance.runtime_properties['network_acl_id'] = params[NETWORKACL_ID]
+    ctx.instance.runtime_properties['network_acl_id'] = \
+        resource_config[NETWORKACL_ID]
     ctx.instance.runtime_properties['rule_number'] = rule_number
     ctx.instance.runtime_properties['egress'] = egress
 
-    filters = {NETWORKACL_IDS: [params[NETWORKACL_ID]]}
+    filters = {NETWORKACL_IDS: [resource_config[NETWORKACL_ID]]}
     network_acl_entry = iface.get_properties_by_filter(**filters)
     entry = network_acl_entry.get(ENTRIES)[0]
     # for rule in entries:
     if rule_number == entry.get(RULE_NUMBER):
-        return iface.replace(params)
+        return iface.replace(resource_config)
 
     # Actually create the resource
-    create_response = iface.create(params)
+    create_response = iface.create(resource_config)
     ctx.instance.runtime_properties['create_response'] = \
         utils.JsonCleanuper(create_response).to_dict()
 

@@ -95,11 +95,7 @@ def prepare(ctx, resource_config, **_):
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS EC2 Customer Gateway"""
 
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
-    public_ip = params.get(PUBLIC_IP)
+    public_ip = resource_config.get(PUBLIC_IP)
     if not public_ip:
         targ = \
             utils.find_rel_by_node_type(ctx.instance, ELASTICIP_TYPE)
@@ -107,10 +103,10 @@ def create(ctx, iface, resource_config, **_):
             public_ip = \
                 targ.target.instance.runtime_properties \
                     .get(ELASTICIP_TYPE_DEPRECATED)
-        params.update({PUBLIC_IP: public_ip})
+        resource_config.update({PUBLIC_IP: public_ip})
 
     # Actually create the resource
-    create_response = iface.create(params)['CustomerGateway']
+    create_response = iface.create(resource_config)['CustomerGateway']
     ctx.instance.runtime_properties['create_response'] = \
         utils.JsonCleanuper(create_response).to_dict()
     utils.update_resource_id(ctx.instance,

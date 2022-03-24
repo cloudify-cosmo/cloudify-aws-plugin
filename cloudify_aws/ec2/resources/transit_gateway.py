@@ -153,11 +153,8 @@ def prepare(ctx, iface, resource_config, **_):
 @decorators.tag_resources
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS EC2 Transit Gateway'''
-    params = utils.clean_params(
-        dict() if not resource_config else resource_config.copy())
-
     # Actually create the resource
-    create_response = iface.create(params)[TG]
+    create_response = iface.create(resource_config)[TG]
     ctx.instance.runtime_properties['create_response'] = \
         utils.JsonCleanuper(create_response).to_dict()
 
