@@ -96,9 +96,7 @@ def prepare(ctx, iface, resource_config, **_):
 def create(ctx, iface, resource_config, **_):
     '''Creates AWS EC2 Keypairs'''
 
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
+    params = ctx.instance.runtime_properties['params']
     params[KEYNAME] = utils.get_resource_name(params.get(KEYNAME))
     key_name = params[KEYNAME]
 

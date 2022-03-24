@@ -147,8 +147,7 @@ def create(ctx, iface, resource_config, **_):
     """Creates an AWS EC2 NetworkInterface"""
 
     # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
+    params = ctx.instance.runtime_properties['params']
     params = _create_eni_params(params, ctx.instance)
     _create(iface, params, ctx.instance)
     _modify_attribute(iface, _.get('modify_network_interface_attribute_args'))

@@ -79,7 +79,7 @@ def prepare(ctx, iface, resource_config, **_):
                          RESOURCE_TYPE)
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS EC2 Route'''
-    params = dict() if not resource_config else resource_config.copy()
+    params = ctx.instance.runtime_properties['params']
 
     routetable_id = params.get(ROUTETABLE_ID)
     gateway_id = params.get(GATEWAY_ID)

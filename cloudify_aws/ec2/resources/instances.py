@@ -173,8 +173,7 @@ def prepare(ctx, iface, resource_config, **_):
 def create(ctx, iface, resource_config, **kwargs):
     '''Creates AWS EC2 Instances'''
 
-    params = utils.clean_params(
-        dict() if not resource_config else resource_config.copy())
+    params = ctx.instance.runtime_properties['params']
     handle_userdata(params)
     assign_subnet_param(params)
     assign_groups_param(params)
