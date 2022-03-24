@@ -227,7 +227,7 @@ def _create_subnet_params(params, ctx_instance):
     ipv6_cidr_block = params.get(IPV6_CIDR_BLOCK)
     # If either of these values is missing,
     # they must be filled from a connected VPC.
-    if not vpc_id or not cidr_block:
+    if not vpc_id or not cidr_block or not ipv6_cidr_block:
         targ = \
             utils.find_rel_by_node_type(
                 ctx_instance,
@@ -245,7 +245,7 @@ def _create_subnet_params(params, ctx_instance):
         # Fallback to connected VPC.
         params[CIDR_BLOCK] = \
             cidr_block or \
-            targ.instance.runtime_properties.get(
+            targ.target.instance.runtime_properties.get(
                 'resource_config', {}).get(CIDR_BLOCK)
 
     # If ipv6 cidr block is provided by user, then we need to make sure that
@@ -253,6 +253,8 @@ def _create_subnet_params(params, ctx_instance):
     if ipv6_cidr_block:
         ipv6_cidr_block = ipv6_cidr_block[:-2] + '64'
         params[IPV6_CIDR_BLOCK] = ipv6_cidr_block
+        if 'Ipv6Native' in params and CIDR_BLOCK in params:
+            del params[CIDR_BLOCK]
     return params
 
 
