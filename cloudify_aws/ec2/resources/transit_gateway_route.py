@@ -36,6 +36,9 @@ CIDR = 'DestinationCidrBlock'
 VPC_TYPE = 'cloudify.nodes.aws.ec2.Vpc'
 RESOURCE_TYPE = 'EC2 Transit Gateway Route'
 ROUTETABLE_TYPE = 'cloudify.nodes.aws.ec2.TransitGatewayRouteTable'
+ROUTETABLES = 'TransitGatewayRouteTables'
+ROUTETABLE_ID = 'TransitGatewayRouteTableId'
+ROUTETABLE_IDS = 'TransitGatewayRouteTableIds'
 
 
 class EC2TransitGatewayRoute(EC2Base):
@@ -45,6 +48,10 @@ class EC2TransitGatewayRoute(EC2Base):
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
+        self._describe_call = 'describe_transit_gateways'
+        self._type_key = ROUTETABLES
+        self._id_key = ROUTETABLE_ID
+        self._ids_key = ROUTETABLE_IDS
 
     def create(self, params):
         '''
