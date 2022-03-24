@@ -132,9 +132,8 @@ def prepare(ctx, iface, resource_config, **_):
 @decorators.tag_resources
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS EC2 Route Table'''
-    params = ctx.instance.runtime_properties['params']
 
-    vpc_id = params.get(VPC_ID)
+    vpc_id = resource_config.get(VPC_ID)
 
     # If either of these values is missing,
     # they must be filled from a connected VPC.
@@ -145,11 +144,11 @@ def create(ctx, iface, resource_config, **_):
 
         # Attempt to use the VPC ID from parameters.
         # Fallback to connected VPC.
-        params[VPC_ID] = vpc_id or targ.target\
+        resource_config[VPC_ID] = vpc_id or targ.target\
             .instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
 
     # Actually create the resource
-    create_response = iface.create(params)[ROUTETABLE]
+    create_response = iface.create(resource_config)[ROUTETABLE]
     ctx.instance.runtime_properties['create_response'] = \
         utils.JsonCleanuper(create_response).to_dict()
     route_table_id = create_response.get(ROUTETABLE_ID)

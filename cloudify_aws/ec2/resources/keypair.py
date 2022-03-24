@@ -96,18 +96,19 @@ def prepare(ctx, iface, resource_config, **_):
 def create(ctx, iface, resource_config, **_):
     '''Creates AWS EC2 Keypairs'''
 
-    params = ctx.instance.runtime_properties['params']
-    params[KEYNAME] = utils.get_resource_name(params.get(KEYNAME))
-    key_name = params[KEYNAME]
+    resource_config[KEYNAME] = utils.get_resource_name(resource_config.get(
+        KEYNAME))
+    key_name = resource_config[KEYNAME]
 
-    if PUBLIC_KEY_MATERIAL in params:
+    if PUBLIC_KEY_MATERIAL in resource_config:
         create_response = \
             iface.import_keypair(
-                params,
+                resource_config,
                 log_response=ctx.node.properties['log_create_response'])
     else:
         create_response = iface.create(
-            params, log_response=ctx.node.properties['log_create_response'])
+            resource_config,
+            log_response=ctx.node.properties['log_create_response'])
 
         # Allow the end user to store the key material in a secret.
         if ctx.node.properties['create_secret']:

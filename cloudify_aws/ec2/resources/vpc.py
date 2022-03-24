@@ -186,9 +186,8 @@ def prepare(ctx, iface, resource_config, **_):
 @decorators.tag_resources
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS EC2 Vpc'''
-    params = utils.clean_params(ctx.instance.runtime_properties['params'])
 
-    _create(iface, params)
+    _create(iface, resource_config)
     utils.update_resource_id(ctx.instance, iface.resource_id)
     _modify_attribute(iface, _.get('modify_vpc_attribute_args'))
 

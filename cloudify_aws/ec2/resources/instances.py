@@ -173,16 +173,15 @@ def prepare(ctx, iface, resource_config, **_):
 def create(ctx, iface, resource_config, **kwargs):
     '''Creates AWS EC2 Instances'''
 
-    params = ctx.instance.runtime_properties['params']
-    handle_userdata(params)
-    assign_subnet_param(params)
-    assign_groups_param(params)
-    assign_nics_param(params)
-    handle_tags(params)
+    handle_userdata(resource_config)
+    assign_subnet_param(resource_config)
+    assign_groups_param(resource_config)
+    assign_nics_param(resource_config)
+    handle_tags(resource_config)
 
-    validate_multiple_vm_per_node_instance(params)
+    validate_multiple_vm_per_node_instance(resource_config)
 
-    create_response = iface.create(params)
+    create_response = iface.create(resource_config)
     ctx.instance.runtime_properties['create_response'] = \
         utils.JsonCleanuper(create_response).to_dict()
     if MULTI_ID not in ctx.instance.runtime_properties:
