@@ -95,12 +95,8 @@ def prepare(ctx, resource_config, **_):
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS EC2 DhcpOptions"""
 
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
     # Actually create the resource
-    create_response = iface.create(params)[DHCPOPTIONS]
+    create_response = iface.create(resource_config)[DHCPOPTIONS]
     ctx.instance.runtime_properties['create_response'] = \
         utils.JsonCleanuper(create_response).to_dict()
     dhcp_options_id = create_response.get(DHCPOPTIONS_ID, '')

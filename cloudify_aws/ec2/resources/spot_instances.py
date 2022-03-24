@@ -144,13 +144,11 @@ def prepare(ctx, iface, resource_config, **_):
 @decorators.tag_resources
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS EC2 Spot Instance Request'''
-    params = utils.clean_params(
-        dict() if not resource_config else resource_config.copy())
-    assign_launch_spec_param(params)
+    assign_launch_spec_param(resource_config)
     ctx.logger.debug(
         'Requesting spot instances with these parameters: {p}'.format(
-            p=params))
-    create_response = iface.create(params)
+            p=resource_config))
+    create_response = iface.create(resource_config)
     ctx.instance.runtime_properties['create_response'] = \
         utils.JsonCleanuper(create_response[REQUESTS]).to_dict()
     instance_id = create_response[REQUESTS][0][REQUEST_ID]

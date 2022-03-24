@@ -106,11 +106,7 @@ def prepare(ctx, resource_config, **_):
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS EC2 NetworkAcl"""
 
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
-    vpc_id = params.get(VPC_ID)
+    vpc_id = resource_config.get(VPC_ID)
     if not vpc_id:
         targ = \
             utils.find_rel_by_node_type(ctx.instance, VPC_TYPE) or \
@@ -118,12 +114,12 @@ def create(ctx, iface, resource_config, **_):
 
         # Attempt to use the VPC ID from parameters.
         # Fallback to connected VPC.
-        params[VPC_ID] = \
+        resource_config[VPC_ID] = \
             vpc_id or \
             targ.target.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
 
     # Actually create the resource
-    create_response = iface.create(params)['NetworkAcl']
+    create_response = iface.create(resource_config)['NetworkAcl']
     ctx.instance.runtime_properties['create_response'] = \
         utils.JsonCleanuper(create_response).to_dict()
     network_acl_id = create_response.get(NETWORKACL_ID, '')
