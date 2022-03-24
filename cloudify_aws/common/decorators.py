@@ -440,6 +440,7 @@ def _aws_resource(function,
     if not ignore_properties:
         resource_config = _get_resource_config_if_not_ignore_properties(
             kwargs, props, runtime_instance_properties)
+        ctx.instance.runtime_properties['params'] = resource_config
     else:
         resource_config = None
 

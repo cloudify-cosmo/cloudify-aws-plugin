@@ -154,8 +154,7 @@ def create(ctx, iface, resource_config, **_):
     """Creates an AWS EC2 ElasticIP"""
 
     # Create a copy of the resource config for clean manipulation.
-    params = utils.clean_params(
-        dict() if not resource_config else resource_config.copy())
+    params = ctx.instance.runtime_properties['params']
 
     # Actually create the resource
     create_response = None

@@ -118,7 +118,7 @@ def prepare(ctx, iface, resource_config, **_):
 @decorators.tag_resources
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS EC2 Route Table'''
-    params = dict() if not resource_config else resource_config.copy()
+    params = ctx.instance.runtime_properties['params']
 
     vpc_id = params.get(VPC_ID)
 

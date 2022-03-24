@@ -115,7 +115,7 @@ def prepare(ctx, resource_config, **_):
 @decorators.tag_resources
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS EC2 Internet Gateway'''
-    params = dict() if not resource_config else resource_config.copy()
+    params = ctx.instance.runtime_properties['params']
     if iface.resource_id and not iface.properties:
         raise OperationRetry("Create did not succeed, trying again ")
     elif iface.resource_id:
