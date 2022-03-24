@@ -378,8 +378,8 @@ def _get_resource_config_if_not_ignore_properties(
         del resource_config['kwargs']
     resource_config.update(resource_config_kwargs)
     # Update the argument
-    kwargs['resource_config'] = kwargs.get(
-        'resource_config') or resource_config or dict()
+    kwargs['resource_config'] = utils.clean_params(
+        kwargs.get('resource_config') or resource_config or dict())
 
     # ``resource_config`` could be part of the runtime instance
     # properties, If ``resource_config`` is empty then check if it
@@ -449,8 +449,6 @@ def _aws_resource(function,
             kwargs, props, runtime_instance_properties)
     else:
         resource_config = None
-    resource_config = utils.clean_params(
-        dict() if not resource_config else resource_config.copy())
 
     resource_id = utils.get_resource_id(node=ctx.node, instance=ctx.instance)
 
