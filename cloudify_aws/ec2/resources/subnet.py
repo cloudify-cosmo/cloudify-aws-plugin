@@ -103,9 +103,8 @@ def prepare(ctx, resource_config, **_):
 @decorators.tag_resources
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS EC2 Subnet'''
-    params = utils.clean_params(ctx.instance.runtime_properties['params'])
-    params = _create_subnet_params(params, ctx.instance)
-    _create(ctx.node, iface, params, ctx.logger)
+    resource_config = _create_subnet_params(resource_config, ctx.instance)
+    _create(ctx.node, iface, resource_config, ctx.logger)
     utils.update_resource_id(ctx.instance, iface.resource_id)
     _modify_attribute(iface, _.get('modify_subnet_attribute_args'))
 

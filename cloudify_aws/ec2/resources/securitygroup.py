@@ -140,11 +140,10 @@ def prepare(ctx, iface, resource_config, **_):
 @decorators.tag_resources
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS EC2 Security Group'''
-    params = ctx.instance.runtime_properties['params']
-    params = _create_group_params(params, ctx.instance)
+    resource_config = _create_group_params(resource_config, ctx.instance)
 
     # Actually create the resource
-    iface.create(params)
+    iface.create(resource_config)
     utils.update_resource_id(ctx.instance, iface.resource_id)
     utils.assign_create_response(
         iface, ctx.instance.runtime_properties, iface.create_response)

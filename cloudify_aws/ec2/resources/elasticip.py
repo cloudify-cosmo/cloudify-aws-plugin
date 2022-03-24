@@ -153,15 +153,12 @@ def prepare(ctx, resource_config, **_):
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS EC2 ElasticIP"""
 
-    # Create a copy of the resource config for clean manipulation.
-    params = ctx.instance.runtime_properties['params']
-
     # Actually create the resource
     create_response = None
     if ctx.node.properties.get('use_unassociated_addresses', False):
         create_response = get_already_allocated_ip(iface.get())
     if not create_response:
-        create_response = iface.create(params)
+        create_response = iface.create(resource_config)
     else:
         ctx.instance.runtime_properties['unassociated_address'] = \
             create_response.get(ELASTICIP_ID)

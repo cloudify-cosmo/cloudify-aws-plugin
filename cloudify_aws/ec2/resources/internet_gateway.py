@@ -115,12 +115,11 @@ def prepare(ctx, resource_config, **_):
 @decorators.tag_resources
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS EC2 Internet Gateway'''
-    params = ctx.instance.runtime_properties['params']
     if iface.resource_id and not iface.properties:
         raise OperationRetry("Create did not succeed, trying again ")
     elif iface.resource_id:
         return
-    create_response = iface.create(params)['InternetGateway']
+    create_response = iface.create(resource_config)['InternetGateway']
     ctx.instance.runtime_properties['create_response'] = \
         utils.JsonCleanuper(create_response).to_dict()
     utils.update_resource_id(ctx.instance,
