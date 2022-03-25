@@ -156,6 +156,10 @@ def delete(ctx, iface, resource_config, **_):
             RESOURCE_NAME: instance_profile_name,
             'RoleName': role_name
         }
-        iface.remove_role_from_instance_profile(remove_role_params)
+        utils.handle_response(
+            iface,
+            'remove_role_from_instance_profile',
+            remove_role_params,
+            ['NoSuchEntity'])
 
-    iface.delete(params)
+    utils.handle_response(iface, 'delete', params, ['NoSuchEntity'])

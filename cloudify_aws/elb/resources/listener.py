@@ -50,6 +50,7 @@ class ELBListener(ELBBase):
             resource_id,
             client or Boto3Connection(ctx_node).client('elbv2'),
             logger)
+        self._properties = {}
         self.type_name = RESOURCE_TYPE
 
     @property
@@ -57,22 +58,23 @@ class ELBListener(ELBBase):
         '''Gets the properties of an external resource'''
         if not self.resource_id:
             return
-        try:
-            resources = self.client.describe_listeners(
-                ListenerArns=[self.resource_id])
-        except (ParamValidationError, ClientError):
-            pass
-        else:
-            return None \
-                if not resources else resources['Listeners'][0]
+        if not self._properties:
+            try:
+                resources = self.client.describe_listeners(
+                    ListenerArns=[self.resource_id])
+            except (ParamValidationError, ClientError):
+                pass
+            else:
+                if 'Listeners' in resources:
+                    for listener in resources['Listeners']:
+                        if listener.get('ListenerArn') == self.resource_id:
+                            self._properties = listener
+        return self._properties
 
     @property
     def status(self):
         '''Gets the status of an external resource'''
-        props = self.properties
-        if not props:
-            return None
-        return props['State']['Code']
+        return self.properties
 
     def create(self, params):
         '''

@@ -52,32 +52,34 @@ class TestELBRule(TestBase):
         self.rule.client = self.make_client_function('describe_rules',
                                                      side_effect=effect)
         res = self.rule.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
         value = []
         self.rule.client = self.make_client_function('describe_rules',
                                                      return_value=value)
         res = self.rule.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
-        value = {'Rules': ['test']}
+        value = {'Rules': [{'RuleArn': True}]}
+        self.rule.resource_id = True
         self.rule.client = self.make_client_function('describe_rules',
                                                      return_value=value)
         res = self.rule.properties
-        self.assertEqual(res, 'test')
+        self.assertEqual(res, {'RuleArn': True})
 
     def test_class_status(self):
         value = []
         self.rule.client = self.make_client_function('describe_rules',
                                                      return_value=value)
         res = self.rule.status
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
-        value = {'Rules': [{'State': {'Code': 'ok'}}]}
+        value = {'Rules': [{'RuleArn': True, 'State': {'Code': 'ok'}}]}
+        self.rule.resource_id = True
         self.rule.client = self.make_client_function('describe_rules',
                                                      return_value=value)
         res = self.rule.status
-        self.assertEqual(res, 'ok')
+        self.assertEqual(res, {'RuleArn': True, 'State': {'Code': 'ok'}})
 
     def test_class_create(self):
         value = {'Rules': [{RULE_ARN: 'id'}]}

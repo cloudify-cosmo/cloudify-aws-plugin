@@ -34,7 +34,7 @@ class TestECSCluster(TestBase):
     def setUp(self):
         super(TestECSCluster, self).setUp()
 
-        self.cluster = ECSCluster("ctx_node", resource_id=True,
+        self.cluster = ECSCluster("ctx_node", resource_id='test_cluster_name',
                                   client=True, logger=None)
         self.mock_resource = patch(
             'cloudify_aws.common.decorators.aws_resource', mock_decorator
@@ -49,8 +49,8 @@ class TestECSCluster(TestBase):
 
     def test_class_properties(self):
         effect = self.get_client_error_exception(name=cluster.RESOURCE_TYPE)
-        self.cluster.client = self.make_client_function('describe_clusters',
-                                                        side_effect=effect)
+        self.cluster.client = self.make_client_function(
+            'describe_clusters', side_effect=effect)
         self.assertIsNone(self.cluster.properties)
 
         response = \

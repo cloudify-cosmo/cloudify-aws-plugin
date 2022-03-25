@@ -17,7 +17,7 @@
     AWS ELB target group
 '''
 # Third Party imports
-from botocore.exceptions import ClientError, ParamValidationError
+from cloudify.exceptions import NonRecoverableError
 
 # Local imports
 from cloudify_aws.common import decorators, utils
@@ -45,28 +45,34 @@ class ELBTargetGroup(ELBBase):
             client or Boto3Connection(ctx_node).client('elbv2'),
             logger)
         self.type_name = RESOURCE_TYPE
+        self._properties = {}
 
     @property
     def properties(self):
         '''Gets the properties of an external resource'''
-        if not self.resource_id:
-            return
-        try:
-            resources = self.client.describe_target_groups(
-                TargetGroupArns=[self.resource_id])
-        except (ParamValidationError, ClientError):
-            pass
-        else:
-            return None \
-                if not resources else resources['TargetGroups'][0]
+        if not self._properties:
+            if not self.resource_id:
+                return
+            params = {'TargetGroupArns': [self.resource_id]}
+            try:
+                resources = self.make_client_call(
+                    'describe_target_groups', params)
+            except NonRecoverableError:
+                return
+            if 'TargetGroups' in resources:
+                for resource in resources['TargetGroups']:
+                    if resource.get('TargetGroupArn', '') == self.resource_id:
+                        self._properties = resource
+                    elif resource.get('TargetGroupName',
+                                      '') == self.resource_id:
+                        self._properties = resource
+        return self._properties
 
     @property
     def status(self):
         '''Gets the status of an external resource'''
-        props = self.properties
-        if not props:
-            return None
-        return props['State']['Code']
+        if self.properties:
+            return self.properties.get('State', {}).get('Code')
 
     def create(self, params):
         '''
@@ -151,7 +157,7 @@ def modify(ctx, iface, resource_config, **_):
     '''modify an AWS ELB target group attributes'''
     # Build API params
     params = \
-        ctx.instance.runtime_properties['resource_config'] \
+        ctx.instance.runtime_properties.get('resource_config') \
         or resource_config
     if TARGETGROUP_ARN not in params:
         params.update(

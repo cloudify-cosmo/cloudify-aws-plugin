@@ -18,8 +18,7 @@
 '''
 from json import dumps as json_dumps
 
-# Boto
-# from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError
 
 # Cloudify
 from cloudify.exceptions import NonRecoverableError
@@ -74,7 +73,23 @@ class IAMRole(IAMBase):
         params.update(dict(RoleName=self.resource_id))
         self.logger.debug('Deleting %s with parameters: %s'
                           % (self.type_name, params))
-        self.client.delete_role(**params)
+        try:
+            self.client.delete_role(**params)
+        except ClientError as e:
+            if 'DeleteConflict' in str(e):
+                instance_profiles_list = self.client.list_instance_profiles()
+                instance_profiles = instance_profiles_list.get(
+                    'InstanceProfiles')
+                for instance_profile in instance_profiles:
+                    for role in instance_profile.get('Roles', []):
+                        if self.resource_id in role.get('RoleName'):
+                            pm = {
+                                'InstanceProfileName': instance_profile.get(
+                                       'InstanceProfileName'),
+                                'RoleName': role.get('RoleName')
+                            }
+                            self.client.remove_role_from_instance_profile(**pm)
+        self._properties = {}
 
     def attach_policy(self, params):
         '''
@@ -123,7 +138,10 @@ def create(ctx, iface, resource_config, params, **_):
                                 ctx.node.properties.get('policy_arns', []))
 
     # Actually create the resource
-    create_response = iface.create(params)
+    create_response = utils.handle_response(
+        iface, 'create', params,
+        raise_substrings='EntityAlreadyExists',
+        raisable=NonRecoverableError)
     resource_id = create_response['Role']['RoleName']
     iface.update_resource_id(resource_id)
     utils.update_resource_id(ctx.instance, resource_id)
@@ -147,8 +165,8 @@ def create(ctx, iface, resource_config, params, **_):
 
 
 @decorators.aws_resource(IAMRole, RESOURCE_TYPE,
-                         ignore_properties=True)
-@decorators.wait_for_delete()
+                         ignore_properties=True,
+                         waits_for_status=False)
 def delete(ctx, iface, resource_config, **_):
     '''Deletes an AWS IAM Role'''
 
@@ -158,8 +176,7 @@ def delete(ctx, iface, resource_config, **_):
             payload = dict()
             payload['PolicyArn'] = policy
             iface.detach_policy(payload)
-
-    iface.delete(resource_config)
+    utils.handle_response(iface, 'delete', resource_config, ['NoSuchEntity'])
 
 
 @decorators.aws_relationship(IAMRole, RESOURCE_TYPE)
@@ -183,4 +200,5 @@ def detach_from(ctx, iface, resource_config, **_):
             node=ctx.target.node,
             instance=ctx.target.instance,
             raise_on_missing=True)
-        iface.detach_policy(resource_config)
+        utils.handle_response(
+            iface, 'detach_policy', resource_config, ['NoSuchEntity'])

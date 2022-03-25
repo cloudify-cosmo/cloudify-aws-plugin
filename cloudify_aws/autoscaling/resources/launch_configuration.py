@@ -168,4 +168,4 @@ def delete(iface, resource_config, **_):
     params = dict() if not resource_config else resource_config.copy()
     if RESOURCE_NAME not in params:
         params.update({RESOURCE_NAME: iface.resource_id})
-    iface.delete(params)
+    utils.handle_response(iface, 'delete', params, ['not found'])

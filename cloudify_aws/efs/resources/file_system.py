@@ -115,4 +115,4 @@ def delete(ctx, iface, resource_config, **_):
         params[FILESYSTEM_ID] = iface.resource_id
 
     # Actually delete the resource
-    utils.handle_response(iface, 'delete', params, raise_substrings='')
+    utils.handle_response(iface, 'delete', params, raise_substrings=[''])
