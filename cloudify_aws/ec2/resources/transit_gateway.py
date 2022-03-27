@@ -171,12 +171,10 @@ def create(ctx, iface, resource_config, **_):
 def delete(iface, resource_config, **_):
     '''Deletes an AWS EC2 Transit Gateway'''
 
-    params = dict() if not resource_config else resource_config.copy()
+    if TG_ID not in resource_config:
+        resource_config.update({TG_ID: iface.resource_id})
 
-    if TG_ID not in params:
-        params.update({TG_ID: iface.resource_id})
-
-    iface.delete(params)
+    iface.delete(resource_config)
 
 
 @decorators.aws_relationship(EC2TransitGatewayAttachment, RESOURCE_TYPE)

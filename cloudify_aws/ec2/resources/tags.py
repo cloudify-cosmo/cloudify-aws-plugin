@@ -86,10 +86,7 @@ def create(ctx, iface, resource_config, **_):
 def delete(ctx, iface, resource_config, **_):
     '''Deletes an AWS EC2 Tags'''
 
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
-    resources = params.get('Resources')
+    resources = resource_config.get('Resources')
     if not resources:
         targets = \
             utils.find_rels_by_type(
@@ -98,6 +95,6 @@ def delete(ctx, iface, resource_config, **_):
         resources = \
             [rel.target.instance.runtime_properties
              .get(EXTERNAL_RESOURCE_ID) for rel in targets]
-        params['Resources'] = resources
+        resource_config['Resources'] = resources
 
-    iface.untag(params)
+    iface.untag(resource_config)

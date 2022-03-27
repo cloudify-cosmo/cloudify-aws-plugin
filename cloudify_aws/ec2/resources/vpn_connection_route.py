@@ -66,23 +66,22 @@ def prepare(ctx, resource_config, **_):
 @decorators.aws_resource(EC2VPNConnectionRoute, RESOURCE_TYPE)
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS EC2 VPN Connection Route"""
-    params = dict() if not resource_config else resource_config.copy()
     resource_id = \
         utils.get_resource_id(
             ctx.node,
             ctx.instance,
-            params.get(VPN_CONNECTION_ID),
+            resource_config.get(VPN_CONNECTION_ID),
             use_instance_id=True
         )
     utils.update_resource_id(ctx.instance, resource_id)
     # Actually create the resource
-    create_response = iface.create(params)
+    create_response = iface.create(resource_config)
     ctx.instance.runtime_properties['create_response'] = \
         utils.JsonCleanuper(create_response).to_dict()
     ctx.instance.runtime_properties['VPN_CONNECTION_ID'] = \
-        params.get(VPN_CONNECTION_ID)
+        resource_config.get(VPN_CONNECTION_ID)
     ctx.instance.runtime_properties['DESTINATION_CIDR_BLOCK'] = \
-        params.get(DESTINATION_CIDR_BLOCK)
+        resource_config.get(DESTINATION_CIDR_BLOCK)
 
 
 @decorators.aws_resource(EC2VPNConnectionRoute, RESOURCE_TYPE)

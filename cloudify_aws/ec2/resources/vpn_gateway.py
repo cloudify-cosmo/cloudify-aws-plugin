@@ -102,12 +102,8 @@ def prepare(ctx, resource_config, **_):
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS EC2 VPN Gateway"""
 
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
     # Actually create the resource
-    create_response = iface.create(params)['VpnGateway']
+    create_response = iface.create(resource_config)['VpnGateway']
     ctx.instance.runtime_properties['create_response'] = \
         utils.JsonCleanuper(create_response).to_dict()
     utils.update_resource_id(ctx.instance, create_response.get(VPNGATEWAY_ID))
@@ -121,31 +117,27 @@ def create(ctx, iface, resource_config, **_):
 def delete(iface, resource_config, **_):
     """Deletes an AWS EC2 VPN Gateway"""
 
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-    vpn_gateway_id = params.get(VPNGATEWAY_ID)
+    vpn_gateway_id = resource_config.get(VPNGATEWAY_ID)
 
     if not vpn_gateway_id:
         vpn_gateway_id = iface.resource_id
 
-    params.update({VPNGATEWAY_ID: vpn_gateway_id})
-    iface.delete(params)
+    resource_config.update({VPNGATEWAY_ID: vpn_gateway_id})
+    iface.delete(resource_config)
 
 
 @decorators.aws_resource(EC2VPNGateway, RESOURCE_TYPE)
 def attach(ctx, iface, resource_config, **_):
     '''Attaches an AWS EC2 VPN Gateway to a VPC'''
-    params = dict() if not resource_config else resource_config.copy()
 
-    vpn_gateway_id = params.get(VPNGATEWAY_ID)
+    vpn_gateway_id = resource_config.get(VPNGATEWAY_ID)
     if not vpn_gateway_id:
         vpn_gateway_id = iface.resource_id
 
-    params.update({VPNGATEWAY_ID: vpn_gateway_id})
-    params.pop('Type')
+    resource_config.update({VPNGATEWAY_ID: vpn_gateway_id})
+    resource_config.pop('Type')
 
-    vpc_id = params.get(VPC_ID)
+    vpc_id = resource_config.get(VPC_ID)
     if not vpc_id:
         targ = \
             utils.find_rel_by_node_type(ctx.instance, VPC_TYPE) or \
@@ -153,12 +145,12 @@ def attach(ctx, iface, resource_config, **_):
 
         # Attempt to use the VPC ID from parameters.
         # Fallback to connected VPC.
-        params[VPC_ID] = \
+        resource_config[VPC_ID] = \
             vpc_id or \
             targ.target.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
 
     # # Actually attach the resources
-    attached_vpc_list = iface.attach(params)
+    attached_vpc_list = iface.attach(resource_config)
     attached_vpc_id = attached_vpc_list.get(VPC_ID)
     ctx.instance.runtime_properties['vpc_id'] = attached_vpc_id
 
@@ -167,16 +159,14 @@ def attach(ctx, iface, resource_config, **_):
                          ignore_properties=True)
 def detach(ctx, iface, resource_config, **_):
     '''Detach an AWS EC2 VPN Gateway from a VPC'''
-    params = dict() if not resource_config else resource_config.copy()
-
-    vpn_gateway_id = params.get(VPNGATEWAY_ID)
+    vpn_gateway_id = resource_config.get(VPNGATEWAY_ID)
     if not vpn_gateway_id:
         vpn_gateway_id = iface.resource_id
 
-    params.update({VPNGATEWAY_ID: vpn_gateway_id})
+    resource_config.update({VPNGATEWAY_ID: vpn_gateway_id})
 
-    vpc_id = params.get(VPC_ID) or ctx.instance.runtime_properties[
+    vpc_id = resource_config.get(VPC_ID) or ctx.instance.runtime_properties[
         'vpc_id']
 
-    params.update({VPC_ID: vpc_id})
-    iface.detach(params)
+    resource_config.update({VPC_ID: vpc_id})
+    iface.detach(resource_config)

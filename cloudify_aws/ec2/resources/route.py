@@ -155,15 +155,13 @@ def create(ctx, iface, resource_config, **_):
                          waits_for_status=False)
 def delete(ctx, iface, resource_config, **_):
     '''Deletes an AWS EC2 Route'''
-    params = \
-        dict() if not resource_config else resource_config.copy()
 
-    routetable_id = params.get(ROUTETABLE_ID)
+    routetable_id = resource_config.get(ROUTETABLE_ID)
     if DESTINATION_CIDR_BLOCK in ctx.instance.runtime_properties:
-        params[DESTINATION_CIDR_BLOCK] = \
+        resource_config[DESTINATION_CIDR_BLOCK] = \
             ctx.instance.runtime_properties[DESTINATION_CIDR_BLOCK]
     elif DESTINATION_IPV6_CIDR_BLOCK in ctx.instance.runtime_properties:
-        params[DESTINATION_IPV6_CIDR_BLOCK] = \
+        resource_config[DESTINATION_IPV6_CIDR_BLOCK] = \
             ctx.instance.runtime_properties[DESTINATION_IPV6_CIDR_BLOCK]
 
     if not routetable_id:
@@ -174,8 +172,8 @@ def delete(ctx, iface, resource_config, **_):
 
         # Attempt to use the Route Table ID from parameters.
         # Fallback to connected Route Table.
-        params[ROUTETABLE_ID] = \
+        resource_config[ROUTETABLE_ID] = \
             routetable_id or \
             targ.target.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
 
-    iface.delete(params)
+    iface.delete(resource_config)

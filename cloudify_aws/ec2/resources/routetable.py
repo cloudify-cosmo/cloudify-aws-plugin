@@ -170,39 +170,36 @@ def create(ctx, iface, resource_config, **_):
 @decorators.untag_resources
 def delete(ctx, iface, resource_config, **_):
     '''Deletes an AWS EC2 Route Table'''
-    params = \
-        dict() if not resource_config else resource_config.copy()
 
-    route_table_id = params.get(ROUTETABLE_ID)
+    route_table_id = resource_config.get(ROUTETABLE_ID)
     if not route_table_id:
-        params[ROUTETABLE_ID] = \
+        resource_config[ROUTETABLE_ID] = \
             iface.resource_id or \
             ctx.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
 
     if iface.properties:
-        iface.delete(params)
+        iface.delete(resource_config)
         raise OperationRetry('Waiting for route table to delete.')
 
 
 @decorators.aws_resource(EC2RouteTable, RESOURCE_TYPE)
 def attach(ctx, iface, resource_config, **_):
     '''Attaches an AWS EC2 Route Table to a Subnet'''
-    params = dict() if not resource_config else resource_config.copy()
 
-    route_table_id = params.get(ROUTETABLE_ID)
+    route_table_id = resource_config.get(ROUTETABLE_ID)
     if not route_table_id:
         route_table_id = iface.resource_id
 
-    params.update({ROUTETABLE_ID: route_table_id})
+    resource_config.update({ROUTETABLE_ID: route_table_id})
 
     targets = \
         utils.find_rels_by_node_type(ctx.instance, SUBNET_TYPE) or \
         utils.find_rels_by_node_type(ctx.instance, SUBNET_TYPE_DEPRECATED)
     association_id_list = []
     for target in targets:
-        params[SUBNET_ID] = \
+        resource_config[SUBNET_ID] = \
             target.target.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
-        association_id = iface.attach(params).get(ASSOCIATION_ID)
+        association_id = iface.attach(resource_config).get(ASSOCIATION_ID)
         association_id_list.append(association_id)
     ctx.instance.runtime_properties['association_ids'] = \
         association_id_list
@@ -212,15 +209,13 @@ def attach(ctx, iface, resource_config, **_):
                          ignore_properties=True)
 def detach(ctx, iface, resource_config, **_):
     '''Detach an AWS EC2 Route Table from a Subnet'''
-    params = dict() if not resource_config else resource_config.copy()
-
     association_ids = ctx.instance.runtime_properties['association_ids']
     if association_ids and isinstance(association_ids, list):
         for association_id in association_ids:
-            params.update({ASSOCIATION_ID: association_id})
+            resource_config.update({ASSOCIATION_ID: association_id})
             return utils.exit_on_substring(iface=iface,
                                            method='detach',
-                                           request=params,
+                                           request=resource_config,
                                            substrings='InvalidAssociationID'
                                                       '.NotFound')
 
