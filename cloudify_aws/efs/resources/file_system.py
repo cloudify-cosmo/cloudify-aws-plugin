@@ -105,6 +105,7 @@ def delete(ctx, iface, resource_config, **_):
     if not file_system_id and iface.resource_id:
         resource_config[FILESYSTEM_ID] = iface.resource_id
 
+
     # Actually delete the resource
     utils.handle_response(
         iface, 'delete', resource_config, raise_substrings=[''])
