@@ -243,11 +243,10 @@ def _store_kubeconfig_in_runtime_properties(node, instance, iface, params):
 @decorators.aws_resource(EKSCluster, RESOURCE_TYPE, waits_for_status=False)
 def prepare(ctx, iface, resource_config, **_):
     """Prepares an AWS EKS Cluster"""
-    # Save the parameters
-    params = dict() if not resource_config else resource_config.copy()
-    name = params.get('name') or ctx.node.properties.get('resource_id')
+    name = resource_config.get('name') or \
+        ctx.node.properties.get('resource_id')
     if name:
-        params['name'] = name
+        resource_config['name'] = name
     utils.update_resource_id(ctx.instance, name)
     ctx.instance.runtime_properties['resource_config'] = resource_config
 
@@ -255,15 +254,14 @@ def prepare(ctx, iface, resource_config, **_):
 @decorators.aws_resource(EKSCluster, RESOURCE_TYPE, waits_for_status=False)
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS EKS Cluster"""
-    params = dict() if not resource_config else resource_config.copy()
     resource_id = utils.get_resource_id(ctx.node,
                                         ctx.instance,
-                                        params.get(CLUSTER_NAME),
+                                        resource_config.get(CLUSTER_NAME),
                                         use_instance_id=True)
 
     utils.update_resource_id(ctx.instance, resource_id)
     iface = prepare_describe_cluster_filter(resource_config.copy(), iface)
-    iface.create(params)
+    iface.create(resource_config)
     if iface.create_response.get(CLUSTER):
         utils.update_resource_arn(
             ctx.instance, iface.create_response.get(CLUSTER).get(CLUSTER_ARN))
@@ -271,13 +269,13 @@ def create(ctx, iface, resource_config, **_):
 
 @decorators.aws_resource(EKSCluster, RESOURCE_TYPE, waits_for_status=False)
 def poststart(ctx, iface, resource_config, **_):
-    params = dict() if not resource_config else resource_config.copy()
-    name = params.get('name') or ctx.node.properties.get('resource_id')
+    name = resource_config.get('name') or \
+           ctx.node.properties.get('resource_id')
     if name:
-        params['name'] = name
+        resource_config['name'] = name
     # wait for cluster to be active
     ctx.logger.info("Waiting for Cluster to become Active.")
-    iface.wait_for_cluster(params, 'cluster_active')
+    iface.wait_for_cluster(resource_config, 'cluster_active')
 
     store_kube_config_in_runtime = \
         ctx.node.properties['store_kube_config_in_runtime']
@@ -285,7 +283,7 @@ def poststart(ctx, iface, resource_config, **_):
         _store_kubeconfig_in_runtime_properties(ctx.node,
                                                 ctx.instance,
                                                 iface,
-                                                params)
+                                                resource_config)
     region_name = ctx.node.properties['client_config']['region_name']
     aws_resource_arn = ctx.instance.runtime_properties.get(
         'aws_resource_arn', iface.properties['arn'])
@@ -336,12 +334,10 @@ def poststart(ctx, iface, resource_config, **_):
 @decorators.aws_resource(EKSCluster, RESOURCE_TYPE, waits_for_status=False)
 def delete(ctx, iface, resource_config, **_):
     """Deletes an AWS EKS Cluster"""
-
-    params = dict() if not resource_config else resource_config.copy()
-    iface.delete(params)
+    iface.delete(resource_config)
     # wait for cluster to be deleted
     ctx.logger.info("Waiting for Cluster to be deleted")
-    iface.wait_for_cluster(params, 'cluster_deleted')
+    iface.wait_for_cluster(resource_config, 'cluster_deleted')
 
 
 @operation
