@@ -155,16 +155,13 @@ def create(ctx, iface, resource_config, **_):
 def delete(iface, resource_config, **_):
     """Deletes an AWS EC2 NAT Gateway"""
 
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-    nat_gateway_id = params.get(NATGATEWAY_ID)
+    nat_gateway_id = resource_config.get(NATGATEWAY_ID)
 
     if not nat_gateway_id:
         nat_gateway_id = iface.resource_id
 
-    params.update({NATGATEWAY_ID: nat_gateway_id})
-    iface.delete(params)
+    resource_config.update({NATGATEWAY_ID: nat_gateway_id})
+    iface.delete(resource_config)
 
 
 interface = EC2NatGateway

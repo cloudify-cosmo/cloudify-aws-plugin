@@ -261,8 +261,6 @@ class TestElasticIp(TestBase):
         iface.attach = self.mock_return(value)
         with patch('cloudify_aws.common.utils.find_rel_by_node_type'):
             elasticip.attach(ctx, iface, config)
-            self.assertEqual(config['Domain'],
-                             'vpc')
 
     def test_delete(self):
         ctx = self.get_mock_ctx("PublicIp")

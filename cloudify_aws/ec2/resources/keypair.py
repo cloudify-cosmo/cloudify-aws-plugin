@@ -159,10 +159,7 @@ def create(ctx, iface, resource_config, **_):
 def delete(iface, resource_config, **_):
     '''Deletes AWS EC2 Keypairs'''
 
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
-    key_name = params.get(KEYNAME, iface.resource_id)
+    key_name = resource_config.get(KEYNAME, iface.resource_id)
 
     iface.delete({KEYNAME: key_name})
 

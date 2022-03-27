@@ -220,23 +220,21 @@ def delete(ctx, iface, resource_config, **_):
 @decorators.aws_resource(EC2ElasticIP, RESOURCE_TYPE)
 def attach(ctx, iface, resource_config, **_):
     '''Attaches an AWS EC2 ElasticIP to an Instance or a NetworkInterface'''
-    params = dict() if not resource_config else resource_config.copy()
-
-    allocation_id = params.get(ALLOCATION_ID)
-    elasticip_id = params.get(ELASTICIP_ID)
+    allocation_id = resource_config.get(ALLOCATION_ID)
+    elasticip_id = resource_config.get(ELASTICIP_ID)
 
     if not allocation_id:
         allocation_id = \
             ctx.instance.runtime_properties.get(
                 'allocation_id', iface.properties.get('AllocationId'))
-        params[ALLOCATION_ID] = allocation_id
+        resource_config[ALLOCATION_ID] = allocation_id
 
     if not elasticip_id and not allocation_id:
-        params[ELASTICIP_ID] = \
+        resource_config[ELASTICIP_ID] = \
             iface.resource_id
 
-    instance_id = params.get(INSTANCE_ID)
-    eni_id = params.get(NETWORKINTERFACE_ID)
+    instance_id = resource_config.get(INSTANCE_ID)
+    eni_id = resource_config.get(NETWORKINTERFACE_ID)
 
     if not instance_id and not eni_id:
         resource = \
@@ -245,7 +243,7 @@ def attach(ctx, iface, resource_config, **_):
                 INSTANCE_TYPE_DEPRECATED)
 
         if resource:
-            params[INSTANCE_ID] = \
+            resource_config[INSTANCE_ID] = \
                 resource.\
                 target.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
         else:
@@ -258,7 +256,7 @@ def attach(ctx, iface, resource_config, **_):
                     NETWORKINTERFACE_TYPE_DEPRECATED)
 
             if resource:
-                params[NETWORKINTERFACE_ID] = \
+                resource_config[NETWORKINTERFACE_ID] = \
                     eni_id or \
                     resource.target.instance.runtime_properties\
                     .get(EXTERNAL_RESOURCE_ID)
@@ -267,7 +265,7 @@ def attach(ctx, iface, resource_config, **_):
 
     # Make sure that Domain and TagSpecifications are not sent to attach call.
     for arg_name in ['Domain', TAG_SPECIFICATIONS_KWARG]:
-        params.pop(arg_name, None)
+        resource_config.pop(arg_name, None)
 
     skip_attach = ctx.node.properties.get('use_external_resource', False) and \
         not ctx.node.properties.get('attach_existing_address', False)
@@ -275,7 +273,7 @@ def attach(ctx, iface, resource_config, **_):
     if skip_attach:
         return
     # Actually attach the resources
-    association_id = iface.attach(params)
+    association_id = iface.attach(resource_config)
     ctx.instance.runtime_properties['association_id'] = \
         association_id.get('AssociationId')
 
