@@ -181,17 +181,15 @@ def create(ctx, iface, resource_config, params, **_):
                          waits_for_status=False)
 def modify(ctx, iface, resource_config, **_):
     '''modify an AWS ELB load balancer attributes'''
-    params = utils.clean_params(
-        dict() if not resource_config else resource_config.copy())
-    if LB_ARN not in params:
-        params.update(
+    if LB_ARN not in resource_config:
+        resource_config.update(
             {LB_ARN: ctx.instance.runtime_properties.get(
                 EXTERNAL_RESOURCE_ARN)})
-    modify_params_attributes = params.pop(LB_ATTR, {})
+    modify_params_attributes = resource_config.pop(LB_ATTR, {})
     if modify_params_attributes:
         # Add the LB ARN
         modify_params = {}
-        modify_params[LB_ARN] = params.get(LB_ARN)
+        modify_params[LB_ARN] = resource_config.get(LB_ARN)
         modify_params[LB_ATTR] = modify_params_attributes
         # Actually modify the resource
         attributes = iface.modify_attribute(modify_params)
@@ -206,8 +204,6 @@ def modify(ctx, iface, resource_config, **_):
 @decorators.wait_for_delete(status_pending=['active'])
 def delete(ctx, iface, resource_config, **_):
     '''Deletes an AWS ELB load balancer'''
-    params = utils.clean_params(
-        dict() if not resource_config else resource_config.copy())
-    if LB_ARN not in params:
-        params.update({LB_ARN: iface.properties.get(LB_ARN)})
-    iface.delete(params)
+    if LB_ARN not in resource_config:
+        resource_config.update({LB_ARN: iface.properties.get(LB_ARN)})
+    iface.delete(resource_config)
