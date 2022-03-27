@@ -109,22 +109,21 @@ def prepare(ctx, resource_config, **_):
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS ELB rule'''
     # Build API params
+    # TODO check if this should stay
     resource_config = \
         resource_config or ctx.instance.runtime_properties['resource_config']
-    params = utils.clean_params(
-        dict() if not resource_config else resource_config.copy())
 
-    if LISTENER_ARN not in params:
+    if LISTENER_ARN not in resource_config:
         targs = \
             utils.find_rels_by_node_type(
                 ctx.instance,
                 LISTENER_TYPE)
         listener_arn = \
             targs[0].target.instance.runtime_properties[EXTERNAL_RESOURCE_ARN]
-        params.update({LISTENER_ARN: listener_arn})
+        resource_config.update({LISTENER_ARN: listener_arn})
         del targs
 
-    for action in params.get('Actions', []):
+    for action in resource_config.get('Actions', []):
         target_grp = action.get(TARGET_ARN)
         if not ARN_MATCHER.match(action.get(target_grp, '')):
             targs = \
@@ -139,7 +138,7 @@ def create(ctx, iface, resource_config, **_):
                     action.update({TARGET_ARN: target_group_arn})
 
     # Actually create the resource
-    create_response = iface.create(params)
+    create_response = iface.create(resource_config)
     iface.update_resource_id(
         create_response['Rules'][0][RULE_ARN])
     utils.update_resource_id(

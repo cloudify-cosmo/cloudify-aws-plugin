@@ -105,20 +105,16 @@ def prepare(ctx, resource_config, **_):
 @decorators.aws_resource(ELBListener, RESOURCE_TYPE)
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS ELB listener'''
-    # Build API params
-    params = utils.clean_params(
-        dict() if not resource_config else resource_config.copy())
-
-    if LB_ARN not in params:
+    if LB_ARN not in resource_config:
         targs = \
             utils.find_rels_by_node_type(
                 ctx.instance,
                 LB_TYPE)
         lb_arn = \
             targs[0].target.instance.runtime_properties[EXTERNAL_RESOURCE_ARN]
-        params.update({LB_ARN: lb_arn})
+        resource_config.update({LB_ARN: lb_arn})
 
-    for action in params.get('DefaultActions', []):
+    for action in resource_config.get('DefaultActions', []):
         target_grp = action.get(TARGET_ARN)
         if not ARN_MATCHER.match(action.get(target_grp, '')):
             targs = \
@@ -133,7 +129,7 @@ def create(ctx, iface, resource_config, **_):
                     action.update({TARGET_ARN: target_group_arn})
 
     # Actually create the resource
-    create_response = iface.create(params)
+    create_response = iface.create(resource_config)
     iface.update_resource_id(
         create_response['Listeners'][0][LISTENER_ARN])
     utils.update_resource_id(
