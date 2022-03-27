@@ -86,13 +86,8 @@ def prepare(ctx, resource_config, **_):
                          waits_for_status=False)
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS EFS File System Tags"""
-
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
     # Get the FILESYSTEM_ID from either params or a relationship.
-    file_system_id = params.get(FILESYSTEM_ID)
+    file_system_id = resource_config.get(FILESYSTEM_ID)
     if not file_system_id:
         targ = utils.find_rel_by_node_type(
             ctx.instance,
@@ -102,12 +97,12 @@ def create(ctx, iface, resource_config, **_):
             targ.target.instance.runtime_properties.get(
                 EXTERNAL_RESOURCE_ID
             )
-        params[FILESYSTEM_ID] = file_system_id
+        resource_config[FILESYSTEM_ID] = file_system_id
     ctx.instance.runtime_properties[FILESYSTEM_ID] = file_system_id
     utils.update_resource_id(ctx.instance, file_system_id)
 
     # Actually create the resource
-    iface.create(params)
+    iface.create(resource_config)
 
 
 @decorators.aws_resource(EFSFileSystemTags,
@@ -115,20 +110,15 @@ def create(ctx, iface, resource_config, **_):
                          waits_for_status=False)
 def delete(ctx, iface, resource_config, **_):
     """Deletes an AWS EFS File System Tags"""
-
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
     # Add the required FILESYSTEM_ID parameter.
-    file_system_id = params.get(FILESYSTEM_ID)
+    file_system_id = resource_config.get(FILESYSTEM_ID)
     if not file_system_id:
-        params[FILESYSTEM_ID] = \
+        resource_config[FILESYSTEM_ID] = \
             ctx.instance.runtime_properties.get(
                 FILESYSTEM_ID, iface.resource_id)
 
-    tags = params.pop(TAGS, {})
-    params['TagKeys'] = [tag.get('Key') for tag in tags]
+    tags = resource_config.pop(TAGS, {})
+    resource_config['TagKeys'] = [tag.get('Key') for tag in tags]
 
     # Actually delete the resource
-    iface.delete(params)
+    iface.delete(resource_config)

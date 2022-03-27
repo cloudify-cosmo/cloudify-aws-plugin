@@ -119,7 +119,7 @@ class TestEFSFileSystem(TestBase):
 
         self.fake_client.delete_file_system = self.mock_return(DELETE_RESPONSE)
 
-        file_system.delete(ctx=_ctx, resource_config=None, iface=None)
+        file_system.delete(ctx=_ctx, resource_config={}, iface=None)
 
         self.fake_boto.assert_called_with('efs', **CLIENT_CONFIG)
 
@@ -145,7 +145,7 @@ class TestEFSFileSystem(TestBase):
             OperationRetry,
             file_system.delete,
             ctx=_ctx,
-            resource_config=None,
+            resource_config={},
             iface=None)
 
         self.fake_boto.assert_called_with('efs', **CLIENT_CONFIG)
