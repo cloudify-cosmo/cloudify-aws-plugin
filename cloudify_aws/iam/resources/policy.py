@@ -80,25 +80,22 @@ class IAMPolicy(IAMBase):
                          waits_for_status=False)
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS IAM Policy'''
-    # Build API params
-    params = \
-        utils.clean_params(
-            dict() if not resource_config else resource_config.copy())
     resource_id = \
         utils.get_resource_id(
             ctx.node,
             ctx.instance,
-            params.get(RESOURCE_NAME),
+            resource_config.get(RESOURCE_NAME),
             use_instance_id=True
         ) or iface.resource_id
-    params[RESOURCE_NAME] = resource_id
+    resource_config[RESOURCE_NAME] = resource_id
     utils.update_resource_id(ctx.instance, resource_id)
 
-    if 'PolicyDocument' in params and \
-            isinstance(params['PolicyDocument'], dict):
-        params['PolicyDocument'] = json_dumps(params['PolicyDocument'])
+    if 'PolicyDocument' in resource_config and \
+            isinstance(resource_config['PolicyDocument'], dict):
+        resource_config['PolicyDocument'] = \
+            json_dumps(resource_config['PolicyDocument'])
     # Actually create the resource
-    create_response = iface.create(params)
+    create_response = iface.create(resource_config)
     resource_id = create_response['Policy']['PolicyName']
     iface.update_resource_id(resource_id)
     utils.update_resource_id(ctx.instance, resource_id)
