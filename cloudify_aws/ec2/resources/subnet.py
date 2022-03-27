@@ -114,18 +114,15 @@ def create(ctx, iface, resource_config, **_):
 @decorators.untag_resources
 def delete(ctx, iface, resource_config, **_):
     '''Deletes an AWS EC2 Subnet'''
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
-    subnet_id = params.get(SUBNET_ID)
+    subnet_id = resource_config.get(SUBNET_ID)
     if not subnet_id:
-        params[SUBNET_ID] = \
+        resource_config[SUBNET_ID] = \
             iface.resource_id or \
             ctx.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
 
     utils.handle_response(iface,
                           'delete',
-                          params,
+                          resource_config,
                           exit_substrings='NotFound',
                           raise_substrings='DependencyViolation')
     ctx.logger.info("handle_response")
@@ -133,13 +130,11 @@ def delete(ctx, iface, resource_config, **_):
 
 @decorators.aws_resource(EC2Subnet, RESOURCE_TYPE)
 def modify_subnet_attribute(ctx, iface, resource_config, **_):
-    params = \
-        dict() if not resource_config else resource_config.copy()
     instance_id = \
         ctx.instance.runtime_properties.get(
             SUBNET_ID, iface.resource_id)
-    params[SUBNET_ID] = instance_id
-    iface.modify_subnet_attribute(params)
+    resource_config[SUBNET_ID] = instance_id
+    iface.modify_subnet_attribute(resource_config)
     utils.update_expected_configuration(iface, ctx.instance.runtime_properties)
 
 

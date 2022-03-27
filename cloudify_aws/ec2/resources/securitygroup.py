@@ -155,10 +155,7 @@ def create(ctx, iface, resource_config, **_):
 def delete(ctx, iface, resource_config, **_):
     '''Deletes an AWS EC2 Security Group'''
 
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
-    group_id = params.get(GROUPID)
+    group_id = resource_config.get(GROUPID)
     if not group_id:
         group_id = iface.resource_id
 
@@ -171,11 +168,8 @@ def delete(ctx, iface, resource_config, **_):
 @decorators.aws_resource(EC2SecurityGroup, RESOURCE_TYPE)
 def authorize_ingress_rules(ctx, iface, resource_config, **_):
     '''Authorize rules for an AWS EC2 Security Group'''
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
     # Fill the GroupId Parameter
-    group_id = params.get(GROUPID)
+    group_id = resource_config.get(GROUPID)
     if not group_id:
         group = \
             utils.find_rel_by_type(
@@ -183,19 +177,16 @@ def authorize_ingress_rules(ctx, iface, resource_config, **_):
         group_id = \
             group.target.instance.runtime_properties.get(
                 EXTERNAL_RESOURCE_ID, iface.resource_id)
-        params[GROUPID] = group_id
+        resource_config[GROUPID] = group_id
 
-    iface.authorize_ingress(params)
+    iface.authorize_ingress(resource_config)
 
 
 @decorators.aws_resource(EC2SecurityGroup, RESOURCE_TYPE)
 def authorize_egress_rules(ctx, iface, resource_config, **_):
     '''Authorize rules for an AWS EC2 Security Group'''
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
     # Fill the GroupId Parameter
-    group_id = params.get(GROUPID)
+    group_id = resource_config.get(GROUPID)
     if not group_id:
         group = \
             utils.find_rel_by_type(
@@ -203,19 +194,16 @@ def authorize_egress_rules(ctx, iface, resource_config, **_):
         group_id = \
             group.target.instance.runtime_properties.get(
                 EXTERNAL_RESOURCE_ID, iface.resource_id)
-        params[GROUPID] = group_id
+        resource_config[GROUPID] = group_id
 
-    iface.authorize_egress(params)
+    iface.authorize_egress(resource_config)
 
 
 @decorators.aws_resource(EC2SecurityGroup, RESOURCE_TYPE)
 def revoke_ingress_rules(ctx, iface, resource_config, **_):
     '''Revoke rules for an AWS EC2 Security Group'''
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
     # Fill the GroupId Parameter
-    group_id = params.get(GROUPID)
+    group_id = resource_config.get(GROUPID)
     if not group_id:
         group = \
             utils.find_rel_by_type(
@@ -223,11 +211,11 @@ def revoke_ingress_rules(ctx, iface, resource_config, **_):
         group_id = \
             group.target.instance.runtime_properties.get(
                 EXTERNAL_RESOURCE_ID, iface.resource_id)
-        params[GROUPID] = group_id
+        resource_config[GROUPID] = group_id
 
     utils.exit_on_substring(iface,
                             'revoke_ingress',
-                            params,
+                            resource_config,
                             ['InvalidPermission.NotFound',
                              'InvalidGroup.NotFound'])
 
@@ -235,11 +223,8 @@ def revoke_ingress_rules(ctx, iface, resource_config, **_):
 @decorators.aws_resource(EC2SecurityGroup, RESOURCE_TYPE)
 def revoke_egress_rules(ctx, iface, resource_config, **_):
     '''Revoke rules for an AWS EC2 Security Group'''
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
     # Fill the GroupId Parameter
-    group_id = params.get(GROUPID)
+    group_id = resource_config.get(GROUPID)
     if not group_id:
         group = \
             utils.find_rel_by_type(
@@ -247,11 +232,11 @@ def revoke_egress_rules(ctx, iface, resource_config, **_):
         group_id = \
             group.target.instance.runtime_properties.get(
                 EXTERNAL_RESOURCE_ID, iface.resource_id)
-        params[GROUPID] = group_id
+        resource_config[GROUPID] = group_id
 
     utils.exit_on_substring(iface,
                             'revoke_egress',
-                            params,
+                            resource_config,
                             ['InvalidPermission.NotFound',
                              'InvalidGroup.NotFound'])
 

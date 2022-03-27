@@ -123,13 +123,12 @@ def prepare(ctx, iface, resource_config, **_):
                             status_pending=['pending'])
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS EC2 Transit Gateway Route Table'''
-    params = dict() if not resource_config else resource_config.copy()
-    transit_gateway_id = params.get(TG_ID) or get_transit_gateway_id(
+    transit_gateway_id = resource_config.get(TG_ID) or get_transit_gateway_id(
         ctx.instance)
-    params[TG_ID] = transit_gateway_id
+    resource_config[TG_ID] = transit_gateway_id
 
     # Actually create the resource
-    create_response = iface.create(params)[ROUTETABLE]
+    create_response = iface.create(resource_config)[ROUTETABLE]
     ctx.instance.runtime_properties['create_response'] = \
         utils.JsonCleanuper(create_response).to_dict()
     transit_gateway_route_table_id = create_response.get(ROUTETABLE_ID)
@@ -143,17 +142,14 @@ def create(ctx, iface, resource_config, **_):
 @decorators.untag_resources
 def delete(ctx, iface, resource_config, **_):
     '''Deletes an AWS EC2 Transit Gateway Route Table'''
-    params = \
-        dict() if not resource_config else resource_config.copy()
-    params[ROUTETABLE_ID] = iface.resource_id
-    iface.delete(params)
+    resource_config[ROUTETABLE_ID] = iface.resource_id
+    iface.delete(resource_config)
 
 
 @decorators.aws_resource(EC2TransitGatewayRouteTable, RESOURCE_TYPE)
 def attach(ctx, iface, resource_config, **_):
     '''Attaches an AWS EC2 Transit Gateway Route Table to a Transit Gateway'''
-    params = dict() if not resource_config else resource_config.copy()
-    route_table_id = params.get(ROUTETABLE_ID, iface.resource_id)
+    route_table_id = resource_config.get(ROUTETABLE_ID, iface.resource_id)
     transit_gateway_attachment_id = get_attachment_id_from_runtime_props(ctx)
     gw = utils.find_rel_by_node_type(ctx.instance, TG_TYPE)
     if not gw:
@@ -201,8 +197,7 @@ def attach(ctx, iface, resource_config, **_):
                          ignore_properties=True)
 def detach(ctx, iface, resource_config, **_):
     '''Detach an AWS EC2 Transit Gateway Route Table from a Transit Gateway'''
-    params = dict() if not resource_config else resource_config.copy()
-    route_table_id = params.get(ROUTETABLE_ID, iface.resource_id)
+    route_table_id = resource_config.get(ROUTETABLE_ID, iface.resource_id)
     transit_gateway_attachment_id = get_attachment_id_from_runtime_props(ctx)
     request = {
         ROUTETABLE_ID: route_table_id,

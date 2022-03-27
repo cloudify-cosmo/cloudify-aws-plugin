@@ -75,12 +75,11 @@ def prepare(ctx, iface, resource_config, **_):
 @decorators.aws_resource(EC2TransitGatewayRoute, RESOURCE_TYPE)
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS EC2 Transit Gateway Route'''
-    params = dict() if not resource_config else resource_config.copy()
-    routetable_id = get_routetable_id(ctx.instance, params)
-    attachment_id = params.get(TG_ATTACHMENT_ID) or get_attachment_id(
+    routetable_id = get_routetable_id(ctx.instance, resource_config)
+    attachment_id = resource_config.get(TG_ATTACHMENT_ID) or get_attachment_id(
         ctx.instance)
     request = {
-        CIDR: params.get(CIDR),
+        CIDR: resource_config.get(CIDR),
         ROUTETABLE_ID: routetable_id,
         TG_ATTACHMENT_ID: attachment_id
     }
@@ -99,10 +98,9 @@ def create(ctx, iface, resource_config, **_):
                          RESOURCE_TYPE)
 def delete(ctx, iface, resource_config, **_):
     '''Deletes an AWS EC2 Transit Gateway Route'''
-    params = dict() if not resource_config else resource_config.copy()
-    routetable_id = get_routetable_id(ctx.instance, params)
+    routetable_id = get_routetable_id(ctx.instance, resource_config)
     request = {
-        CIDR: params.get(CIDR),
+        CIDR: resource_config.get(CIDR),
         ROUTETABLE_ID: routetable_id
     }
     # Actually create the resource
