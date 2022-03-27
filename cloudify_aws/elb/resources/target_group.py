@@ -111,12 +111,9 @@ def prepare(ctx, resource_config, **_):
 @decorators.aws_resource(ELBTargetGroup, RESOURCE_TYPE)
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS ELB target group'''
-    # Build API params
-    params = utils.clean_params(
-        dict() if not resource_config else resource_config.copy())
     # TG attributes are only applied in modify operation.
-    params.pop(GRP_ATTR, {})
-    if VPC_ID not in params:
+    resource_config.pop(GRP_ATTR, {})
+    if VPC_ID not in resource_config:
         targs = \
             utils.find_rels_by_node_type(
                 ctx.instance,
@@ -124,12 +121,12 @@ def create(ctx, iface, resource_config, **_):
                 ctx.instance,
                 VPC_TYPE_DEPRECATED)
         tg_attr = targs[0].target.instance.runtime_properties
-        params[VPC_ID] = \
+        resource_config[VPC_ID] = \
             tg_attr.get(EXTERNAL_RESOURCE_ID)
         del targs
 
     # Actually create the resource
-    create_response = iface.create(params)
+    create_response = iface.create(resource_config)
     iface.update_resource_id(
         create_response['TargetGroups'][0][TARGETGROUP_ARN])
     utils.update_resource_id(
