@@ -97,18 +97,17 @@ def prepare(ctx, resource_config, **_):
 @decorators.aws_resource(ECSCluster, RESOURCE_TYPE)
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS ECS Cluster"""
-    params = dict() if not resource_config else resource_config.copy()
     resource_id = \
         utils.get_resource_id(
             ctx.node,
             ctx.instance,
-            params.get(CLUSTER_RESOURCE_NAME),
+            resource_config.get(CLUSTER_RESOURCE_NAME),
             use_instance_id=True
         )
 
     utils.update_resource_id(ctx.instance, resource_id)
     iface = prepare_describe_cluster_filter(resource_config.copy(), iface)
-    response = iface.create(params)
+    response = iface.create(resource_config)
     if response and response.get(CLUSTER):
         resource_arn = response[CLUSTER].get(CLUSTER_ARN)
         utils.update_resource_arn(ctx.instance, resource_arn)
@@ -117,6 +116,4 @@ def create(ctx, iface, resource_config, **_):
 @decorators.aws_resource(ECSCluster, RESOURCE_TYPE)
 def delete(ctx, iface, resource_config, **_):
     """Deletes an AWS ECS Cluster"""
-
-    params = dict() if not resource_config else resource_config.copy()
-    iface.delete(params)
+    iface.delete(resource_config)
