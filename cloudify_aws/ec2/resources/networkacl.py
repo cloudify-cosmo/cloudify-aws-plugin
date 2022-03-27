@@ -48,14 +48,10 @@ class EC2NetworkAcl(EC2Base):
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
-
-    @property
-    def properties(self):
-        """Gets the properties of an external resource"""
-        if not self.resource_id:
-            return
-        return self.get_properties_by_filter(
-            NETWORKACL_IDS, [self.resource_id])
+        self._describe_call = 'describe_network_acls'
+        self._type_key = NETWORKACLS
+        self._id_key = NETWORKACL_ID
+        self._ids_key = NETWORKACL_IDS
 
     def get_properties_by_filter(self, filter_key, filter_value):
         params = {FILTERS: [{FILTERS_NAME: filter_key,

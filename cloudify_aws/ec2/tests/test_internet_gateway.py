@@ -38,7 +38,7 @@ class TestEC2InternetGateway(TestBase):
 
     def setUp(self):
         self.internet_gateway = EC2InternetGateway("ctx_node",
-                                                   resource_id=True,
+                                                   resource_id='test_name',
                                                    client=True, logger=None)
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',
                       mock_decorator)
@@ -55,14 +55,14 @@ class TestEC2InternetGateway(TestBase):
             self.make_client_function('describe_internet_gateways',
                                       side_effect=effect)
         res = self.internet_gateway.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
         value = {}
         self.internet_gateway.client = \
             self.make_client_function('describe_internet_gateways',
                                       return_value=value)
         res = self.internet_gateway.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
         value = {INTERNETGATEWAYS: [{INTERNETGATEWAY_ID: 'test_name'}]}
         self.internet_gateway.client = \

@@ -51,6 +51,10 @@ class EC2SpotInstances(EC2Instances):
         EC2Instances.__init__(self, ctx_node, resource_id, client, logger)
         self.ctx_node = ctx_node
         self.type_name = RESOURCE_TYPE
+        self._describe_call = 'describe_spot_instance_requests'
+        self._type_key = REQUESTS
+        self._id_key = REQUEST_ID
+        self._ids_key = REQUEST_IDS
 
     def prepare_request_id_param(self, params=None):
         params = params or {}
@@ -59,14 +63,16 @@ class EC2SpotInstances(EC2Instances):
     @property
     def properties(self):
         """Gets the properties of an external resource"""
-        resources = self.describe()
-        if REQUESTS in resources:
-            for request in resources[REQUESTS]:
-                if request[REQUEST_ID] == self.resource_id:
-                    return request
+        if not self._properties:
+            resources = self.describe()
+            if REQUESTS in resources:
+                for request in resources[REQUESTS]:
+                    if request[REQUEST_ID] == self.resource_id:
+                        self._properties = request
+        return self._properties
 
     def describe(self, params=None):
-        params = params or self.prepare_request_id_param
+        params = params or self.prepare_request_id_param(params)
         try:
             return self.make_client_call(
                 'describe_spot_instance_requests', params)

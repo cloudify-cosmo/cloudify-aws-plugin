@@ -49,37 +49,40 @@ class TestEC2SpotInstances(TestBase):
         self.spot_instances.client = self.make_client_function(
             'describe_spot_instance_requests', side_effect=effect)
         res = self.spot_instances.properties
-        self.assertIsNone(res)
+        self.assertEquals(res, {})
 
         value = {}
         self.spot_instances.client = self.make_client_function(
             'describe_spot_instance_requests', return_value=value)
         res = self.spot_instances.properties
-        self.assertIsNone(res)
+        self.assertEquals(res, {})
 
-        value = {mod.REQUESTS: [{mod.REQUEST_ID: 'test_name'}]}
-        self.spot_instances.resource_id = 'test_name'
+    def test_class_properties_not_empty(self):
+        value = {mod.REQUESTS: [{mod.REQUEST_ID: 'spot instance'}]}
+        self.spot_instances.resource_id = 'spot instance'
         self.spot_instances.client = self.make_client_function(
             'describe_spot_instance_requests', return_value=value)
         res = self.spot_instances.properties
-        self.assertEqual(res, {mod.REQUEST_ID: 'test_name'})
+        self.assertEqual(res, {mod.REQUEST_ID: 'spot instance'})
 
     def test_class_status(self):
         value = {
             mod.REQUESTS: [
-                {mod.REQUEST_ID: 'test_name', 'State': None}]
+                {mod.REQUEST_ID: 'spot instance', 'State': None}]
         }
-        self.spot_instances.resource_id = 'test_name'
+        self.spot_instances.resource_id = 'spot instance'
         self.spot_instances.client = self.make_client_function(
             'describe_spot_instance_requests', return_value=value)
         res = self.spot_instances.status
         self.assertIsNone(res)
 
+    def test_class_status_not_none(self):
+
         value = {
             mod.REQUESTS: [
-                {mod.REQUEST_ID: 'test_name', 'State': 'open'}]
+                {mod.REQUEST_ID: 'spot instance', 'State': 'open'}]
         }
-        self.spot_instances.resource_id = 'test_name'
+        self.spot_instances.resource_id = 'spot instance'
         self.spot_instances.client = self.make_client_function(
             'describe_spot_instance_requests', return_value=value)
         res = self.spot_instances.status

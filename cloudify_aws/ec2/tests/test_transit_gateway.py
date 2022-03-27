@@ -33,7 +33,7 @@ class TestEC2TransitGateway(TestBase):
     def setUp(self):
         self.transit_gateway = mod.EC2TransitGateway(
             "ctx_node",
-            resource_id=True,
+            resource_id='test_name',
             client=True,
             logger=None)
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',
@@ -49,7 +49,7 @@ class TestEC2TransitGateway(TestBase):
         self.transit_gateway.client = self.make_client_function(
             'describe_transit_gateways', side_effect=effect)
         res = self.transit_gateway.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
         value = {}
         self.transit_gateway.client = self.make_client_function(
@@ -73,12 +73,15 @@ class TestEC2TransitGateway(TestBase):
         res = self.transit_gateway.status
         self.assertIsNone(res)
 
+    def test_class_status_positive(self):
+
         value = {
             mod.TGS: [
                 {mod.TG_ID: 'test_name', 'State': 'available'}]
         }
+        se = [value, value, value]
         self.transit_gateway.client = self.make_client_function(
-            'describe_transit_gateways', return_value=value)
+            'describe_transit_gateways', side_effect=se)
         res = self.transit_gateway.status
         self.assertEqual(res, 'available')
 

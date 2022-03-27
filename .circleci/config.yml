@@ -33,7 +33,7 @@ commands:
 
   run_hello_world_test:
     steps:
-      - run: ecosystem-test local-blueprint-test  -b examples/blueprint-examples/hello-world-example/aws.yaml --test-id=hello-world-example -i aws_region_name=us-east-1 --on-failure=uninstall-force --timeout=1800
+      - run: ecosystem-test local-blueprint-test  -b examples/blueprint-examples/hello-world-example/aws.yaml --test-id=hello-world-example -i aws_region_name=us-east-1 --on-failure=uninstall-force --timeout=1800 --nested-test=.circleci/test_cloudwatch.py
 
   run_cf_test:
     steps:
@@ -64,7 +64,7 @@ commands:
 
   run_ec2_instance_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/ec2-instance-feature-demo/blueprint.yaml --test-id=ec2-instance --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/ec2-vpc-feature-demo/ipv6.yaml --test-id=ec2-ipv6 --on-failure=uninstall-force --timeout=3000
 
   run_ec2_keys_test:
     steps:

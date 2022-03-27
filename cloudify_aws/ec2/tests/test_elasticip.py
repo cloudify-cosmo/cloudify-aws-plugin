@@ -38,7 +38,7 @@ from cloudify_aws.ec2.resources.elasticip import (
 )
 
 
-class TestEC2NetworkInterface(TestBase):
+class TestElasticIp(TestBase):
 
     def setUp(self):
         self.elasticip = EC2ElasticIP("ctx_node", resource_id=True,
@@ -54,14 +54,14 @@ class TestEC2NetworkInterface(TestBase):
             self.make_client_function('describe_addresses',
                                       side_effect=effect)
         res = self.elasticip.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
         value = {}
         self.elasticip.client = \
             self.make_client_function('describe_addresses',
                                       return_value=value)
         res = self.elasticip.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
         value = {ADDRESSES: [{NETWORKINTERFACE_ID: 'test_name'}]}
         self.elasticip.client = \
@@ -149,24 +149,23 @@ class TestEC2NetworkInterface(TestBase):
                     'AllocationId': 'test_name',
                 },
                 {
+                    ELASTICIP_ID: 'elasticip',
                     NETWORKINTERFACE_ID: 'test_name2',
                     'AssociationId': '',
                     'AllocationId': 'test_name2'
                 }
             ]
         }
-        value[ADDRESSES]
         self.elasticip.client = self.make_client_function(
             'describe_addresses', return_value=value)
 
         test_node_props = {'use_unassociated_addresses': True}
-        ctx = self.get_mock_ctx("PublicIp",
-                                test_properties=test_node_props)
+        ctx = self.get_mock_ctx("PublicIp", test_properties=test_node_props)
         config = {ELASTICIP_ID: 'elasticip', INSTANCE_ID: 'instance'}
         self.elasticip.resource_id = config[ELASTICIP_ID]
         iface = MagicMock()
         iface.create = self.mock_return(config)
-        iface.list = self.mock_return(value[ADDRESSES])
+        iface.get = self.mock_return(value[ADDRESSES])
         elasticip.create(ctx=ctx, iface=iface, resource_config=config)
         self.assertEqual(self.elasticip.resource_id, 'elasticip')
         self.assertEqual(

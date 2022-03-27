@@ -37,7 +37,7 @@ from cloudify_aws.ec2.resources.vpn_gateway import (
 class TestEC2VPNGateway(TestBase):
 
     def setUp(self):
-        self.vpn_gateway = EC2VPNGateway("ctx_node", resource_id=True,
+        self.vpn_gateway = EC2VPNGateway("ctx_node", resource_id='test_name',
                                          client=True, logger=None)
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',
                       mock_decorator)
@@ -57,14 +57,14 @@ class TestEC2VPNGateway(TestBase):
             self.make_client_function('describe_vpn_gateways',
                                       side_effect=effect)
         res = self.vpn_gateway.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
         value = {}
         self.vpn_gateway.client = \
             self.make_client_function('describe_vpn_gateways',
                                       return_value=value)
         res = self.vpn_gateway.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
         value = {VPNGATEWAYS: [{VPNGATEWAY_ID: 'test_name'}]}
         self.vpn_gateway.client = \

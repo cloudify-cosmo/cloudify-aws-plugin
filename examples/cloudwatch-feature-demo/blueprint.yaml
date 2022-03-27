@@ -20,6 +20,7 @@ inputs:
 
   aws_instance_id:
     type: string
+    description: The AWS Resource ID of an EC2 Instance (i-xxxxxxxxxxxxxxxx)
     required: True
 
 dsl_definitions:

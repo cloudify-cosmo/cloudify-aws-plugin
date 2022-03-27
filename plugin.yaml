@@ -2,7 +2,7 @@ plugins:
   aws:
     executor: central_deployment_agent
     package_name: cloudify-aws-plugin
-    package_version: '3.0.1'
+    package_version: '3.0.2'
 
 data_types:
 
@@ -682,7 +682,7 @@ data_types:
       CidrBlock:
         type: string
         description: The IPv4 network range for the subnet, in CIDR notation.
-        required: true
+        required: false
       VpcId:
         type: string
         description: The ID of the VPC. May be provided via relationship to a VPC type.

@@ -42,6 +42,10 @@ class EC2NetworkAclEntry(EC2Base):
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
+        self._describe_call = 'describe_network_acls'
+        self._type_key = NETWORKACLS
+        self._id_key = NETWORKACL_ID
+        self._ids_key = NETWORKACL_IDS
 
     def get_properties_by_filter(self, **filters):
         try:

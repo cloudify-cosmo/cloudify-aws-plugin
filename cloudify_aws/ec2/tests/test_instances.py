@@ -44,7 +44,7 @@ from cloudify_aws.ec2.resources.instances import (
 class TestEC2Instances(TestBase):
 
     def setUp(self):
-        self.instances = EC2Instances("ctx_node", resource_id='ec2 instance',
+        self.instances = EC2Instances("ctx_node", resource_id='test_name',
                                       client=True, logger=None)
         mock0 = patch('cloudify_aws.common.decorators.multiple_aws_resource',
                       mock_decorator)
@@ -63,14 +63,14 @@ class TestEC2Instances(TestBase):
             self.make_client_function('describe_instances',
                                       side_effect=effect)
         res = self.instances.properties
-        self.assertEqual(res, [])
+        self.assertEqual(res, {})
 
         value = {}
         self.instances.client = \
             self.make_client_function('describe_instances',
                                       return_value=value)
         res = self.instances.properties
-        self.assertEqual(res, [])
+        self.assertEqual(res, {})
 
         value = {RESERVATIONS: [{INSTANCES: [{INSTANCE_ID: 'test_name'}]}]}
         self.instances.client = self.make_client_function(
@@ -234,6 +234,7 @@ class TestEC2Instances(TestBase):
                 target_type_hierarchy=['cloudify.nodes.Root',
                                        NETWORK_INTERFACE_TYPE])
         _target_ctx1.instance.runtime_properties['aws_resource_id'] = 'eni-0'
+        _target_ctx1.instance.runtime_properties['resource_config'] = {}
         _target_ctx1.instance.runtime_properties['device_index'] = 0
 
         _source_ctx2, _target_ctx2, _nic_type2 = \
@@ -245,6 +246,7 @@ class TestEC2Instances(TestBase):
                 target_type_hierarchy=['cloudify.nodes.Root',
                                        NETWORK_INTERFACE_TYPE])
         _target_ctx2.instance.runtime_properties['aws_resource_id'] = 'eni-1'
+        _target_ctx2.instance.runtime_properties['resource_config'] = {}
         _target_ctx2.instance.runtime_properties['device_index'] = 1
 
         _ctx = self.get_mock_ctx(

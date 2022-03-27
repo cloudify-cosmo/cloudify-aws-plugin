@@ -20,7 +20,7 @@
 from botocore.exceptions import ClientError, ParamValidationError
 
 # Local imports
-from cloudify.exceptions import NonRecoverableError
+from cloudify.exceptions import NonRecoverableError, OperationRetry
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.sns import SNSBase
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ARN
@@ -166,7 +166,7 @@ def start(ctx, iface, resource_config, **_):
     sub_attributes = iface.confirm(params)
 
     if CONFIRM_AUTHENTICATED not in sub_attributes:
-        return ctx.operation.retry(
+        raise OperationRetry(
             'Confirm has not been authenticated. Retrying...')
 
 

@@ -52,32 +52,34 @@ class TestELBListener(TestBase):
         self.listener.client = self.make_client_function('describe_listeners',
                                                          side_effect=effect)
         res = self.listener.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
         value = []
         self.listener.client = self.make_client_function('describe_listeners',
                                                          return_value=value)
         res = self.listener.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
-        value = {'Listeners': ['test']}
+        self.listener.resource_id = True
+        value = {'Listeners': [{'ListenerArn': True}]}
         self.listener.client = self.make_client_function('describe_listeners',
                                                          return_value=value)
         res = self.listener.properties
-        self.assertEqual(res, 'test')
+        self.assertEqual(res, {'ListenerArn': True})
 
     def test_class_status(self):
         value = []
         self.listener.client = self.make_client_function('describe_listeners',
                                                          return_value=value)
         res = self.listener.status
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
-        value = {'Listeners': [{'State': {'Code': 'ok'}}]}
+        value = {'Listeners': [{'ListenerArn': True, 'State': {'Code': 'ok'}}]}
         self.listener.client = self.make_client_function('describe_listeners',
                                                          return_value=value)
+        self.listener.resource_id = True
         res = self.listener.status
-        self.assertEqual(res, 'ok')
+        self.assertEqual(res, {'ListenerArn': True, 'State': {'Code': 'ok'}})
 
     def test_class_create(self):
         value = {'Listeners': [{LISTENER_ARN: 'id'}]}

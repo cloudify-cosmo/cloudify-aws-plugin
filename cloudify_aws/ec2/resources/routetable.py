@@ -19,8 +19,8 @@
 from time import sleep
 
 # Boto
+from botocore.exceptions import ClientError
 from cloudify.exceptions import OperationRetry
-from botocore.exceptions import ClientError, ParamValidationError
 
 # Cloudify
 from cloudify_aws.ec2 import EC2Base
@@ -49,24 +49,10 @@ class EC2RouteTable(EC2Base):
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
-
-    @property
-    def properties(self):
-        '''Gets the properties of an external resource'''
-        if not self.resource_id:
-            return
-        params = {ROUTETABLE_IDS: [self.resource_id]}
-        try:
-            resources = \
-                self.client.describe_route_tables(**params)
-        except (ClientError, ParamValidationError) as e:
-            self.logger.debug(
-                'Describe Route Table failed: {}'.format(str(e)))
-            pass
-        else:
-            self.logger.debug('Describe Route Table: {}'.format(
-                resources))
-            return None if not resources else resources.get(ROUTETABLES)[0]
+        self._describe_call = 'describe_route_tables'
+        self._type_key = ROUTETABLES
+        self._ids_key = ROUTETABLE_IDS
+        self._id_key = ROUTETABLE_ID
 
     @property
     def status(self):
@@ -91,13 +77,26 @@ class EC2RouteTable(EC2Base):
         '''
         return self.make_client_call('create_route_table', params)
 
-    def delete(self, params=None):
+    def delete(self, params=None, recurse=True):
         '''
             Deletes an existing AWS EC2 Route Table.
         '''
         self.logger.debug('Deleting %s with parameters: %s'
                           % (self.type_name, params))
-        res = self.client.delete_route_table(**params)
+        try:
+            res = self.client.delete_route_table(**params)
+        except ClientError:
+            if not recurse:
+                raise
+            self.logger.error(
+                'Failed to delete route table because of dependencies. '
+                'Attempting cleanup.')
+            for a in self.properties.get('Associations', []):
+                if not a.get('Main'):
+                    self.logger.info('Disassociating: {}'.format(a))
+                    self.client.disassociate_route_table(
+                        AssociationId=a.get('RouteTableAssociationId'))
+            res = self.delete(params, False)
         self.logger.debug('Response: %s' % res)
         return res
 

@@ -41,7 +41,7 @@ from cloudify_aws.ec2.resources.routetable import (
 class TestEC2RouteTable(TestBase):
 
     def setUp(self):
-        self.routetable = EC2RouteTable("ctx_node", resource_id=True,
+        self.routetable = EC2RouteTable("ctx_node", resource_id='test_name',
                                         client=MagicMock(), logger=None)
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',
                       mock_decorator)
@@ -57,21 +57,22 @@ class TestEC2RouteTable(TestBase):
             self.make_client_function('describe_route_tables',
                                       side_effect=effect)
         res = self.routetable.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
         value = {}
         self.routetable.client = \
             self.make_client_function('describe_route_tables',
                                       return_value=value)
         res = self.routetable.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
+
+    def test_class_properties_not_empty(self):
 
         value = {ROUTETABLES: [{ROUTETABLE_ID: 'test_name'}]}
-        self.routetable.client = \
-            self.make_client_function('describe_route_tables',
-                                      return_value=value)
-        res = self.routetable.properties
-        self.assertEqual(res[ROUTETABLE_ID], 'test_name')
+        self.routetable.client = self.make_client_function(
+            'describe_route_tables', return_value=value)
+        self.assertEqual(
+            self.routetable.properties[ROUTETABLE_ID], 'test_name')
 
     def test_class_create(self):
         value = {'RouteTable': 'test'}

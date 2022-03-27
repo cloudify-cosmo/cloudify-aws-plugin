@@ -55,20 +55,10 @@ class EC2TransitGateway(EC2Base):
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
-
-    @property
-    def properties(self):
-        '''Gets the properties of an external resource'''
-        if not self.resource_id:
-            return
-        params = {TG_IDS: [self.resource_id]}
-        try:
-            resources = \
-                self.client.describe_transit_gateways(**params)
-        except (ClientError, ParamValidationError):
-            resources = None
-        return resources if not resources else resources.get(
-            TGS, [None])[0]
+        self._describe_call = 'describe_transit_gateways'
+        self._type_key = TGS
+        self._id_key = TG_ID
+        self._ids_key = TG_IDS
 
     @property
     def status(self):

@@ -17,7 +17,6 @@
     AWS EC2 EBS Volume
 """
 # Boto
-from botocore.exceptions import ClientError, ParamValidationError
 from botocore.exceptions import CapacityNotAvailableError
 
 # Cloudify
@@ -60,23 +59,10 @@ class EC2VolumeMixin(object):
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE_VOLUME
-
-    @property
-    def properties(self):
-        """
-        Gets the properties of an external resource
-        :return: dict of selected volume
-        """
-        if not self.resource_id:
-            return
-        params = {VOLUME_IDS: [self.resource_id]}
-        try:
-            resources = \
-                self.client.describe_volumes(**params)
-        except (ClientError, ParamValidationError):
-            pass
-        else:
-            return resources.get(VOLUMES)[0] if resources else None
+        self._describe_call = 'describe_volumes'
+        self._type_key = VOLUMES
+        self._id_key = VOLUME_ID
+        self._ids_key = VOLUME_IDS
 
     @property
     def status(self):

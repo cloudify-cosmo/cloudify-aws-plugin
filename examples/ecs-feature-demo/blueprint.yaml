@@ -117,7 +117,7 @@ node_templates:
     type: cloudify.nodes.aws.iam.InstanceProfile
     properties:
       client_config: *client_config
-      resource_id: ecs_cfy_instance_profile
+      resource_id: { concat: [ 'cfy_ecs_instance_profile', '-', { get_input: ecs_cluster_name } ] }
       resource_config:
         InstanceProfileName: ecs_cfy_instance_profile
         Path: '/ecs_cfy_instance_profile/'
@@ -183,7 +183,7 @@ node_templates:
         target: ecs_service_iam_role
     interfaces:
       cloudify.interfaces.lifecycle:
-        configure:
+        create:
           inputs:
             resource_config:
               serviceName: 'service_name_1'
@@ -207,8 +207,9 @@ node_templates:
           DesiredCapacity: 1
           DefaultCooldown: 20
           AvailabilityZones:
-            - { get_property: [ subnet1, resource_config, kwargs, AvailabilityZone ] }
-          VPCZoneIdentifier: { concat: [ { get_attribute: [ subnet1, aws_resource_id ] }  ] }
+          - { get_property: [ subnet1, resource_config, kwargs, AvailabilityZone ] }
+          VPCZoneIdentifier:
+          - { get_attribute: [ subnet1, aws_resource_id ] }
 
     relationships:
       - type: cloudify.relationships.depends_on
@@ -232,7 +233,8 @@ node_templates:
         LaunchConfigurationName: container_instance
         KeyName: { get_property: [ key, resource_config,  KeyName] }
         kwargs:
-          IamInstanceProfile: { get_attribute: [ ecs_instance_iam_role_instance_profile, aws_resource_arn ] }
+          IamInstanceProfile: { concat: [ 'cfy_ecs_instance_profile', '-', { get_input: ecs_cluster_name } ] }
+          # IamInstanceProfile: { get_attribute: [ ecs_instance_iam_role_instance_profile, aws_resource_arn ] }
           AssociatePublicIpAddress: True
           SecurityGroups:
             - { get_attribute: [ securitygroup1, aws_resource_id ] }
@@ -254,6 +256,8 @@ node_templates:
         target: ecs_instance_iam_role_instance_profile
       - type: cloudify.relationships.depends_on
         target: key
+      - type: cloudify.relationships.depends_on
+        target: igw
 
   forward_rule:
     type: cloudify.nodes.aws.elb.Rule
@@ -263,7 +267,7 @@ node_templates:
         Priority: 101
     interfaces:
       cloudify.interfaces.lifecycle:
-        configure:
+        create:
           inputs:
             resource_config:
               Priority: 101
@@ -399,7 +403,7 @@ node_templates:
     type: cloudify.nodes.aws.ec2.SecurityGroup
     properties:
       resource_config:
-        GroupName: SecurityGroup1
+        GroupName: SecurityGroup2
         Description: Example Security Group 1
         kwargs:
       client_config: *client_config

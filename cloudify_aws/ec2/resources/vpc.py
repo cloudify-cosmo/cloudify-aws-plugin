@@ -20,7 +20,9 @@
 import sys
 from time import sleep
 
-from cloudify.exceptions import NonRecoverableError
+from botocore.exceptions import ClientError
+
+from cloudify.exceptions import NonRecoverableError, OperationRetry
 from cloudify.utils import exception_to_error_cause
 
 # Local imports
@@ -64,11 +66,84 @@ class EC2Vpc(EC2Base):
         '''
             Deletes an existing AWS EC2 VPC.
         '''
-        self.logger.debug('Deleting %s with parameters: %s'
-                          % (self.type_name, params))
-        res = self.client.delete_vpc(**params)
-        self.logger.debug('Response: %s' % res)
-        return res
+        try:
+            return self.make_client_call('delete_vpc', params)
+        except NonRecoverableError as e:
+            if 'DependencyViolation' in str(e):
+                self.cleanup_vpc()
+
+    def cleanup_vpc_internet_gateways(self, vpc=None):
+        vpc = vpc or self.resource_id
+        igs = self.client.describe_internet_gateways(
+            Filters=[{'Name': 'attachment.vpc-id', 'Values': [vpc]}])
+        for ig in igs.get('InternetGateways', []):
+            self.client.detach_internet_gateway(
+                InternetGatewayId=ig.get('InternetGatewayId'))
+
+    def cleanup_vpc_route_tables(self, vpc=None):
+        vpc = vpc or self.resource_id
+        rts = self.client.describe_route_tables(
+            Filters=[{'Name': 'vpc-id', 'Values': [vpc]}])
+        for rt in rts.get('RouteTables', []):
+            for rta in rt.get('Associations'):
+                if not rta.get('Main'):
+                    self.client.disassociate_route_table(
+                        AssociationId=rta.get('RouteTableAssociationId'))
+
+    def cleanup_vpc_subnets(self, vpc=None):
+        vpc = vpc or self.resource_id
+        subnets = self.client.describe_subnets(
+            Filters=[{'Name': 'vpc-id', 'Values': [vpc]}])
+        for subnet in subnets.get('Subnets', []):
+            self.client.delete_subnet(SubnetId=subnet.get('SubnetId'))
+
+    def cleanup_vpc_endpoints(self, vpc=None):
+        vpc = vpc or self.resource_id
+        eps = self.client.describe_vpc_endpoints(
+            Filters=[{'Name': 'vpc-id', 'Values': [vpc]}])
+        for ep in eps.get('VpcEndpoints', []):
+            self.client.delete_vpc_endpoints(
+                VpcEndpointIds=ep.get('VpcEndpointId'))
+
+    def cleanup_vpc_security_groups(self, vpc=None):
+        vpc = vpc or self.resource_id
+        sgs = self.client.describe_security_groups(
+            Filters=[{'Name': 'vpc-id', 'Values': [vpc]}])
+        for g in sgs.get('SecurityGroups', []):
+            if g.get('GroupName') == 'default':
+                continue
+            self.client.delete_security_group(GroupId=g.get('GroupId'))
+
+    def clean_vpc_peering_connections(self, vpc=None):
+        vpc = vpc or self.resource_id
+        pcs = self.client.describe_vpc_peering_connections(
+            Filters=[{'Name': 'requester-vpc-info.vpc-id', 'Values': [vpc]}])
+        for pc in pcs.get('VpcPeeringConnections', []):
+            self.client.delete_vpc_peering_connection(
+                VpcPeeringConnectionId=pc.get('VpcPeeringConnectionId'))
+
+    def cleanup_vpc_network_acls(self, vpc=None):
+        vpc = vpc or self.resource_id
+        alcs = self.client.describe_network_acls(
+            Filters=[{'Name': 'vpc-id', 'Values': [vpc]}])
+        for acl in alcs.get('NetworkAcls', []):
+            if acl.get('IsDefault'):
+                continue
+            self.client.delete_network_acl(
+                NetworkAclId=acl.get('NetworkAclId'))
+
+    def cleanup_vpc(self):
+        try:
+            self.cleanup_vpc_internet_gateways()
+            self.cleanup_vpc_route_tables()
+            self.cleanup_vpc_endpoints()
+            self.cleanup_vpc_security_groups()
+            self.clean_vpc_peering_connections()
+            self.cleanup_vpc_network_acls()
+            self.cleanup_vpc_subnets()
+        except (NonRecoverableError, ClientError) as e:
+            raise OperationRetry(
+                'Failed to delete VPC dependencies: {}.'.format(str(e)))
 
     def modify_vpc_attribute(self, params):
         '''
@@ -144,7 +219,10 @@ def delete(iface, resource_config, **_):
     if VPC_ID not in params:
         params.update({VPC_ID: iface.resource_id})
 
-    iface.delete(params)
+    utils.handle_response(iface,
+                          'delete',
+                          params,
+                          raise_substrings='DependencyViolation')
 
 
 @decorators.aws_resource(EC2Vpc, RESOURCE_TYPE)

@@ -16,8 +16,6 @@
     ~~~~~~~~~~~~~~
     AWS EC2 DhcpOptions interface
 """
-# Boto
-from botocore.exceptions import ClientError, ParamValidationError
 
 # Cloudify
 from cloudify_aws.common import decorators, utils
@@ -40,20 +38,10 @@ class EC2DHCPOptions(EC2Base):
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
-
-    @property
-    def properties(self):
-        """Gets the properties of an external resource"""
-        if not self.resource_id:
-            return
-        params = {DHCPOPTIONS_IDS: [self.resource_id]}
-        try:
-            resources = \
-                self.client.describe_dhcp_options(**params)
-        except (ClientError, ParamValidationError):
-            pass
-        else:
-            return resources.get(DHCPOPTIONS)[0] if resources else None
+        self._describe_call = 'describe_dhcp_options'
+        self._type_key = DHCPOPTIONS
+        self._id_key = DHCPOPTIONS_ID
+        self._ids_key = DHCPOPTIONS_IDS
 
     def create(self, params):
         """

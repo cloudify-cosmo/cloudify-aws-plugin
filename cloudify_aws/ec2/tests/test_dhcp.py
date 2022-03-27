@@ -36,7 +36,7 @@ from cloudify_aws.ec2.resources.dhcp import (
 class TestEC2DHCPOptions(TestBase):
 
     def setUp(self):
-        self.dhcp = EC2DHCPOptions("ctx_node", resource_id=True,
+        self.dhcp = EC2DHCPOptions("ctx_node", resource_id='test_name',
                                    client=True, logger=None)
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',
                       mock_decorator)
@@ -49,14 +49,14 @@ class TestEC2DHCPOptions(TestBase):
             self.make_client_function('describe_dhcp_options',
                                       side_effect=effect)
         res = self.dhcp.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
         value = {}
         self.dhcp.client = \
             self.make_client_function('describe_dhcp_options',
                                       return_value=value)
         res = self.dhcp.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
         value = {DHCPOPTIONS: [{DHCPOPTIONS_ID: 'test_name'}]}
         self.dhcp.client = \

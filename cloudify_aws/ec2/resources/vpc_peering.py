@@ -18,8 +18,6 @@
 """
 from __future__ import unicode_literals
 
-# Boto
-from botocore.exceptions import ClientError, ParamValidationError
 
 # Cloudify
 from cloudify_aws.common import decorators, utils
@@ -43,29 +41,14 @@ class EC2VpcPeering(EC2Base):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
         self._describe_vpc_peering_filter = {}
+        self._describe_call = 'describe_vpc_peering_connections'
+        self._type_key = VPC_PEERING_CONNECTIONS
+        self._id_key = VPC_PEERING_CONNECTION_ID
+        self._ids_key = VPC_PEERING_CONNECTION_IDS
 
     @property
     def describe_vpc_peering_filter(self):
         return self._describe_vpc_peering_filter
-
-    @property
-    def properties(self):
-        """Gets the properties of an external resource"""
-        try:
-            self.logger.info('Filter: {}'.format(
-                self.describe_vpc_peering_filter))
-            resources = \
-                self.client.describe_vpc_peering_connections(
-                    **self.describe_vpc_peering_filter
-                )
-        except (ClientError, ParamValidationError):
-            resources = {}
-        for vpc in self.describe_vpc_peering_filter.get(
-                VPC_PEERING_CONNECTION_IDS, []):
-            for vpc_peering_connection in resources.get(
-                    VPC_PEERING_CONNECTIONS):
-                if vpc == vpc_peering_connection['RequesterVpcInfo']['VpcId']:
-                    return vpc_peering_connection
 
     @property
     def status(self):

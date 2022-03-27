@@ -17,7 +17,7 @@
     AWS EC2 NAT Gateway interface
 """
 # Boto
-from botocore.exceptions import ClientError, ParamValidationError
+from botocore.exceptions import ClientError
 
 # Cloudify
 from cloudify_aws.common import decorators, utils
@@ -46,23 +46,10 @@ class EC2NatGateway(EC2Base):
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
-
-    @property
-    def properties(self):
-        """Gets the properties of a resource"""
-        if not self.resource_id:
-            return
-        params = \
-            {
-                NATGATEWAY_IDS: [self.resource_id]
-            }
-        try:
-            resources = \
-                self.client.describe_nat_gateways(**params)
-        except (ClientError, ParamValidationError):
-            return None
-        else:
-            return resources.get(NATGATEWAYS, [{}])[0]
+        self._describe_call = 'describe_nat_gateways'
+        self._type_key = NATGATEWAYS
+        self._id_key = NATGATEWAY_ID
+        self._ids_key = NATGATEWAY_IDS
 
     @property
     def status(self):

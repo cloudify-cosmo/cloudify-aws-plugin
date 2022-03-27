@@ -21,8 +21,6 @@ from cloudify_aws.common import decorators, utils
 from cloudify_aws.ec2 import EC2Base
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
 
-# Boto
-from botocore.exceptions import ClientError, ParamValidationError
 
 RESOURCE_TYPE = 'EC2 VPN Gateway'
 VPNGATEWAYS = 'VpnGateways'
@@ -40,20 +38,10 @@ class EC2VPNGateway(EC2Base):
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
-
-    @property
-    def properties(self):
-        """Gets the properties of an external resource"""
-        if not self.resource_id:
-            return
-        params = {VPNGATEWAY_IDS: [self.resource_id]}
-        try:
-            resources = \
-                self.client.describe_vpn_gateways(**params)
-        except (ClientError, ParamValidationError):
-            pass
-        else:
-            return resources.get(VPNGATEWAYS)[0] if resources else None
+        self._describe_call = 'describe_vpn_gateways'
+        self._type_key = VPNGATEWAYS
+        self._id_key = VPNGATEWAY_ID
+        self._ids_key = VPNGATEWAY_IDS
 
     @property
     def status(self):
@@ -128,7 +116,7 @@ def create(ctx, iface, resource_config, **_):
 @decorators.aws_resource(EC2VPNGateway, RESOURCE_TYPE,
                          ignore_properties=True)
 @decorators.wait_for_delete(status_deleted=['deleted'],
-                            status_pending=['deleting'])
+                            status_pending=['available', 'deleting'])
 @decorators.untag_resources
 def delete(iface, resource_config, **_):
     """Deletes an AWS EC2 VPN Gateway"""

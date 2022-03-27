@@ -39,7 +39,7 @@ from cloudify_aws.ec2.resources import keypair
 class TestEC2Keypair(TestBase):
 
     def setUp(self):
-        self.keypair = EC2Keypair("ctx_node", resource_id=True,
+        self.keypair = EC2Keypair("ctx_node", resource_id='test_name',
                                   client=True, logger=None)
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',
                       mock_decorator)
@@ -55,14 +55,14 @@ class TestEC2Keypair(TestBase):
             self.make_client_function('describe_key_pairs',
                                       side_effect=effect)
         res = self.keypair.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
         value = {}
         self.keypair.client = \
             self.make_client_function('describe_key_pairs',
                                       return_value=value)
         res = self.keypair.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
         value = {KEYPAIRS: [{KEYNAME: 'test_name'}]}
         self.keypair.client = \

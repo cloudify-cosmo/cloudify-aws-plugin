@@ -89,18 +89,17 @@ class EC2Instances(EC2Base):
     @property
     def properties(self):
         '''Gets the properties of an external resource'''
-        return self.get_instances(self.instance_ids_request)
+        if not self._properties:
+            self._properties = self.get(self.instance_ids_request)[0]
+        if self._type_key in self._properties:
+            for obj in self._properties[self._type_key]:
+                if obj[self._id_key] == self.resource_id:
+                    return obj
+        return {}
 
-    def get_instances(self, request):
+    def get(self, request):
         resources = self.describe(request)
-        reservations = resources.get(RESERVATIONS, [])
-        instances = []
-        for r in reservations:
-            for i in r.get(INSTANCES, []):
-                instances.append(i)
-        if len(instances) == 1:
-            return instances[0]
-        return []
+        return resources.get(RESERVATIONS, [{}])
 
     @property
     def status(self):
@@ -479,7 +478,13 @@ def assign_subnet_param(params):
 
 def assign_groups_param(params):
     # Add security groups from relationships if provided.
-    group_ids = params.get(GROUPIDS, [])
+    group_ids = get_groups_from_rels(params.get(GROUPIDS, []))
+    if group_ids:
+        params[GROUPIDS] = group_ids
+
+
+def get_groups_from_rels(group_ids=None):
+    group_ids = group_ids or []
     relationships = utils.find_rels_by_node_type(ctx.instance, GROUP_TYPE)
     for relationship in relationships:
         target = relationship
@@ -491,29 +496,33 @@ def assign_groups_param(params):
                 group_ids.append(group_id)
             del group_id
         del target, relationship
-    if group_ids:
-        params[GROUPIDS] = group_ids
+    return group_ids
 
 
-def assign_nics_param(params):
-    # Get all nics from relationships.
-    nics_from_rels = []
+def get_nics_from_rels(nics_from_rels=None):
+    nics_from_rels = nics_from_rels or []
     relationships = utils.find_rels_by_node_type(
         ctx.instance, NETWORK_INTERFACE_TYPE)
     for relationship in relationships:
         target = relationship
         if target is not None:
-            rel_nic_id = \
-                target.target.instance.runtime_properties.get(
-                    EXTERNAL_RESOURCE_ID)
-            rel_device_index = target.target.instance.runtime_properties.get(
-                'device_index')
+            prop = target.target.instance.runtime_properties
+            rel_nic_id = prop.get(EXTERNAL_RESOURCE_ID)
+            rel_device_index = prop.get('device_index')
             rel_nic = {
                 NIC_ID: rel_nic_id,
                 DEVICE_INDEX: rel_device_index
             }
+            if 'Description' in prop['resource_config']:
+                rel_nic['Description'] = prop['resource_config']['Description']
             nics_from_rels.append(rel_nic)
         del target, rel_nic_id, rel_device_index, rel_nic
+    return nics_from_rels
+
+
+def assign_nics_param(params):
+    # Get all nics from relationships.
+    nics_from_rels = get_nics_from_rels()
 
     # Get all nics from the resource_config dict.
     nics_from_params = params.get(NETWORK_INTERFACES, [])

@@ -18,8 +18,6 @@
 '''
 from time import sleep
 
-# Boto
-from botocore.exceptions import ClientError, ParamValidationError
 
 # Cloudify
 from cloudify_aws.common import decorators, utils
@@ -44,23 +42,10 @@ class EC2InternetGateway(EC2Base):
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         EC2Base.__init__(self, ctx_node, resource_id, client, logger)
         self.type_name = RESOURCE_TYPE
-
-    @property
-    def properties(self):
-        '''Gets the properties of an external resource'''
-        if not self.resource_id:
-            return
-        params = {INTERNETGATEWAY_IDS: [self.resource_id]}
-        try:
-            resources = self.client.describe_internet_gateways(**params)
-        except (ClientError, ParamValidationError) as e:
-            self.logger.debug(
-                'Describe Internet Gateway failed: {}'.format(str(e)))
-            pass
-        else:
-            self.logger.debug('Describe Internet Gateway: {}'.format(
-                resources))
-            return resources.get(INTERNETGATEWAYS)[0] if resources else None
+        self._describe_call = 'describe_internet_gateways'
+        self._type_key = INTERNETGATEWAYS
+        self._ids_key = INTERNETGATEWAY_IDS
+        self._id_key = INTERNETGATEWAY_ID
 
     @property
     def status(self):
