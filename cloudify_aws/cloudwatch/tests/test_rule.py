@@ -126,7 +126,7 @@ class TestCloudwatchEventsRule(TestBase):
 
         self.fake_client.delete_rule = self.mock_return(DELETE_RESPONSE)
 
-        rule.delete(ctx=_ctx, resource_config=None, iface=None)
+        rule.delete(ctx=_ctx, resource_config={}, iface=None)
 
         self.fake_boto.assert_called_with('events', **CLIENT_CONFIG)
 

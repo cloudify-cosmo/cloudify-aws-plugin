@@ -170,25 +170,23 @@ def prepare(ctx, resource_config, **_):
     status_pending=['CREATE_IN_PROGRESS'])
 def create(ctx, iface, resource_config, minimum_wait_time=None, **_):
     """Creates an AWS CloudFormation Stack"""
-    # Create a copy of the resource config for clean manipulation.
-    params = dict() if not resource_config else resource_config.copy()
     resource_id = \
         iface.resource_id or \
         utils.get_resource_id(
             ctx.node,
             ctx.instance,
-            params.get(RESOURCE_NAME),
+            resource_config.get(RESOURCE_NAME),
             use_instance_id=True)
-    params[RESOURCE_NAME] = resource_id
+    resource_config[RESOURCE_NAME] = resource_id
     utils.update_resource_id(ctx.instance, resource_id)
 
-    template_body = params.get(TEMPLATEBODY, {})
+    template_body = resource_config.get(TEMPLATEBODY, {})
     if template_body and not isinstance(template_body, text_type):
-        params[TEMPLATEBODY] = json.dumps(template_body)
+        resource_config[TEMPLATEBODY] = json.dumps(template_body)
     if not iface.resource_id:
-        setattr(iface, 'resource_id', params.get(RESOURCE_NAME))
+        setattr(iface, 'resource_id', resource_config.get(RESOURCE_NAME))
     # Actually create the resource
-    iface.create(params)
+    iface.create(resource_config)
 
     if minimum_wait_time is not None and minimum_wait_time > 0:
         arrived_at_min_wait_time(ctx, minimum_wait_time)
@@ -233,9 +231,7 @@ def start(ctx, iface, **_):
                         'ROLLBACK_FAILED'])
 def delete(ctx, iface, resource_config, minimum_wait_time=None, **_):
     """Deletes an AWS CloudFormation Stack"""
-    # Create a copy of the resource config for clean manipulation.
-    params = dict() if not resource_config else resource_config.copy()
-    name = params.get(RESOURCE_NAME)
+    name = resource_config.get(RESOURCE_NAME)
     if not name:
         name = iface.resource_id
     iface.delete({RESOURCE_NAME: name})
