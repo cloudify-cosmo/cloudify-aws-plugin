@@ -67,8 +67,4 @@ def prepare(ctx, resource_config, **_):
 @decorators.aws_resource(CloudwatchEvent, RESOURCE_TYPE)
 def create(iface, resource_config, **_):
     """Creates an AWS Cloudwatch Events Event"""
-
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-    iface.create(params)
+    iface.create(resource_config)

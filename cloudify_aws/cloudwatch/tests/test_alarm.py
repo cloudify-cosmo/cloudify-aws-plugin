@@ -141,7 +141,7 @@ class TestCloudwatchAlarm(TestBase):
 
         self.fake_client.delete_alarms = self.mock_return(DELETE_RESPONSE)
 
-        alarm.delete(ctx=_ctx, resource_config=None, iface=None)
+        alarm.delete(ctx=_ctx, resource_config={}, iface=None)
 
         self.fake_boto.assert_called_with('cloudwatch', **CLIENT_CONFIG)
 
