@@ -93,22 +93,19 @@ class IAMInstanceProfile(IAMBase):
                          waits_for_status=False)
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS IAM Profile'''
-    # Build API params
-    params = \
-        dict() if not resource_config else resource_config.copy()
     resource_id = \
         utils.get_resource_id(
             ctx.node,
             ctx.instance,
-            params.get(RESOURCE_NAME),
+            resource_config.get(RESOURCE_NAME),
             use_instance_id=True
         ) or iface.resource_id
-    params[RESOURCE_NAME] = resource_id
+    resource_config[RESOURCE_NAME] = resource_id
     utils.update_resource_id(ctx.instance, resource_id)
 
-    role_name = params.pop('RoleName', None)
+    role_name = resource_config.pop('RoleName', None)
 
-    create_response = iface.create(params)
+    create_response = iface.create(resource_config)
     resource_id = create_response['InstanceProfile'][RESOURCE_NAME]
     iface.update_resource_id(resource_id)
     utils.update_resource_id(ctx.instance, resource_id)
@@ -132,21 +129,18 @@ def create(ctx, iface, resource_config, **_):
                          waits_for_status=False)
 def delete(ctx, iface, resource_config, **_):
     '''Deletes an AWS IAM Profile'''
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-    instance_profile_name = params.get(RESOURCE_NAME)
+    instance_profile_name = resource_config.get(RESOURCE_NAME)
     if not instance_profile_name:
         instance_profile_name = iface.resource_id
-    params[RESOURCE_NAME] = instance_profile_name
+    resource_config[RESOURCE_NAME] = instance_profile_name
 
     # Path parameter is not accepted by delete_instance_profile.
     try:
-        del params['Path']
+        del resource_config['Path']
     except KeyError:
         pass
 
-    role_name = params.pop('RoleName', None)
+    role_name = resource_config.pop('RoleName', None)
     if not role_name:
         role_name = \
             utils.find_resource_id_by_type(ctx.instance,
@@ -162,4 +156,4 @@ def delete(ctx, iface, resource_config, **_):
             remove_role_params,
             ['NoSuchEntity'])
 
-    utils.handle_response(iface, 'delete', params, ['NoSuchEntity'])
+    utils.handle_response(iface, 'delete', resource_config, ['NoSuchEntity'])
