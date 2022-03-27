@@ -249,13 +249,6 @@ class TestIAMRole(TestBase):
             RoleName='role_name_id'
         )
 
-        self.assertEqual(
-            _ctx.instance.runtime_properties,
-            {
-                '__deleted': True,
-            }
-        )
-
     def test_IAMRoleClass_properties(self):
         self.fake_client.get_role = MagicMock(return_value={
             'Role': {

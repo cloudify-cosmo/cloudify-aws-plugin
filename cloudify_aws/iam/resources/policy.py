@@ -21,6 +21,8 @@ from json import dumps as json_dumps
 # Boto
 from botocore.exceptions import ClientError, ParamValidationError
 
+from cloudify.exceptions import NonRecoverableError
+
 # Cloudify
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.iam import IAMBase
@@ -98,7 +100,10 @@ def create(ctx, iface, resource_config, **_):
             isinstance(params['PolicyDocument'], dict):
         params['PolicyDocument'] = json_dumps(params['PolicyDocument'])
     # Actually create the resource
-    create_response = iface.create(params)
+    create_response = utils.handle_response(
+        iface, 'create', params,
+        raise_substrings='EntityAlreadyExists',
+        raisable=NonRecoverableError)
     resource_id = create_response['Policy']['PolicyName']
     iface.update_resource_id(resource_id)
     utils.update_resource_id(ctx.instance, resource_id)
@@ -112,4 +117,4 @@ def create(ctx, iface, resource_config, **_):
 def delete(iface, resource_config, **_):
     '''Deletes an AWS IAM Policy'''
     iface.update_resource_id(utils.get_resource_arn())
-    iface.delete(resource_config)
+    utils.handle_response(iface, 'delete', resource_config, ['NoSuchEntity'])

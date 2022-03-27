@@ -122,7 +122,7 @@ class EC2SecurityGroup(EC2Base):
         max_wait = 5
         counter = 0
         while not self.properties:
-            self.logger.debug('Waiting for Route Table to be created.')
+            self.logger.debug('Waiting for Security Group to be created.')
             sleep(5)
             if max_wait > counter:
                 break
@@ -136,7 +136,9 @@ def prepare(ctx, iface, resource_config, **_):
     ctx.instance.runtime_properties['resource_config'] = resource_config
 
 
-@decorators.aws_resource(EC2SecurityGroup, RESOURCE_TYPE)
+@decorators.aws_resource(EC2SecurityGroup,
+                         RESOURCE_TYPE,
+                         waits_for_status=False)
 @decorators.tag_resources
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS EC2 Security Group'''
@@ -147,8 +149,6 @@ def create(ctx, iface, resource_config, **_):
     # Actually create the resource
     iface.create(params)
     utils.update_resource_id(ctx.instance, iface.resource_id)
-    utils.assign_create_response(
-        iface, ctx.instance.runtime_properties, iface.create_response)
     iface.wait()
 
 

@@ -622,9 +622,11 @@ def handle_response(iface,
     :param raisable: The exception to raise if substrings are found.
     :return:
     """
+    exit_substrings = exit_substrings or []
     if isinstance(exit_substrings, text_type):
         exit_substrings = [exit_substrings]
 
+    raise_substrings = raise_substrings or []
     if isinstance(raise_substrings, text_type):
         raise_substrings = [raise_substrings]
 

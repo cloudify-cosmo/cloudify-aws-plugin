@@ -41,7 +41,7 @@ class TestELBTargetGroup(TestBase):
 
     def setUp(self):
         super(TestELBTargetGroup, self).setUp()
-        self.target_group = ELBTargetGroup("ctx_node", resource_id=True,
+        self.target_group = ELBTargetGroup("ctx_node", resource_id='test',
                                            client=MagicMock(), logger=None)
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',
                       mock_decorator)
@@ -67,14 +67,14 @@ class TestELBTargetGroup(TestBase):
             'describe_target_groups',
             return_value=value)
         res = self.target_group.properties
-        self.assertIsNone(res)
+        self.assertEqual(res, {})
 
-        value = {'TargetGroups': ['test']}
+        value = {'TargetGroups': [{'TargetGroupArn': 'test'}]}
         self.target_group.client = self.make_client_function(
             'describe_target_groups',
             return_value=value)
         res = self.target_group.properties
-        self.assertEqual(res, 'test')
+        self.assertEqual(res, {'TargetGroupArn': 'test'})
 
     def test_class_status(self):
         value = []
@@ -84,7 +84,13 @@ class TestELBTargetGroup(TestBase):
         res = self.target_group.status
         self.assertIsNone(res)
 
-        value = {'TargetGroups': [{'State': {'Code': 'ok'}}]}
+        value = {
+            'TargetGroups': [
+                {'TargetGroupArn': 'test',
+                 'State': {'Code': 'ok'}
+                 }
+            ]
+        }
         self.target_group.client = self.make_client_function(
             'describe_target_groups',
             return_value=value)
