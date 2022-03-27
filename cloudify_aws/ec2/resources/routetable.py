@@ -19,6 +19,7 @@
 from time import sleep
 
 # Boto
+from botocore.exceptions import ClientError
 from cloudify.exceptions import OperationRetry
 
 # Cloudify
@@ -76,13 +77,26 @@ class EC2RouteTable(EC2Base):
         '''
         return self.make_client_call('create_route_table', params)
 
-    def delete(self, params=None):
+    def delete(self, params=None, recurse=True):
         '''
             Deletes an existing AWS EC2 Route Table.
         '''
         self.logger.debug('Deleting %s with parameters: %s'
                           % (self.type_name, params))
-        res = self.client.delete_route_table(**params)
+        try:
+            res = self.client.delete_route_table(**params)
+        except ClientError:
+            if not recurse:
+                raise
+            self.logger.error(
+                'Failed to delete route table because of dependencies. '
+                'Attempting cleanup.')
+            for a in self.properties.get('Associations', []):
+                if not a.get('Main'):
+                    self.logger.info('Disassociating: {}'.format(a))
+                    self.client.disassociate_route_table(
+                        AssociationId=a.get('RouteTableAssociationId'))
+            res = self.delete(params, False)
         self.logger.debug('Response: %s' % res)
         return res
 

@@ -17,11 +17,10 @@
     AWS Autoscaling Group interface
 
 """
-# Standard imports
-from re import sub
 
 # Third party imports
-from cloudify.exceptions import OperationRetry
+from cloudify.exceptions import OperationRetry, NonRecoverableError
+
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.autoscaling import AutoscalingBase
 
@@ -148,26 +147,7 @@ def create(ctx, iface, resource_config, params, **_):
                 INSTANCE_TYPE)
         params[INSTANCE_ID] = instance_id
 
-    subnet_list_string = params.get(SUBNET_LIST)
-    subnet_list = \
-        sub("[^\w]", " ", subnet_list_string).split() if \
-        subnet_list_string else []
-
-    subnet_list = \
-        utils.add_resources_from_rels(
-            ctx.instance,
-            SUBNET_TYPE,
-            subnet_list)
-    subnet_list = \
-        utils.add_resources_from_rels(
-            ctx.instance,
-            SUBNET_TYPE_DEPRECATED,
-            subnet_list)
-
-    if subnet_list:
-        # Remove any duplicate items from subnet list
-        subnet_list = list(set(subnet_list))
-        params[SUBNET_LIST] = ', '.join(subnet_list)
+    get_subnet_list(ctx.instance, params)
 
     # Actually create the resource
     if not iface.resource_id:
@@ -181,9 +161,7 @@ def create(ctx, iface, resource_config, params, **_):
 
 
 @decorators.aws_resource(AutoscalingGroup, RESOURCE_TYPE)
-def stop(iface,
-         resource_config,
-         **_):
+def stop(iface, resource_config, **_):
     """Stops all instances associated with Autoscaling group."""
 
     autoscaling_group = iface.properties
@@ -229,3 +207,28 @@ def delete(iface, resource_config, **_):
              [instance.get(INSTANCE_ID) for instance in instances]})
 
     iface.delete(resource_config)
+
+
+def get_subnet_list(ctx_instance, params):
+    subnet_list = params.get(SUBNET_LIST)
+    subnet_list = subnet_list or []
+    if not isinstance(subnet_list, list):
+        raise NonRecoverableError(
+            'The provided {} is not a list, '
+            'please reformat. Provided value: {}'.format(
+                SUBNET_LIST, subnet_list))
+
+    subnet_list = \
+        utils.add_resources_from_rels(
+            ctx_instance,
+            SUBNET_TYPE,
+            subnet_list)
+    subnet_list = \
+        utils.add_resources_from_rels(
+            ctx_instance,
+            SUBNET_TYPE_DEPRECATED,
+            subnet_list)
+    if subnet_list:
+        # Remove any duplicate items from subnet list
+        subnet_list = list(set(subnet_list))
+        params[SUBNET_LIST] = ', '.join(subnet_list)

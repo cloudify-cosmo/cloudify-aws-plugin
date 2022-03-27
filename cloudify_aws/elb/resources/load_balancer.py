@@ -62,13 +62,13 @@ class ELBLoadBalancer(ELBBase):
         if not self.resource_id:
             return
         if not self._properties:
-            res = self.get_describe_result(
-                {'LoadBalancerNames': [self.resource_id]})
+            res = self.get_describe_result({'Names': [self.resource_id]})
+            self.logger.info('Describe LB response: {}'.format(res))
+            names = []
             if 'LoadBalancers' in res:
                 for elb in res['LoadBalancers']:
                     lb_name = elb.get('LoadBalancerName')
                     name = elb.get('Name')
-                    names = []
                     if lb_name:
                         names.append(lb_name)
                     if name:
@@ -193,6 +193,8 @@ def modify(ctx, iface, resource_config, **_):
         modify_params[LB_ATTR] = modify_params_attributes
         # Actually modify the resource
         attributes = iface.modify_attribute(modify_params)
+        if 'resource_config' not in ctx.instance.runtime_properties:
+            ctx.instance.runtime_properties['resource_config'] = {}
         ctx.instance.runtime_properties['resource_config'][LB_ATTR] = \
             attributes
 

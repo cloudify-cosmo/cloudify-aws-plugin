@@ -23,8 +23,8 @@ from cloudify.exceptions import NonRecoverableError
 from cloudify_aws.ec2 import EC2Base
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
-from cloudify_aws.ec2.resources.transit_gateway_routetable import (
-    TG_TYPE)
+
+from cloudify_aws.ec2.resources.transit_gateway_routetable import TG_TYPE
 from cloudify_aws.ec2.resources.transit_gateway import (
     TG_ATTACHMENT,
     TG_ATTACHMENTS,

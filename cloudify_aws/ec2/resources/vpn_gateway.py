@@ -112,7 +112,7 @@ def create(ctx, iface, resource_config, **_):
 @decorators.aws_resource(EC2VPNGateway, RESOURCE_TYPE,
                          ignore_properties=True)
 @decorators.wait_for_delete(status_deleted=['deleted'],
-                            status_pending=['deleting'])
+                            status_pending=['available', 'deleting'])
 @decorators.untag_resources
 def delete(iface, resource_config, **_):
     """Deletes an AWS EC2 VPN Gateway"""

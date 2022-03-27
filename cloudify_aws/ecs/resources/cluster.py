@@ -20,10 +20,7 @@
 
 from __future__ import unicode_literals
 
-# Boto
-
-from botocore.exceptions import ClientError, ParamValidationError
-
+from cloudify.exceptions import NonRecoverableError
 # Cloudify
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.ecs import ECSBase
@@ -41,29 +38,30 @@ class ECSCluster(ECSBase):
     """
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         ECSBase.__init__(self, ctx_node, resource_id, client, logger)
+        self._properties = {}
         self.type_name = RESOURCE_TYPE
         self.describe_cluster_filter = {}
 
     @property
     def properties(self):
         """Gets the properties of an external resource"""
-        try:
-            resources = \
-                self.client.describe_clusters(
-                    **self.describe_cluster_filter
-                )
-        except (ParamValidationError, ClientError):
-            pass
-        else:
-            return None if not resources else resources.get(CLUSTERS)[0]
+        if not self._properties:
+            try:
+                resources = self.make_client_call(
+                    'describe_clusters', self.describe_cluster_filter)
+            except NonRecoverableError:
+                return
+            if CLUSTERS in resources:
+                for resource in resources[CLUSTERS]:
+                    if resource.get(CLUSTER_RESOURCE_NAME) == self.resource_id:
+                        self._properties = resource
+        return self._properties
 
     @property
     def status(self):
         """Gets the status of an external resource"""
-        props = self.properties
-        if not props:
-            return None
-        return props.get('status')
+        if self.properties:
+            return self.properties.get('status')
 
     def create(self, params):
         """

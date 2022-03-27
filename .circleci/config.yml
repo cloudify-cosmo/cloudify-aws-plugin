@@ -64,7 +64,7 @@ commands:
 
   run_ec2_instance_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/ec2-instance-feature-demo/blueprint.yaml --test-id=ec2-instance --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/ec2-vpc-feature-demo/ipv6.yaml --test-id=ec2-ipv6 --on-failure=uninstall-force --timeout=3000
 
   run_ec2_keys_test:
     steps:

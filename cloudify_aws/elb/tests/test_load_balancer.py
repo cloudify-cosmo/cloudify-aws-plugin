@@ -231,7 +231,7 @@ class TestELBLoadBalancer(TestBase):
             Name='aws_resource', SecurityGroups=['sec_id'],
             Subnets=['subnet_id'])
         self.fake_client.describe_load_balancers.assert_called_with(
-            LoadBalancerNames=['abc'])
+            Names=['abc'])
 
         # This is just because I'm not interested in the content
         # of remote_configuration right now.
@@ -418,7 +418,7 @@ class TestELBLoadBalancer(TestBase):
             LoadBalancerArn='def'
         )
         self.fake_client.describe_load_balancers.assert_called_with(
-            LoadBalancerNames=['abc'])
+            Names=['abc'])
 
 
 if __name__ == '__main__':

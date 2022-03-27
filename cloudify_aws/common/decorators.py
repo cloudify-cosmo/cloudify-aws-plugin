@@ -425,12 +425,19 @@ def _aws_resource(function,
     aws_config = ctx.instance.runtime_properties.get('aws_config')
     aws_config_kwargs = kwargs.get('aws_config')
 
+    resource_name = None
+    if 'cloudify.nodes.aws.elb.LoadBalancer' in ctx.node.type_hierarchy:
+        resource_name = ctx.node.properties.get(
+            'resource_config', {}).get('Name')
+
     # Attribute needed for AWS resource class
     class_decl_attr = {
         'ctx_node': ctx.node,
         'logger': ctx.logger,
         'resource_id': utils.get_resource_id(
-            node=ctx.node, instance=ctx.instance),
+            node=ctx.node,
+            instance=ctx.instance,
+            resource_name=resource_name),
     }
 
     _put_aws_config_in_class_decl(

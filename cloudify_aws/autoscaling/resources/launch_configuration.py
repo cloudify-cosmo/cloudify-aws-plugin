@@ -166,4 +166,4 @@ def delete(iface, resource_config, **_):
     """Deletes an AWS Autoscaling Autoscaling Launch Configuration"""
     if RESOURCE_NAME not in resource_config:
         resource_config.update({RESOURCE_NAME: iface.resource_id})
-    iface.delete(resource_config)
+    utils.handle_response(iface, 'delete', resource_config, ['not found'])

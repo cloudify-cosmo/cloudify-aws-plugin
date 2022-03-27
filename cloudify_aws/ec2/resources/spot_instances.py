@@ -72,7 +72,7 @@ class EC2SpotInstances(EC2Instances):
         return self._properties
 
     def describe(self, params=None):
-        params = params or self.prepare_request_id_param
+        params = params or self.prepare_request_id_param(params)
         try:
             return self.make_client_call(
                 'describe_spot_instance_requests', params)

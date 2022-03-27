@@ -49,6 +49,7 @@ class ELBRule(ELBBase):
             resource_id,
             client or Boto3Connection(ctx_node).client('elbv2'),
             logger)
+        self._properties = {}
         self.type_name = RESOURCE_TYPE
 
     @property
@@ -56,22 +57,23 @@ class ELBRule(ELBBase):
         '''Gets the properties of an external resource'''
         if not self.resource_id:
             return
-        try:
-            resources = self.client.describe_rules(
-                RuleArns=[self.resource_id])
-        except (ParamValidationError, ClientError):
-            pass
-        else:
-            return None \
-                if not resources else resources['Rules'][0]
+        if not self._properties:
+            try:
+                resources = self.client.describe_rules(
+                    RuleArns=[self.resource_id])
+            except (ParamValidationError, ClientError):
+                pass
+            else:
+                if 'Rules' in resources:
+                    for rule in resources['Rules']:
+                        if rule.get('RuleArn') == self.resource_id:
+                            self._properties = rule
+        return self._properties
 
     @property
     def status(self):
         '''Gets the status of an external resource'''
-        props = self.properties
-        if not props:
-            return None
-        return props['State']['Code']
+        return self.properties
 
     def create(self, params):
         '''
@@ -148,8 +150,8 @@ def create(ctx, iface, resource_config, **_):
 
 
 @decorators.aws_resource(ELBRule, RESOURCE_TYPE,
-                         ignore_properties=True)
-@decorators.wait_for_delete(status_pending=[])
+                         ignore_properties=True,
+                         waits_for_status=False)
 def delete(iface, resource_config, **_):
     '''Deletes an AWS ELB rule'''
     iface.delete(resource_config)
