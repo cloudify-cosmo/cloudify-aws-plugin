@@ -99,15 +99,11 @@ def prepare(ctx, resource_config, **_):
 @decorators.wait_for_delete()
 def delete(ctx, iface, resource_config, **_):
     """Deletes a Pipeline"""
-
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
     # Add the required name parameter.
-    if RESOURCE_NAME not in params:
+    if RESOURCE_NAME not in resource_config:
         params = {RESOURCE_NAME: iface.resource_id}
     else:
-        params = {RESOURCE_NAME: params.get(RESOURCE_NAME)}
+        params = {RESOURCE_NAME: resource_config.get(RESOURCE_NAME)}
     ctx.logger.info("delete params {}".format(params))
     iface.delete(params)
 
