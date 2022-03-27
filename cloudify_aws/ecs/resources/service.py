@@ -139,8 +139,10 @@ def create(ctx, iface, resource_config, **_):
     if not cluster_name:
         resource_config[CLUSTER] = get_cluster_name(ctx)
 
-    ctx.instance.runtime_properties[SERVICE] = resource_config.get(SERVICE_RESOURCE)
-    utils.update_resource_id(ctx.instance, resource_config.get(SERVICE_RESOURCE))
+    ctx.instance.runtime_properties[SERVICE] = \
+        resource_config.get(SERVICE_RESOURCE)
+    utils.update_resource_id(
+        ctx.instance, resource_config.get(SERVICE_RESOURCE))
 
     iface = prepare_describe_service_filter(resource_config.copy(), iface)
     response = iface.create(resource_config)

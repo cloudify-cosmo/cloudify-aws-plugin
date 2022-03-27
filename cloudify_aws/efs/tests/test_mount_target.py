@@ -161,7 +161,7 @@ class TestEFSMountTarget(TestBase):
         self.fake_client.delete_mount_target = self.mock_return(
             DELETE_RESPONSE)
 
-        mount_target.delete(ctx=_ctx, resource_config=None, iface=None)
+        mount_target.delete(ctx=_ctx, resource_config={}, iface=None)
 
         self.fake_boto.assert_called_with('efs', **CLIENT_CONFIG)
 
