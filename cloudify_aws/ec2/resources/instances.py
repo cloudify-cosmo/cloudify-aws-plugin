@@ -208,9 +208,6 @@ def create(ctx, iface, resource_config, **kwargs):
 @decorators.multiple_aws_resource(EC2Instances, RESOURCE_TYPE)
 def start(ctx, iface, resource_config, **_):
     '''Starts AWS EC2 Instances'''
-    params = utils.clean_params(
-        dict() if not resource_config else resource_config.copy())
-
     if iface.status in [RUNNING] and ctx.operation.retry_number > 0:
         assign_ip_properties(ctx, iface.properties)
         if not _handle_password(iface):
@@ -219,7 +216,7 @@ def start(ctx, iface, resource_config, **_):
                     iface.type_name, iface.resource_id))
         return
     elif ctx.operation.retry_number == 0:
-        iface.start(iface.prepare_instance_ids_request(params))
+        iface.start(iface.prepare_instance_ids_request(resource_config))
 
     raise OperationRetry(
         '{0} ID# {1} is still in a pending state {2}.'.format(
@@ -241,11 +238,10 @@ def poststart(ctx, iface, *_, **__):
 def stop(ctx, iface, resource_config, **_):
     '''Stops AWS EC2 Instances'''
 
-    params = utils.clean_params(
-        dict() if not resource_config else resource_config.copy())
     if MULTI_ID in ctx.instance.runtime_properties:
-        params[INSTANCE_IDS] = ctx.instance.runtime_properties[MULTI_ID]
-    iface.stop(iface.prepare_instance_ids_request(params))
+        resource_config[INSTANCE_IDS] = \
+            ctx.instance.runtime_properties[MULTI_ID]
+    iface.stop(iface.prepare_instance_ids_request(resource_config))
 
 
 @decorators.multiple_aws_resource(EC2Instances, RESOURCE_TYPE)
@@ -256,18 +252,15 @@ def stop(ctx, iface, resource_config, **_):
 def delete(iface, resource_config, **_):
     '''Deletes AWS EC2 Instances'''
 
-    params = \
-        dict() if not resource_config else resource_config.copy()
     if MULTI_ID in ctx.instance.runtime_properties:
-        params[INSTANCE_IDS] = ctx.instance.runtime_properties[MULTI_ID]
-    iface.delete(iface.prepare_instance_ids_request(params))
+        resource_config[INSTANCE_IDS] = \
+            ctx.instance.runtime_properties[MULTI_ID]
+    iface.delete(iface.prepare_instance_ids_request(resource_config))
 
 
 @decorators.multiple_aws_resource(EC2Instances, RESOURCE_TYPE)
 def modify_instance_attribute(ctx, iface, resource_config, **_):
-    params = utils.clean_params(
-        dict() if not resource_config else resource_config.copy())
-    do_modify_instance_attribute(iface, params)
+    do_modify_instance_attribute(iface, resource_config)
 
 
 def extract_powershell_content(string_with_powershell):
