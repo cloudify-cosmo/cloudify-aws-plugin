@@ -195,21 +195,18 @@ def stop(iface, resource_config, **_):
                          ignore_properties=True)
 def delete(iface, resource_config, **_):
     """Deletes an AWS Autoscaling Group"""
-    # Create a copy of the resource config for clean manipulation.
-    params = dict() if not resource_config else resource_config.copy()
-
-    if RESOURCE_NAME not in params:
-        params.update({RESOURCE_NAME: iface.resource_id})
+    if RESOURCE_NAME not in resource_config:
+        resource_config.update({RESOURCE_NAME: iface.resource_id})
 
     autoscaling_group = iface.properties
     instances = autoscaling_group.get(INSTANCES)
     iface.remove_instances(
-        {RESOURCE_NAME: params.get(RESOURCE_NAME),
+        {RESOURCE_NAME: resource_config.get(RESOURCE_NAME),
          'ShouldDecrementDesiredCapacity': False,
          INSTANCE_IDS:
              [instance.get(INSTANCE_ID) for instance in instances]})
 
-    iface.delete(params)
+    iface.delete(resource_config)
 
 
 def get_subnet_list(ctx_instance, params):

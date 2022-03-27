@@ -133,7 +133,7 @@ class TestAutoscalingLifecycleHook(TestBase):
         self.fake_client.delete_lifecycle_hook = self.mock_return(
             DELETE_RESPONSE)
 
-        lifecycle_hook.delete(ctx=_ctx, resource_config=None, iface=None)
+        lifecycle_hook.delete(ctx=_ctx, resource_config={}, iface=None)
 
         self.fake_boto.assert_called_with('autoscaling', **CLIENT_CONFIG)
 
