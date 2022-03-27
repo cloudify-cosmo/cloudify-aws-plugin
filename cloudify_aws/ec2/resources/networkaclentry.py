@@ -133,19 +133,16 @@ def create(ctx, iface, resource_config, **_):
 def delete(ctx, iface, resource_config, **_):
     """Deletes an AWS EC2 NetworkAcl Entry"""
 
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
-    network_acl_id = params.get(NETWORKACL_ID)
-    rule_number = params.get(RULE_NUMBER) or ctx.instance.runtime_properties[
-        'rule_number']
-    egress = params.get(EGRESS) or ctx.instance.runtime_properties['egress']
+    network_acl_id = resource_config.get(NETWORKACL_ID)
+    rule_number = resource_config.get(RULE_NUMBER) or \
+        ctx.instance.runtime_properties['rule_number']
+    egress = resource_config.get(EGRESS) or \
+        ctx.instance.runtime_properties['egress']
 
     if not network_acl_id:
-        params[NETWORKACL_ID] = \
+        resource_config[NETWORKACL_ID] = \
             network_acl_id or ctx.instance.runtime_properties['network_acl_id']
 
-    params.update({RULE_NUMBER: rule_number})
-    params.update({EGRESS: egress})
-    iface.delete(params)
+    resource_config.update({RULE_NUMBER: rule_number})
+    resource_config.update({EGRESS: egress})
+    iface.delete(resource_config)
