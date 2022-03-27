@@ -122,13 +122,10 @@ def create(ctx, iface, resource_config, **_):
 def delete(iface, resource_config, **_):
     """Deletes an AWS EC2 Customer Gateway"""
 
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-    customer_gateway_id = params.get(CUSTOMERGATEWAY_ID)
+    customer_gateway_id = resource_config.get(CUSTOMERGATEWAY_ID)
 
     if not customer_gateway_id:
         customer_gateway_id = iface.resource_id
 
-    params.update({CUSTOMERGATEWAY_ID: customer_gateway_id})
-    iface.delete(params)
+    resource_config.update({CUSTOMERGATEWAY_ID: customer_gateway_id})
+    iface.delete(resource_config)

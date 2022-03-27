@@ -183,8 +183,7 @@ def _create_attachment(ctx, iface, resource_config):
     :param iface:
     :param resource_config:
     """
-    params = dict() if not resource_config else resource_config.copy()
-    response = _attach_ebs(params, iface, ctx)
+    response = _attach_ebs(resource_config, iface, ctx)
     # Update the esp_id (volume_id)
     esp_id = response.get(VOLUME_ID, '')
     utils.update_resource_id(ctx.instance, esp_id)
@@ -226,19 +225,16 @@ def create(ctx, iface, resource_config, **_):
     :param _:
     :return:
     """
-    params = utils.clean_params(
-        dict() if not resource_config else resource_config.copy())
-
     # Actually create ebs resource
     region_name = ctx.node.properties['client_config']['region_name']
     use_available_zones = ctx.node.properties.get('use_available_zones', False)
     try:
-        create_response = iface.create(params)
+        create_response = iface.create(resource_config)
     except CapacityNotAvailableError:
         if use_available_zones:
             ctx.logger.warn(
                 "The Availability Zone chosen {0} "
-                "is not available".format(params['AvailabilityZone']))
+                "is not available".format(resource_config['AvailabilityZone']))
             valid_zone = \
                 iface.get_available_zone({
                     'Filters': [
@@ -248,8 +244,8 @@ def create(ctx, iface, resource_config, **_):
             if valid_zone:
                 ctx.logger.info(
                     "using {0} Availability Zone instead".format(valid_zone))
-                params['AvailabilityZone'] = valid_zone
-                create_response = iface.create(params)
+                resource_config['AvailabilityZone'] = valid_zone
+                create_response = iface.create(resource_config)
             else:
                 raise NonRecoverableError(
                     "no available Availability Zones "
@@ -257,7 +253,8 @@ def create(ctx, iface, resource_config, **_):
         else:
             raise NonRecoverableError(
                 "The Availability Zone chosen "
-                "{0} is not available".format(params['AvailabilityZone']))
+                "{0} is not available".format(
+                    resource_config['AvailabilityZone']))
     # Check if the resource created
     if not create_response:
         raise NonRecoverableError(

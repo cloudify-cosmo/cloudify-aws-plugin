@@ -176,7 +176,7 @@ class TestELBClassicLoadBalancer(TestBase):
 
         self.assertEqual(
             _ctx.instance.runtime_properties['resource_config'],
-            {'Attributes': [], 'LoadBalancerName': 'loadbalancer'})
+            {'LoadBalancerName': 'loadbalancer'})
 
     def test_create_raises_UnknownServiceError(self):
         self._prepare_create_raises_UnknownServiceError(
