@@ -164,8 +164,6 @@ def create(ctx, iface, resource_config, params, **_):
                          ignore_properties=True)
 def delete(iface, resource_config, **_):
     """Deletes an AWS Autoscaling Autoscaling Launch Configuration"""
-    # Create a copy of the resource config for clean manipulation.
-    params = dict() if not resource_config else resource_config.copy()
-    if RESOURCE_NAME not in params:
-        params.update({RESOURCE_NAME: iface.resource_id})
-    iface.delete(params)
+    if RESOURCE_NAME not in resource_config:
+        resource_config.update({RESOURCE_NAME: iface.resource_id})
+    iface.delete(resource_config)

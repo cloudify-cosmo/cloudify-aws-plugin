@@ -132,7 +132,7 @@ class TestAutoscalingPolicy(TestBase):
 
         self.fake_client.delete_policy = self.mock_return(DELETE_RESPONSE)
 
-        policy.delete(ctx=_ctx, resource_config=None, iface=None)
+        policy.delete(ctx=_ctx, resource_config={}, iface=None)
 
         self.fake_boto.assert_called_with('autoscaling', **CLIENT_CONFIG)
 
