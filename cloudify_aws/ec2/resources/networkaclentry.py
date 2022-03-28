@@ -121,7 +121,8 @@ def create(ctx, iface, resource_config, **_):
     # for rule in entries:
     if rule_number == entry.get(RULE_NUMBER):
         return iface.replace(resource_config)
-
+    if not egress:
+        resource_config[EGRESS] = False
     # Actually create the resource
     create_response = iface.create(resource_config)
     ctx.instance.runtime_properties['create_response'] = \
