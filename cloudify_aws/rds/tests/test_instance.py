@@ -66,6 +66,7 @@ RUNTIME_PROPERTIES_AFTER_CREATE = {
         'EngineVersion': '5.7.16',
         'DBInstanceClass': 'db.t2.small',
         'DBName': 'devdb',
+        'DBInstanceIdentifier': 'devdbinstance',
     }
 }
 
