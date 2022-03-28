@@ -72,20 +72,17 @@ def prepare(ctx, resource_config, **_):
 @decorators.aws_resource(KMSKeyGrant, RESOURCE_TYPE, waits_for_status=False)
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS KMS Key Grant"""
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
     resource_id = \
         utils.get_resource_id(
             ctx.node,
             ctx.instance,
-            params.get(RESOURCE_NAME),
+            resource_config.get(RESOURCE_NAME),
             use_instance_id=True
         )
-    params[RESOURCE_NAME] = resource_id
+    resource_config[RESOURCE_NAME] = resource_id
     utils.update_resource_id(ctx.instance, resource_id)
 
-    key_id = params.get(KEY_ID)
+    key_id = resource_config.get(KEY_ID)
     if not key_id:
         target_key = \
             utils.find_rel_by_node_type(
@@ -93,11 +90,11 @@ def create(ctx, iface, resource_config, **_):
                 KEY_TYPE)
         key_id = \
             target_key.target.instance.runtime_properties[EXTERNAL_RESOURCE_ID]
-        params[KEY_ID] = key_id
+        resource_config[KEY_ID] = key_id
         ctx.instance.runtime_properties[KEY_ID] = key_id
 
     # Actually create the resource
-    output = iface.create(params)
+    output = iface.create(resource_config)
     ctx.instance.runtime_properties[GRANT_TOKEN] = \
         output.get(GRANT_TOKEN)
     utils.update_resource_id(
@@ -112,19 +109,14 @@ def create(ctx, iface, resource_config, **_):
                          waits_for_status=False)
 def delete(ctx, iface, resource_config, **_):
     """Deletes an KMS Key Grant"""
-
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
-    key_id = params.get(KEY_ID)
+    key_id = resource_config.get(KEY_ID)
     if not key_id:
-        params[KEY_ID] = \
+        resource_config[KEY_ID] = \
             ctx.instance.runtime_properties[KEY_ID]
-    grant_id = params.get(GRANT_ID)
+    grant_id = resource_config.get(GRANT_ID)
     if not grant_id:
-        params[GRANT_ID] = \
+        resource_config[GRANT_ID] = \
             iface.resource_id
 
     # Actually delete the resource
-    iface.delete(params)
+    iface.delete(resource_config)

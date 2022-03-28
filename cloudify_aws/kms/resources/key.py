@@ -102,12 +102,7 @@ def prepare(ctx, resource_config, **_):
 @decorators.aws_resource(KMSKey, RESOURCE_TYPE)
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS KMS Key"""
-
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
-    create_response = iface.create(params)[KEY_META]
+    create_response = iface.create(resource_config)[KEY_META]
     utils.update_resource_arn(
         ctx.instance,
         create_response.get(ARN)
@@ -121,12 +116,9 @@ def create(ctx, iface, resource_config, **_):
 @decorators.aws_resource(KMSKey, RESOURCE_TYPE,
                          ignore_properties=True)
 def enable(ctx, iface, resource_config, **_):
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-    key_id = params.get(KEY_ID)
+    key_id = resource_config.get(KEY_ID)
     if not key_id:
-        params[KEY_ID] = \
+        resource_config[KEY_ID] = \
             ctx.instance.runtime_properties.get(
                 EXTERNAL_RESOURCE_ID,
                 iface.resource_id)
@@ -136,12 +128,9 @@ def enable(ctx, iface, resource_config, **_):
 @decorators.aws_resource(KMSKey, RESOURCE_TYPE,
                          ignore_properties=True)
 def disable(ctx, iface, resource_config, **_):
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-    key_id = params.get(KEY_ID)
+    key_id = resource_config.get(KEY_ID)
     if not key_id:
-        params[KEY_ID] = \
+        resource_config[KEY_ID] = \
             ctx.instance.runtime_properties.get(
                 EXTERNAL_RESOURCE_ID,
                 iface.resource_id)
@@ -152,17 +141,12 @@ def disable(ctx, iface, resource_config, **_):
                          ignore_properties=True)
 def delete(ctx, iface, resource_config, **_):
     """Deletes an AWS KMS Key"""
-
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
-    key_id = params.get(KEY_ID)
+    key_id = resource_config.get(KEY_ID)
     if not key_id:
-        params[KEY_ID] = \
+        resource_config[KEY_ID] = \
             ctx.instance.runtime_properties.get(
                 EXTERNAL_RESOURCE_ID,
                 iface.resource_id)
 
     # Actually delete the resource
-    iface.delete(params)
+    iface.delete(resource_config)
