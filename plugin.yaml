@@ -2,7 +2,7 @@ plugins:
   aws:
     executor: central_deployment_agent
     package_name: cloudify-aws-plugin
-    package_version: '3.0.2'
+    package_version: '3.0.3'
 
 data_types:
 
@@ -2714,6 +2714,9 @@ node_types:
           inputs: *operation_inputs
         create:
           implementation: aws.cloudify_aws.ec2.resources.spot_fleet_request.create
+          inputs: *operation_inputs
+        poststart:
+          implementation: aws.cloudify_aws.ec2.resources.spot_fleet_request.poststart
           inputs: *operation_inputs
         delete:
           implementation: aws.cloudify_aws.ec2.resources.spot_fleet_request.delete

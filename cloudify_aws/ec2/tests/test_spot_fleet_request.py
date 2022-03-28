@@ -135,30 +135,34 @@ class TestEC2SpotFleetRequest(TestBase):
 
     def test_poststart(self):
         ctx = self.get_mock_ctx(SpotFleetRequest)
-        config = {'SpotFleetRequestConfig': {SpotFleetRequestId: 'foo'}}
+        config = {
+            'SpotFleetRequestConfig': {
+                SpotFleetRequestId: 'foo',
+                'TargetCapacity': 1
+            }
+        }
         self.spot_fleet_request.resource_id = \
             config['SpotFleetRequestConfig'][SpotFleetRequestId]
-        iface = MagicMock()
-        iface.list_spot_fleet_instances = self.mock_return(
-            {
-                'ActiveInstances': [
-                    {
-                        'InstanceId': 'foo',
-                        'InstanceType': 'bar',
-                        'SpotInstanceRequestId': 'foo',
-                        'InstanceHealth': 'baz'
-                    },
-                ],
-                'NextToken': 'string',
-                'SpotFleetRequestId': 'foo'
-            }
-        )
+        instance_list = {
+            'ActiveInstances': [
+                {
+                    'InstanceId': 'foo',
+                    'InstanceType': 'bar',
+                    'SpotInstanceRequestId': 'foo',
+                    'InstanceHealth': 'baz'
+                },
+            ],
+            'NextToken': 'string',
+            'SpotFleetRequestId': 'foo'
+        }
+        self.spot_fleet_request._properties = config
+        self.spot_fleet_request.client = self.make_client_function(
+            'describe_spot_fleet_instances', return_value=instance_list)
 
-        spot_fleet_request.poststart(ctx=ctx, iface=iface, resource_config={
-            'TargetCapacity': 1
-        })
+        spot_fleet_request.poststart(
+            ctx=ctx, iface=self.spot_fleet_request, resource_config={})
         self.assertTrue(
-            'foo' in ctx.instance.runtime_properties['aws_resource_ids']
+            'foo' in ctx.instance.runtime_properties['instance_ids']
         )
 
 
