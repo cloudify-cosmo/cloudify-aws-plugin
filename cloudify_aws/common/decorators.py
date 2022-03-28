@@ -669,7 +669,6 @@ def _wait_for_delete(kwargs,
                      status_deleted,
                      status_not_deleted=None):
     status_not_deleted = status_not_deleted or []
-    print('This is the operation: {}'.format(operation))
     resource_type = kwargs.get('resource_type', 'AWS Resource')
     iface = kwargs['iface']
     ctx_instance = get_ctx_instance()

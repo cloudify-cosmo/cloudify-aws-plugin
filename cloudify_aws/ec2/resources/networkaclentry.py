@@ -96,7 +96,9 @@ def create(ctx, iface, resource_config, **_):
 
     network_acl_id = resource_config.get(NETWORKACL_ID)
     rule_number = resource_config.get(RULE_NUMBER)
-    egress = resource_config.get(EGRESS)
+    egress = resource_config.get(EGRESS, False)
+    if not egress:
+        resource_config[EGRESS] = False
 
     if not network_acl_id:
         targ = \
@@ -121,8 +123,6 @@ def create(ctx, iface, resource_config, **_):
     # for rule in entries:
     if rule_number == entry.get(RULE_NUMBER):
         return iface.replace(resource_config)
-    if not egress:
-        resource_config[EGRESS] = False
     # Actually create the resource
     create_response = iface.create(resource_config)
     ctx.instance.runtime_properties['create_response'] = \
@@ -133,12 +133,17 @@ def create(ctx, iface, resource_config, **_):
                          ignore_properties=True)
 def delete(ctx, iface, resource_config, **_):
     """Deletes an AWS EC2 NetworkAcl Entry"""
+    ctx.logger.info("yaniv log1 {}".format(resource_config.get(EGRESS)))
+    if not resource_config.get(EGRESS):
+        resource_config[EGRESS] = False
+    ctx.logger.info("yaniv log2 {}".format(resource_config.get(EGRESS)))
 
     network_acl_id = resource_config.get(NETWORKACL_ID)
     rule_number = resource_config.get(RULE_NUMBER) or \
         ctx.instance.runtime_properties['rule_number']
-    egress = resource_config.get(EGRESS) or \
+    egress = resource_config.get(EGRESS, False) or \
         ctx.instance.runtime_properties['egress']
+    ctx.logger.info("yaniv log3 egress={}".format(egress))
 
     if not network_acl_id:
         resource_config[NETWORKACL_ID] = \
