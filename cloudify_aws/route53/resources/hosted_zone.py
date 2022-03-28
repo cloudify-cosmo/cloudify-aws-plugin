@@ -104,15 +104,13 @@ def prepare(ctx, resource_config, iface, **_):
 @decorators.aws_resource(Route53HostedZone, RESOURCE_TYPE)
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS Route53 Hosted Zone'''
-    # Build API params
-    params = \
-        dict() if not resource_config else resource_config.copy()
     if iface.resource_id:
-        params.update({'Name': iface.resource_id})
-    if not params.get('CallerReference'):
-        params.update(dict(CallerReference=text_type(ctx.instance.id)))
+        resource_config.update({'Name': iface.resource_id})
+    if not resource_config.get('CallerReference'):
+        resource_config.update(dict(CallerReference=text_type(
+            ctx.instance.id)))
     # Actually create the resource
-    create_response = iface.create(params)['HostedZone']['Id']
+    create_response = iface.create(resource_config)['HostedZone']['Id']
     iface.update_resource_id(create_response)
     utils.update_resource_id(ctx.instance, create_response)
     utils.update_resource_arn(ctx.instance, create_response)

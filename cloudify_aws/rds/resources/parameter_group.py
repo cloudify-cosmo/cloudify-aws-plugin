@@ -88,12 +88,9 @@ class ParameterGroup(RDSBase):
                          waits_for_status=False)
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS RDS Parameter Group'''
-    # Build API params
-    params = \
-        dict() if not resource_config else resource_config.copy()
     if iface.resource_id:
-        params.update({'DBParameterGroupName': iface.resource_id})
-    create_response = iface.create(params)
+        resource_config.update({'DBParameterGroupName': iface.resource_id})
+    create_response = iface.create(resource_config)
     resource_id = create_response['DBParameterGroup']['DBParameterGroupName']
     iface.update_resource_id(resource_id)
     utils.update_resource_id(ctx.instance, resource_id)

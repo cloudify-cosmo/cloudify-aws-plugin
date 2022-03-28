@@ -126,9 +126,7 @@ class TestELBRule(TestBase):
             utils.find_rels_by_node_type = self.mock_return([ctx_target])
             rule.create(ctx, iface, config)
             self.assertTrue(iface.create.called)
-            self.assertEqual(
-                config,
-                {'Actions': [{'TargetGroupArn': 'elb'}]})
+            self.assertEqual(config, {'Actions': [{'TargetGroupArn': 'elb'}]})
 
     def test_delete(self):
         iface = MagicMock()
