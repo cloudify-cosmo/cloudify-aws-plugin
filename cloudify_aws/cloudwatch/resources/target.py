@@ -81,18 +81,13 @@ def prepare(ctx, resource_config, **_):
 @decorators.aws_resource(CloudwatchTarget, RESOURCE_TYPE)
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS Cloudwatch Target"""
-
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
-    rule = params.get(RULE)
+    rule = resource_config.get(RULE)
     if not rule:
         rule = utils.find_resource_id_by_type(
             ctx.instance, RULE_TYPE)
-        params[RULE] = rule
+        resource_config[RULE] = rule
 
-    targets = params.get(TARGETS, [])
+    targets = resource_config.get(TARGETS, [])
     for target in targets:
         target_arn = target.get(ARN, '')
         if not utils.validate_arn(target_arn):
@@ -109,24 +104,19 @@ def create(ctx, iface, resource_config, **_):
         targets.append(target)
 
     # Actually create the resource
-    iface.create(params)
+    iface.create(resource_config)
 
 
 @decorators.aws_resource(CloudwatchTarget, RESOURCE_TYPE)
 def delete(ctx, iface, resource_config, **_):
     """Deletes an AWS Cloudwatch Target"""
 
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
-    rule = params.get(RULE)
+    rule = resource_config.get(RULE)
     if not rule:
-        rule = utils.find_resource_id_by_type(
-            ctx.instance, RULE_TYPE)
-        params[RULE] = rule
+        rule = utils.find_resource_id_by_type(ctx.instance, RULE_TYPE)
+        resource_config[RULE] = rule
 
-    params[IDS] = \
-        [target.get(ID) for target in params.pop(TARGETS)]
+    resource_config[IDS] = \
+        [target.get(ID) for target in resource_config.pop(TARGETS)]
 
-    iface.delete(params)
+    iface.delete(resource_config)

@@ -181,13 +181,8 @@ def prepare(ctx, resource_config, **_):
                          waits_for_status=False)
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS S3 Bucket Object"""
-
-    # Create a copy of the resource config for clean manipulation.
-    params = utils.clean_params(
-        dict() if not resource_config else resource_config.copy())
-
     # Get the bucket object key from params
-    object_key = params.get(OBJECT_KEY)
+    object_key = resource_config.get(OBJECT_KEY)
     if not object_key:
         raise NonRecoverableError('{0} param is required'.format(OBJECT_KEY))
 
@@ -226,17 +221,17 @@ def create(ctx, iface, resource_config, **_):
 
         # Set the updated path url so that it can
         # be uploaded to the AWS S3 bucket
-        params[BUCKET_OBJECT_BODY] = object_body
+        resource_config[BUCKET_OBJECT_BODY] = object_body
 
     # If the "source_type" is "bytes" then the body should provided from the
     #  blueprint and follow the boto3 API documents
     elif source_type == OBJECT_BYTES_SOURCE:
-        if not params.get(BUCKET_OBJECT_BODY):
+        if not resource_config.get(BUCKET_OBJECT_BODY):
             raise NonRecoverableError('Body param must be provided when '
                                       'source_type is selected as bytes')
 
     # Get the bucket name from either params or a relationship.
-    bucket_name = params.get(BUCKET)
+    bucket_name = resource_config.get(BUCKET)
     if not bucket_name:
         targ = utils.find_rel_by_node_type(
             ctx.instance,
@@ -246,13 +241,13 @@ def create(ctx, iface, resource_config, **_):
             targ.target.instance.runtime_properties.get(
                 EXTERNAL_RESOURCE_ID
             )
-        params[BUCKET] = bucket_name
+        resource_config[BUCKET] = bucket_name
 
     iface.bucket_name = bucket_name
     ctx.instance.runtime_properties[BUCKET] = bucket_name
 
     # Actually create the resource
-    iface.create(params)
+    iface.create(resource_config)
 
 
 @decorators.check_swift_resource
@@ -260,23 +255,18 @@ def create(ctx, iface, resource_config, **_):
                          ignore_properties=True)
 def delete(ctx, iface, resource_config, **_):
     """Deletes an AWS S3 Bucket Object"""
-
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
     # Add the required BUCKET parameter.
-    bucket_name = params.get(BUCKET)
+    bucket_name = resource_config.get(BUCKET)
     if not bucket_name:
         bucket_name = ctx.instance.runtime_properties.get(BUCKET)
-        params.update({BUCKET: bucket_name})
+        resource_config.update({BUCKET: bucket_name})
 
     # Add the required object key parameter
-    object_key = params.get(OBJECT_KEY)
+    object_key = resource_config.get(OBJECT_KEY)
     if not object_key:
-        params.update({OBJECT_KEY: iface.resource_id})
+        resource_config.update({OBJECT_KEY: iface.resource_id})
 
     iface.bucket_name = bucket_name
 
     # Actually delete the resource
-    iface.delete(params)
+    iface.delete(resource_config)

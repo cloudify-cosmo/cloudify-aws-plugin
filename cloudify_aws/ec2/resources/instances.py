@@ -90,12 +90,13 @@ class EC2Instances(EC2Base):
     def properties(self):
         '''Gets the properties of an external resource'''
         if not self._properties:
-            self._properties = self.get(self.instance_ids_request)[0]
-        if self._type_key in self._properties:
-            for obj in self._properties[self._type_key]:
-                if obj[self._id_key] == self.resource_id:
-                    return obj
-        return {}
+            reservations = self.get(self.instance_ids_request)
+            for res in reservations:
+                if self._type_key in res:
+                    for instance in res[self._type_key]:
+                        if instance[self._id_key] == self.resource_id:
+                            self._properties = instance
+        return self._properties
 
     def get(self, request):
         resources = self.describe(request)
@@ -104,10 +105,9 @@ class EC2Instances(EC2Base):
     @property
     def status(self):
         '''Gets the status of an external resource'''
-        props = self.properties
-        if not props:
-            return None
-        return props['State']['Code']
+        if not self.properties:
+            return
+        return self.properties.get('State', {}).get('Code')
 
     @property
     def check_status(self):
@@ -173,17 +173,15 @@ def prepare(ctx, iface, resource_config, **_):
 def create(ctx, iface, resource_config, **kwargs):
     '''Creates AWS EC2 Instances'''
 
-    params = utils.clean_params(
-        dict() if not resource_config else resource_config.copy())
-    handle_userdata(params)
-    assign_subnet_param(params)
-    assign_groups_param(params)
-    assign_nics_param(params)
-    handle_tags(params)
+    handle_userdata(resource_config)
+    assign_subnet_param(resource_config)
+    assign_groups_param(resource_config)
+    assign_nics_param(resource_config)
+    handle_tags(resource_config)
 
-    validate_multiple_vm_per_node_instance(params)
+    validate_multiple_vm_per_node_instance(resource_config)
 
-    create_response = iface.create(params)
+    create_response = iface.create(resource_config)
     ctx.instance.runtime_properties['create_response'] = \
         utils.JsonCleanuper(create_response).to_dict()
     if MULTI_ID not in ctx.instance.runtime_properties:
@@ -210,9 +208,6 @@ def create(ctx, iface, resource_config, **kwargs):
 @decorators.multiple_aws_resource(EC2Instances, RESOURCE_TYPE)
 def start(ctx, iface, resource_config, **_):
     '''Starts AWS EC2 Instances'''
-    params = utils.clean_params(
-        dict() if not resource_config else resource_config.copy())
-
     if iface.status in [RUNNING] and ctx.operation.retry_number > 0:
         assign_ip_properties(ctx, iface.properties)
         if not _handle_password(iface):
@@ -221,7 +216,13 @@ def start(ctx, iface, resource_config, **_):
                     iface.type_name, iface.resource_id))
         return
     elif ctx.operation.retry_number == 0:
-        iface.start(iface.prepare_instance_ids_request(params))
+        try:
+            iface.start(iface.prepare_instance_ids_request(resource_config))
+        except NonRecoverableError as e:
+            if 'UnsupportedOperation' not in str(e):
+                raise
+            ctx.logger.info(
+                'Skipping start, because the operation is not supported.')
 
     raise OperationRetry(
         '{0} ID# {1} is still in a pending state {2}.'.format(
@@ -243,11 +244,15 @@ def poststart(ctx, iface, *_, **__):
 def stop(ctx, iface, resource_config, **_):
     '''Stops AWS EC2 Instances'''
 
-    params = utils.clean_params(
-        dict() if not resource_config else resource_config.copy())
     if MULTI_ID in ctx.instance.runtime_properties:
-        params[INSTANCE_IDS] = ctx.instance.runtime_properties[MULTI_ID]
-    iface.stop(iface.prepare_instance_ids_request(params))
+        resource_config[INSTANCE_IDS] = \
+            ctx.instance.runtime_properties[MULTI_ID]
+    try:
+        iface.stop(iface.prepare_instance_ids_request(resource_config))
+    except NonRecoverableError as e:
+        if 'UnsupportedOperation' not in str(e):
+            raise
+        raise utils.SkipWaitingOperation('Unsupported operation.')
 
 
 @decorators.multiple_aws_resource(EC2Instances, RESOURCE_TYPE)
@@ -258,18 +263,15 @@ def stop(ctx, iface, resource_config, **_):
 def delete(iface, resource_config, **_):
     '''Deletes AWS EC2 Instances'''
 
-    params = \
-        dict() if not resource_config else resource_config.copy()
     if MULTI_ID in ctx.instance.runtime_properties:
-        params[INSTANCE_IDS] = ctx.instance.runtime_properties[MULTI_ID]
-    iface.delete(iface.prepare_instance_ids_request(params))
+        resource_config[INSTANCE_IDS] = \
+            ctx.instance.runtime_properties[MULTI_ID]
+    iface.delete(iface.prepare_instance_ids_request(resource_config))
 
 
 @decorators.multiple_aws_resource(EC2Instances, RESOURCE_TYPE)
 def modify_instance_attribute(ctx, iface, resource_config, **_):
-    params = utils.clean_params(
-        dict() if not resource_config else resource_config.copy())
-    do_modify_instance_attribute(iface, params)
+    do_modify_instance_attribute(iface, resource_config)
 
 
 def extract_powershell_content(string_with_powershell):

@@ -96,9 +96,8 @@ def prepare(ctx, resource_config, **_):
     fail_on_missing=False)
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS EC2 VPN Connection"""
-    params = dict() if not resource_config else resource_config.copy()
     # Actually create the resource
-    create_response = iface.create(params)[VPN_CONNECTION]
+    create_response = iface.create(resource_config)[VPN_CONNECTION]
     ctx.instance.runtime_properties['create_response'] = \
         utils.JsonCleanuper(create_response).to_dict()
     if create_response:

@@ -107,18 +107,14 @@ def create(ctx, iface, resource_config, params, **_):
                          ignore_properties=True)
 def delete(ctx, iface, resource_config, **_):
     """Deletes an AWS Autoscaling Lifecycle Hook"""
-
-    # Create a copy of the resource config for clean manipulation.
-    params = dict() if not resource_config else resource_config.copy()
-
     # Ensure the $GROUP_NAME parameter is populated.
-    autoscaling_group = params.get(GROUP_NAME)
+    autoscaling_group = resource_config.get(GROUP_NAME)
     if not autoscaling_group:
         autoscaling_group = \
             ctx.instance.runtime_properties[GROUP_NAME]
-        params.update(
+        resource_config.update(
             {GROUP_NAME: autoscaling_group})
 
-    if RESOURCE_NAME not in params:
-        params.update({RESOURCE_NAME: iface.resource_id})
-    iface.delete(params)
+    if RESOURCE_NAME not in resource_config:
+        resource_config.update({RESOURCE_NAME: iface.resource_id})
+    iface.delete(resource_config)

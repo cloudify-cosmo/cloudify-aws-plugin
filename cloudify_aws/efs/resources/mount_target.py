@@ -88,13 +88,8 @@ def prepare(ctx, resource_config, **_):
 @decorators.aws_resource(EFSMountTarget, RESOURCE_TYPE, waits_for_status=False)
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS EFS Mount Target"""
-
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
     # Add File System ID
-    file_system_id = params.get(FILESYSTEM_ID)
+    file_system_id = resource_config.get(FILESYSTEM_ID)
     if not file_system_id:
         file_system = \
             utils.find_rel_by_node_type(
@@ -102,10 +97,10 @@ def create(ctx, iface, resource_config, **_):
                 FILESYSTEM_TYPE)
         file_system_id = file_system.target.instance.runtime_properties[
             EXTERNAL_RESOURCE_ID]
-        params[FILESYSTEM_ID] = file_system_id
+        resource_config[FILESYSTEM_ID] = file_system_id
 
     # Add Subnet
-    subnet_id = params.get(SUBNET_ID)
+    subnet_id = resource_config.get(SUBNET_ID)
     if not subnet_id:
         subnet = \
             utils.find_rel_by_node_type(
@@ -116,11 +111,11 @@ def create(ctx, iface, resource_config, **_):
 
         subnet_id = \
             subnet.target.instance.runtime_properties[EXTERNAL_RESOURCE_ID]
-        params[SUBNET_ID] = subnet_id
+        resource_config[SUBNET_ID] = subnet_id
 
     # Add Security Groups
-    secgroups_list = params.get(SECGROUPS, [])
-    params[SECGROUPS] = \
+    secgroups_list = resource_config.get(SECGROUPS, [])
+    resource_config[SECGROUPS] = \
         utils.add_resources_from_rels(
             ctx.instance,
             SECGROUP_TYPE,
@@ -130,7 +125,7 @@ def create(ctx, iface, resource_config, **_):
             SECGROUP_TYPE_DEPRECATED,
             secgroups_list)
 
-    output = iface.create(params)
+    output = iface.create(resource_config)
     utils.update_resource_id(ctx.instance, output.get(MOUNTTARGET_ID))
     ctx.instance.runtime_properties[FILESYSTEM_ID] = output.get(FILESYSTEM_ID)
     ctx.instance.runtime_properties[SUBNET_ID] = output.get(SUBNET_ID)
@@ -144,14 +139,9 @@ def create(ctx, iface, resource_config, **_):
                          waits_for_status=False)
 def delete(iface, resource_config, **_):
     """Deletes an AWS EFS Mount Target"""
-
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
-    mount_target_id = params.get(MOUNTTARGET_ID)
+    mount_target_id = resource_config.get(MOUNTTARGET_ID)
     if not mount_target_id:
-        params[MOUNTTARGET_ID] = iface.resource_id
+        resource_config[MOUNTTARGET_ID] = iface.resource_id
 
     # Actually delete the resource
-    iface.delete(params)
+    iface.delete(resource_config)

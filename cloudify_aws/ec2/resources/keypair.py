@@ -96,20 +96,19 @@ def prepare(ctx, iface, resource_config, **_):
 def create(ctx, iface, resource_config, **_):
     '''Creates AWS EC2 Keypairs'''
 
-    params = \
-        dict() if not resource_config else resource_config.copy()
+    resource_config[KEYNAME] = utils.get_resource_name(resource_config.get(
+        KEYNAME))
+    key_name = resource_config[KEYNAME]
 
-    params[KEYNAME] = utils.get_resource_name(params.get(KEYNAME))
-    key_name = params[KEYNAME]
-
-    if PUBLIC_KEY_MATERIAL in params:
+    if PUBLIC_KEY_MATERIAL in resource_config:
         create_response = \
             iface.import_keypair(
-                params,
+                resource_config,
                 log_response=ctx.node.properties['log_create_response'])
     else:
         create_response = iface.create(
-            params, log_response=ctx.node.properties['log_create_response'])
+            resource_config,
+            log_response=ctx.node.properties['log_create_response'])
 
         # Allow the end user to store the key material in a secret.
         if ctx.node.properties['create_secret']:
@@ -160,10 +159,7 @@ def create(ctx, iface, resource_config, **_):
 def delete(iface, resource_config, **_):
     '''Deletes AWS EC2 Keypairs'''
 
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
-    key_name = params.get(KEYNAME, iface.resource_id)
+    key_name = resource_config.get(KEYNAME, iface.resource_id)
 
     iface.delete({KEYNAME: key_name})
 

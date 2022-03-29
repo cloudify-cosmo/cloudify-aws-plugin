@@ -88,26 +88,23 @@ def prepare(ctx, resource_config, **_):
 @decorators.aws_resource(SQSQueue, RESOURCE_TYPE)
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS SQS Queue"""
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
     resource_id = \
         utils.get_resource_id(
             ctx.node,
             ctx.instance,
-            params.get(RESOURCE_NAME),
+            resource_config.get(RESOURCE_NAME),
             use_instance_id=True
         )
-    params[RESOURCE_NAME] = resource_id
+    resource_config[RESOURCE_NAME] = resource_id
     utils.update_resource_id(ctx.instance, resource_id)
 
-    queue_attributes = params.get('Attributes', {})
+    queue_attributes = resource_config.get('Attributes', {})
     queue_attributes_policy = queue_attributes.get('Policy')
     if not isinstance(queue_attributes_policy, text_type):
         queue_attributes[POLICY] = json.dumps(queue_attributes_policy)
 
     # Actually create the resource
-    create_response = iface.create(params)
+    create_response = iface.create(resource_config)
     # Attempt to retrieve the ARN.
     try:
         resource_attributes = iface.client.get_queue_attributes(
@@ -128,12 +125,9 @@ def create(ctx, iface, resource_config, **_):
                          ignore_properties=True)
 def delete(iface, resource_config, **_):
     """Deletes an AWS SQS Queue"""
-
-    # Create a copy of the resource config for clean manipulation.
-    params = dict() if not resource_config else resource_config.copy()
     # Add the required QueueUrl parameter.
-    if QUEUE_URL not in params:
-        params.update({QUEUE_URL: iface.resource_id})
+    if QUEUE_URL not in resource_config:
+        resource_config.update({QUEUE_URL: iface.resource_id})
 
     # Actually delete the resource
-    iface.delete(params)
+    iface.delete(resource_config)

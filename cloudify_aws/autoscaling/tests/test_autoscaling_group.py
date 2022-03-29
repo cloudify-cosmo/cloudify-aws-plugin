@@ -185,8 +185,7 @@ class TestAutoscalingGroup(TestBase):
             }
         )
 
-        autoscaling_group.delete(ctx=_ctx, resource_config=None,
-                                 iface=None)
+        autoscaling_group.delete(ctx=_ctx, resource_config={}, iface=None)
 
         self.fake_boto.assert_called_with('autoscaling', **CLIENT_CONFIG)
 

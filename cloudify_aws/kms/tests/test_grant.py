@@ -127,7 +127,7 @@ class TestKMSGrant(TestKMS):
 
         self.fake_client.revoke_grant = MagicMock(return_value={})
 
-        grant.delete(ctx=_ctx, resource_config=None, iface=None)
+        grant.delete(ctx=_ctx, resource_config={}, iface=None)
 
         self.fake_boto.assert_called_with('kms', **CLIENT_CONFIG)
 

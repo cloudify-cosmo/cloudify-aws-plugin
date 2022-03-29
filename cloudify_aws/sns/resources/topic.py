@@ -98,20 +98,18 @@ def prepare(ctx, resource_config, **_):
 @decorators.aws_resource(SNSTopic, RESOURCE_TYPE)
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS SNS Topic"""
-    params = \
-        dict() if not resource_config else resource_config.copy()
     resource_id = \
         utils.get_resource_id(
             ctx.node,
             ctx.instance,
-            params.get(RESOURCE_NAME),
+            resource_config.get(RESOURCE_NAME),
             use_instance_id=True
         )
-    params[RESOURCE_NAME] = resource_id
+    resource_config[RESOURCE_NAME] = resource_id
     utils.update_resource_id(ctx.instance, resource_id)
 
     # Actually create the resource
-    res_id = iface.create(params)
+    res_id = iface.create(resource_config)
     utils.update_resource_id(ctx.instance, res_id)
     utils.update_resource_arn(ctx.instance, res_id)
 
@@ -120,15 +118,12 @@ def create(ctx, iface, resource_config, **_):
                          ignore_properties=True)
 def delete(ctx, iface, resource_config, **_):
     """Deletes an AWS SNS Topic"""
-
-    # Create a copy of the resource config for clean manipulation.
-    params = dict() if not resource_config else resource_config.copy()
-    if TOPIC_ARN not in params:
-        params.update(
+    if TOPIC_ARN not in resource_config:
+        resource_config.update(
             {TOPIC_ARN:
              utils.get_resource_arn(
                  ctx.node,
                  ctx.instance)})
 
     # Actually delete the resource
-    iface.delete(params)
+    iface.delete(resource_config)

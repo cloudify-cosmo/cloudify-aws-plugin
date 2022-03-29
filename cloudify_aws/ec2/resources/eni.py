@@ -147,10 +147,8 @@ def create(ctx, iface, resource_config, **_):
     """Creates an AWS EC2 NetworkInterface"""
 
     # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-    params = _create_eni_params(params, ctx.instance)
-    _create(iface, params, ctx.instance)
+    resource_config = _create_eni_params(resource_config, ctx.instance)
+    _create(iface, resource_config, ctx.instance)
     _modify_attribute(iface, _.get('modify_network_interface_attribute_args'))
 
 
@@ -161,43 +159,39 @@ def delete(ctx, iface, resource_config, **_):
     """Deletes an AWS EC2 NetworkInterface"""
 
     # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-    eni_id = params.get(NETWORKINTERFACE_ID)
+    eni_id = resource_config.get(NETWORKINTERFACE_ID)
 
     if not eni_id:
-        params[NETWORKINTERFACE_ID] = \
+        resource_config[NETWORKINTERFACE_ID] = \
             iface.resource_id or \
             ctx.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
 
-    iface.delete(params)
+    iface.delete(resource_config)
 
 
 @decorators.aws_resource(EC2NetworkInterface, RESOURCE_TYPE)
 def attach(ctx, iface, resource_config, **_):
     '''Attaches an AWS EC2 NetworkInterface to a Subnet'''
-    params = dict() if not resource_config else resource_config.copy()
-
-    eni_id = params.get(NETWORKINTERFACE_ID)
+    eni_id = resource_config.get(NETWORKINTERFACE_ID)
     if not eni_id:
         eni_id = iface.resource_id
 
-    device_index = params.get(
+    device_index = resource_config.get(
         'DeviceIndex') or ctx.instance.runtime_properties.get(
         'device_index', 1)
     ctx.instance.runtime_properties['device_index'] = device_index
 
-    params.update({NETWORKINTERFACE_ID: eni_id})
-    params.update({'DeviceIndex': device_index})
-    instance_id = get_attached_instance_id(params)
+    resource_config.update({NETWORKINTERFACE_ID: eni_id})
+    resource_config.update({'DeviceIndex': device_index})
+    instance_id = get_attached_instance_id(resource_config)
     if not instance_id:
         return
-    params[INSTANCE_ID] = instance_id
-    if SUBNET_ID in params:
-        del params[SUBNET_ID]
+    resource_config[INSTANCE_ID] = instance_id
+    if SUBNET_ID in resource_config:
+        del resource_config[SUBNET_ID]
 
     # Actually attach the resources
-    eni_attachment_id = iface.attach(params)
+    eni_attachment_id = iface.attach(resource_config)
     ctx.instance.runtime_properties['attachment_id'] = \
         eni_attachment_id[ATTACHMENT_ID]
 
@@ -206,7 +200,6 @@ def attach(ctx, iface, resource_config, **_):
                          ignore_properties=True)
 def detach(ctx, iface, resource_config, **_):
     '''Detach an AWS EC2 NetworkInterface from a Subnet'''
-    params = dict() if not resource_config else resource_config.copy()
     attachment_id = ctx.instance.runtime_properties.get('attachment_id', None)
     if not attachment_id:
         try:
@@ -219,10 +212,10 @@ def detach(ctx, iface, resource_config, **_):
                     i=iface.resource_id))
             return
 
-    params.update({ATTACHMENT_ID: attachment_id})
+    resource_config.update({ATTACHMENT_ID: attachment_id})
     if iface.attachment['Status'] == 'detached':
         return
-    iface.detach(params)
+    iface.detach(resource_config)
     raise OperationRetry(
         'Waiting for {i} attachment to be detached.'.format(
             i=iface.resource_id))
@@ -230,13 +223,11 @@ def detach(ctx, iface, resource_config, **_):
 
 @decorators.aws_resource(EC2NetworkInterface, RESOURCE_TYPE)
 def modify_network_interface_attribute(ctx, iface, resource_config, **_):
-    params = \
-        dict() if not resource_config else resource_config.copy()
     eni_id = \
         ctx.instance.runtime_properties.get(
             NETWORKINTERFACE_ID, iface.resource_id)
-    params[NETWORKINTERFACE_ID] = eni_id
-    iface.modify_network_interface_attribute(params)
+    resource_config[NETWORKINTERFACE_ID] = eni_id
+    iface.modify_network_interface_attribute(resource_config)
 
 
 def get_attached_instance_id(params):

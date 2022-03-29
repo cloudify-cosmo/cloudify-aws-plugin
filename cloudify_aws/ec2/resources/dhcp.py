@@ -95,12 +95,8 @@ def prepare(ctx, resource_config, **_):
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS EC2 DhcpOptions"""
 
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
     # Actually create the resource
-    create_response = iface.create(params)[DHCPOPTIONS]
+    create_response = iface.create(resource_config)[DHCPOPTIONS]
     ctx.instance.runtime_properties['create_response'] = \
         utils.JsonCleanuper(create_response).to_dict()
     dhcp_options_id = create_response.get(DHCPOPTIONS_ID, '')
@@ -116,16 +112,14 @@ def delete(ctx, iface, resource_config, **_):
     """Deletes an AWS EC2 DhcpOptions"""
 
     # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-    dhcp_options_id = params.get(DHCPOPTIONS_ID)
+    dhcp_options_id = resource_config.get(DHCPOPTIONS_ID)
 
     if not dhcp_options_id:
-        params[DHCPOPTIONS_ID] = \
+        resource_config[DHCPOPTIONS_ID] = \
             iface.resource_id or \
             ctx.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
 
-    iface.delete(params)
+    iface.delete(resource_config)
 
 
 @decorators.aws_resource(EC2DHCPOptions,
@@ -133,16 +127,14 @@ def delete(ctx, iface, resource_config, **_):
                          waits_for_status=False)
 def attach(ctx, iface, resource_config, **_):
     '''Attaches an AWS EC2 DhcpOptions to a VPC'''
-    params = dict() if not resource_config else resource_config.copy()
-
-    dhcp_options_id = params.get(DHCPOPTIONS_ID)
+    dhcp_options_id = resource_config.get(DHCPOPTIONS_ID)
     if not dhcp_options_id:
         dhcp_options_id = iface.resource_id
 
-    params.update({DHCPOPTIONS_ID: dhcp_options_id})
-    params.pop('DhcpConfigurations')
+    resource_config.update({DHCPOPTIONS_ID: dhcp_options_id})
+    resource_config.pop('DhcpConfigurations')
 
-    vpc_id = params.get(VPC_ID)
+    vpc_id = resource_config.get(VPC_ID)
     if not vpc_id:
         targ = \
             utils.find_rel_by_node_type(ctx.instance, VPC_TYPE) or \
@@ -150,14 +142,14 @@ def attach(ctx, iface, resource_config, **_):
 
         # Attempt to use the VPC ID from parameters.
         # Fallback to connected VPC.
-        params[VPC_ID] = \
+        resource_config[VPC_ID] = \
             vpc_id or \
             targ.target.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
 
     ctx.instance.runtime_properties['vpc_id'] = vpc_id
 
     # # Actually attach the resources
-    iface.attach(params)
+    iface.attach(resource_config)
 
 
 @decorators.aws_resource(EC2DHCPOptions,
@@ -166,11 +158,10 @@ def attach(ctx, iface, resource_config, **_):
                          waits_for_status=False)
 def detach(ctx, iface, resource_config, **_):
     '''Detach an AWS EC2 DhcpOptions from a VPC'''
-    params = dict() if not resource_config else resource_config.copy()
+    resource_config.update({DHCPOPTIONS_ID: 'default'})
 
-    params.update({DHCPOPTIONS_ID: 'default'})
-
-    vpc_id = params.get(VPC_ID) or ctx.instance.runtime_properties['vpc_id']
+    vpc_id = resource_config.get(VPC_ID) or \
+        ctx.instance.runtime_properties['vpc_id']
     if not vpc_id:
         targ = \
             utils.find_rel_by_node_type(ctx.instance, VPC_TYPE) or \
@@ -178,10 +169,10 @@ def detach(ctx, iface, resource_config, **_):
 
         # Attempt to use the VPC ID from parameters.
         # Fallback to connected VPC.
-        params[VPC_ID] = \
+        resource_config[VPC_ID] = \
             vpc_id or \
             targ.target.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
     else:
-        params.update({VPC_ID: vpc_id})
+        resource_config.update({VPC_ID: vpc_id})
 
-    iface.detach(params)
+    iface.detach(resource_config)

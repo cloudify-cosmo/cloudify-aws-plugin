@@ -99,12 +99,9 @@ def prepare(ctx, resource_config, **_):
     status_pending=['creating', 'modifying', 'backing-up'])
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS RDS Instance'''
-    # Build API params
-    params = \
-        dict() if not resource_config else resource_config.copy()
-    params.update(dict(DBInstanceIdentifier=iface.resource_id))
+    resource_config.update(dict(DBInstanceIdentifier=iface.resource_id))
     # Actually create the resource
-    res = iface.create(params)
+    res = iface.create(resource_config)
     db_instance = res['DBInstance']
     for key, value in db_instance.items():
         if key == 'DBInstanceIdentifier':

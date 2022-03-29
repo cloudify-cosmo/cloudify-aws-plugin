@@ -177,7 +177,7 @@ class TestS3Bucket(TestBase):
 
         self.fake_client.delete_bucket = self.mock_return(DELETE_RESPONSE)
 
-        bucket.delete(ctx=_ctx, resource_config=None, iface=None)
+        bucket.delete(ctx=_ctx, resource_config={}, iface=None)
 
         self.fake_boto.assert_called_with('s3', **CLIENT_CONFIG)
 

@@ -82,25 +82,21 @@ def prepare(ctx, resource_config, **_):
 @decorators.aws_resource(LambdaPermission, RESOURCE_TYPE)
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS Lambda Permission'''
-    # Build API params
-    params = utils.clean_params(
-        dict() if not resource_config else resource_config.copy())
-
     function_rels = \
         utils.find_rels_by_node_type(
             ctx.instance, FUNCTION_TYPE)
 
     lambda_function = None if len(function_rels) != 1 else function_rels[0]
     if lambda_function:
-        params[FUNCTION_NAME] = utils.get_resource_id(
+        resource_config[FUNCTION_NAME] = utils.get_resource_id(
             node=lambda_function.target.node,
             instance=lambda_function.target.instance,
             raise_on_missing=False)
 
-    if STATEMENT_ID not in params and iface.resource_id:
-        params.update({'StatementId': iface.resource_id})
+    if STATEMENT_ID not in resource_config and iface.resource_id:
+        resource_config.update({'StatementId': iface.resource_id})
 
-    create_response = iface.create(params)
+    create_response = iface.create(resource_config)
 
     statement = create_response.get('Statement')
     # The actual value for key "statement" is not a python dict type,

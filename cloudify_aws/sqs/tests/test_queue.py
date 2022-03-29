@@ -224,7 +224,7 @@ class TestSQSQueue(TestBase):
 
         self.fake_client.delete_queue = self.mock_return(DELETE_RESPONSE)
 
-        queue.delete(ctx=_ctx, resource_config=None, iface=None)
+        queue.delete(ctx=_ctx, resource_config={}, iface=None)
 
         self.fake_boto.assert_called_with('sqs', **CLIENT_CONFIG)
 

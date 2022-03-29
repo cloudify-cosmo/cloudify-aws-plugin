@@ -105,14 +105,18 @@ def prepare(ctx, resource_config, iface, **_):
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS Route53 Hosted Zone'''
     # Build API params
-    params = \
-        dict() if not resource_config else resource_config.copy()
     if iface.resource_id:
-        params.update({'Name': iface.resource_id})
-    if not params.get('CallerReference'):
-        params.update(dict(CallerReference=text_type(ctx.instance.id)))
+        resource_config.update({'Name': iface.resource_id})
+    if not resource_config.get('CallerReference'):
+        resource_config.update(
+            dict(CallerReference=text_type(ctx.instance.id)))
     # Actually create the resource
-    create_response = iface.create(params)['HostedZone']['Id']
+    rel = utils.find_rel_by_node_type(
+        ctx.instance, 'cloudify.nodes.aws.ec2.Vpc')
+    if rel:
+        resource_config = associate(rel.target, ctx, resource_config)
+
+    create_response = iface.create(resource_config)['HostedZone']['Id']
     iface.update_resource_id(create_response)
     utils.update_resource_id(ctx.instance, create_response)
     utils.update_resource_arn(ctx.instance, create_response)
@@ -150,21 +154,12 @@ def delete(ctx, iface, resource_config, resource_type,
 @decorators.aws_relationship(Route53HostedZone, RESOURCE_TYPE)
 def prepare_assoc(ctx, iface, resource_config, **inputs):
     '''Prepares to associate an Route53 Hosted Zone to something else'''
-    if utils.is_node_type(ctx.target.node,
-                          'cloudify.aws.nodes.VPC'):
-        vpc_id = utils.get_resource_id(
-            node=ctx.target.node,
-            instance=ctx.target.instance,
-            raise_on_missing=True)
-        # Update VPC configuration
-        vpccfg = ctx.source.instance.runtime_properties[
-            'resource_config'].get('VPC', dict())
-        vpccfg['VPCId'] = vpc_id
-        if not vpccfg.get('VPCRegion'):
-            vpccfg['VPCRegion'] = detect_vpc_region(Boto3Connection(
-                ctx.source.node).client('ec2'), vpc_id)
+    if utils.is_node_type(ctx.target.node, 'cloudify.nodes.aws.ec2.Vpc'):
         ctx.source.instance.runtime_properties[
-            'resource_config']['VPC'] = vpccfg
+            'resource_config'] = associate(
+            ctx.target,
+            ctx.source,
+            ctx.source.instance.runtime_properties['resource_config'])
 
 
 @decorators.aws_relationship(Route53HostedZone, RESOURCE_TYPE)
@@ -188,3 +183,18 @@ def detect_vpc_region(client, vpc_id):
         return None
     # Get an associated Region
     return zones['AvailabilityZones'][0]['RegionName']
+
+
+def associate(ctx_target, ctx_source, resource_config):
+    vpc_id = utils.get_resource_id(
+        node=ctx_target.node,
+        instance=ctx_target.instance,
+        raise_on_missing=True)
+    # Update VPC configuration
+    vpccfg = resource_config.get('VPC', dict())
+    vpccfg['VPCId'] = vpc_id
+    if not vpccfg.get('VPCRegion'):
+        vpccfg['VPCRegion'] = detect_vpc_region(Boto3Connection(
+            ctx_source.node).client('ec2'), vpc_id)
+        resource_config['VPC'] = vpccfg
+    return resource_config

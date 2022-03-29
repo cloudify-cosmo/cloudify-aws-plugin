@@ -110,17 +110,12 @@ def create(ctx, iface, resource_config, params, **_):
 @decorators.aws_resource(S3Bucket, RESOURCE_TYPE, ignore_properties=True)
 def delete(ctx, iface, resource_config, **_):
     """Deletes an AWS S3 Bucket"""
-
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
-    bucket = params.get(RESOURCE_NAME)
+    bucket = resource_config.get(RESOURCE_NAME)
     # Add the required RESOURCE_NAME parameter.
     if not bucket:
         bucket = iface.resource_id
-        params.update({RESOURCE_NAME: bucket})
+        resource_config.update({RESOURCE_NAME: bucket})
 
     # Actually delete the resource
     iface.delete_objects(bucket)
-    iface.delete(params)
+    iface.delete(resource_config)

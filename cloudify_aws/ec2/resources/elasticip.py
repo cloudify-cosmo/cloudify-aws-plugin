@@ -153,16 +153,12 @@ def prepare(ctx, resource_config, **_):
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS EC2 ElasticIP"""
 
-    # Create a copy of the resource config for clean manipulation.
-    params = utils.clean_params(
-        dict() if not resource_config else resource_config.copy())
-
     # Actually create the resource
     create_response = None
     if ctx.node.properties.get('use_unassociated_addresses', False):
         create_response = get_already_allocated_ip(iface.get())
     if not create_response:
-        create_response = iface.create(params)
+        create_response = iface.create(resource_config)
     else:
         ctx.instance.runtime_properties['unassociated_address'] = \
             create_response.get(ELASTICIP_ID)
@@ -181,30 +177,26 @@ def create(ctx, iface, resource_config, **_):
 def delete(ctx, iface, resource_config, **_):
     """Deletes an AWS EC2 ElasticIP"""
 
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
-    allocation_id = params.get(ALLOCATION_ID)
+    allocation_id = resource_config.get(ALLOCATION_ID)
     if not allocation_id:
         allocation_id = \
             ctx.instance.runtime_properties.get(
                 'allocation_id')
 
-    elasticip_id = params.get(ELASTICIP_ID)
+    elasticip_id = resource_config.get(ELASTICIP_ID)
     if not elasticip_id:
         elasticip_id = iface.resource_id
 
     if allocation_id:
-        params[ALLOCATION_ID] = allocation_id
+        resource_config[ALLOCATION_ID] = allocation_id
         try:
-            del params[ELASTICIP_ID]
+            del resource_config[ELASTICIP_ID]
         except KeyError:
             pass
     elif elasticip_id:
-        params[ELASTICIP_ID] = elasticip_id
+        resource_config[ELASTICIP_ID] = elasticip_id
         try:
-            del params[ALLOCATION_ID]
+            del resource_config[ALLOCATION_ID]
         except KeyError:
             pass
 
@@ -217,7 +209,7 @@ def delete(ctx, iface, resource_config, **_):
             return
 
     try:
-        iface.delete(params)
+        iface.delete(resource_config)
     except ClientError as e:
         if 'AuthFailure' is text_type(e):
             raise OperationRetry('Address has not released yet.')
@@ -228,23 +220,21 @@ def delete(ctx, iface, resource_config, **_):
 @decorators.aws_resource(EC2ElasticIP, RESOURCE_TYPE)
 def attach(ctx, iface, resource_config, **_):
     '''Attaches an AWS EC2 ElasticIP to an Instance or a NetworkInterface'''
-    params = dict() if not resource_config else resource_config.copy()
-
-    allocation_id = params.get(ALLOCATION_ID)
-    elasticip_id = params.get(ELASTICIP_ID)
+    allocation_id = resource_config.get(ALLOCATION_ID)
+    elasticip_id = resource_config.get(ELASTICIP_ID)
 
     if not allocation_id:
         allocation_id = \
             ctx.instance.runtime_properties.get(
                 'allocation_id', iface.properties.get('AllocationId'))
-        params[ALLOCATION_ID] = allocation_id
+        resource_config[ALLOCATION_ID] = allocation_id
 
     if not elasticip_id and not allocation_id:
-        params[ELASTICIP_ID] = \
+        resource_config[ELASTICIP_ID] = \
             iface.resource_id
 
-    instance_id = params.get(INSTANCE_ID)
-    eni_id = params.get(NETWORKINTERFACE_ID)
+    instance_id = resource_config.get(INSTANCE_ID)
+    eni_id = resource_config.get(NETWORKINTERFACE_ID)
 
     if not instance_id and not eni_id:
         resource = \
@@ -253,7 +243,7 @@ def attach(ctx, iface, resource_config, **_):
                 INSTANCE_TYPE_DEPRECATED)
 
         if resource:
-            params[INSTANCE_ID] = \
+            resource_config[INSTANCE_ID] = \
                 resource.\
                 target.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
         else:
@@ -266,7 +256,7 @@ def attach(ctx, iface, resource_config, **_):
                     NETWORKINTERFACE_TYPE_DEPRECATED)
 
             if resource:
-                params[NETWORKINTERFACE_ID] = \
+                resource_config[NETWORKINTERFACE_ID] = \
                     eni_id or \
                     resource.target.instance.runtime_properties\
                     .get(EXTERNAL_RESOURCE_ID)
@@ -275,7 +265,7 @@ def attach(ctx, iface, resource_config, **_):
 
     # Make sure that Domain and TagSpecifications are not sent to attach call.
     for arg_name in ['Domain', TAG_SPECIFICATIONS_KWARG]:
-        params.pop(arg_name, None)
+        resource_config.pop(arg_name, None)
 
     skip_attach = ctx.node.properties.get('use_external_resource', False) and \
         not ctx.node.properties.get('attach_existing_address', False)
@@ -283,7 +273,7 @@ def attach(ctx, iface, resource_config, **_):
     if skip_attach:
         return
     # Actually attach the resources
-    association_id = iface.attach(params)
+    association_id = iface.attach(resource_config)
     ctx.instance.runtime_properties['association_id'] = \
         association_id.get('AssociationId')
 
@@ -292,32 +282,31 @@ def attach(ctx, iface, resource_config, **_):
                          ignore_properties=True)
 def detach(ctx, iface, resource_config, **_):
     '''Detach an AWS EC2 Elasticip from an Instance or NetworkInterface'''
-    params = dict() if not resource_config else resource_config.copy()
 
     association_id = \
-        params.get('AssociationId') or \
+        resource_config.get('AssociationId') or \
         ctx.instance.runtime_properties.get('association_id')
-    elasticip_id = params.get(ELASTICIP_ID)
+    elasticip_id = resource_config.get(ELASTICIP_ID)
 
     if not elasticip_id:
         elasticip_id = iface.resource_id
-        params[ELASTICIP_ID] = elasticip_id
+        resource_config[ELASTICIP_ID] = elasticip_id
 
     if not association_id:
         return
 
     if association_id and elasticip_id:
-        del params[ELASTICIP_ID]
+        del resource_config[ELASTICIP_ID]
 
-    params['AssociationId'] = association_id
-    params.pop(TAG_SPECIFICATIONS_KWARG, None)
+    resource_config['AssociationId'] = association_id
+    resource_config.pop(TAG_SPECIFICATIONS_KWARG, None)
 
     skip_attach = ctx.node.properties.get('use_external_resource', False) and \
         not ctx.node.properties.get('attach_existing_address', False)
 
     if skip_attach:
         return
-    iface.detach(params)
+    iface.detach(resource_config)
 
 
 interface = EC2ElasticIP

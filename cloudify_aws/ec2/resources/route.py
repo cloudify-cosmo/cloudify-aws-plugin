@@ -79,11 +79,10 @@ def prepare(ctx, iface, resource_config, **_):
                          RESOURCE_TYPE)
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS EC2 Route'''
-    params = dict() if not resource_config else resource_config.copy()
 
-    routetable_id = params.get(ROUTETABLE_ID)
-    gateway_id = params.get(GATEWAY_ID)
-    natgateway_id = params.get(NATGATEWAY_ID)
+    routetable_id = resource_config.get(ROUTETABLE_ID)
+    gateway_id = resource_config.get(GATEWAY_ID)
+    natgateway_id = resource_config.get(NATGATEWAY_ID)
 
     # If this value is missing,
     # it must be filled from a connected Route Table.
@@ -95,18 +94,19 @@ def create(ctx, iface, resource_config, **_):
 
         # Attempt to use the Route Table ID from parameters.
         # Fallback to connected Route Table.
-        params[ROUTETABLE_ID] = \
+        resource_config[ROUTETABLE_ID] = \
             routetable_id or \
             targ.target.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
 
-    ctx.instance.runtime_properties['routetable_id'] = params[ROUTETABLE_ID]
+    ctx.instance.runtime_properties['routetable_id'] = \
+        resource_config[ROUTETABLE_ID]
 
-    if DESTINATION_CIDR_BLOCK in params:
+    if DESTINATION_CIDR_BLOCK in resource_config:
         ctx.instance.runtime_properties[DESTINATION_CIDR_BLOCK] = \
-            params[DESTINATION_CIDR_BLOCK]
-    elif DESTINATION_IPV6_CIDR_BLOCK in params:
+            resource_config[DESTINATION_CIDR_BLOCK]
+    elif DESTINATION_IPV6_CIDR_BLOCK in resource_config:
         ctx.instance.runtime_properties[DESTINATION_IPV6_CIDR_BLOCK] = \
-            params[DESTINATION_IPV6_CIDR_BLOCK]
+            resource_config[DESTINATION_IPV6_CIDR_BLOCK]
     else:
         raise NonRecoverableError(
             'One of the following keyword arguments must be provided for '
@@ -129,7 +129,7 @@ def create(ctx, iface, resource_config, **_):
         # Attempt to use the Route Table ID from parameters.
         # Fallback to connected Route Table.
         if gateway_id or targ:
-            params[GATEWAY_ID] = \
+            resource_config[GATEWAY_ID] = \
                 gateway_id or targ.target.instance.runtime_properties\
                 .get(EXTERNAL_RESOURCE_ID)
 
@@ -139,12 +139,12 @@ def create(ctx, iface, resource_config, **_):
         # Attempt to use the Route Table ID from parameters.
         # Fallback to connected Route Table.
         if natgateway_id or targ:
-            params[NATGATEWAY_ID] = \
+            resource_config[NATGATEWAY_ID] = \
                 natgateway_id or targ.target.instance.runtime_properties\
                 .get(EXTERNAL_RESOURCE_ID)
 
     # Actually create the resource
-    create_response = iface.create(params)
+    create_response = iface.create(resource_config)
     ctx.instance.runtime_properties['create_response'] = \
         utils.JsonCleanuper(create_response).to_dict()
 
@@ -155,15 +155,13 @@ def create(ctx, iface, resource_config, **_):
                          waits_for_status=False)
 def delete(ctx, iface, resource_config, **_):
     '''Deletes an AWS EC2 Route'''
-    params = \
-        dict() if not resource_config else resource_config.copy()
 
-    routetable_id = params.get(ROUTETABLE_ID)
+    routetable_id = resource_config.get(ROUTETABLE_ID)
     if DESTINATION_CIDR_BLOCK in ctx.instance.runtime_properties:
-        params[DESTINATION_CIDR_BLOCK] = \
+        resource_config[DESTINATION_CIDR_BLOCK] = \
             ctx.instance.runtime_properties[DESTINATION_CIDR_BLOCK]
     elif DESTINATION_IPV6_CIDR_BLOCK in ctx.instance.runtime_properties:
-        params[DESTINATION_IPV6_CIDR_BLOCK] = \
+        resource_config[DESTINATION_IPV6_CIDR_BLOCK] = \
             ctx.instance.runtime_properties[DESTINATION_IPV6_CIDR_BLOCK]
 
     if not routetable_id:
@@ -174,8 +172,8 @@ def delete(ctx, iface, resource_config, **_):
 
         # Attempt to use the Route Table ID from parameters.
         # Fallback to connected Route Table.
-        params[ROUTETABLE_ID] = \
+        resource_config[ROUTETABLE_ID] = \
             routetable_id or \
             targ.target.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
 
-    iface.delete(params)
+    iface.delete(resource_config)

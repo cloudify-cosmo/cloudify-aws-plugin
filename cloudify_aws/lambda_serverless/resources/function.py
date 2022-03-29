@@ -184,12 +184,9 @@ def _get_iam_role_to_attach(ctx):
 @decorators.aws_resource(LambdaFunction, RESOURCE_TYPE)
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS Lambda Function'''
-    # Build API params
-    params = utils.clean_params(
-        dict() if not resource_config else resource_config.copy())
-    if RESOURCE_ID not in params:
-        params[RESOURCE_ID] = iface.resource_id
-    vpc_config = params.get('VpcConfig', dict())
+    if RESOURCE_ID not in resource_config:
+        resource_config[RESOURCE_ID] = iface.resource_id
+    vpc_config = resource_config.get('VpcConfig', dict())
 
     # Attach a Subnet Group if it exists
     subnet_ids = _get_subnets_to_attach(ctx, vpc_config)
@@ -201,28 +198,28 @@ def create(ctx, iface, resource_config, **_):
     if security_groups:
         vpc_config['SecurityGroupIds'] = security_groups
 
-    params['VpcConfig'] = vpc_config
+    resource_config['VpcConfig'] = vpc_config
     # Attach an IAM Role if it exists
     iam_role = _get_iam_role_to_attach(ctx)
     if iam_role:
-        params['Role'] = iam_role
+        resource_config['Role'] = iam_role
 
     # Handle user-profided code ZIP file
-    if params.get('Code', dict()).get('ZipFile'):
-        codezip = params['Code']['ZipFile']
+    if resource_config.get('Code', dict()).get('ZipFile'):
+        codezip = resource_config['Code']['ZipFile']
         ctx.logger.debug('ZipFile: "%s" (%s)' % (codezip, type(codezip)))
         if not path_exists(codezip):
             codezip = ctx.download_resource(codezip)
             ctx.logger.debug('Downloaded resource: "%s"' % codezip)
             with open(codezip, mode='rb') as _file:
-                params['Code']['ZipFile'] = _file.read()
+                resource_config['Code']['ZipFile'] = _file.read()
             ctx.logger.debug('Deleting resource: "%s"' % codezip)
             os_remove(codezip)
         else:
             with open(codezip, mode='rb') as _file:
-                params['Code']['ZipFile'] = _file.read()
+                resource_config['Code']['ZipFile'] = _file.read()
     # Actually create the resource
-    create_response = iface.create(params)
+    create_response = iface.create(resource_config)
     resource_id = create_response['FunctionName']
     utils.update_resource_id(ctx.instance, resource_id)
     utils.update_resource_arn(

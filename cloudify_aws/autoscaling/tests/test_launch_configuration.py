@@ -167,7 +167,7 @@ class TestAutoscalingLaunchConfiguration(TestBase):
         self.fake_client.delete_launch_configuration = self.mock_return(
             DELETE_RESPONSE)
 
-        launch_configuration.delete(ctx=_ctx, resource_config=None,
+        launch_configuration.delete(ctx=_ctx, resource_config={},
                                     iface=None)
 
         self.fake_boto.assert_called_with('autoscaling', **CLIENT_CONFIG)

@@ -155,7 +155,7 @@ class TestDynamoDBTable(TestBase):
 
         self.fake_client.delete_table = self.mock_return(DELETE_RESPONSE)
 
-        table.delete(ctx=_ctx, resource_config=None, iface=None)
+        table.delete(ctx=_ctx, resource_config={}, iface=None)
 
         self.fake_boto.assert_called_with('dynamodb', **CLIENT_CONFIG)
 

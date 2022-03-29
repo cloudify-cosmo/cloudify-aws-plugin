@@ -106,11 +106,7 @@ def prepare(ctx, resource_config, **_):
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS EC2 NetworkAcl"""
 
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
-    vpc_id = params.get(VPC_ID)
+    vpc_id = resource_config.get(VPC_ID)
     if not vpc_id:
         targ = \
             utils.find_rel_by_node_type(ctx.instance, VPC_TYPE) or \
@@ -118,12 +114,12 @@ def create(ctx, iface, resource_config, **_):
 
         # Attempt to use the VPC ID from parameters.
         # Fallback to connected VPC.
-        params[VPC_ID] = \
+        resource_config[VPC_ID] = \
             vpc_id or \
             targ.target.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
 
     # Actually create the resource
-    create_response = iface.create(params)['NetworkAcl']
+    create_response = iface.create(resource_config)['NetworkAcl']
     ctx.instance.runtime_properties['create_response'] = \
         utils.JsonCleanuper(create_response).to_dict()
     network_acl_id = create_response.get(NETWORKACL_ID, '')
@@ -137,35 +133,31 @@ def create(ctx, iface, resource_config, **_):
 def delete(ctx, iface, resource_config, **_):
     """Deletes an AWS EC2 NetworkAcl"""
 
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-    network_acl_id = params.get(NETWORKACL_ID)
+    network_acl_id = resource_config.get(NETWORKACL_ID)
 
     if not network_acl_id:
-        params[NETWORKACL_ID] = \
+        resource_config[NETWORKACL_ID] = \
             iface.resource_id or \
             ctx.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
 
-    iface.delete(params)
+    iface.delete(resource_config)
 
 
 @decorators.aws_resource(EC2NetworkAcl, RESOURCE_TYPE)
 def attach(ctx, iface, resource_config, **_):
     '''Attaches an AWS EC2 NetworkACL to a Subnet'''
-    params = dict() if not resource_config else resource_config.copy()
 
-    network_acl_id = params.get(NETWORKACL_ID)
+    network_acl_id = resource_config.get(NETWORKACL_ID)
 
     if not network_acl_id:
         network_acl_id = iface.resource_id
 
-    params.update({NETWORKACL_ID: network_acl_id})
+    resource_config.update({NETWORKACL_ID: network_acl_id})
 
     # Really the user should not provide subnet_id param and will
     # only use a relationship. But this code used to be here so
     # we are stuck with it.
-    subnet_id = params.get(SUBNET_ID)
+    subnet_id = resource_config.get(SUBNET_ID)
     network_acl_assoc_prop = {}
     subnet_ids = utils.find_ids_of_rels_by_node_type(
         ctx.instance, SUBNET_TYPE)
@@ -207,7 +199,6 @@ def attach(ctx, iface, resource_config, **_):
                          ignore_properties=True)
 def detach(ctx, iface, resource_config, **_):
     '''Detach an AWS EC2 NetworkACL from a Subnet'''
-    params = dict() if not resource_config else resource_config.copy()
     try:
         vpc_id = utils.find_ids_of_rels_by_node_type(
             ctx.instance, VPC_TYPE)[0]
@@ -221,6 +212,6 @@ def detach(ctx, iface, resource_config, **_):
             break
     for _, param in ctx.instance.runtime_properties.get(
             'network_acl_associations', {}).items():
-        params[NETWORKACL_ID] = acl['NetworkAclId']
-        params[ASSOCIATION_ID] = param['new_assoc_id']
-        iface.replace(params)
+        resource_config[NETWORKACL_ID] = acl['NetworkAclId']
+        resource_config[ASSOCIATION_ID] = param['new_assoc_id']
+        iface.replace(resource_config)

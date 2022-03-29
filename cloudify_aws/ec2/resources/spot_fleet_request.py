@@ -132,13 +132,11 @@ def prepare(ctx, iface, resource_config, **_):
 @decorators.tag_resources
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS EC2 Spot Fleet Request'''
-    params = utils.clean_params(
-        dict() if not resource_config else resource_config.copy())
 
-    update_launch_spec_from_rels(params)
+    update_launch_spec_from_rels(resource_config)
 
     # Actually create the resource
-    create_response = iface.create(params)
+    create_response = iface.create(resource_config)
     ctx.instance.runtime_properties['create_response'] = \
         utils.JsonCleanuper(create_response).to_dict()
 

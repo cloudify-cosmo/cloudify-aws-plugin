@@ -100,13 +100,8 @@ def prepare(ctx, resource_config, **_):
                          waits_for_status=False)
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS S3 Bucket Lifecycle Configuration"""
-
-    # Create a copy of the resource config for clean manipulation.
-    params = utils.clean_params(
-        dict() if not resource_config else resource_config.copy())
-
     # Get the bucket name from either params or a relationship.
-    bucket_name = params.get(BUCKET)
+    bucket_name = resource_config.get(BUCKET)
     if not bucket_name:
         targ = utils.find_rel_by_node_type(
             ctx.instance,
@@ -116,25 +111,21 @@ def create(ctx, iface, resource_config, **_):
             targ.target.instance.runtime_properties.get(
                 EXTERNAL_RESOURCE_ID
             )
-        params[BUCKET] = bucket_name
+        resource_config[BUCKET] = bucket_name
     ctx.instance.runtime_properties[BUCKET] = bucket_name
     utils.update_resource_id(ctx.instance, bucket_name)
 
     # Actually create the resource
-    iface.create(params)
+    iface.create(resource_config)
 
 
 @decorators.aws_resource(S3BucketLifecycleConfiguration, RESOURCE_TYPE,
                          ignore_properties=True)
 def delete(iface, resource_config, **_):
     """Deletes an AWS S3 Bucket Lifecycle Configuration"""
-
-    # Create a copy of the resource config for clean manipulation.
-    params = dict() if not resource_config else resource_config.copy()
-
     # Add the required BUCKET parameter.
-    if BUCKET not in params:
-        params.update({BUCKET: iface.resource_id})
+    if BUCKET not in resource_config:
+        resource_config.update({BUCKET: iface.resource_id})
 
     # Actually delete the resource
-    iface.delete(params)
+    iface.delete(resource_config)

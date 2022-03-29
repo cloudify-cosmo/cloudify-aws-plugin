@@ -87,7 +87,10 @@ def _wait_for_status(kwargs,
         if not creation_phase:
             ctx.logger.error(
                 'The resource should exist, but does not have a resource ID.')
-        result = function(**kwargs)
+        try:
+            result = function(**kwargs)
+        except utils.SkipWaitingOperation:
+            return
         ctx.logger.debug("The function result is %s" % result)
         iface_resource_id = kwargs['iface'].resource_id
         runtime_resource_id = utils.get_resource_id(ctx.node, ctx_instance)
@@ -156,7 +159,10 @@ def _wait_for_status(kwargs,
                 r=resource_type, n=resource_id))
 
     elif status not in status_good + status_pending:
-        result = function(**kwargs)
+        try:
+            result = function(**kwargs)
+        except utils.SkipWaitingOperation:
+            return
         ctx.logger.debug("The function result is %s" % result)
         raise OperationRetry('Waiting for operation to succeed...')
 
@@ -378,8 +384,8 @@ def _get_resource_config_if_not_ignore_properties(
         del resource_config['kwargs']
     resource_config.update(resource_config_kwargs)
     # Update the argument
-    kwargs['resource_config'] = kwargs.get(
-        'resource_config') or resource_config or dict()
+    kwargs['resource_config'] = utils.clean_params(
+        kwargs.get('resource_config') or resource_config or dict())
 
     # ``resource_config`` could be part of the runtime instance
     # properties, If ``resource_config`` is empty then check if it
@@ -459,7 +465,10 @@ def _aws_resource(function,
             resource_config, runtime_instance_properties)
 
     try:
-        exists = iface.status
+        if iface.status in [None, {}]:
+            exists = False
+        else:
+            exists = True
     except (AttributeError, NotImplementedError):
         exists = False
         special_condition = True
@@ -476,7 +485,7 @@ def _aws_resource(function,
     result = None
     if not skip(
             resource_type=resource_type,
-            resource_id=ctx.instance.id,
+            resource_id=getattr(kwargs['iface'], 'resource_id', resource_id),
             _ctx_node=ctx.node,
             exists=exists,
             special_condition=special_condition,
@@ -540,7 +549,10 @@ def multiple_aws_resource(class_decl=None,
         def wrapper_inner(**kwargs):
             '''Inner, worker function'''
             ctx = kwargs['ctx']
-            for resource_id in ctx.instance.runtime_properties[MULTI_ID]:
+            ids = ctx.instance.runtime_properties.get(MULTI_ID, [])
+            if not ids and EXT_RES_ID in ctx.instance.runtime_properties:
+                ids.append(ctx.instance.runtime_properties[EXT_RES_ID])
+            for resource_id in ids:
                 kwargs_runtime_properties = kwargs.get('runtime_properties')
                 if not isinstance(kwargs_runtime_properties, dict):
                     kwargs_runtime_properties = {}
@@ -669,7 +681,6 @@ def _wait_for_delete(kwargs,
                      status_deleted,
                      status_not_deleted=None):
     status_not_deleted = status_not_deleted or []
-    print('This is the operation: {}'.format(operation))
     resource_type = kwargs.get('resource_type', 'AWS Resource')
     iface = kwargs['iface']
     ctx_instance = get_ctx_instance()

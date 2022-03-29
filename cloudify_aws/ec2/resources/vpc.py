@@ -186,10 +186,8 @@ def prepare(ctx, iface, resource_config, **_):
 @decorators.tag_resources
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS EC2 Vpc'''
-    params = utils.clean_params(
-        dict() if not resource_config else resource_config.copy())
 
-    _create(iface, params)
+    _create(iface, resource_config)
     utils.update_resource_id(ctx.instance, iface.resource_id)
     _modify_attribute(iface, _.get('modify_vpc_attribute_args'))
 
@@ -214,26 +212,22 @@ def check_drift(ctx, iface=None, **_):
 def delete(iface, resource_config, **_):
     '''Deletes an AWS EC2 Vpc'''
 
-    params = dict() if not resource_config else resource_config.copy()
-
-    if VPC_ID not in params:
-        params.update({VPC_ID: iface.resource_id})
+    if VPC_ID not in resource_config:
+        resource_config.update({VPC_ID: iface.resource_id})
 
     utils.handle_response(iface,
                           'delete',
-                          params,
+                          resource_config,
                           raise_substrings='DependencyViolation')
 
 
 @decorators.aws_resource(EC2Vpc, RESOURCE_TYPE)
 def modify_vpc_attribute(ctx, iface, resource_config, **_):
-    params = \
-        dict() if not resource_config else resource_config.copy()
     instance_id = \
         ctx.instance.runtime_properties.get(
             VPC_ID, iface.resource_id)
-    params[VPC_ID] = instance_id
-    iface.modify_vpc_attribute(params)
+    resource_config[VPC_ID] = instance_id
+    iface.modify_vpc_attribute(resource_config)
 
 
 def _create(iface, params):

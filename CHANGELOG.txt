@@ -1,4 +1,5 @@
 3.0.3:
+    - RD-1979 Standardize use of resource_config instead of copying it to params
     - RD-4490 add poststart to spot fleet request
 3.0.2:
     - RD-4434 Nics for Spot Fleet Requests
