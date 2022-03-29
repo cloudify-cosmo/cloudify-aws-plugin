@@ -90,12 +90,13 @@ class EC2Instances(EC2Base):
     def properties(self):
         '''Gets the properties of an external resource'''
         if not self._properties:
-            self._properties = self.get(self.instance_ids_request)[0]
-        if self._type_key in self._properties:
-            for obj in self._properties[self._type_key]:
-                if obj[self._id_key] == self.resource_id:
-                    return obj
-        return {}
+            reservations = self.get(self.instance_ids_request)
+            for res in reservations:
+                if self._type_key in res:
+                    for instance in res[self._type_key]:
+                        if instance[self._id_key] == self.resource_id:
+                            self._properties = instance
+        return self._properties
 
     def get(self, request):
         resources = self.describe(request)
@@ -104,10 +105,9 @@ class EC2Instances(EC2Base):
     @property
     def status(self):
         '''Gets the status of an external resource'''
-        props = self.properties
-        if not props:
-            return None
-        return props['State']['Code']
+        if not self.properties:
+            return
+        return self.properties.get('State', {}).get('Code')
 
     @property
     def check_status(self):
@@ -216,7 +216,13 @@ def start(ctx, iface, resource_config, **_):
                     iface.type_name, iface.resource_id))
         return
     elif ctx.operation.retry_number == 0:
-        iface.start(iface.prepare_instance_ids_request(resource_config))
+        try:
+            iface.start(iface.prepare_instance_ids_request(resource_config))
+        except NonRecoverableError as e:
+            if 'UnsupportedOperation' not in str(e):
+                raise
+            ctx.logger.info(
+                'Skipping start, because the operation is not supported.')
 
     raise OperationRetry(
         '{0} ID# {1} is still in a pending state {2}.'.format(
@@ -241,7 +247,12 @@ def stop(ctx, iface, resource_config, **_):
     if MULTI_ID in ctx.instance.runtime_properties:
         resource_config[INSTANCE_IDS] = \
             ctx.instance.runtime_properties[MULTI_ID]
-    iface.stop(iface.prepare_instance_ids_request(resource_config))
+    try:
+        iface.stop(iface.prepare_instance_ids_request(resource_config))
+    except NonRecoverableError as e:
+        if 'UnsupportedOperation' not in str(e):
+            raise
+        raise utils.SkipWaitingOperation('Unsupported operation.')
 
 
 @decorators.multiple_aws_resource(EC2Instances, RESOURCE_TYPE)

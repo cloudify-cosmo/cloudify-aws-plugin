@@ -28,7 +28,7 @@ from ecosystem_tests.dorkl.cloudify_api import (
     deployments_create,
     executions_start)
 
-TEST_ID = environ.get('__ECOSYSTEM_TEST_ID', 'virtual-machine')
+TEST_ID = environ.get('__ECOSYSTEM_TEST_ID', 'hello-world-example')
 
 
 @contextmanager

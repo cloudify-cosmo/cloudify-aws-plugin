@@ -989,3 +989,7 @@ def check_drift(resource_type, iface, logger):
         'configuration has not drifted.'.format(
             resource_type=resource_type, resource_id=iface.resource_id))
     return
+
+
+class SkipWaitingOperation(Exception):
+    pass
