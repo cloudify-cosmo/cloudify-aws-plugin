@@ -16,7 +16,7 @@ inputs:
 
   aws_region_name:
     type: string
-    default: { get_secret: ec2_region_name }
+    default: { get_secret: aws_region_name }
 
   availability_zone:
     type: string
@@ -50,7 +50,7 @@ node_templates:
       target: instance
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
+        precreate:
           implementation: aws.cloudify_aws.route53.resources.record_set.prepare
           inputs:
             resource_config:
@@ -101,6 +101,7 @@ node_templates:
     - type: cloudify.relationships.aws.route53.hosted_zone.connected_to
       target: dns_vpc
 
+
   instance:
     type: cloudify.nodes.aws.ec2.Instances
     properties:
@@ -110,7 +111,7 @@ node_templates:
         MaxCount: 1
         MinCount: 1
         ImageId: { get_attribute: [ ubuntu_trusty_ami, aws_resource_id ] }
-        InstanceType: m3.large
+        InstanceType: t2.micro
       client_config: *client_config
     relationships:
     - type: cloudify.relationships.depends_on

@@ -35,8 +35,17 @@ def prepare(ctx, iface, resource_config, **_):
 @decorators.aws_resource(Route53HostedZone, RESOURCE_TYPE)
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS Route53 Resource Record Set'''
-    iface.change_resource_record_sets(
-        ctx.instance.runtime_properties['resource_config'] or dict())
+    if 'ChangeBatch' not in resource_config:
+        resource_config = {
+            'ChangeBatch': {
+                'Changes': [resource_config]
+            }
+        }
+    rel = utils.find_rel_by_node_type(
+        ctx.instance, 'cloudify.nodes.aws.route53.HostedZone')
+    if rel:
+        resource_config = associate(rel.target, ctx, resource_config)
+    iface.change_resource_record_sets(resource_config)
 
 
 @decorators.aws_resource(Route53HostedZone, RESOURCE_TYPE)
@@ -68,16 +77,23 @@ def prepare_assoc(ctx, iface, **_):
     '''Prepares to associate an Route53 Resource Record Set to something'''
     if utils.is_node_type(ctx.target.node,
                           'cloudify.nodes.aws.route53.HostedZone'):
-        zone_id = utils.get_resource_id(
-            node=ctx.target.node,
-            instance=ctx.target.instance,
-            raise_on_missing=True)
-        utils.update_resource_id(ctx.source.instance, zone_id)
-        ctx.source.instance.runtime_properties['resource_config'].update(
-            dict(HostedZoneId=zone_id))
+        cfg = ctx.source.instance.runtime_properties['resource_config']
+        cfg = associate(ctx.target, ctx.source, cfg)
+        ctx.source.instance.runtime_properties['resource_config'] = cfg
 
 
 @decorators.aws_relationship(resource_type=RESOURCE_TYPE)
 def detach_from(ctx, **_):
     '''Detaches an Route53 Resource Record Set from something else'''
     pass
+
+
+def associate(ctx_target, ctx_source, resource_config):
+    zone_id = utils.get_resource_id(
+        node=ctx_target.node,
+        instance=ctx_target.instance,
+        raise_on_missing=True)
+    utils.update_resource_id(ctx_source.instance, zone_id)
+    resource_config.update(
+        dict(HostedZoneId=zone_id))
+    return resource_config
