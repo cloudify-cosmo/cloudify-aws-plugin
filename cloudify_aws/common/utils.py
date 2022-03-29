@@ -509,7 +509,7 @@ def clean_params(p):
     if not isinstance(p, dict) or not p:
         return {}
     for _k, _v in list(p.items()):
-        if _v is None or _v == {}:
+        if _v is None or _v == {} or _v == []:
             del p[_k]
         elif _k == 'AvailabilityZone':
             check_availability_zone(_v)
