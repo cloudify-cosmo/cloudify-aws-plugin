@@ -96,9 +96,7 @@ def create(ctx, iface, resource_config, **_):
 
     network_acl_id = resource_config.get(NETWORKACL_ID)
     rule_number = resource_config.get(RULE_NUMBER)
-    egress = resource_config.get(EGRESS, False)
-    if not egress:
-        resource_config[EGRESS] = False
+    egress = resource_config.get(EGRESS)
 
     if not network_acl_id:
         targ = \
@@ -133,17 +131,11 @@ def create(ctx, iface, resource_config, **_):
                          ignore_properties=True)
 def delete(ctx, iface, resource_config, **_):
     """Deletes an AWS EC2 NetworkAcl Entry"""
-    ctx.logger.info("yaniv log1 {}".format(resource_config.get(EGRESS)))
-    if not resource_config.get(EGRESS):
-        resource_config[EGRESS] = False
-    ctx.logger.info("yaniv log2 {}".format(resource_config.get(EGRESS)))
-
     network_acl_id = resource_config.get(NETWORKACL_ID)
     rule_number = resource_config.get(RULE_NUMBER) or \
         ctx.instance.runtime_properties['rule_number']
-    egress = resource_config.get(EGRESS, False) or \
+    egress = resource_config.get(EGRESS) or \
         ctx.instance.runtime_properties['egress']
-    ctx.logger.info("yaniv log3 egress={}".format(egress))
 
     if not network_acl_id:
         resource_config[NETWORKACL_ID] = \
