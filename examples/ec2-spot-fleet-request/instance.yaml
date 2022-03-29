@@ -1,0 +1,31 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+description: >
+  This blueprint deploy EC2 for agent tests
+imports:
+  - http://cloudify.co/spec/cloudify/6.3.0/types.yaml
+  - plugin:cloudify-aws-plugin?version=3.0.2
+
+inputs:
+
+  spot_fleet_id:
+    type: string
+
+dsl_definitions:
+
+   client_config: &client_config
+    aws_access_key_id: { get_secret:  aws_access_key_id }
+    aws_secret_access_key: { get_secret:  aws_secret_access_key }
+    region_name: { get_secret: aws_region_name }
+
+node_templates:
+  instance_details:
+    type: cloudify.nodes.aws.ec2.Instances
+    properties:
+      client_config: *client_config
+      use_external_resource: true
+      use_public_ip: true
+      # resource_id: { get_attribute: [ fleet, describe, ActiveInstances, 0, InstanceId ] }
+      resource_config:
+        kwargs:
+          SpotFleetRequestId: { get_input: spot_fleet_id }

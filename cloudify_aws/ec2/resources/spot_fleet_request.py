@@ -31,8 +31,6 @@ from cloudify_aws.ec2.resources.instances import (
     sort_devices,
     get_nics_from_rels,
     get_groups_from_rels)
-from cloudify_aws.common.constants import (
-    EXTERNAL_RESOURCE_ID_MULTIPLE as MULTI_ID)
 
 RESOURCE_TYPE = 'EC2 Spot Fleet Request'
 SpotFleetRequest = 'SpotFleetRequest'
@@ -96,11 +94,8 @@ class EC2SpotFleetRequest(EC2Base):
 
     @property
     def active_instances(self):
-        instances = self.list_spot_fleet_instances(
-            {'SpotFleetRequestId': self.resource_id})
-        active_instances = instances.get('ActiveInstances')
-        if active_instances:
-            return instances['ActiveInstances']
+        spot_fleet_instances = self.list_spot_fleet_instances()
+        return spot_fleet_instances.get('ActiveInstances', [])
 
     def create(self, params):
         '''
@@ -118,7 +113,7 @@ class EC2SpotFleetRequest(EC2Base):
         '''
             Checks current instances of AWS EC2 Spot Fleet Request.
         '''
-        params = params or {SpotFleetRequestIds: [self.resource_id]}
+        params = params or {SpotFleetRequestId: self.resource_id}
         return self.make_client_call('describe_spot_fleet_instances', params)
 
 
@@ -159,24 +154,30 @@ def create(ctx, iface, resource_config, **_):
         c += 1
 
 
-@decorators.aws_resource(EC2SpotFleetRequest,
-                         RESOURCE_TYPE,
-                         ignore_properties=True,
-                         waits_for_status=False)
+@decorators.aws_resource(
+    EC2SpotFleetRequest,
+    RESOURCE_TYPE,
+    ignore_properties=True,
+    waits_for_status=False)
 def poststart(ctx, iface, resource_config, wait_for_target_capacity=True, **_):
     if not wait_for_target_capacity:
         return
-    target_capacity = resource_config.get('TargetCapacity')
+
+    target_capacity = iface.properties.get(
+        'SpotFleetRequestConfig', {}).get('TargetCapacity', 0)
     spot_fleet_instances = iface.list_spot_fleet_instances()
-    active = spot_fleet_instances.get('ActiveInstances')
+    active = spot_fleet_instances.get('ActiveInstances', [])
+
     if not len(active) == target_capacity:
         raise OperationRetry(
-            'Waiting for active instance number to match target capacity.')
-    if MULTI_ID not in ctx.instance.runtime_properties:
-        ctx.instance.runtime_properties[MULTI_ID] = []
+            'Waiting for active instance number to match target '
+            'capacity {} {}.'.format(
+                len(active), target_capacity))
+    if 'instance_ids' not in ctx.instance.runtime_properties:
+        ctx.instance.runtime_properties['instance_ids'] = []
     for instance in active:
         instance_id = instance.get(INSTANCE_ID, '')
-        ctx.instance.runtime_properties[MULTI_ID].append(instance_id)
+        ctx.instance.runtime_properties['instance_ids'].append(instance_id)
 
 
 @decorators.aws_resource(EC2SpotFleetRequest,
@@ -184,7 +185,7 @@ def poststart(ctx, iface, resource_config, wait_for_target_capacity=True, **_):
                          ignore_properties=True,
                          waits_for_status=False)
 @decorators.untag_resources
-def delete(iface, resource_config, terminate_instances=False, **_):
+def delete(iface, resource_config, terminate_instances=True, **_):
     '''Deletes an AWS EC2 Vpc'''
     params = dict()
     params.update({SpotFleetRequestIds: [iface.resource_id]})
