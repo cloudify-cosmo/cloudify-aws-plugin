@@ -35,6 +35,12 @@ def prepare(ctx, iface, resource_config, **_):
 @decorators.aws_resource(Route53HostedZone, RESOURCE_TYPE)
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS Route53 Resource Record Set'''
+    if 'ChangeBatch' not in resource_config:
+        resource_config = {
+            'ChangeBatch': {
+                'Changes': [resource_config]
+            }
+        }
     rel = utils.find_rel_by_node_type(
         ctx.instance, 'cloudify.nodes.aws.route53.HostedZone')
     if rel:
