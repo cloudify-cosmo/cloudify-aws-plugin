@@ -75,20 +75,17 @@ def prepare(ctx, resource_config, **_):
 @decorators.aws_resource(KMSKeyAlias, RESOURCE_TYPE)
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS KMS Key Alias"""
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
     resource_id = \
         utils.get_resource_id(
             ctx.node,
             ctx.instance,
-            params.get(RESOURCE_NAME),
+            resource_config.get(RESOURCE_NAME),
             use_instance_id=True
         )
-    params[RESOURCE_NAME] = resource_id
+    resource_config[RESOURCE_NAME] = resource_id
     utils.update_resource_id(ctx.instance, resource_id)
 
-    target_key_id = params.get(TARGET_KEY_ID)
+    target_key_id = resource_config.get(TARGET_KEY_ID)
     if not target_key_id:
         target_key = \
             utils.find_rel_by_node_type(
@@ -96,25 +93,20 @@ def create(ctx, iface, resource_config, **_):
                 KEY_TYPE)
         target_key_id = \
             target_key.target.instance.runtime_properties[EXTERNAL_RESOURCE_ID]
-        params[TARGET_KEY_ID] = target_key_id
+        resource_config[TARGET_KEY_ID] = target_key_id
     # Actually create the resource
-    iface.create(params)
+    iface.create(resource_config)
 
 
 @decorators.aws_resource(KMSKeyAlias, RESOURCE_TYPE)
 def delete(ctx, iface, resource_config, **_):
     """Deletes an KMS Key Alias"""
-
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
-    alias_name = params.get(RESOURCE_NAME)
+    alias_name = resource_config.get(RESOURCE_NAME)
     if not alias_name:
-        params[RESOURCE_NAME] = \
+        resource_config[RESOURCE_NAME] = \
             ctx.instance.runtime_properties.get(
                 EXTERNAL_RESOURCE_ID,
                 iface.resource_id)
 
     # Actually delete the resource
-    iface.delete(params)
+    iface.delete(resource_config)

@@ -88,22 +88,19 @@ def create(ctx, iface, resource_config, params, **_):
                          waits_for_status=False)
 def delete(ctx, iface, resource_config, **_):
     '''Deletes an AWS IAM Role Policy'''
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
     # Add RoleName
-    role_name = params.get(ROLE_NAME, '')
+    role_name = resource_config.get(ROLE_NAME, '')
     if not role_name:
-        params[ROLE_NAME] = \
+        resource_config[ROLE_NAME] = \
             utils.find_resource_id_by_type(
                 ctx.instance,
                 ROLE_TYPE)
     # Add Policy Name
-    policy_name = params.get(RESOURCE_NAME, '')
+    policy_name = resource_config.get(RESOURCE_NAME, '')
     if not policy_name:
-        params[RESOURCE_NAME] = \
+        resource_config[RESOURCE_NAME] = \
             ctx.node.properties.get('resource_id') or \
             ctx.instance.runtime_properties[CTS.EXTERNAL_RESOURCE_ID] or \
             ctx.instance.id
 
-    iface.delete(params)
+    iface.delete(resource_config)

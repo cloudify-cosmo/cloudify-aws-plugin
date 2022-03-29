@@ -89,19 +89,17 @@ def prepare(ctx, resource_config, **_):
 @decorators.aws_resource(CloudwatchEventsRule, RESOURCE_TYPE)
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS Cloudwatch Events Rule"""
-    params = \
-        dict() if not resource_config else resource_config.copy()
     resource_id = \
         iface.resource_id or \
         utils.get_resource_id(
             ctx.node,
             ctx.instance,
-            params.get(RESOURCE_NAME),
+            resource_config.get(RESOURCE_NAME),
             use_instance_id=True)
-    params[RESOURCE_NAME] = resource_id
+    resource_config[RESOURCE_NAME] = resource_id
     utils.update_resource_id(ctx.instance, resource_id)
     # Actually create the resource
-    rule_arn = iface.create(params)[ARN]
+    rule_arn = iface.create(resource_config)[ARN]
     utils.update_resource_arn(ctx.instance, rule_arn)
 
 
@@ -109,9 +107,6 @@ def create(ctx, iface, resource_config, **_):
                          ignore_properties=True)
 def delete(iface, resource_config, **_):
     """Deletes an AWS Cloudwatch Events Rule"""
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-    if RESOURCE_NAME not in params.keys():
-        params.update({RESOURCE_NAME: iface.resource_id})
-    iface.delete(params)
+    if RESOURCE_NAME not in resource_config.keys():
+        resource_config.update({RESOURCE_NAME: iface.resource_id})
+    iface.delete(resource_config)

@@ -90,11 +90,7 @@ def prepare(ctx, resource_config, **_):
 @decorators.wait_for_status(status_good=['Complete'])
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS RDS Subnet Group'''
-    # Build API params
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
-    node_subnet_ids = params.get('SubnetIds', list())
+    node_subnet_ids = resource_config.get('SubnetIds', list())
     instance_subnet_ids = \
         ctx.instance.runtime_properties['resource_config'].get('SubnetIds',
                                                                list())
@@ -103,7 +99,7 @@ def create(ctx, iface, resource_config, **_):
             raise NonRecoverableError(
                 'Missing required parameter in input: SubnetIds')
 
-        params['SubnetIds'] = instance_subnet_ids
+        resource_config['SubnetIds'] = instance_subnet_ids
 
     # if it is set then we need to combine them to what we already have as
     # runtime_properties
@@ -112,11 +108,11 @@ def create(ctx, iface, resource_config, **_):
             if subnet_id not in node_subnet_ids:
                 node_subnet_ids.append(subnet_id)
 
-        params['SubnetIds'] = node_subnet_ids
+        resource_config['SubnetIds'] = node_subnet_ids
 
     if iface.resource_id:
-        params.update({'DBSubnetGroupName': iface.resource_id})
-    create_response = iface.create(params)
+        resource_config.update({'DBSubnetGroupName': iface.resource_id})
+    create_response = iface.create(resource_config)
     resource_id = create_response['DBSubnetGroup']['DBSubnetGroupName']
     utils.update_resource_id(ctx.instance, resource_id)
     utils.update_resource_arn(

@@ -1,3 +1,5 @@
+3.0.3:
+    - RD-1979 Standardize use of resource_config instead of copying it to params
 3.0.2:
     - RD-4434 Nics for Spot Fleet Requests
     - RD-2009 EC2 base properties improvement

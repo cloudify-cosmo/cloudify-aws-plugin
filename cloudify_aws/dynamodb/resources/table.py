@@ -94,13 +94,8 @@ def create(ctx, iface, resource_config, params, **_):
 @decorators.wait_for_delete(status_pending=['DELETING'])
 def delete(iface, resource_config, **_):
     """Deletes an AWS DynamoDB Table"""
-
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
     # Add the required TableName parameter.
-    if RESOURCE_NAME not in params:
-        params.update({RESOURCE_NAME: iface.resource_id})
+    if RESOURCE_NAME not in resource_config:
+        resource_config.update({RESOURCE_NAME: iface.resource_id})
 
-    iface.delete(params)
+    iface.delete(resource_config)

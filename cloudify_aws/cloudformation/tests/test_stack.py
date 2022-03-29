@@ -174,7 +174,7 @@ class TestCloudFormationStack(TestBase):
 
         self.fake_client.delete_stack = MagicMock(return_value=DELETE_RESPONSE)
 
-        stack.delete(ctx=_ctx, resource_config=None, iface=None)
+        stack.delete(ctx=_ctx, resource_config={}, iface=None)
 
         self.fake_boto.assert_called_with('cloudformation', **CLIENT_CONFIG)
 

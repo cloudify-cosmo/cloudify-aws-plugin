@@ -85,59 +85,35 @@ def prepare(ctx, resource_config, **_):
 @decorators.aws_resource(AutoscalingNotification, RESOURCE_TYPE)
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS Autoscaling Group Notification Configuration"""
-
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
-    autoscaling_group = \
-        params.get(AUTOSCALING_GROUP_TARGET)
+    autoscaling_group = resource_config.get(AUTOSCALING_GROUP_TARGET)
     if not autoscaling_group:
         autoscaling_group = \
-            utils.find_resource_id_by_type(
-                ctx.instance,
-                AUTOSCALING_TYPE)
-        params[AUTOSCALING_GROUP_TARGET] = \
-            autoscaling_group
+            utils.find_resource_id_by_type(ctx.instance, AUTOSCALING_TYPE)
+        resource_config[AUTOSCALING_GROUP_TARGET] = autoscaling_group
 
-    topic_arn = params.get(TOPIC_TARGET)
+    topic_arn = resource_config.get(TOPIC_TARGET)
     if not topic_arn:
-        topic_arn = \
-            utils.find_resource_arn_by_type(
-                ctx.instance,
-                TOPIC_TYPE)
-        params[TOPIC_TARGET] = \
-            topic_arn
+        topic_arn = utils.find_resource_arn_by_type(ctx.instance, TOPIC_TYPE)
+        resource_config[TOPIC_TARGET] = topic_arn
 
     # Actually create the resource
-    iface.create(params)
+    iface.create(resource_config)
 
 
 @decorators.aws_resource(AutoscalingNotification, RESOURCE_TYPE,
                          ignore_properties=True)
 def delete(ctx, iface, resource_config, **_):
     """Deletes an AWS Autoscaling Group Notification Configuration"""
-
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
-    autoscaling_group = \
-        params.get(AUTOSCALING_GROUP_TARGET)
+    autoscaling_group = resource_config.get(AUTOSCALING_GROUP_TARGET)
     if not autoscaling_group:
         autoscaling_group = \
-            utils.find_resource_id_by_type(
-                ctx.instance,
-                AUTOSCALING_TYPE)
-        params[AUTOSCALING_GROUP_TARGET] = \
-            autoscaling_group
+            utils.find_resource_id_by_type(ctx.instance, AUTOSCALING_TYPE)
+        resource_config[AUTOSCALING_GROUP_TARGET] = autoscaling_group
 
-    topic_arn = params.get(TOPIC_TARGET)
+    topic_arn = resource_config.get(TOPIC_TARGET)
     if not topic_arn:
         topic_arn = \
-            utils.find_resource_arn_by_type(
-                ctx.instance,
-                TOPIC_TYPE)
-        params[TOPIC_TARGET] = \
-            topic_arn
+            utils.find_resource_arn_by_type(ctx.instance, TOPIC_TYPE)
+        resource_config[TOPIC_TARGET] = topic_arn
 
-    iface.delete(params)
+    iface.delete(resource_config)

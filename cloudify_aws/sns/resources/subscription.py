@@ -100,11 +100,7 @@ def prepare(ctx, resource_config, **_):
 @decorators.aws_resource(SNSSubscription, RESOURCE_TYPE)
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS SNS Subscription"""
-
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-    topic_arn = params.get(TOPIC_ARN)
+    topic_arn = resource_config.get(TOPIC_ARN)
     # Add the required TopicArn parameter.
     if not topic_arn:
         rel = \
@@ -116,7 +112,7 @@ def create(ctx, iface, resource_config, **_):
                 EXTERNAL_RESOURCE_ARN)
         ctx.instance.runtime_properties[TOPIC_ARN] = \
             topic_arn
-        params[TOPIC_ARN] = topic_arn
+        resource_config[TOPIC_ARN] = topic_arn
 
     topic_iface = SNSTopic(
         ctx_node=ctx.node,
@@ -125,7 +121,7 @@ def create(ctx, iface, resource_config, **_):
         logger=ctx.logger)
 
     # Subscribe Endpoint is the arn of an endpoint
-    endpoint_name = params.get('Endpoint')
+    endpoint_name = resource_config.get('Endpoint')
     if not endpoint_name:
         raise NonRecoverableError(
             'Endpoint ARN or node_name was not provided.')
@@ -139,10 +135,10 @@ def create(ctx, iface, resource_config, **_):
         endpoint_arn = \
             rel.target.instance.runtime_properties.get(
                 EXTERNAL_RESOURCE_ARN)
-        params['Endpoint'] = endpoint_arn
+        resource_config['Endpoint'] = endpoint_arn
 
     # Request the subscription
-    request_arn = topic_iface.subscribe(params)
+    request_arn = topic_iface.subscribe(resource_config)
     utils.update_resource_id(ctx.instance, request_arn)
     utils.update_resource_arn(ctx.instance, request_arn)
 
@@ -152,18 +148,15 @@ def create(ctx, iface, resource_config, **_):
                          ignore_properties=True)
 def start(ctx, iface, resource_config, **_):
     """Confirm an AWS SNS Subscription"""
-
-    # Create a copy of the resource config for clean manipulation.
-    params = dict() if not resource_config else resource_config.copy()
     # Add the required SubscriptionArn parameter.
-    if SUB_ARN not in params:
+    if SUB_ARN not in resource_config:
         arn = \
             utils.get_resource_arn(
                 ctx.node,
                 ctx.instance)
-        params[SUB_ARN] = arn
+        resource_config[SUB_ARN] = arn
 
-    sub_attributes = iface.confirm(params)
+    sub_attributes = iface.confirm(resource_config)
 
     if CONFIRM_AUTHENTICATED not in sub_attributes:
         raise OperationRetry(
@@ -174,16 +167,13 @@ def start(ctx, iface, resource_config, **_):
                          ignore_properties=True)
 def delete(ctx, iface, resource_config, **_):
     """Deletes an AWS SNS Subscription"""
-
-    # Create a copy of the resource config for clean manipulation.
-    params = dict() if not resource_config else resource_config.copy()
     # Add the required SubscriptionArn parameter.
-    if SUB_ARN not in params:
+    if SUB_ARN not in resource_config:
         arn = \
             utils.get_resource_arn(
                 ctx.node,
                 ctx.instance)
-        params[SUB_ARN] = arn
+        resource_config[SUB_ARN] = arn
 
     # Actually delete the resource
-    iface.delete(params)
+    iface.delete(resource_config)

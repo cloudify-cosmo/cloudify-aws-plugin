@@ -115,12 +115,11 @@ def prepare(ctx, resource_config, **_):
 @decorators.tag_resources
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS EC2 Internet Gateway'''
-    params = dict() if not resource_config else resource_config.copy()
     if iface.resource_id and not iface.properties:
         raise OperationRetry("Create did not succeed, trying again ")
     elif iface.resource_id:
         return
-    create_response = iface.create(params)['InternetGateway']
+    create_response = iface.create(resource_config)['InternetGateway']
     ctx.instance.runtime_properties['create_response'] = \
         utils.JsonCleanuper(create_response).to_dict()
     utils.update_resource_id(ctx.instance,
@@ -142,14 +141,12 @@ def create(ctx, iface, resource_config, **_):
 @decorators.untag_resources
 def delete(iface, resource_config, **_):
     '''Deletes an AWS EC2 Internet Gateway'''
-    params = dict() if not resource_config else resource_config.copy()
-
-    internet_gateway_id = params.get(INTERNETGATEWAY_ID)
+    internet_gateway_id = resource_config.get(INTERNETGATEWAY_ID)
     if not internet_gateway_id:
         internet_gateway_id = iface.resource_id
 
-    params.update({INTERNETGATEWAY_ID: internet_gateway_id})
-    iface.delete(params)
+    resource_config.update({INTERNETGATEWAY_ID: internet_gateway_id})
+    iface.delete(resource_config)
 
 
 @decorators.aws_resource(EC2InternetGateway,
@@ -157,17 +154,15 @@ def delete(iface, resource_config, **_):
                          waits_for_status=False)
 def attach(ctx, iface, resource_config, **_):
     '''Attach an AWS EC2 Internet Gateway to a VPC'''
-    params = dict() if not resource_config else resource_config.copy()
-
-    internet_gateway_id = params.get(INTERNETGATEWAY_ID)
+    internet_gateway_id = resource_config.get(INTERNETGATEWAY_ID)
     if not internet_gateway_id:
         internet_gateway_id = \
             iface.resource_id or \
             ctx.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
 
-    params.update({INTERNETGATEWAY_ID: internet_gateway_id})
+    resource_config.update({INTERNETGATEWAY_ID: internet_gateway_id})
 
-    vpc_id = params.get(VPC_ID)
+    vpc_id = resource_config.get(VPC_ID)
     if not vpc_id:
         targ = \
             utils.find_rel_by_node_type(ctx.instance, VPC_TYPE) or \
@@ -175,12 +170,12 @@ def attach(ctx, iface, resource_config, **_):
 
         # Attempt to use the VPC ID from parameters.
         # Fallback to connected VPC.
-        params[VPC_ID] = \
+        resource_config[VPC_ID] = \
             vpc_id or \
             targ.target.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
 
     # Actually create the resource
-    attach_params = params.copy()
+    attach_params = resource_config.copy()
     attach_params.pop(TAG_SPECIFICATIONS_KWARG, None)
     # TODO: Handle conditionally if already attached.
     iface.attach(attach_params)
@@ -192,17 +187,15 @@ def attach(ctx, iface, resource_config, **_):
                          waits_for_status=False)
 def detach(ctx, iface, resource_config, **_):
     '''Detach an AWS EC2 Internet Gateway from a VPC'''
-    params = dict() if not resource_config else resource_config.copy()
-
-    internet_gateway_id = params.get(INTERNETGATEWAY_ID)
+    internet_gateway_id = resource_config.get(INTERNETGATEWAY_ID)
     if not internet_gateway_id:
         internet_gateway_id = iface.resource_id
     if not internet_gateway_id:
         internet_gateway_id = utils.get_resource_id(ctx.node, ctx.instance)
 
-    params.update({INTERNETGATEWAY_ID: internet_gateway_id})
+    resource_config.update({INTERNETGATEWAY_ID: internet_gateway_id})
 
-    vpc_id = params.get(VPC_ID)
+    vpc_id = resource_config.get(VPC_ID)
     if not vpc_id:
         targ = \
             utils.find_rel_by_node_type(ctx.instance, VPC_TYPE) or \
@@ -210,13 +203,13 @@ def detach(ctx, iface, resource_config, **_):
 
         # Attempt to use the VPC ID from parameters.
         # Fallback to connected VPC.
-        params[VPC_ID] = \
+        resource_config[VPC_ID] = \
             vpc_id or \
             targ.target.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
 
     return utils.exit_on_substring(iface,
                                    'detach',
-                                   params,
+                                   resource_config,
                                    ['Gateway.NotAttached',
                                     'InvalidInternetGatewayID.NotFound'])
 

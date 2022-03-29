@@ -106,9 +106,8 @@ def prepare(ctx, resource_config, **_):
 @decorators.aws_resource(ECSTaskDefinition, RESOURCE_TYPE)
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS ECS Task Definition"""
-    params = dict() if not resource_config else resource_config.copy()
     # Get the cluster name from either params or a relationship.
-    task_definition_name = params.get(TASK_DEFINITION_FAMILY)
+    task_definition_name = resource_config.get(TASK_DEFINITION_FAMILY)
 
     ctx.instance.runtime_properties[
         TASK_DEFINITION_RESOURCE] = task_definition_name
@@ -117,7 +116,7 @@ def create(ctx, iface, resource_config, **_):
     iface = prepare_describe_task_definition_filter(
         resource_config.copy(), iface
     )
-    response = iface.create(params)
+    response = iface.create(resource_config)
     if response and response.get(TASK_DEFINITION):
         resource_arn = response[TASK_DEFINITION].get(TASK_DEFINITION_ARN)
         utils.update_resource_arn(ctx.instance, resource_arn)

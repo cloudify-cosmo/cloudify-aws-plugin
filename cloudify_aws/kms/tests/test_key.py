@@ -102,7 +102,7 @@ class TestKMSKey(TestKMS):
 
         self.fake_client.schedule_key_deletion = MagicMock(return_value={})
 
-        key.enable(ctx=_ctx, resource_config=None, iface=None)
+        key.enable(ctx=_ctx, resource_config={}, iface=None)
 
         self.fake_boto.assert_called_with('kms', **CLIENT_CONFIG)
 
@@ -118,7 +118,7 @@ class TestKMSKey(TestKMS):
 
         self.fake_client.schedule_key_deletion = MagicMock(return_value={})
 
-        key.disable(ctx=_ctx, resource_config=None, iface=None)
+        key.disable(ctx=_ctx, resource_config={}, iface=None)
 
         self.fake_boto.assert_called_with('kms', **CLIENT_CONFIG)
 
@@ -134,7 +134,7 @@ class TestKMSKey(TestKMS):
 
         self.fake_client.schedule_key_deletion = MagicMock(return_value={})
 
-        key.delete(ctx=_ctx, resource_config=None, iface=None)
+        key.delete(ctx=_ctx, resource_config={}, iface=None)
 
         self.fake_boto.assert_called_with('kms', **CLIENT_CONFIG)
 

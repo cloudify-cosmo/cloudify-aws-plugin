@@ -410,7 +410,7 @@ class TestELBLoadBalancer(TestBase):
                 }
             }]})
 
-        load_balancer.delete(ctx=_ctx, resource_config=None, iface=None)
+        load_balancer.delete(ctx=_ctx, resource_config={}, iface=None)
 
         self.fake_boto.assert_called_with('elbv2', **CLIENT_CONFIG)
 

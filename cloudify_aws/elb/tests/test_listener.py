@@ -128,7 +128,8 @@ class TestELBListener(TestBase):
             self.assertTrue(iface.create.called)
             self.assertEqual(
                 config,
-                {'DefaultActions': [{'TargetGroupArn': 'elb'}]})
+                {'DefaultActions': [{'TargetGroupArn': 'ext_id'}],
+                 'LoadBalancerArn': 'ext_id'})
 
     def test_delete(self):
         iface = MagicMock()

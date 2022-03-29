@@ -82,23 +82,18 @@ def prepare(ctx, resource_config, **_):
 @decorators.aws_resource(EFSFileSystem, RESOURCE_TYPE)
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS EFS File System"""
-
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-
     # The creation token is used by AWS to ensure idempotent fs creation.
     creation_token = \
-        params.get(
+        resource_config.get(
             CREATION_TOKEN,
             ctx.instance.runtime_properties.get(CREATION_TOKEN))
     if not creation_token:
         creation_token = utils.get_uuid()
         ctx.instance.runtime_properties[CREATION_TOKEN] = \
             creation_token
-        params[CREATION_TOKEN] = creation_token
+        resource_config[CREATION_TOKEN] = creation_token
 
-    output = iface.create(params)
+    output = iface.create(resource_config)
     utils.update_resource_id(ctx.instance, output.get(FILESYSTEM_ID))
 
 
@@ -106,13 +101,10 @@ def create(ctx, iface, resource_config, **_):
                          ignore_properties=True)
 def delete(ctx, iface, resource_config, **_):
     """Deletes an AWS EFS File System"""
-
-    # Create a copy of the resource config for clean manipulation.
-    params = \
-        dict() if not resource_config else resource_config.copy()
-    file_system_id = params.get(FILESYSTEM_ID)
+    file_system_id = resource_config.get(FILESYSTEM_ID)
     if not file_system_id and iface.resource_id:
-        params[FILESYSTEM_ID] = iface.resource_id
+        resource_config[FILESYSTEM_ID] = iface.resource_id
 
     # Actually delete the resource
-    utils.handle_response(iface, 'delete', params, raise_substrings=[''])
+    utils.handle_response(
+        iface, 'delete', resource_config, raise_substrings=[''])

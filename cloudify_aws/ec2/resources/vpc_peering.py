@@ -117,21 +117,20 @@ def prepare(ctx, resource_config, iface, **_):
 @decorators.tag_resources
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS EC2 Vpc Peering"""
-    params = dict() if not resource_config else resource_config.copy()
-
     # Accepter and Requester options are not part of create api, so we
     # Should check them if they are exists and then remove them
-    accepter_vpc_options = params.get(ACCEPTER_VPC_PEERING_CONNECTION)
-    requester_vpc_options = params.get(REQUESTER_VPC_PEERING_CONNECTION)
+    accepter_vpc_options = resource_config.get(ACCEPTER_VPC_PEERING_CONNECTION)
+    requester_vpc_options = resource_config.get(
+        REQUESTER_VPC_PEERING_CONNECTION)
 
     if accepter_vpc_options:
-        del params[ACCEPTER_VPC_PEERING_CONNECTION]
+        del resource_config[ACCEPTER_VPC_PEERING_CONNECTION]
 
     if requester_vpc_options:
-        del params[REQUESTER_VPC_PEERING_CONNECTION]
+        del resource_config[REQUESTER_VPC_PEERING_CONNECTION]
 
     # Actually create the resource
-    create_response = iface.create(params)[VPC_PEERING_CONNECTION]
+    create_response = iface.create(resource_config)[VPC_PEERING_CONNECTION]
     ctx.instance.runtime_properties['create_response'] = \
         utils.JsonCleanuper(create_response).to_dict()
     if create_response:
@@ -150,10 +149,11 @@ def create(ctx, iface, resource_config, **_):
 @decorators.aws_resource(EC2VpcPeering, RESOURCE_TYPE)
 def modify(ctx, iface, resource_config, **_):
     """Modifies an AWS EC2 Vpc Peering"""
-    params = dict() if not resource_config else resource_config.copy()
     modify_options_param = dict()
-    accepter_vpc_options = params.get(ACCEPTER_VPC_PEERING_CONNECTION)
-    requester_vpc_options = params.get(REQUESTER_VPC_PEERING_CONNECTION)
+    accepter_vpc_options = resource_config.get(
+        ACCEPTER_VPC_PEERING_CONNECTION)
+    requester_vpc_options = resource_config.get(
+        REQUESTER_VPC_PEERING_CONNECTION)
 
     if accepter_vpc_options or requester_vpc_options:
 
@@ -184,9 +184,8 @@ def delete(ctx, iface, resource_config, **_):
     resource_id = \
         ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
 
-    params = dict() if not resource_config else resource_config.copy()
-    if params:
-        deleted_params['DryRun'] = params.get('DryRun') or False
+    if resource_config:
+        deleted_params['DryRun'] = resource_config.get('DryRun') or False
     if resource_id:
         deleted_params[VPC_PEERING_CONNECTION_ID] = resource_id
 
@@ -196,30 +195,28 @@ def delete(ctx, iface, resource_config, **_):
 @decorators.aws_resource(EC2VpcPeering, RESOURCE_TYPE)
 def accept(ctx, iface, resource_config, **_):
     """Accepts an AWS EC2 Vpc Peer Request"""
-    params = dict() if not resource_config else resource_config.copy()
     resource_id = \
         utils.get_resource_id(
             ctx.node,
             ctx.instance,
-            params.get(VPC_PEERING_CONNECTION_ID),
+            resource_config.get(VPC_PEERING_CONNECTION_ID),
             use_instance_id=True
         )
 
     utils.update_resource_id(ctx.instance, resource_id)
-    iface.accept(params)
+    iface.accept(resource_config)
 
 
 @decorators.aws_resource(EC2VpcPeering, RESOURCE_TYPE)
 def reject(ctx, iface, resource_config, **_):
     """Rejects an AWS EC2 Vpc Peer Request"""
-    params = dict() if not resource_config else resource_config.copy()
     resource_id = \
         utils.get_resource_id(
             ctx.node,
             ctx.instance,
-            params.get(VPC_PEERING_CONNECTION_ID),
+            resource_config.get(VPC_PEERING_CONNECTION_ID),
             use_instance_id=True
         )
 
     utils.update_resource_id(ctx.instance, resource_id)
-    iface.reject(params)
+    iface.reject(resource_config)

@@ -142,11 +142,10 @@ def create(ctx, iface, resource_config, **_):
         # if use_external_resource there we are using an existing image
         return
 
-    params = utils.clean_params(resource_config)
-    if 'InstanceId' not in params:
-        params['InstanceId'] = utils.find_resource_id_by_type(
+    if 'InstanceId' not in resource_config:
+        resource_config['InstanceId'] = utils.find_resource_id_by_type(
             ctx.instance, 'cloudify.nodes.aws.ec2.Instances')
-    params = utils.clean_empty_vals(params)
+    params = utils.clean_empty_vals(resource_config)
 
     # Actually create the resource
     create_response = iface.create(params)

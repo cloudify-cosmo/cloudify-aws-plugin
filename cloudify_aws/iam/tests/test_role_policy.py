@@ -167,7 +167,7 @@ class TestIAMRolePolicy(TestBase):
 
         self.fake_client.delete_role_policy = self.mock_return({})
 
-        role_policy.delete(ctx=_ctx, resource_config=None, iface=None,
+        role_policy.delete(ctx=_ctx, resource_config={}, iface=None,
                            params=None)
 
         self.fake_boto.assert_called_with('iam', **CLIENT_CONFIG)

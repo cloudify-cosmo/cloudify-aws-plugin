@@ -134,18 +134,18 @@ def prepare(ctx, resource_config, **_):
 @decorators.aws_resource(ECSService, RESOURCE_TYPE)
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS ECS Service"""
-
-    params = dict() if not resource_config else resource_config.copy()
     # Get the cluster name from either params or a relationship.
-    cluster_name = params.get(CLUSTER)
+    cluster_name = resource_config.get(CLUSTER)
     if not cluster_name:
-        params[CLUSTER] = get_cluster_name(ctx)
+        resource_config[CLUSTER] = get_cluster_name(ctx)
 
-    ctx.instance.runtime_properties[SERVICE] = params.get(SERVICE_RESOURCE)
-    utils.update_resource_id(ctx.instance, params.get(SERVICE_RESOURCE))
+    ctx.instance.runtime_properties[SERVICE] = \
+        resource_config.get(SERVICE_RESOURCE)
+    utils.update_resource_id(
+        ctx.instance, resource_config.get(SERVICE_RESOURCE))
 
     iface = prepare_describe_service_filter(resource_config.copy(), iface)
-    response = iface.create(params)
+    response = iface.create(resource_config)
     if response and response.get(SERVICE):
         resource_arn = response[SERVICE].get(SERVICE_ARN)
         utils.update_resource_arn(ctx.instance, resource_arn)

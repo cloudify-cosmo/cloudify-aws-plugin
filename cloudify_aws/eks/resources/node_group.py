@@ -198,12 +198,11 @@ def prepare(ctx, resource_config, **_):
                             status_good=['ACTIVE', 'available'])
 def create(ctx, iface, resource_config, **_):
     """Creates an AWS EKS Node Group"""
-    params = dict() if not resource_config else resource_config.copy()
     resource_id = \
         utils.get_resource_id(
             ctx.node,
             ctx.instance,
-            params.get(NODEGROUP_NAME),
+            resource_config.get(NODEGROUP_NAME),
             use_instance_id=True
         )
 
@@ -211,7 +210,7 @@ def create(ctx, iface, resource_config, **_):
     iface.node_group_name = resource_config.get(NODEGROUP_NAME)
     iface.cluster_name = resource_config.get(CLUSTER_NAME)
     try:
-        response = iface.create(params)
+        response = iface.create(resource_config)
     except (NonRecoverableError, ClientError) as e:
         if 'ResourceInUseException' not in str(e):
             raise e
@@ -227,18 +226,17 @@ def create(ctx, iface, resource_config, **_):
             utils.JsonCleanuper(response).to_dict()
     # wait for nodegroup to be active
     ctx.logger.info("Waiting for NodeGroup to become Active")
-    iface.wait_for_nodegroup(params, 'nodegroup_active')
+    iface.wait_for_nodegroup(resource_config, 'nodegroup_active')
 
 
 @decorators.aws_resource(EKSNodeGroup, RESOURCE_TYPE, waits_for_status=False)
 def start(ctx, iface, resource_config, **_):
     """Updates an AWS EKS Node Group"""
-    params = dict() if not resource_config else resource_config.copy()
     resource_id = \
         utils.get_resource_id(
             ctx.node,
             ctx.instance,
-            params.get(NODEGROUP_NAME),
+            resource_config.get(NODEGROUP_NAME),
             use_instance_id=True
         )
     utils.update_resource_id(ctx.instance, resource_id)
@@ -247,8 +245,8 @@ def start(ctx, iface, resource_config, **_):
         "clusterName", "nodegroupName", "labels", "taints",
         "scalingConfig", "updateConfig", "clientRequestToken"
     ]
-    valid_params = {x: params.get(x) for x in valid_keys
-                    if params.get(x) is not None}
+    valid_params = {x: resource_config.get(x) for x in valid_keys
+                    if resource_config.get(x) is not None}
     try:
         response = iface.start(valid_params)
     except ClientError as e:
@@ -259,18 +257,17 @@ def start(ctx, iface, resource_config, **_):
         utils.update_resource_arn(ctx.instance, resource_arn)
     # wait for nodegroup to be active
     ctx.logger.info("Waiting for NodeGroup to become \"Active\".")
-    iface.wait_for_nodegroup(params, 'nodegroup_active')
+    iface.wait_for_nodegroup(resource_config, 'nodegroup_active')
 
 
 @decorators.aws_resource(EKSNodeGroup, RESOURCE_TYPE, waits_for_status=False)
 def delete(ctx, iface, resource_config, **_):
     """Deletes an AWS EKS Node Group"""
 
-    params = dict() if not resource_config else resource_config.copy()
-    iface.delete(params)
+    iface.delete(resource_config)
     # wait for nodegroup to be deleted
     ctx.logger.info("Waiting for NodeGroup to be deleted")
-    iface.wait_for_nodegroup(params, 'nodegroup_deleted')
+    iface.wait_for_nodegroup(resource_config, 'nodegroup_deleted')
 
 
 @decorators.aws_resource(class_decl=EKSNodeGroup,

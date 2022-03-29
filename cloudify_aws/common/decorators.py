@@ -378,8 +378,8 @@ def _get_resource_config_if_not_ignore_properties(
         del resource_config['kwargs']
     resource_config.update(resource_config_kwargs)
     # Update the argument
-    kwargs['resource_config'] = kwargs.get(
-        'resource_config') or resource_config or dict()
+    kwargs['resource_config'] = utils.clean_params(
+        kwargs.get('resource_config') or resource_config or dict())
 
     # ``resource_config`` could be part of the runtime instance
     # properties, If ``resource_config`` is empty then check if it
@@ -669,7 +669,6 @@ def _wait_for_delete(kwargs,
                      status_deleted,
                      status_not_deleted=None):
     status_not_deleted = status_not_deleted or []
-    print('This is the operation: {}'.format(operation))
     resource_type = kwargs.get('resource_type', 'AWS Resource')
     iface = kwargs['iface']
     ctx_instance = get_ctx_instance()
