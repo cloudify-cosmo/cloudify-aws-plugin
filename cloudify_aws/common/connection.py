@@ -23,14 +23,10 @@ import boto3
 from botocore.config import Config
 
 # Local imports
-<<<<<<< HEAD
 from .utils import (
     get_uuid,
     desecretize_client_config
 )
-=======
-from .utils import desecretize_client_config, get_uuid
->>>>>>> 95d51f2 (Add assume role to the client)
 from cloudify_aws.common.constants import AWS_CONFIG_PROPERTY
 
 # pylint: disable=R0903
