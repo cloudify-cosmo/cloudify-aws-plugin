@@ -1,3 +1,5 @@
+3.0.4:
+    - Add assume role to the client configuration
 3.0.3:
     - RD-1979 Standardize use of resource_config instead of copying it to params
     - RD-4490 add poststart to spot fleet request
@@ -6,7 +8,6 @@
     - RD-2009 EC2 base properties improvement
     - Fix for EFS
     - Fix for ECS
-    - Add assume role to the client configuration
 3.0.1:
     - RD-3458 fix iam blueprint & iam status
 3.0.0:
