@@ -2,7 +2,7 @@ plugins:
   aws:
     executor: central_deployment_agent
     package_name: cloudify-aws-plugin
-    package_version: '3.0.3'
+    package_version: '3.0.4'
 
 data_types:
 
@@ -68,6 +68,10 @@ data_types:
         type: string
         required: false
         description: The API Version to use, if not latest.
+      assume_role:
+        type: string
+        required: false
+        description: The role ARN that Cloudify manager instance is able to assume.
       additional_config:
         required: false
         description: >
@@ -207,7 +211,7 @@ data_types:
       RoleName:
         type: string
         description: The name of the role to associate the policy with. Required if no relationship to a Role was provided.
-        required: true
+        required: false
       PolicyName:
         type: string
         description: The name of the policy document.
