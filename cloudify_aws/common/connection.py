@@ -74,8 +74,8 @@ class Boto3Connection(object):
         if additional_config and isinstance(additional_config, dict):
             self.aws_config['config'] = Config(**additional_config)
 
-    def get_sts_credentials(self, role):
-        sts_client = boto3.client("sts")
+    def get_sts_credentials(self, role, config):
+        sts_client = boto3.client("sts", **config)
 
         sts_credentials = sts_client.assume_role(
             RoleArn=role,
@@ -97,11 +97,11 @@ class Boto3Connection(object):
         :raises: :exc:`cloudify.exceptions.NonRecoverableError`
         '''
         config = self.aws_config
-        assume_role = self.aws_config.get('assume_role') \
+        assume_role = self.aws_config.pop('assume_role', None) \
             or os.environ.get("AWS_ASSUME_ROLE_ARN")
 
         if assume_role:
-            config = self.get_sts_credentials(assume_role)
+            config = self.get_sts_credentials(assume_role, config)
 
         resource = boto3.client(service_name, **config)
         return resource
