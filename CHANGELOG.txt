@@ -1,3 +1,5 @@
+3.0.5:
+    - Allow to assume role after initial authentication
 3.0.4:
     - Add assume role to the client configuration
 3.0.3:
