@@ -1,0 +1,4305 @@
+plugins:
+  aws:
+    executor: central_deployment_agent
+    package_name: cloudify-aws-plugin
+    package_version: '3.0.5'
+
+blueprint_labels:
+  obj-type:
+    values:
+      - aws
+
+labels:
+  obj-type:
+    values:
+      - aws
+
+resource_tags:
+  tenant: get_sys [tenant, name]
+  deployment_id: get_sys [deplyment, id]
+  owner: get_sys [deplyment, owner]
+
+data_types:
+
+  cloudify.datatypes.swift.Connection:
+    properties:
+      swift_username:
+        description: >
+          The USERNAME of your Swift.
+        type: string
+        required: true
+      swift_password:
+        description: >
+          The PASSWORD of your Swift.
+        type: string
+        required: true
+      swift_auth_url:
+        description: >
+          The auth url in order to authenticate against and generate token
+        type: string
+        required: true
+      swift_region_name:
+        description: >
+          The server region name, such as us-east-1.
+          (Not us-east-1b, which is an availability zone, or
+          US East, which is a Region.)
+        type: string
+        required: true
+
+  cloudify.datatypes.aws.ConnectionConfig:
+    properties:
+      aws_session_token:
+        description: Session token.
+        type: string
+        required: false
+      aws_access_key_id:
+        description: >
+          The ID of your AWS ACCESS KEY ID.
+        type: string
+        required: false
+      aws_secret_access_key:
+        description: >
+          The ID of your AWS SECRET ACCESS KEY.
+        type: string
+        required: false
+      region_name:
+        description: >
+          The server region name, such as us-east-1.
+          (Not us-east-1b, which is an availability zone, or
+          US East, which is a Region.)
+        type: string
+        required: false
+      endpoint_url:
+        description: >
+            The complete URL to use for the constructed
+            client. Normally, botocore will automatically construct the
+            appropriate URL to use when communicating with a service.  You
+            can specify a complete URL (including the "http/https" scheme)
+            to override this behavior.  If this value is provided,
+            then ``use_ssl`` is ignored.
+        type: string
+        required: false
+      api_version:
+        type: string
+        required: false
+        description: The API Version to use, if not latest.
+      assume_role:
+        type: string
+        required: false
+        description: The role ARN that Cloudify manager instance is able to assume.
+      additional_config:
+        required: false
+        description: >
+          An abstraction of the 'config' parameter accepted by boto3.client function.
+          This parameter should only be used by experienced users. Example usage:
+          vm:
+            type: cloudify.nodes.aws.ec2.Instances
+            properties:
+              client_config:
+                additional_config:
+                  retries:
+                    max_attempts: 10
+                    mode: adaptive
+
+  cloudify.datatypes.aws.dynamodb.Table.config:
+    properties:
+      TableName:
+        description: The name of the table to create.
+        type: string
+        required: true
+      AttributeDefinitions:
+        description: An array of attributes that describe the key schema (dict) for the table and indexes. Keys are AttributeName, AttributeType.
+        default: []
+      KeySchema:
+        description: Specifies the attributes that make up the primary key for a table or an index. The attributes in KeySchema must also be defined in the AttributeDefinitions array. For more information, see Data Model in the Amazon DynamoDB Developer Guide .
+        default: []
+      LocalSecondaryIndexes:
+        description: One or more local secondary indexes (the maximum is five) to be created on the table. Each index is scoped to a given partition key value. There is a 10 GB size limit per partition key value; otherwise, the size of a local secondary index is unconstrained.
+        default: []
+      GlobalSecondaryIndexes:
+        description: One or more global secondary indexes (the maximum is five) to be created on the table..
+        default: []
+      BillingMode:
+        description: Controls how you are charged for read and write throughput and how you manage capacity. This setting can be changed later. Either 'PROVISIONED' or 'PAY_PER_REQUEST'.
+        type: string
+        required: false
+      ProvisionedThroughput:
+        description: Represents the provisioned throughput settings for a specified table or index. The settings can be modified using the UpdateTable operation.
+        default: {}
+      StreamSpecification:
+        description: The settings for DynamoDB Streams on the table.
+        default: {}
+      SSESpecification:
+        description: Represents the settings used to enable server-side encryption.
+        default: {}
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/dynamodb.html#DynamoDB.Client.create_table
+        default: {}
+
+  cloudify.datatypes.aws.iam.Group.config:
+    properties:
+      Path:
+        description: The path to the group. For more information about paths, see IAM Identifiers in the IAM User Guide.
+        type: string
+        required: false
+      GroupName:
+        description: The name of the group to create. Do not include the path in this value.
+        type: string
+        required: true
+        default: 'cfy_CloudifyGroup'
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/iam.html#IAM.Client.create_group
+        default: {}
+
+  cloudify.datatypes.aws.iam.AccessKey.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/iam.html#IAM.Client.create_access_key
+        default: {}
+
+  cloudify.datatypes.aws.iam.LoginProfile.config:
+    properties:
+      UserName:
+        type: string
+        description: The name of the IAM user that the new key will belong to.
+        required: false
+      Password:
+        type: string
+        description: The new password for the user.
+        required: false
+      PasswordResetRequired:
+        type: boolean
+        description: Specifies whether the user is required to set a new password on next sign-in.
+        required: false
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/iam.html#IAM.Client.create_login_profile
+        default: {}
+
+  cloudify.datatypes.aws.iam.User.config:
+    properties:
+      UserName:
+        type: string
+        description: The name of the IAM user that the new key will belong to.
+        required: false
+      Path:
+        description: The path to the user. For more information about paths, see IAM Identifiers in the IAM User Guide.
+        type: string
+        required: false
+      PermissionsBoundary:
+        description: The ARN of the policy that is used to set the permissions boundary for the user.
+        type: string
+        required: false
+      Tags:
+        description: A list of tags that you want to attach to the newly created user. Each tag consists of a key name and an associated value. For more information about tagging, see Tagging IAM Identities in the IAM User Guide.
+        default: []
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/iam.html#IAM.Client.create_user
+        default: {}
+
+  cloudify.datatypes.aws.iam.Role.config:
+    properties:
+      AssumeRolePolicyDocument:
+        description: The trust relationship policy document that grants an entity permission to assume the role.
+        required: true
+        default:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Principal:
+              Service: 'lambda.amazonaws.com'
+            Action: 'sts:AssumeRole'
+      RoleName:
+        description: The name of the role to create.
+        type: string
+        required: true
+        default: 'cfy_lambdarole'
+      Path:
+        description: The path to the role.
+        type: string
+        required: false
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/iam.html#IAM.Client.create_role
+        default: {}
+
+  cloudify.datatypes.aws.iam.RolePolicy.config:
+    properties:
+      RoleName:
+        type: string
+        description: The name of the role to associate the policy with. Required if no relationship to a Role was provided.
+        required: false
+      PolicyName:
+        type: string
+        description: The name of the policy document.
+        required: true
+      PolicyDocument:
+        type: string
+        description: The policy document.
+        required: true
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/iam.html#IAM.Client.put_role_policy
+        default: {}
+
+  cloudify.datatypes.aws.iam.InstanceProfile.config:
+    properties:
+      InstanceProfileName:
+        type: string
+        description: The name of the instance profile to create.
+        required: true
+        default: 'cfy_iam_user_instance_profile'
+      Path:
+        type: string
+        description: The path to the instance profile.
+        required: true
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/iam.html#IAM.Client.create_instance_profile
+        default: {}
+
+  cloudify.datatypes.aws.iam.Policy.config:
+    properties:
+      PolicyName:
+        type: string
+        description: The friendly name of the policy.
+        required: true
+      Path:
+        type: string
+        description: The path to the policy.
+        required: true
+      PolicyDocument:
+        type: string
+        description: The policy document.
+        required: true
+      Description:
+        type: string
+        description: A friendly description of the policy.
+        required: false
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/iam.html#IAM.Client.create_policy
+        default: {}
+
+  cloudify.datatypes.aws.lambda.Function.config:
+    properties:
+      FunctionName:
+        type: string
+        description: The name of the Lambda function.
+        required: true
+      Runtime:
+        type: string
+        description: The runtime version for the function.
+        required: true
+      Handler:
+        type: string
+        description: The name of the method within your code that Lambda calls to execute your function.
+        required: true
+      Code:
+        description: The code for the function.
+        required: true
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/lambda.html#Lambda.Client.create_function
+        default: {}
+
+  cloudify.datatypes.aws.lambda.Invoke.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/lambda.html#Lambda.Client.invoke
+        default: {}
+
+  cloudify.datatypes.aws.lambda.Permission.config:
+    properties:
+      FunctionName:
+        type: string
+        description: The name of the Lambda function. Required. May also be provided from a relationship to a cloudify.nodes.aws.lambda.Function.
+        required: false
+      StatementId:
+        type: string
+        description: A unique statement identifier.
+        required: true
+      Action:
+        type: string
+        description: The AWS Lambda action you want to allow in this statement.
+        required: true
+      Principal:
+        type: string
+        description: The principal who is getting this permission.
+        required: true
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/lambda.html#Lambda.Client.add_permission
+        default: {}
+
+  cloudify.datatypes.aws.rds.Instance.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/rds.html#RDS.Client.create_db_instance
+        default: {}
+
+  cloudify.datatypes.aws.rds.InstanceReadReplica.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/rds.html#RDS.Client.create_db_instance_read_replica
+        default: {}
+
+  cloudify.datatypes.aws.rds.SubnetGroup.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/rds.html#RDS.Client.create_db_subnet_group
+        default: {}
+
+  cloudify.datatypes.aws.rds.OptionGroup.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/rds.html#RDS.Client.create_option_group
+        default: {}
+
+  cloudify.datatypes.aws.rds.Option.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/rds.html#RDS.Client.modify_option_group
+        default: {}
+
+  cloudify.datatypes.aws.rds.ParameterGroup.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/rds.html#RDS.Client.create_db_parameter_group
+        default: {}
+
+  cloudify.datatypes.aws.rds.Parameter.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/rds.html#RDS.Client.modify_db_parameter_group
+        default: {}
+
+  cloudify.datatypes.aws.route53.HostedZone.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/route53.html#Route53.Client.create_hosted_zone
+        default: {}
+
+  cloudify.datatypes.aws.route53.RecordSet.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/route53.html#Route53.Client.change_resource_record_sets
+        default: {}
+
+  cloudify.datatypes.aws.elb.LoadBalancer.config:
+    properties:
+      Name:
+        type: string
+        description: The name of the load balancer.
+        required: true
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/elbv2.html#ElasticLoadBalancingv2.Client.create_load_balancer
+        default: {}
+
+  cloudify.datatypes.aws.elb.TargetGroup.config:
+    properties:
+      Name:
+        type: string
+        description: The name of the target group.
+        required: true
+      Protocol:
+        type: string
+        description: The protocol to use for routing traffic to the targets.
+        required: false
+      Port:
+        type: string
+        description: The port on which the targets receive traffic.
+        required: false
+      HealthCheckProtocol:
+        type: string
+        description: The protocol the load balancer uses when performing health checks on targets.
+        required: false
+      HealthCheckPort:
+        type: string
+        description: The port the load balancer uses when performing health checks on targets..
+        required: false
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/elbv2.html#ElasticLoadBalancingv2.Client.create_target_group
+        default: {}
+
+  cloudify.datatypes.aws.elb.Listener.config:
+    properties:
+      Protocol:
+        type: string
+        description: The protocol for connections from clients to the load balancer. For Application Load Balancers, the supported protocols are HTTP and HTTPS. For Network Load Balancers, the supported protocol is TCP.
+        required: true
+      Port:
+        type: integer
+        description: The port on which the load balancer is listening.
+        required: true
+      DefaultActions:
+        description: The actions for the default rule.
+        default: []
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/elbv2.html#ElasticLoadBalancingv2.Client.create_listener
+        default: {}
+
+  cloudify.datatypes.aws.elb.Rule.config:
+    properties:
+      Conditions:
+        description: The conditions. Each condition specifies a field name and a single value.
+        default: []
+      Priority:
+        type: integer
+        description: The rule priority. A listener can't have multiple rules with the same priority.
+        required: true
+      Actions:
+        description: The actions. Each rule must include exactly one of the following types of actions - forward, fixed-response, or redirect.
+        default: []
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/elbv2.html#ElasticLoadBalancingv2.Client.create_rule
+        default: {}
+
+  cloudify.datatypes.aws.elb.Classic.LoadBalancer.config:
+    properties:
+      LoadBalancerName:
+        type: string
+        description: The name of the load balancer.
+        required: true
+      Listeners:
+        description: The listeners.
+        default: {}
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/elb.html#ElasticLoadBalancing.Client.create_load_balancer
+        default: {}
+
+  cloudify.datatypes.aws.elb.Classic.Listener.config:
+    properties:
+      LoadBalancerName:
+        type: string
+        description: The name of the load balancer.
+        required: false
+      Listeners:
+        description: The listeners.
+        default: {}
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/elb.html#ElasticLoadBalancing.Client.create_load_balancer_listeners
+        default: {}
+
+  cloudify.datatypes.aws.elb.Classic.healthCheck.healthCheck:
+    properties:
+      Target:
+        type: string
+        required: true
+        description: The instance being checked. The protocol is either TCP, HTTP, HTTPS, or SSL. The range of valid ports is one (1) through 65535.
+      Interval:
+        type: integer
+        required: true
+        description: The approximate interval, in seconds, between health checks of an individual instance.
+      Timeout:
+        type: integer
+        required: true
+        description: The amount of time, in seconds, during which no response means a failed health check.
+      UnhealthyThreshold:
+        type: integer
+        required: true
+        description: The number of consecutive health check failures required before moving the instance to the Unhealthy state.
+      HealthyThreshold:
+        type: integer
+        required: true
+        description: The number of consecutive health checks successes required before moving the instance to the Healthy state.
+
+  cloudify.datatypes.aws.elb.Classic.HealthCheck.config:
+    properties:
+      LoadBalancerName:
+        type: string
+        description: The name of the load balancer.
+        required: false
+      HealthCheck:
+        type: cloudify.datatypes.aws.elb.Classic.healthCheck.healthCheck
+        required: true
+        description: The configuration information.
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/elb.html#ElasticLoadBalancing.Client.configure_health_check
+        default: {}
+
+  cloudify.datatypes.aws.elb.Classic.Policy.config:
+    properties:
+      LoadBalancerName:
+        type: string
+        description: The name of the load balancer.
+        required: false
+      PolicyName:
+        type: string
+        required: true
+        description: The name of the load balancer policy to be created. This name must be unique within the set of policies for this load balancer.
+      PolicyTypeName:
+        type: string
+        required: true
+        description: The name of the base policy type. To get the list of policy types, use DescribeLoadBalancerPolicyTypes.
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/elb.html#ElasticLoadBalancing.Client.create_load_balancer_policy
+        default: {}
+
+  cloudify.datatypes.aws.elb.Classic.StickinessPolicy.config:
+    properties:
+      LoadBalancerName:
+        type: string
+        description: The name of the load balancer.
+        required: false
+      PolicyName:
+        type: string
+        required: true
+        description: The name of the load balancer policy to be created. This name must be unique within the set of policies for this load balancer.
+      CookieExpirationPeriod:
+        type: integer
+        required: false
+        description: The time period, in seconds, after which the cookie should be considered stale.
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/elb.html#ElasticLoadBalancing.Client.create_lb_cookie_stickiness_policy
+        default: {}
+
+  cloudify.datatypes.aws.SQS.Queue.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/sqs.html#SQS.Client.create_queue
+        default: {}
+
+  cloudify.datatypes.aws.SNS.Topic.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/sns.html#SNS.Client.create_topic
+        default: {}
+
+  cloudify.datatypes.aws.SNS.Subscription.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/sns.html#SNS.Client.get_subscription_attributes
+        default: {}
+
+  cloudify.datatypes.aws.s3.BucketTagging.Tagging:
+    properties:
+      TagSet:
+        required: true
+        description: A list of dictionaries with a keys Key and Value.
+        default: []
+
+  cloudify.datatypes.aws.s3.BucketTagging.config:
+    properties:
+      Bucket:
+        type: string
+        required: false
+        description: The bucket to tag.
+      Tagging:
+        type: cloudify.datatypes.aws.s3.BucketTagging.Tagging
+        required: true
+        description: The tagging set.
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/s3.html#S3.Client.put_bucket_tagging
+        default: {}
+
+  cloudify.datatypes.aws.s3.BucketLifecycleConfiguration.Lifecycle:
+    properties:
+      Rules:
+        default: []
+        required: true
+        description: A list of rules in dict format with keys Prefix, Status, etc.
+
+  cloudify.datatypes.aws.s3.BucketLifecycleConfiguration.config:
+    properties:
+      Bucket:
+        type: string
+        required: false
+        description: The bucket to tag.
+      LifecycleConfiguration:
+        type: cloudify.datatypes.aws.s3.BucketLifecycleConfiguration.Lifecycle
+        required: false
+        description: The lifecycle configuration.
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/s3.html#S3.Client.put_bucket_lifecycle
+        default: {}
+
+  cloudify.datatypes.aws.s3.BucketPolicy.config:
+    properties:
+      Bucket:
+        type: string
+        required: false
+        description: The bucket to tag.
+      ConfirmRemoveSelfBucketAccess:
+        type: boolean
+        required: false
+        description: Set this parameter to true to confirm that you want to remove your permissions to change this bucket policy in the future.
+      Policy:
+        required: true
+        description: The bucket policy as a JSON document.
+        default: {}
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/s3.html#S3.Client.put_bucket_policy
+        default: {}
+
+  cloudify.datatypes.aws.s3.CreateBucketConfiguration:
+    properties:
+      LocationConstraint:
+        type: string
+        required: false
+        description: Specifies the region where the bucket will be created. If you don't specify a region, the bucket will be created in US Standard.
+
+  cloudify.datatypes.aws.s3.Bucket.config:
+    properties:
+      Bucket:
+        type: string
+        required: true
+        description: The bucket name.
+      ACL:
+        type: string
+        required: false
+        description: The canned ACL to apply to the bucket.
+      CreateBucketConfiguration:
+        type: cloudify.datatypes.aws.s3.CreateBucketConfiguration
+        required: false
+        description: Specifies the region where the bucket will be created.
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/s3.html#S3.Client.create_bucket
+        default: {}
+
+  cloudify.datatypes.aws.s3.BucketObject.config:
+    properties:
+      Bucket:
+        type: string
+        required: false
+        description: The bucket name.
+      Key:
+        type: string
+        required: false
+        description: Object key for which the PUT operation was initiated.
+      ACL:
+        type: string
+        required: false
+        description: Object key for which the PUT operation was initiated.
+      kwargs:
+        description: https://boto3.readthedocs.io/en/latest/reference/services/s3.html#S3.Client.put_object
+        default: {}
+
+  cloudify.datatypes.aws.ec2.Vpc.config:
+    properties:
+      CidrBlock:
+        type: string
+        description: The IPv4 network range for the VPC, in CIDR notation.
+        required: true
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.create_vpc
+        default: {}
+
+  cloudify.datatypes.aws.ec2.VpcPeering.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.create_vpc_peering_connection
+        default: {}
+
+  cloudify.datatypes.aws.ec2.VpcPeeringRequest.config:
+    properties:
+      kwargs:
+        description: >
+          http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.accept_vpc_peering_connection
+          http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.reject_vpc_peering_connection
+        default: {}
+
+  cloudify.datatypes.aws.ec2.Subnet.config:
+    properties:
+      AvailabilityZone:
+        type: string
+        description: The Availability Zone for the subnet.
+        required: false
+      CidrBlock:
+        type: string
+        description: The IPv4 network range for the subnet, in CIDR notation.
+        required: false
+      VpcId:
+        type: string
+        description: The ID of the VPC. May be provided via relationship to a VPC type.
+        required: false
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.create_subnet
+        default: {}
+
+  cloudify.datatypes.aws.ec2.SecurityGroup.config:
+    properties:
+      Description:
+        type: string
+        description: The description for the security group.
+        required: true
+      GroupName:
+        type: string
+        description:  The name of the security group.
+        required: true
+      VpcId:
+        type: string
+        description:  The ID of the VPC. Required for EC2-VPC.
+        required: false
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.create_security_group
+        default: {}
+
+  cloudify.datatypes.aws.ec2.SecurityGroupRules.config:
+    properties:
+      IpPermissions:
+        description: One or more sets of IP permissions.
+        default: []
+      kwargs:
+        description: >
+          http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.authorize_security_group_ingress
+          http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.authorize_security_group_egress
+        default: {}
+
+  cloudify.datatypes.aws.ec2.NATGateway.config:
+    properties:
+      ConnectivityType:
+        type: string
+        required: false
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.create_nat_gateway
+        default: {}
+
+  cloudify.datatypes.aws.ec2.NetworkACL.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.create_network_acl
+        default: {}
+
+  cloudify.datatypes.aws.ec2.Interface.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.create_network_interface
+        default: {}
+
+  cloudify.datatypes.aws.ec2.Instances.LaunchTemplate:
+    properties:
+      LaunchTemplateId:
+        type: string
+        required: false
+      LaunchTemplateName:
+        type: string
+        required: false
+      Version:
+        type: string
+        required: false
+
+  cloudify.datatypes.aws.ec2.Instances.config:
+    properties:
+      MinCount:
+        type: integer
+        default: 1
+      MaxCount:
+        type: integer
+        default: 1
+      ImageId:
+        type: string
+        required: false
+      InstanceType:
+        type: string
+        required: false
+      LaunchTemplate:
+        type: cloudify.datatypes.aws.ec2.Instances.LaunchTemplate
+        required: false
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.run_instances
+        default: {}
+
+  cloudify.datatypes.aws.ec2.SpotInstances.config:
+    properties:
+      kwargs:
+        description: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.html#EC2.Client.request_spot_instances
+        default: {}
+
+  cloudify.datatypes.aws.ec2.SpotFleetRequest.config:
+    properties:
+      kwargs:
+        description: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.html#EC2.Client.request_spot_fleet
+        default: {}
+
+  cloudify.datatypes.aws.ec2.Keypair.config:
+    properties:
+      KeyName:
+        type: string
+        required: false
+        description: >
+          If not provided, this defaults to the node-instance ID.
+      PublicKeyMaterial:
+        type: string
+        required: false
+        description: >
+          If PublicKeyMaterial is provided, the import_key_pair operation is executed instead of create_key_pair.
+          See documentation: http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.import_key_pair.
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.create_key_pair
+        default: {}
+
+  cloudify.datatypes.aws.ec2.ElasticIP.config:
+    properties:
+      Domain:
+        type: string
+        description: Set to vpc to allocate the address for use with instances in a VPC, valid values are 'vpc' or 'standard'.
+        default: vpc
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.allocate_address
+        default: {}
+
+  cloudify.datatypes.aws.ec2.NetworkAclEntry.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.create_network_acl_entry
+        default: {}
+
+  cloudify.datatypes.aws.ec2.DHCPOptions.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.create_dhcp_options
+        default: {}
+
+  cloudify.datatypes.aws.ec2.VPNGateway.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.create_vpn_gateway
+        default: {}
+
+  cloudify.datatypes.aws.ec2.VPNConnection.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.create_vpn_connection
+        default: {}
+
+  cloudify.datatypes.aws.ec2.VPNConnectionRoute.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.create_vpn_connection_route
+        default: {}
+
+  cloudify.datatypes.aws.ec2.CustomerGateway.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.create_customer_gateway
+        default: {}
+
+  cloudify.datatypes.aws.ec2.InternetGateway.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.create_internet_gateway
+        default: {}
+
+  cloudify.datatypes.aws.ec2.TransitGateway.config:
+    properties:
+      kwargs:
+        description: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.html#EC2.Client.create_transit_gateway
+        default: {}
+
+  cloudify.datatypes.aws.ec2.TransitGatewayVPCAttachment.config:
+    properties:
+      kwargs:
+        description: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.html#EC2.Client.create_transit_gateway_vpc_attachment
+        default: {}
+
+  cloudify.datatypes.aws.ec2.TransitGatewayRouteTable.config:
+    properties:
+      kwargs:
+        description: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.html#EC2.Client.create_transit_gateway_route_table
+        default: {}
+
+  cloudify.datatypes.aws.ec2.TransitGatewayRoute.config:
+    properties:
+      kwargs:
+        description: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.html#EC2.Client.create_transit_gateway_route
+        default: {}
+
+  cloudify.datatypes.aws.ec2.RouteTable.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.create_route_table
+        default: {}
+
+  cloudify.datatypes.aws.ec2.Route.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.create_route
+        default: {}
+
+  cloudify.datatypes.aws.ec2.Image.config.create.BlockDeviceMappings:
+    properties:
+      DeviceName:
+        type: string
+        required: false
+        description: ~
+      VirtualName:
+        type: string
+        required: false
+        description: ~
+      Ebs:
+        type: cloudify.datatypes.aws.ec2.Image.config.create.BlockDeviceMappings.Ebs
+        required: false
+        description: ~
+      NoDevice:
+        type: string
+        required: false
+        description: ~
+      kwargs:
+        description: ~
+        default: { }
+
+  cloudify.datatypes.aws.ec2.Image.config:
+    properties:
+      BlockDeviceMappings:
+        type: cloudify.datatypes.aws.ec2.Image.config.create.BlockDeviceMappings
+        required: false
+        description: list contaning a dict of arguments to create an ami.
+      Description:
+        type: string
+        required: false
+        description: The description of the created image.
+      DryRun:
+        type: boolean
+        required: false
+        description: ~
+      InstanceId:
+        type: string
+        required: false
+        description: The InstanceId to create an image from.
+      Name:
+        type: string
+        required: false
+        description: The name of the image.
+      NoReboot:
+        type: boolean
+        required: false
+        description: ~
+      TagSpecifications:
+        type: cloudify.datatypes.aws.TagSpecifications
+        required: false
+        description: ~
+      kwargs:
+        description: "https://docs.cloudify.co/latest/working_with/official_plugins/infrastructure/aws/#cloudify-nodes-aws-ec2-image"
+        default: {}
+
+  cloudify.datatypes.aws.ec2.Image.config.create.BlockDeviceMappings.Ebs:
+    properties:
+      DeleteOnTermination:
+        type: boolean
+        required: false
+        description: ~
+      Iops:
+        type: integer
+        required: false
+        description: ~
+      SnapshotId:
+        type: string
+        required: false
+        description: ~
+      VolumeSize:
+        type: integer
+        required: false
+        description: ~
+      VolumeType:
+        type: string
+        required: false
+        description: ~
+      KmsKeyId:
+        type: string
+        required: false
+        description:
+      Throughput:
+        type: integer
+        required: false
+        description: ~
+      OutpostArn:
+        type: string
+        required: false
+        description: ~
+      Encrypted:
+        type: boolean
+        required: false
+        description: ~
+      kwargs:
+        description: ~
+        default: { }
+
+  cloudify.datatypes.aws.TagSpecifications:
+    properties:
+      ResourceType:
+        type: string
+        required: false
+        description: ~
+      Tags:
+        type: list
+        required: false
+
+  cloudify.datatypes.aws.ec2.Tags.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.create_tags
+        default: {}
+
+  cloudify.datatypes.aws.ec2.EBSVolume.config:
+    properties:
+      AvailabilityZone:
+        type: string
+        description: The Availability Zone in which to create the volume.
+        required: true
+      Size:
+        type: integer
+        description: The size of the volume, in GiBs.
+        required: false
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.create_volume
+        default: {}
+
+  cloudify.datatypes.aws.ec2.EBSAttachment.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/ec2.html#EC2.Client.attach_volume
+        default: {}
+
+  cloudify.datatypes.aws.autoscaling.LaunchTemplate:
+    properties:
+      LaunchTemplateId:
+        type: string
+        required: false
+        description: The ID of the launch template. You must specify either a template ID or a template name.
+      LaunchTemplateName:
+        type: string
+        required: false
+        description: The name of the launch template. You must specify either a template name or a template ID.
+      Version:
+        type: string
+        required: false
+        description: The version number, $Latest , or $Default . If the value is $Latest , Amazon EC2 Auto Scaling selects the latest version of the launch template when launching instances. If the value is $Default , Amazon EC2 Auto Scaling selects the default version of the launch template when launching instances. The default value is $Default.
+
+  cloudify.datatypes.aws.autoscaling.Group.config:
+    properties:
+      AutoScalingGroupName:
+        type: string
+        required: true
+        description: The name of the Auto Scaling group. This name must be unique within the scope of your AWS account.
+      LaunchConfigurationName:
+        type: string
+        required: false
+        description: The name of the launch configuration. This parameter, a launch template, a mixed instances policy, or an EC2 instance must be specified.
+      LaunchTemplate:
+        type: cloudify.datatypes.aws.autoscaling.LaunchTemplate
+        required: false
+        description: The launch template to use to launch instances. This parameter, a launch configuration, a mixed instances policy, or an EC2 instance must be specified.
+      InstanceId:
+        type: string
+        required: false
+        description: The ID of the instance used to create a launch configuration for the group. This parameter, a launch configuration, a launch template, or a mixed instances policy must be specified.
+      MinSize:
+        type: integer
+        required: true
+        description: The minimum size of the group.
+      MaxSize:
+        type: integer
+        required: true
+        description: The maximum size of the group.
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/autoscaling.html#AutoScaling.Client.create_auto_scaling_group
+        default: {}
+
+  cloudify.datatypes.aws.autoscaling.LaunchConfiguration.config:
+    properties:
+      LaunchConfigurationName:
+        type: string
+        required: true
+        description: The name of the launch configuration. This name must be unique within the scope of your AWS account.
+      ImageId:
+        type: string
+        required: false
+        description: The ID of the Amazon Machine Image (AMI) to use to launch your EC2 instances.
+      InstanceType:
+        type: string
+        required: false
+        description: The instance type of the EC2 instance. If you do not specify InstanceId, you must specify InstanceType.
+      InstanceId:
+        type: string
+        required: false
+        description: The ID of the instance to use to create the launch configuration. The new launch configuration derives attributes from the instance, except for the block device mapping. If you do not specify InstanceId , you must specify both ImageId and InstanceType.
+      KeyName:
+        type: string
+        required: false
+        description: The name of the key pair.
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/autoscaling.html#AutoScaling.Client.create_launch_configuration
+        default: {}
+
+  cloudify.datatypes.aws.autoscaling.Policy.config:
+    properties:
+      AutoScalingGroupName:
+        type: string
+        required: false
+        description: The name of the Auto Scaling group.
+      PolicyName:
+        type: string
+        required: true
+        description: The name of the policy.
+      PolicyType:
+        type: string
+        required: false
+        description: The policy type. The valid values are SimpleScaling, StepScaling, and TargetTrackingScaling. If the policy type is null, the value is treated as SimpleScaling.
+      AdjustmentType:
+        type: string
+        required: false
+        description: The adjustment type. The valid values are ChangeInCapacity, ExactCapacity, and PercentChangeInCapacity. This parameter is supported if the policy type is SimpleScaling or StepScaling.
+      ScalingAdjustment:
+        type: integer
+        required: false
+        description: The amount by which to scale, based on the specified adjustment type. A positive value adds to the current capacity while a negative number removes from the current capacity.
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/autoscaling.html#AutoScaling.Client.put_scaling_policy
+        default: {}
+
+  cloudify.datatypes.aws.autoscaling.LifecycleHook.config:
+    properties:
+      LifecycleHookName:
+        type: string
+        required: true
+        description: The name of the lifecycle hook.
+      AutoScalingGroupName:
+        type: string
+        required: false
+        description: The name of the Auto Scaling group.
+      LifecycleTransition:
+        type: string
+        required: false
+        description: The instance state to which you want to attach the lifecycle hook.
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/autoscaling.html#AutoScaling.Client.put_lifecycle_hook
+        default: {}
+
+  cloudify.datatypes.aws.autoscaling.NotificationConfiguration.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/autoscaling.html#AutoScaling.Client.put_notification_configuration
+        default: {}
+
+  cloudify.datatypes.aws.cloudwatch.Alarm.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/cloudwatch.html#CloudWatch.Client.put_metric_alarm
+        default: {}
+
+
+  cloudify.datatypes.aws.cloudwatch.Rule.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/events.html#CloudWatchEvents.Client.put_rule
+        default: {}
+
+  cloudify.datatypes.aws.cloudwatch.Event.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/events.html#CloudWatchEvents.Client.put_events
+        default: {}
+
+  cloudify.datatypes.aws.cloudwatch.Target.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/events.html#CloudWatchEvents.Client.put_targets
+        default: {}
+
+  cloudify.datatypes.aws.efs.FileSystem.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/efs.html#EFS.Client.create_file_system
+        default: {}
+
+  cloudify.datatypes.aws.efs.FileSystemTags.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/efs.html#EFS.Client.create_tags
+        default: {}
+
+  cloudify.datatypes.aws.efs.MountTarget.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/efs.html#EFS.Client.create_mount_target
+        default: {}
+
+  cloudify.datatypes.aws.kms.CustomerMasterKey.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/kms.html#KMS.Client.create_key
+        default: {}
+
+  cloudify.datatypes.aws.kms.Alias.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/kms.html#KMS.Client.create_alias
+        default: {}
+
+  cloudify.datatypes.aws.kms.Grant.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/kms.html#KMS.Client.create_grant
+        default: {}
+
+  cloudify.datatypes.aws.CloudFormation.Stack.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/cloudformation.html#CloudFormation.Client.create_stack
+        default: {}
+
+  cloudify.datatypes.aws.ECS.Cluster.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/ecs.html#ECS.Client.create_cluster
+        default: {}
+
+  cloudify.datatypes.aws.ECS.Service.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/ecs.html#ECS.Client.create_service
+        default: {}
+
+  cloudify.datatypes.aws.ECS.TaskDefinition.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/ecs.html#ECS.Client.register_task_definition
+        default: {}
+
+  cloudify.datatypes.aws.EKS.Cluster.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/eks.html#EKS.Client.create_cluster
+        default: {}
+
+  cloudify.datatypes.aws.EKS.NodeGroup.config:
+    properties:
+      kwargs:
+        description: http://boto3.readthedocs.io/en/latest/reference/services/eks.html#EKS.Client.create_nodegroup
+        default: {}
+
+  cloudify.datatypes.aws.codepipeline.Pipeline.config:
+    properties:
+      kwargs:
+        description: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/codepipeline.html#CodePipeline.Client.create_pipeline
+        default: {}
+
+dsl_definitions:
+
+  use_external_resource_desc: &use_external_resource_desc >
+    Indicate whether the resource exists or if Cloudify should create the resource,
+    true if you are bringing an existing resource, false if you want cloudify to create it.
+
+  resource_id_desc: &resource_id_desc >
+    The AWS resource ID of the external resource, if
+    use_external_resource is true. Otherwise it is an empty string.
+
+  # Every operation uses these inputs, unless noted.
+  operation_inputs: &operation_inputs
+    aws_resource_id:
+      description: >
+        This overrides the resource_id property (useful for setting the
+        resource ID of a node instance at runtime).
+      type: string
+      required: false
+      default: ~
+    runtime_properties:
+      description: >
+        This overrides any runtime property at runtime. This is a key-value
+        pair / dictionary that will be passed, as-is, to the runtime properties
+        of the running instance.
+      required: false
+      default: ~
+    force_operation:
+      description: >
+        Forces the current operation to be executed regardless
+        if the "use_external_resource" property is set or not.
+      required: false
+      default: false
+    resource_config:
+      description: >
+        Configuration key-value data to be passed as-is to the corresponding
+        Boto3 method. Key names must match the case that Boto3 requires.
+      required: false
+      default: {}
+
+  # Every resource uses this property unless noted.
+  external_resource: &external_resource
+    use_external_resource:
+      description: *use_external_resource_desc
+      type: boolean
+      default: false
+
+  # Every resource uses this property unless noted.
+  client_config: &client_config
+    client_config:
+      description: >
+        A dictionary of values to pass to authenticate with the AWS API.
+      type: cloudify.datatypes.aws.ConnectionConfig
+      required: false
+
+  # Every resource uses this property unless noted.
+  resource_id: &resource_id
+    resource_id:
+      description: *resource_id_desc
+      type: string
+      default: ''
+
+  # Every resource uses this property to create swift resources.
+  swift_config: &swift_config
+    swift_config:
+      description: >
+        A dictionary of values to pass to authenticate with the SWIFT API.
+      type: cloudify.datatypes.swift.Connection
+      required: true
+
+  tags_property: &tags_property
+    Tags:
+      description: Tags to add to an EC2 resource.
+      required: false
+
+  device_name: &device_name
+    device_name:
+      description: Device name which is requried when creating EBS volume which need to be attached to EC2 instance using relationship
+      type: string
+      default: ''
+
+  validation_interface: &validation_interface
+    cloudify.interfaces.validation:
+      check_status:
+        implementation: aws.cloudify_aws.workflows.check_status.check_status
+
+node_types:
+
+  cloudify.nodes.aws.dynamodb.Table:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.dynamodb.Table.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.cloudify_aws.dynamodb.resources.table.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.dynamodb.resources.table.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.iam.Group:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.iam.Group.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.cloudify_aws.iam.resources.group.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.iam.resources.group.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.iam.AccessKey:
+    derived_from: cloudify.nodes.Root
+    properties:
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.iam.AccessKey.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        configure:
+          implementation: aws.cloudify_aws.iam.resources.access_key.configure
+          inputs:
+            runtime_properties:
+              description: >
+                This overrides any runtime property at runtime. This is a key-value
+                pair / dictionary that will be passed, as-is, to the runtime properties
+                of the running instance.
+              required: false
+              default: ~
+            resource_config:
+              description: >
+                Configuration key-value data to be passed as-is to the corresponding
+                Boto3 method. Key names must match the case that Boto3 requires.
+              required: false
+              default: {}
+
+  cloudify.nodes.aws.iam.LoginProfile:
+    derived_from: cloudify.nodes.Root
+    properties:
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.iam.LoginProfile.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        configure:
+          implementation: aws.cloudify_aws.iam.resources.login_profile.configure
+          inputs:
+            runtime_properties:
+              description: >
+                This overrides any runtime property at runtime. This is a key-value
+                pair / dictionary that will be passed, as-is, to the runtime properties
+                of the running instance.
+              required: false
+              default: ~
+            resource_config:
+              description: >
+                Configuration key-value data to be passed as-is to the corresponding
+                Boto3 method. Key names must match the case that Boto3 requires.
+              required: false
+              default: {}
+
+  cloudify.nodes.aws.iam.User:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.iam.User.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.cloudify_aws.iam.resources.user.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.iam.resources.user.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.iam.Role:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      policy_arns:
+        description: >
+          List of ARN policies to be provided.
+          The list needs to contain dictionaries containing a single ARN
+          policy with the key 'PolicyArn'
+        type: list
+        default: []
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.iam.Role.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.cloudify_aws.iam.resources.role.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.iam.resources.role.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.iam.RolePolicy:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.iam.RolePolicy.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.cloudify_aws.iam.resources.role_policy.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.iam.resources.role_policy.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.iam.InstanceProfile:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.iam.InstanceProfile.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.cloudify_aws.iam.resources.instance_profile.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.iam.resources.instance_profile.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.iam.Policy:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.iam.Policy.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.cloudify_aws.iam.resources.policy.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.iam.resources.policy.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.lambda.Function:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.lambda.Function.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.cloudify_aws.lambda_serverless.resources.function.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.lambda_serverless.resources.function.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.lambda.Invoke:
+    derived_from: cloudify.nodes.Root
+    properties:
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method, except for dicionary containing Payload key. Payload
+          content will be encoded according to Boto3 requirements.
+          If the Payload value is a dictionary it will be JSON encoded and
+          converted into bytes. If the Payload value is string it will be
+          treated as the path for file that will be used to populate the value.
+          In other cases (integer, bool, etc.) Payload will be passed as is.
+          Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.lambda.Invoke.config
+        required: false
+      resource_encoding:
+        description: >
+          Encoding used to decode replies
+        default: 'utf-8'
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        configure:
+          implementation: aws.cloudify_aws.lambda_serverless.resources.invoke.configure
+          inputs:
+            runtime_properties:
+              description: >
+                This overrides any runtime property at runtime. This is a key-value
+                pair / dictionary that will be passed, as-is, to the runtime properties
+                of the running instance.
+              required: false
+              default: ~
+            resource_config:
+              description: >
+                Configuration key-value data to be passed as-is to the corresponding
+                Boto3 method. Key names must match the case that Boto3 requires.
+              required: false
+              default: {}
+
+  cloudify.nodes.aws.lambda.Permission:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.lambda.Permission.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.lambda_serverless.resources.permission.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.lambda_serverless.resources.permission.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.lambda_serverless.resources.permission.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.rds.Instance:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.rds.Instance.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.rds.resources.instance.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.rds.resources.instance.create
+          inputs: *operation_inputs
+        start:
+          implementation: aws.cloudify_aws.rds.resources.instance.start
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.rds.resources.instance.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.rds.InstanceReadReplica:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.rds.InstanceReadReplica.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.rds.resources.instance_read_replica.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.rds.resources.instance_read_replica.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.rds.resources.instance_read_replica.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.rds.SubnetGroup:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.rds.SubnetGroup.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.rds.resources.subnet_group.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.rds.resources.subnet_group.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.rds.resources.subnet_group.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.rds.OptionGroup:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.rds.OptionGroup.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.cloudify_aws.rds.resources.option_group.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.rds.resources.option_group.delete
+          inputs: *operation_inputs
+
+  # Stores prepared Option in runtime property "resource_config"
+  cloudify.nodes.aws.rds.Option:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.rds.Option.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        configure:
+          implementation: aws.cloudify_aws.rds.resources.option.configure
+          inputs: *operation_inputs
+
+  # Reference: https://boto3.readthedocs.io/en/latest/reference/services/rds.html#RDS.Client.create_db_parameter_group
+  cloudify.nodes.aws.rds.ParameterGroup:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.rds.ParameterGroup.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.cloudify_aws.rds.resources.parameter_group.create
+          inputs: *operation_inputs
+        configure:
+          implementation: aws.cloudify_aws.rds.resources.parameter_group.configure
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.rds.resources.parameter_group.delete
+          inputs: *operation_inputs
+
+  # Stores prepared Parameter in runtime property "resource_config"
+  cloudify.nodes.aws.rds.Parameter:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.rds.Parameter.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        configure:
+          implementation: aws.cloudify_aws.rds.resources.parameter.configure
+          inputs: *operation_inputs
+
+  # Reference: https://boto3.readthedocs.io/en/latest/reference/services/route53.html#Route53.Client.create_hosted_zone
+  cloudify.nodes.aws.route53.HostedZone:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.route53.HostedZone.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.route53.resources.hosted_zone.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.route53.resources.hosted_zone.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.route53.resources.hosted_zone.delete
+          inputs:
+            aws_resource_id:
+              description: >
+                This overrides the resource_id property (useful for setting the
+                resource ID of a node instance at runtime).
+              type: string
+              required: false
+              default: ~
+            runtime_properties:
+              description: >
+                This overrides any runtime property at runtime. This is a key-value
+                pair / dictionary that will be passed, as-is, to the runtime properties
+                of the running instance.
+              required: false
+              default: ~
+            force_operation:
+              description: >
+                Forces the current operation to be executed regardless
+                if the "use_external_resource" property is set or not.
+              required: false
+              default: false
+            force_delete:
+              description: >
+                Hosted Zones can only be deleted if all Resource Sets (except for the
+                default ones) are already removed. If this is set to `true`, the operation
+                will attempt to delete all Resource Sets within the Hosted Zone before
+                deleting the Hosted Zone itself.
+              required: true
+              default: false
+            resource_config:
+              description: >
+                Configuration key-value data to be passed as-is to the corresponding
+                Boto3 method. Key names must match the case that Boto3 requires.
+              required: false
+              default: {}
+
+  # Reference: https://boto3.readthedocs.io/en/latest/reference/services/route53.html#Route53.Client.change_resource_record_sets
+  cloudify.nodes.aws.route53.RecordSet:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.route53.RecordSet.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.route53.resources.record_set.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.route53.resources.record_set.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.route53.resources.record_set.delete
+          inputs: *operation_inputs
+
+  # Reference: https://boto3.readthedocs.io/en/latest/reference/services/sqs.html
+  cloudify.nodes.aws.SQS.Queue:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.SQS.Queue.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.sqs.resources.queue.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.sqs.resources.queue.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.sqs.resources.queue.delete
+          inputs: *operation_inputs
+
+  # https://boto3.readthedocs.io/en/latest/reference/services/sns.html
+  cloudify.nodes.aws.SNS.Topic:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.SNS.Topic.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.sns.resources.topic.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.sns.resources.topic.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.sns.resources.topic.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.SNS.Subscription:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.SNS.Subscription.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.sns.resources.subscription.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.sns.resources.subscription.create
+          inputs: *operation_inputs
+        start:
+          implementation: aws.cloudify_aws.sns.resources.subscription.start
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.sns.resources.subscription.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.elb.LoadBalancer:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      cloudify_tagging:
+        description: an automatic tag to identify the ec2 instance
+        type: boolean
+        default: true
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.elb.LoadBalancer.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.elb.resources.load_balancer.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.elb.resources.load_balancer.create
+          inputs: *operation_inputs
+        start:
+          implementation: aws.cloudify_aws.elb.resources.load_balancer.modify
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.elb.resources.load_balancer.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.elb.Classic.LoadBalancer:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      cloudify_tagging:
+        description: an automatic tag to identify the ec2 instance
+        type: boolean
+        default: true
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.elb.Classic.LoadBalancer.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.elb.resources.classic.load_balancer.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.elb.resources.classic.load_balancer.create
+          inputs: *operation_inputs
+        start:
+          implementation: aws.cloudify_aws.elb.resources.classic.load_balancer.start
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.elb.resources.classic.load_balancer.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.elb.Classic.HealthCheck:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      cloudify_tagging:
+        description: an automatic tag to identify the ec2 instance
+        type: boolean
+        default: true
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.elb.Classic.HealthCheck.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.elb.resources.classic.health_check.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.elb.resources.classic.health_check.create
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.elb.Listener:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      cloudify_tagging:
+        description: an automatic tag to identify the ec2 instance
+        type: boolean
+        default: true
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.elb.Listener.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.elb.resources.listener.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.elb.resources.listener.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.elb.resources.listener.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.elb.Classic.Listener:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      cloudify_tagging:
+        description: an automatic tag to identify the ec2 instance
+        type: boolean
+        default: true
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.elb.Classic.Listener.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.elb.resources.classic.listener.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.elb.resources.classic.listener.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.elb.resources.classic.listener.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.elb.Rule:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      cloudify_tagging:
+        description: an automatic tag to identify the ec2 instance
+        type: boolean
+        default: true
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.elb.Rule.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.elb.resources.rule.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.elb.resources.rule.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.elb.resources.rule.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.elb.TargetGroup:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      cloudify_tagging:
+        description: an automatic tag to identify the ec2 instance
+        type: boolean
+        default: true
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.elb.TargetGroup.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.elb.resources.target_group.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.elb.resources.target_group.create
+          inputs: *operation_inputs
+        start:
+          implementation: aws.cloudify_aws.elb.resources.target_group.modify
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.elb.resources.target_group.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.elb.Classic.Policy:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      cloudify_tagging:
+        description: an automatic tag to identify the ec2 instance
+        type: boolean
+        default: true
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.elb.Classic.Policy.config
+        required: true
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.elb.resources.classic.policy.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.elb.resources.classic.policy.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.elb.resources.classic.policy.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.elb.Classic.Policy.Stickiness:
+    derived_from: cloudify.nodes.aws.elb.Classic.Policy
+    properties:
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.elb.Classic.StickinessPolicy.config
+        required: true
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.cloudify_aws.elb.resources.classic.policy.create_sticky
+          inputs: *operation_inputs
+        start:
+          implementation: aws.cloudify_aws.elb.resources.classic.policy.start_sticky
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.s3.BaseBucket:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.s3.Bucket.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.s3.resources.bucket.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.s3.resources.bucket.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.s3.resources.bucket.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.s3.BaseBucketObject:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.s3.BucketObject.config
+        required: false
+      source_type:
+        description: >
+          This property represents the source type of the object that need to be upload to the S3. the following options supported:
+          - remote: Read data from remote url
+          - local: Read data from local url exists with blueprint
+          - bytes: Read data as sequence of bytes.These bytes should be
+          specified inside "Body" param inside "resource_config"
+        type: string
+        default: local
+      path:
+        description: >
+          This property represents the path to read file that need to be
+          uploaded to the S3 and this param should only provided when the
+          source_type is "local" or "remote"
+        type: string
+        default: ''
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.s3.resources.bucket_object.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.s3.resources.bucket_object.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.s3.resources.bucket_object.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.s3.Bucket:
+    derived_from: cloudify.nodes.aws.s3.BaseBucket
+    properties:
+      <<: *client_config
+
+  cloudify.nodes.aws.s3.BucketPolicy:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.s3.BucketPolicy.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.s3.resources.bucket_policy.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.s3.resources.bucket_policy.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.s3.resources.bucket_policy.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.s3.BucketLifecycleConfiguration:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.s3.BucketLifecycleConfiguration.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.s3.resources.lifecycle_configuration.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.s3.resources.lifecycle_configuration.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.s3.resources.lifecycle_configuration.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.s3.BucketTagging:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.s3.BucketTagging.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.s3.resources.tagging.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.s3.resources.tagging.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.s3.resources.tagging.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.s3.BucketObject:
+    derived_from: cloudify.nodes.aws.s3.BaseBucketObject
+    properties:
+      <<: *client_config
+
+  cloudify.nodes.aws.ec2.BaseType:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      <<: *tags_property
+      cloudify_tagging:
+        description: an automatic tag to identify the ec2 instance
+        type: boolean
+        default: true
+
+  cloudify.nodes.aws.ec2.Vpc:
+    derived_from: cloudify.nodes.aws.ec2.BaseType
+    properties:
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ec2.Vpc.config
+        required: false
+    interfaces:
+      <<: *validation_interface
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.ec2.resources.vpc.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.ec2.resources.vpc.create
+          inputs: *operation_inputs
+        poststart:
+          implementation: aws.cloudify_aws.ec2.resources.vpc.poststart
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.ec2.resources.vpc.delete
+          inputs: *operation_inputs
+        modify_vpc_attribute:
+          implementation: aws.cloudify_aws.ec2.resources.vpc.modify_vpc_attribute
+          inputs: *operation_inputs
+        check_drift:
+          implementation: aws.cloudify_aws.ec2.resources.vpc.check_drift
+          inputs: {}
+
+
+  cloudify.nodes.aws.ec2.VpcPeering:
+    derived_from: cloudify.nodes.aws.ec2.BaseType
+    properties:
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ec2.VpcPeering.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.ec2.resources.vpc_peering.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.ec2.resources.vpc_peering.create
+          inputs: *operation_inputs
+        start:
+          implementation: aws.cloudify_aws.ec2.resources.vpc_peering.modify
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.ec2.resources.vpc_peering.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.ec2.VpcPeeringRequest:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ec2.VpcPeeringRequest.config
+        required: false
+
+  cloudify.nodes.aws.ec2.VpcPeeringAcceptRequest:
+    derived_from: cloudify.nodes.aws.ec2.VpcPeeringRequest
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.ec2.resources.vpc_peering.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.ec2.resources.vpc_peering.accept
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.ec2.VpcPeeringRejectRequest:
+    derived_from: cloudify.nodes.aws.ec2.VpcPeeringRequest
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.ec2.resources.vpc_peering.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.ec2.resources.vpc_peering.reject
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.ec2.Subnet:
+    derived_from: cloudify.nodes.aws.ec2.BaseType
+    properties:
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ec2.Subnet.config
+        required: false
+      use_available_zones:
+        type: boolean
+        description: A boolean to choose another available zone if the one provided is not available.
+        required: false
+    interfaces:
+      <<: *validation_interface
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.ec2.resources.subnet.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.ec2.resources.subnet.create
+          inputs: *operation_inputs
+        poststart:
+          implementation: aws.cloudify_aws.ec2.resources.subnet.poststart
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.ec2.resources.subnet.delete
+          inputs: *operation_inputs
+        modify_subnet_attribute:
+          implementation: aws.cloudify_aws.ec2.resources.subnet.modify_subnet_attribute
+          inputs: *operation_inputs
+        check_drift:
+          implementation: aws.cloudify_aws.ec2.resources.subnet.check_drift
+          inputs: {}
+
+  cloudify.nodes.aws.ec2.SecurityGroup:
+    derived_from: cloudify.nodes.aws.ec2.BaseType
+    properties:
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ec2.SecurityGroup.config
+        required: false
+    interfaces:
+      <<: *validation_interface
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.ec2.resources.securitygroup.prepare
+#          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.ec2.resources.securitygroup.create
+#          inputs: *operation_inputs
+        poststart:
+          implementation: aws.cloudify_aws.ec2.resources.securitygroup.poststart
+#          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.ec2.resources.securitygroup.delete
+#          inputs: *operation_inputs
+        check_drift:
+          implementation: aws.cloudify_aws.ec2.resources.securitygroup.check_drift
+          inputs: {}
+
+  cloudify.nodes.aws.ec2.SecurityGroupRuleIngress:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ec2.SecurityGroupRules.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        start:
+          implementation: aws.cloudify_aws.ec2.resources.securitygroup.authorize_ingress_rules
+#          inputs: *operation_inputs
+        stop:
+          implementation: aws.cloudify_aws.ec2.resources.securitygroup.revoke_ingress_rules
+#          inputs: *operation_inputs
+
+  cloudify.nodes.aws.ec2.SecurityGroupRuleEgress:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ec2.SecurityGroupRules.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        start:
+          implementation: aws.cloudify_aws.ec2.resources.securitygroup.authorize_egress_rules
+          inputs: *operation_inputs
+        stop:
+          implementation: aws.cloudify_aws.ec2.resources.securitygroup.revoke_egress_rules
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.ec2.NATGateway:
+    derived_from: cloudify.nodes.aws.ec2.BaseType
+    properties:
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ec2.NATGateway.config
+        required: false
+    interfaces:
+      <<: *validation_interface
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.ec2.resources.nat_gateway.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.ec2.resources.nat_gateway.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.ec2.resources.nat_gateway.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.ec2.Interface:
+    derived_from: cloudify.nodes.aws.ec2.BaseType
+    properties:
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ec2.Interface.config
+        required: false
+    interfaces:
+      <<: *validation_interface
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.ec2.resources.eni.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.ec2.resources.eni.create
+          inputs: *operation_inputs
+        start:
+          implementation: aws.cloudify_aws.ec2.resources.eni.attach
+          inputs: *operation_inputs
+        poststart:
+          implementation: aws.cloudify_aws.ec2.resources.eni.poststart
+        stop:
+          implementation: aws.cloudify_aws.ec2.resources.eni.detach
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.ec2.resources.eni.delete
+          inputs: *operation_inputs
+        modify_network_interface_attribute:
+          implementation: aws.cloudify_aws.ec2.resources.eni.modify_network_interface_attribute
+          inputs: *operation_inputs
+        check_drift:
+          implementation: aws.cloudify_aws.ec2.resources.eni.check_drift
+          inputs: {}
+
+  cloudify.nodes.aws.ec2.Instances:
+    derived_from: cloudify.nodes.Compute
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      <<: *tags_property
+      cloudify_tagging:
+        description: an automatic tag to identify the ec2 instance
+        type: boolean
+        default: true
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ec2.Instances.config
+        required: false
+      use_ipv6_ip:
+        type: boolean
+        description: >
+          Tells us to use the IPv6 IP if one exists for agent installation. If use_public_ip is provided, this is overridden.
+        default: false
+      use_public_ip:
+        type: boolean
+        description: >
+          Tells the deployment to use the public IP (if available) of the resource
+          for Cloudify Agent connections
+        default: false
+      use_password:
+        type: boolean
+        description: Whether to use a password for agent communication.
+        default: false
+    interfaces:
+      <<: *validation_interface
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.ec2.resources.instances.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.ec2.resources.instances.create
+          inputs: *operation_inputs
+        start:
+          implementation: aws.cloudify_aws.ec2.resources.instances.start
+          inputs: *operation_inputs
+        poststart:
+          implementation: aws.cloudify_aws.ec2.resources.instances.poststart
+          inputs: *operation_inputs
+        stop:
+          implementation: aws.cloudify_aws.ec2.resources.instances.stop
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.ec2.resources.instances.delete
+          inputs: *operation_inputs
+        modify_instance_attribute:
+          implementation: aws.cloudify_aws.ec2.resources.instances.modify_instance_attribute
+          inputs: *operation_inputs
+        check_drift:
+          implementation: aws.cloudify_aws.ec2.resources.instances.check_drift
+          inputs: {}
+
+  cloudify.nodes.aws.ec2.SpotInstances:
+    derived_from: cloudify.nodes.Compute
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      <<: *tags_property
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ec2.SpotInstances.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.ec2.resources.spot_instances.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.ec2.resources.spot_instances.create
+          inputs: *operation_inputs
+        configure:
+          implementation: aws.cloudify_aws.ec2.resources.spot_instances.configure
+          inputs: *operation_inputs
+        stop:
+          implementation: aws.cloudify_aws.ec2.resources.spot_instances.stop
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.ec2.resources.spot_instances.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.ec2.SpotFleetRequest:
+    derived_from: cloudify.nodes.aws.ec2.BaseType
+    properties:
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ec2.SpotFleetRequest.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.ec2.resources.spot_fleet_request.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.ec2.resources.spot_fleet_request.create
+          inputs: *operation_inputs
+        poststart:
+          implementation: aws.cloudify_aws.ec2.resources.spot_fleet_request.poststart
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.ec2.resources.spot_fleet_request.delete
+          inputs:
+            <<: *operation_inputs
+            terminate_instances:
+              type: boolean
+              description: Indicates whether to terminate instances for a Spot Fleet Request if it is canceled successfully.
+              default: true
+
+  cloudify.nodes.aws.ec2.Keypair:
+    derived_from: cloudify.nodes.aws.ec2.BaseType
+    properties:
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ec2.Keypair.config
+        required: false
+      log_create_response:
+        description: >
+          Opt-in to storing the create API request. Not recommended.
+        default: false
+      store_in_runtime_properties:
+        description: >
+          Opt-in to save the KeyPair KeyMaterial in the node-instance runtime-properties. Not recommended.
+        default: false
+      create_secret:
+        description: >
+          Opt-in to save the KeyPair KeyMaterial in the secret store. Only available in Cloudify Manager.
+        default: false
+      secret_name:
+        description: >
+          If "create_secret" property is true, provide the name of the secret, defaults to KeyName.
+        required: false
+      update_existing_secret:
+        description: >
+          If "create_secret" property is true, and the secret name already exists, overwrite the secret.
+        default: false
+      cloudify_tagging:
+        default: False
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.ec2.resources.keypair.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.ec2.resources.keypair.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.ec2.resources.keypair.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.ec2.ElasticIP:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      <<: *tags_property
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ec2.ElasticIP.config
+        required: false
+      use_unassociated_addresses:
+        description: >
+          Sometimes an IP has already been allocated,
+          but is not assigned to a NIC.
+          In order to work with limited quota, set this to true.
+        default: false
+      attach_existing_address:
+        description: If use_external_resource is true, and we do not want to try to attach the resource.
+        default: false
+    interfaces:
+      <<: *validation_interface
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.ec2.resources.elasticip.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.ec2.resources.elasticip.create
+          inputs: *operation_inputs
+        start:
+          implementation: aws.cloudify_aws.ec2.resources.elasticip.attach
+          inputs:
+            <<: *operation_inputs
+            force_operation:
+              default: true
+        stop:
+          implementation: aws.cloudify_aws.ec2.resources.elasticip.detach
+          inputs:
+            <<: *operation_inputs
+            force_operation:
+              default: true
+        delete:
+          implementation: aws.cloudify_aws.ec2.resources.elasticip.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.ec2.NetworkACL:
+    derived_from: cloudify.nodes.aws.ec2.BaseType
+    properties:
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ec2.NetworkACL.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.ec2.resources.networkacl.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.ec2.resources.networkacl.create
+          inputs: *operation_inputs
+        start:
+          implementation: aws.cloudify_aws.ec2.resources.networkacl.attach
+          inputs: *operation_inputs
+        stop:
+          implementation: aws.cloudify_aws.ec2.resources.networkacl.detach
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.ec2.resources.networkacl.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.ec2.NetworkAclEntry:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ec2.NetworkAclEntry.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.ec2.resources.networkaclentry.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.ec2.resources.networkaclentry.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.ec2.resources.networkaclentry.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.ec2.DHCPOptions:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ec2.DHCPOptions.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.ec2.resources.dhcp.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.ec2.resources.dhcp.create
+          inputs: *operation_inputs
+        start:
+          implementation: aws.cloudify_aws.ec2.resources.dhcp.attach
+          inputs: *operation_inputs
+        stop:
+          implementation: aws.cloudify_aws.ec2.resources.dhcp.detach
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.ec2.resources.dhcp.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.ec2.VPNGateway:
+    derived_from: cloudify.nodes.aws.ec2.BaseType
+    properties:
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ec2.VPNGateway.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.ec2.resources.vpn_gateway.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.ec2.resources.vpn_gateway.create
+          inputs: *operation_inputs
+        start:
+          implementation: aws.cloudify_aws.ec2.resources.vpn_gateway.attach
+          inputs: *operation_inputs
+        stop:
+          implementation: aws.cloudify_aws.ec2.resources.vpn_gateway.detach
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.ec2.resources.vpn_gateway.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.ec2.VPNConnection:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ec2.VPNConnection.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.ec2.resources.vpn_connection.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.ec2.resources.vpn_connection.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.ec2.resources.vpn_connection.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.ec2.VPNConnectionRoute:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ec2.VPNConnectionRoute.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.ec2.resources.vpn_connection_route.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.ec2.resources.vpn_connection_route.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.ec2.resources.vpn_connection_route.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.ec2.CustomerGateway:
+    derived_from: cloudify.nodes.aws.ec2.BaseType
+    properties:
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ec2.CustomerGateway.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.ec2.resources.customer_gateway.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.ec2.resources.customer_gateway.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.ec2.resources.customer_gateway.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.ec2.InternetGateway:
+    derived_from: cloudify.nodes.aws.ec2.BaseType
+    properties:
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ec2.InternetGateway.config
+        required: false
+    interfaces:
+      <<: *validation_interface
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.ec2.resources.internet_gateway.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.ec2.resources.internet_gateway.create
+          inputs: *operation_inputs
+        start:
+          implementation: aws.cloudify_aws.ec2.resources.internet_gateway.attach
+          inputs: *operation_inputs
+        stop:
+          implementation: aws.cloudify_aws.ec2.resources.internet_gateway.detach
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.ec2.resources.internet_gateway.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.ec2.TransitGateway:
+    derived_from: cloudify.nodes.aws.ec2.BaseType
+    properties:
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ec2.TransitGateway.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.ec2.resources.transit_gateway.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.ec2.resources.transit_gateway.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.ec2.resources.transit_gateway.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.ec2.TransitGatewayRouteTable:
+    derived_from: cloudify.nodes.aws.ec2.BaseType
+    properties:
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ec2.TransitGatewayRouteTable.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.ec2.resources.transit_gateway_routetable.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.ec2.resources.transit_gateway_routetable.create
+          inputs: *operation_inputs
+        start:
+          implementation: aws.cloudify_aws.ec2.resources.transit_gateway_routetable.attach
+          inputs: *operation_inputs
+        stop:
+          implementation: aws.cloudify_aws.ec2.resources.transit_gateway_routetable.detach
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.ec2.resources.transit_gateway_routetable.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.ec2.TransitGatewayRoute:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ec2.TransitGatewayRoute.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.ec2.resources.transit_gateway_route.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.ec2.resources.transit_gateway_route.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.ec2.resources.transit_gateway_route.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.ec2.RouteTable:
+    derived_from: cloudify.nodes.aws.ec2.BaseType
+    properties:
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ec2.RouteTable.config
+        required: false
+    interfaces:
+      <<: *validation_interface
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.ec2.resources.routetable.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.ec2.resources.routetable.create
+          inputs: *operation_inputs
+        start:
+          implementation: aws.cloudify_aws.ec2.resources.routetable.attach
+          inputs: *operation_inputs
+        stop:
+          implementation: aws.cloudify_aws.ec2.resources.routetable.detach
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.ec2.resources.routetable.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.ec2.Route:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ec2.Route.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.ec2.resources.route.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.ec2.resources.route.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.ec2.resources.route.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.ec2.Image:
+    derived_from: cloudify.nodes.Root
+    properties:
+      use_external_resource:
+        type: boolean
+        default: true
+        description: indecates if external_resourc should be used
+      <<: *client_config
+      <<: *resource_id
+
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ec2.Image.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.ec2.resources.image.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.ec2.resources.image.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.ec2.resources.image.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.ec2.Tags:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ec2.Tags.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.ec2.resources.tags.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.ec2.resources.tags.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.ec2.resources.tags.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.ec2.EBSVolume:
+    derived_from: cloudify.nodes.aws.ec2.BaseType
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      <<: *device_name
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ec2.EBSVolume.config
+        required: false
+      use_available_zones:
+        type: boolean
+        description: A boolean to choose another available zone if the one provided is not available.
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.ec2.resources.ebs.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.ec2.resources.ebs.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.ec2.resources.ebs.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.ec2.EBSAttachment:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ec2.EBSAttachment.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        prepare:
+          implementation: aws.cloudify_aws.ec2.resources.ebs.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.ec2.resources.ebs.attach
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.ec2.resources.ebs.detach
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.autoscaling.Group:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.autoscaling.Group.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.autoscaling.resources.autoscaling_group.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.autoscaling.resources.autoscaling_group.create
+          inputs: *operation_inputs
+        stop:
+          implementation: aws.cloudify_aws.autoscaling.resources.autoscaling_group.stop
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.autoscaling.resources.autoscaling_group.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.autoscaling.LaunchConfiguration:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.autoscaling.LaunchConfiguration.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.autoscaling.resources.launch_configuration.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.autoscaling.resources.launch_configuration.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.autoscaling.resources.launch_configuration.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.autoscaling.Policy:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.autoscaling.Policy.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.autoscaling.resources.policy.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.autoscaling.resources.policy.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.autoscaling.resources.policy.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.autoscaling.LifecycleHook:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.autoscaling.LifecycleHook.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.autoscaling.resources.lifecycle_hook.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.autoscaling.resources.lifecycle_hook.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.autoscaling.resources.lifecycle_hook.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.autoscaling.NotificationConfiguration:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.autoscaling.NotificationConfiguration.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.autoscaling.resources.notification_configuration.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.autoscaling.resources.notification_configuration.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.autoscaling.resources.notification_configuration.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.cloudwatch.Alarm:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.cloudwatch.Alarm.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.cloudwatch.resources.alarm.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.cloudwatch.resources.alarm.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.cloudwatch.resources.alarm.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.cloudwatch.Rule:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.cloudwatch.Rule.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.cloudwatch.resources.rule.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.cloudwatch.resources.rule.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.cloudwatch.resources.rule.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.cloudwatch.Event:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.cloudwatch.Event.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.cloudwatch.resources.event.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.cloudwatch.resources.event.create
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.cloudwatch.Target:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.cloudwatch.Target.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.cloudwatch.resources.target.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.cloudwatch.resources.target.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.cloudwatch.resources.target.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.efs.FileSystem:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.efs.FileSystem.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.efs.resources.file_system.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.efs.resources.file_system.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.efs.resources.file_system.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.efs.MountTarget:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.efs.MountTarget.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.efs.resources.mount_target.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.efs.resources.mount_target.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.efs.resources.mount_target.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.efs.FileSystemTags:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.efs.FileSystemTags.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.efs.resources.tags.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.efs.resources.tags.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.efs.resources.tags.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.kms.CustomerMasterKey:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.kms.CustomerMasterKey.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.kms.resources.key.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.kms.resources.key.create
+          inputs: *operation_inputs
+        start:
+          implementation: aws.cloudify_aws.kms.resources.key.enable
+          inputs: *operation_inputs
+        stop:
+          implementation: aws.cloudify_aws.kms.resources.key.disable
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.kms.resources.key.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.kms.Alias:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.kms.Alias.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.kms.resources.alias.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.kms.resources.alias.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.kms.resources.alias.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.kms.Grant:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.kms.Grant.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.kms.resources.grant.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.kms.resources.grant.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.kms.resources.grant.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.CloudFormation.Stack:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.CloudFormation.Stack.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.cloudformation.resources.stack.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.cloudformation.resources.stack.create
+          inputs:
+            minimum_wait_time:
+              type: integer
+              default: 0
+              description: |
+               Minimum waiting time in seconds to complete the operation.
+            <<: *operation_inputs
+        start:
+          implementation: aws.cloudify_aws.cloudformation.resources.stack.start
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.cloudformation.resources.stack.delete
+          inputs:
+            minimum_wait_time:
+              type: integer
+              default: 0
+              description: |
+               Minimum waiting time in seconds to complete the operation.
+            <<: *operation_inputs
+        pull:
+          implementation: aws.cloudify_aws.cloudformation.resources.stack.pull
+
+  cloudify.nodes.aws.ecs.Cluster:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ECS.Cluster.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.ecs.resources.cluster.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.ecs.resources.cluster.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.ecs.resources.cluster.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.ecs.Service:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ECS.Service.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.ecs.resources.service.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.ecs.resources.service.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.ecs.resources.service.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.ecs.TaskDefinition:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ECS.TaskDefinition.config
+        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.ecs.resources.task_definition.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.ecs.resources.task_definition.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.ecs.resources.task_definition.delete
+          inputs: *operation_inputs
+
+
+  ####
+   # Swift Nodes
+  ###
+  cloudify.nodes.swift.s3.Bucket:
+    derived_from: cloudify.nodes.aws.s3.BaseBucket
+    properties:
+      <<: *swift_config
+
+  cloudify.nodes.swift.s3.BucketObject:
+    derived_from: cloudify.nodes.aws.s3.BaseBucketObject
+    properties:
+      <<: *swift_config
+
+  ####
+   # EKS Nodes
+  ###
+  cloudify.nodes.aws.eks.Cluster:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      cloudify_tagging:
+        description: an automatic tag to identify the ec2 instance
+        type: boolean
+        default: true
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.EKS.Cluster.config
+        required: false
+      store_kube_config_in_runtime:
+        type: boolean
+        default: true
+        required: true
+        description: >
+          it will store the kubernetes configuration into a runtime property ['kubeconf'] to
+          use later to interact with the cluster
+    interfaces:
+      <<: *validation_interface
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.eks.resources.cluster.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.eks.resources.cluster.create
+          inputs: *operation_inputs
+        poststart:
+          implementation: aws.cloudify_aws.eks.resources.cluster.poststart
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.eks.resources.cluster.delete
+          inputs: *operation_inputs
+        check_drift:
+          implementation: aws.cloudify_aws.eks.resources.cluster.check_drift
+          inputs: {}
+
+  cloudify.nodes.aws.eks.NodeGroup:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      cloudify_tagging:
+        description: an automatic tag to identify the ec2 instance
+        type: boolean
+        default: true
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.EKS.NodeGroup.config
+        required: false
+    interfaces:
+      <<: *validation_interface
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.eks.resources.node_group.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.eks.resources.node_group.create
+          inputs: *operation_inputs
+        start:
+          implementation: aws.cloudify_aws.eks.resources.node_group.start
+          inputs: *operation_inputs
+        poststart:
+          implementation: aws.cloudify_aws.eks.resources.node_group.poststart
+        delete:
+          implementation: aws.cloudify_aws.eks.resources.node_group.delete
+          inputs: *operation_inputs
+        check_drift:
+          implementation: aws.cloudify_aws.eks.resources.node_group.check_drift
+
+  cloudify.nodes.aws.codepipeline.Pipeline:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.codepipeline.Pipeline.config
+#        required: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.codepipeline.resources.pipeline.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.codepipeline.resources.pipeline.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.codepipeline.resources.pipeline.delete
+          inputs: *operation_inputs
+      aws.codepipeline.pipeline:
+        start_pipeline_execution:
+          implementation: aws.cloudify_aws.codepipeline.resources.pipeline.execute
+          inputs: *operation_inputs
+
+  cloudify.nodes.resources.AmazonWebServices:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *client_config
+      regions:
+        type: list
+        default: []
+      resource_config:
+        type: dict
+        default:
+          resource_types:
+            - AWS::EKS::CLUSTER
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.cloudify_aws.workflows.resources.initialize
+          inputs:
+            resource_config:
+              default: { get_property: [ SELF, resource_config ] }
+            regions:
+              default: { get_property: [ SELF, regions ] }
+        delete:
+          implementation: aws.cloudify_aws.workflows.resources.deinitialize
+          inputs: *operation_inputs
+
+relationships:
+
+  cloudify.relationships.aws.connected_to:
+    derived_from: cloudify.relationships.connected_to
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        preconfigure:
+          implementation: ~
+          inputs:
+            resource_config:
+              description: >
+                Configuration key-value data to be passed as-is to the corresponding
+                Boto3 method. Key names must match the case that Boto3 requires.
+              required: false
+              default: {}
+        postconfigure:
+          implementation: ~
+          inputs:
+            resource_config:
+              description: >
+                Configuration key-value data to be passed as-is to the corresponding
+                Boto3 method. Key names must match the case that Boto3 requires.
+              required: false
+              default: {}
+        establish:
+          implementation: ~
+          inputs:
+            resource_config:
+              description: >
+                Configuration key-value data to be passed as-is to the corresponding
+                Boto3 method. Key names must match the case that Boto3 requires.
+              required: false
+              default: {}
+        unlink:
+          implementation: ~
+          inputs:
+            resource_config:
+              description: >
+                Configuration key-value data to be passed as-is to the corresponding
+                Boto3 method. Key names must match the case that Boto3 requires.
+              required: false
+              default: {}
+
+
+
+  ####
+  # AWS Identity & Access Management
+  ####
+
+  ##
+  # IAM USER
+  ##
+  # IAM GROUP: https://boto3.readthedocs.io/en/latest/reference/services/iam.html#IAM.Client.add_user_to_group
+  # IAM POLICY: https://boto3.readthedocs.io/en/latest/reference/services/iam.html#IAM.Client.attach_user_policy
+  # IAM LOGIN PROFILE: https://boto3.readthedocs.io/en/latest/reference/services/iam.html#IAM.Client.create_login_profile
+  # IAM ACCESS KEY: https://boto3.readthedocs.io/en/latest/reference/services/iam.html#IAM.Client.create_access_key
+  cloudify.relationships.aws.iam.user.connected_to:
+    derived_from: cloudify.relationships.aws.connected_to
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish: { implementation: aws.cloudify_aws.iam.resources.user.attach_to }
+        unlink: { implementation: aws.cloudify_aws.iam.resources.user.detach_from }
+
+  ##
+  # IAM GROUP
+  ##
+  # IAM USER: https://boto3.readthedocs.io/en/latest/reference/services/iam.html#IAM.Client.add_user_to_group
+  # IAM POLICY: https://boto3.readthedocs.io/en/latest/reference/services/iam.html#IAM.Client.attach_group_policy
+  cloudify.relationships.aws.iam.group.connected_to:
+    derived_from: cloudify.relationships.aws.connected_to
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish: { implementation: aws.cloudify_aws.iam.resources.group.attach_to }
+        unlink: { implementation: aws.cloudify_aws.iam.resources.group.detach_from }
+
+  ##
+  # IAM ACCESS KEY
+  ##
+  # IAM USER: https://boto3.readthedocs.io/en/latest/reference/services/iam.html#IAM.Client.create_access_key
+  cloudify.relationships.aws.iam.access_key.connected_to:
+    derived_from: cloudify.relationships.aws.connected_to
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish: { implementation: aws.cloudify_aws.iam.resources.access_key.attach_to }
+        unlink: { implementation: aws.cloudify_aws.iam.resources.access_key.detach_from }
+
+  ##
+  # IAM LOGIN PROFILE
+  ##
+  # IAM USER: https://boto3.readthedocs.io/en/latest/reference/services/iam.html#IAM.Client.create_login_profile
+  cloudify.relationships.aws.iam.login_profile.connected_to:
+    derived_from: cloudify.relationships.aws.connected_to
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish: { implementation: aws.cloudify_aws.iam.resources.login_profile.attach_to }
+        unlink: { implementation: aws.cloudify_aws.iam.resources.login_profile.detach_from }
+
+  ##
+  # IAM ROLE
+  ##
+  # IAM POLICY: https://boto3.readthedocs.io/en/latest/reference/services/iam.html#IAM.Client.attach_role_policy
+  cloudify.relationships.aws.iam.role.connected_to:
+    derived_from: cloudify.relationships.aws.connected_to
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish: { implementation: aws.cloudify_aws.iam.resources.role.attach_to }
+        unlink: { implementation: aws.cloudify_aws.iam.resources.role.detach_from }
+
+
+  ####
+  # AWS Lambda
+  ####
+
+  ##
+  # LAMBDA INVOKE
+  ##
+  # LAMBDA FUNCTION: https://boto3.readthedocs.io/en/latest/reference/services/lambda.html#Lambda.Client.invoke
+  cloudify.relationships.aws.lambda.invoke.connected_to:
+    derived_from: cloudify.relationships.aws.connected_to
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish: { implementation: aws.cloudify_aws.lambda_serverless.resources.invoke.attach_to }
+        unlink: { implementation: aws.cloudify_aws.lambda_serverless.resources.invoke.detach_from }
+
+  ##
+  # LAMBDA PERMISSION
+  ##
+  # LAMBDA FUNCTION: https://boto3.readthedocs.io/en/latest/reference/services/lambda.html#Lambda.Client.add_permission
+  cloudify.relationships.aws.lambda.permission.connected_to:
+    derived_from: cloudify.relationships.aws.connected_to
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        preconfigure: { implementation: aws.cloudify_aws.lambda_serverless.resources.permission.prepare_assoc }
+        unlink: { implementation: aws.cloudify_aws.lambda_serverless.resources.permission.detach_from }
+
+
+  ####
+  # AWS Relational Database Service
+  ####
+
+  ##
+  # RDS INSTANCE READ REPLICA
+  ##
+  # RDS INSTANCE: https://boto3.readthedocs.io/en/latest/reference/services/rds.html#RDS.Client.create_db_instance_read_replica
+  # RDS PARAMETER GROUP: https://boto3.readthedocs.io/en/latest/reference/services/rds.html#RDS.Client.create_db_instance_read_replica
+  # RDS OPTION GROUP: https://boto3.readthedocs.io/en/latest/reference/services/rds.html#RDS.Client.create_db_instance_read_replica
+  # IAM ROLE: https://boto3.readthedocs.io/en/latest/reference/services/rds.html#RDS.Client.create_db_instance
+  cloudify.relationships.aws.rds.instance_read_replica.connected_to:
+    derived_from: cloudify.relationships.aws.connected_to
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        preconfigure:
+          implementation: aws.cloudify_aws.rds.resources.instance_read_replica.prepare_assoc
+          inputs:
+            iam_role_type_key:
+              description: >
+                If the relationship target is an IAM Role, it's necessary to give more context in order to
+                match the Role with the correct mapping to the relationship source since this type accepts
+                more than 1 type of Role. For instance, the RDS.Client.create_db_instance() method can
+                take both "DomainIAMRoleName" and "MonitoringRoleArn" keys. Consider this input as the
+                destination function keyword for the Role's ID or ARN. This is a required input if the
+                relationship target is of type IAM Role.
+              type: string
+              default: MonitoringRoleArn
+              required: false
+            iam_role_id_key:
+              description: >
+                If the relationship target is an IAM Role, it's necessary to give more context in order to
+                match the Role with the correct mapping to the relationship source since this type accepts
+                more than 1 type of Role. The value for this input should be the key name of a runtime
+                property (of the target) which will be subsequently placed as the value for the destination
+                function keyword from the "iam_role_type_key" input. This is a required input if the
+                relationship target is of type IAM Role.
+              type: string
+              default: aws_resource_arn
+        unlink: { implementation: aws.cloudify_aws.rds.resources.instance_read_replica.detach_from }
+
+  ##
+  # RDS INSTANCE
+  ##
+  # RDS SUBNET GROUP: https://boto3.readthedocs.io/en/latest/reference/services/rds.html#RDS.Client.create_db_instance
+  # RDS PARAMETER GROUP: https://boto3.readthedocs.io/en/latest/reference/services/rds.html#RDS.Client.create_db_instance
+  # RDS OPTION GROUP: https://boto3.readthedocs.io/en/latest/reference/services/rds.html#RDS.Client.create_db_instance
+  # IAM ROLE: https://boto3.readthedocs.io/en/latest/reference/services/rds.html#RDS.Client.create_db_instance
+  # EC2 SECURITY GROUP: https://boto3.readthedocs.io/en/latest/reference/services/rds.html#RDS.Client.create_db_instance
+  cloudify.relationships.aws.rds.instance.connected_to:
+    derived_from: cloudify.relationships.aws.connected_to
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        preconfigure:
+          implementation: aws.cloudify_aws.rds.resources.instance.prepare_assoc
+          inputs:
+            iam_role_type_key:
+              description: >
+                If the relationship target is an IAM Role, it's necessary to give more context in order to
+                match the Role with the correct mapping to the relationship source since this type accepts
+                more than 1 type of Role. For instance, the RDS.Client.create_db_instance() method can
+                take both "DomainIAMRoleName" and "MonitoringRoleArn" keys. Consider this input as the
+                destination function keyword for the Role's ID or ARN. This is a required input if the
+                relationship target is of type IAM Role.
+              type: string
+              default: ~
+              required: false
+            iam_role_id_key:
+              description: >
+                If the relationship target is an IAM Role, it's necessary to give more context in order to
+                match the Role with the correct mapping to the relationship source since this type accepts
+                more than 1 type of Role. The value for this input should be the key name of a runtime
+                property (of the target) which will be subsequently placed as the value for the destination
+                function keyword from the "iam_role_type_key" input. This is a required input if the
+                relationship target is of type IAM Role.
+              type: string
+              default: aws_resource_arn
+        unlink: { implementation: aws.cloudify_aws.rds.resources.instance.detach_from }
+
+  ##
+  # RDS SUBNET GROUP
+  ##
+  # EC2 VPC SUBNET: https://boto3.readthedocs.io/en/latest/reference/services/rds.html#RDS.Client.create_db_subnet_group
+  cloudify.relationships.aws.rds.subnet_group.connected_to:
+    derived_from: cloudify.relationships.aws.connected_to
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        preconfigure: { implementation: aws.cloudify_aws.rds.resources.subnet_group.prepare_assoc }
+        unlink: { implementation: aws.cloudify_aws.rds.resources.subnet_group.detach_from }
+
+  ##
+  # RDS PARAMETER GROUP
+  ##
+  # RDS PARAMETER: https://boto3.readthedocs.io/en/latest/reference/services/rds.html#RDS.Client.modify_db_parameter_group
+  cloudify.relationships.aws.rds.parameter_group.connected_to:
+    derived_from: cloudify.relationships.aws.connected_to
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish: { implementation: aws.cloudify_aws.rds.resources.parameter_group.attach_to }
+        unlink: { implementation: aws.cloudify_aws.rds.resources.parameter_group.detach_from }
+
+  ##
+  # RDS PARAMETER
+  ##
+  # RDS PARAMETER GROUP: https://boto3.readthedocs.io/en/latest/reference/services/rds.html#RDS.Client.modify_db_parameter_group
+  cloudify.relationships.aws.rds.parameter.connected_to:
+    derived_from: cloudify.relationships.aws.connected_to
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish: { implementation: aws.cloudify_aws.rds.resources.parameter.attach_to }
+        unlink: { implementation: aws.cloudify_aws.rds.resources.parameter.detach_from }
+
+  ##
+  # RDS OPTION GROUP
+  ##
+  # RDS OPTION: https://boto3.readthedocs.io/en/latest/reference/services/rds.html#RDS.Client.modify_db_option_group
+  cloudify.relationships.aws.rds.option_group.connected_to:
+    derived_from: cloudify.relationships.aws.connected_to
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish: { implementation: aws.cloudify_aws.rds.resources.option_group.attach_to }
+        unlink: { implementation: aws.cloudify_aws.rds.resources.option_group.detach_from }
+
+  ##
+  # RDS OPTION
+  ##
+  # RDS OPTION GROUP: https://boto3.readthedocs.io/en/latest/reference/services/rds.html#RDS.Client.modify_db_option_group
+  cloudify.relationships.aws.rds.option.connected_to:
+    derived_from: cloudify.relationships.aws.connected_to
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish: { implementation: aws.cloudify_aws.rds.resources.option.attach_to }
+        unlink: { implementation: aws.cloudify_aws.rds.resources.option.detach_from }
+
+
+  ####
+  # AWS Route53 DNS Service
+  ####
+
+  ##
+  # ROUTE53 HOSTED ZONE
+  ##
+  # EC2 VPC: https://boto3.readthedocs.io/en/latest/reference/services/route53.html#Route53.Client.create_hosted_zone
+  cloudify.relationships.aws.route53.hosted_zone.connected_to:
+    derived_from: cloudify.relationships.aws.connected_to
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        preconfigure: { implementation: aws.cloudify_aws.route53.resources.hosted_zone.prepare_assoc }
+        unlink: { implementation: aws.cloudify_aws.route53.resources.hosted_zone.detach_from }
+
+  ##
+  # ROUTE53 RESOURCE RECORD SET
+  ##
+  # ROUTE53 HOSTED ZONE: https://boto3.readthedocs.io/en/latest/reference/services/route53.html#Route53.Client.change_resource_record_sets
+  cloudify.relationships.aws.route53.record_set.connected_to:
+    derived_from: cloudify.relationships.aws.connected_to
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        preconfigure: { implementation: aws.cloudify_aws.route53.resources.record_set.prepare_assoc }
+        unlink: { implementation: aws.cloudify_aws.route53.resources.record_set.detach_from }
+
+  ##
+  # Instance to LB
+  ##
+  cloudify.relationships.aws.elb.instance.connected_to:
+    derived_from: cloudify.relationships.aws.connected_to
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish: { implementation: aws.cloudify_aws.elb.resources.classic.load_balancer.assoc }
+        unlink: { implementation: aws.cloudify_aws.elb.resources.classic.load_balancer.disassoc }
+
+
+  ##
+  # EBS to EC2 Instance
+  ##
+
+  cloudify.relationships.aws.ebs.attachment.connected_to:
+    derived_from: cloudify.relationships.aws.connected_to
+    target_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish: { implementation: aws.cloudify_aws.ec2.resources.ebs.attach_using_relationship }
+        unlink: { implementation: aws.cloudify_aws.ec2.resources.ebs.detach_using_relationship }
+
+
+  cloudify.relationships.aws.ec2.subnet_connected_to_vpc:
+    derived_from: cloudify.relationships.aws.connected_to
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish:
+          implementation: aws.cloudify_aws.ec2.resources.subnet.set_subnet
+        unlink:
+          implementation: aws.cloudify_aws.ec2.resources.subnet.unset_subnet
+
+  cloudify.relationships.aws.ec2.attach_transit_gateway_to_vpc:
+    derived_from: cloudify.relationships.aws.connected_to
+    target_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish:
+          implementation: aws.cloudify_aws.ec2.resources.transit_gateway.request_vpc_attachment
+          inputs:
+            # cloudify.datatypes.aws.ec2.TransitGatewayVPCAttachment.config
+            transit_gateway_id:
+              type: string
+              description: The Transit Gateway ID. See documentation. The value can be provided as an input, but if the value is not provided, then the plugin will perform the same default lookup as indicated byt the get attribute intrinsic function.
+              default: { get_attribute: [ SOURCE, aws_resource_id ] }
+            vpc_id:
+              type: string
+              description: The VPC ID. See documentation. The value can be provided as an input, but if the value is not provided, then the plugin will perform the same default lookup as indicated byt the get attribute intrinsic function.
+              default: { get_attribute: [ TARGET, create_response, vpc_id ] }
+            SubnetIds:
+              type: list
+              description: A list of Subnet IDs.
+              default: [ { get_attribute: [ TARGET, aws_resource_id ] } ]
+            Options:
+              type: dict
+              description: See documentation.
+              default: {}
+            TagSpecifications:
+              type: list
+              description: See documentation.
+              default: []
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        unlink:
+          implementation: aws.cloudify_aws.ec2.resources.transit_gateway.delete_vpc_attachment
+          inputs:
+            transit_gateway_attachment_id:
+              # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.html#EC2.Client.accept_transit_gateway_vpc_attachment
+              type: string
+              description: The Gateway Attachment ID that is created in request_vpc_attachment. The value can be provided as an input, but if the value is not provided, then the plugin will perform the same default lookup as indicated byt the get attribute intrinsic function.
+              default: { get_attribute: [ SOURCE, TransitGatewayVpcAttachments, { get_attribute: [ TARGET, aws_resource_id ] }, TransitGatewayVpcAttachment, TransitGatewayAttachmentId] }
+
+  ##
+  # Refresh kubeconfig for EKS cluster in runtime properties. Use this relationship on kubernetes
+  # resources that use EKS cluster kubeconfig as authentication method.
+  ##
+
+  cloudify.relationships.aws.eks.connected_to_eks_cluster:
+    derived_from: cloudify.relationships.aws.connected_to
+    target_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish: { implementation: aws.cloudify_aws.eks.resources.cluster.refresh_kubeconfig}
+        unlink: { implementation: aws.cloudify_aws.eks.resources.cluster.refresh_kubeconfig }
+
+workflows:
+
+  discover_and_deploy:
+#    description: >
+#      Using provided credentials, list all discoverable resources of specified resource type.
+#      (Default is cloudify.nodes.aws.eks.Cluster).
+#      This is restricted to provided credentials and region.
+#      Install new deployments for them.
+    mapping: aws.cloudify_aws.workflows.discover.discover_and_deploy
+    parameters:
+      node_id:
+        type: string
+        description: >
+          The node_id. Not required.
+        default: ''
+      resource_types:
+        description: >
+            The name of the resource to discover.
+            Default is [AWS::EKS::CLUSTER], as that is the only currently supported resource.
+        type: list
+        default:
+          - AWS::EKS::CLUSTER
+      blueprint_id:
+        description: The ID of the blueprint that should be used to deploy the new resources. Default is current blueprint.
+        type: string
+        default: 'existing-eks-cluster'
