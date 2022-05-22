@@ -170,9 +170,9 @@ def poststart(ctx, iface, resource_config, wait_for_target_capacity=True, **_):
 
     if not len(active) == target_capacity:
         raise OperationRetry(
-            'Waiting for active instance number to match target '
-            'capacity {} {}.'.format(
-                len(active), target_capacity))
+            'Waiting for active instance number to match target capacity.'
+            ' Current instances: {}, Target: {}.'.format(len(active),
+                                                         target_capacity))
     if 'instance_ids' not in ctx.instance.runtime_properties:
         ctx.instance.runtime_properties['instance_ids'] = []
     for instance in active:

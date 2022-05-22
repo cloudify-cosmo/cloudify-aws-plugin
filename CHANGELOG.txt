@@ -1,3 +1,5 @@
+3.0.6:
+    - RD-4912-spot-fleet-instances-reporting Rewrite the message to be more clear
 3.0.5:
     - Allow to assume role after initial authentication
 3.0.4:
