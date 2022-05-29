@@ -2,22 +2,7 @@ plugins:
   aws:
     executor: central_deployment_agent
     package_name: cloudify-aws-plugin
-    package_version: '3.0.5'
-
-blueprint_labels:
-  obj-type:
-    values:
-      - aws
-
-labels:
-  obj-type:
-    values:
-      - aws
-
-resource_tags:
-  tenant: get_sys [tenant, name]
-  deployment_id: get_sys [deplyment, id]
-  owner: get_sys [deplyment, owner]
+    package_version: '3.0.7'
 
 data_types:
 
@@ -4301,5 +4286,20 @@ workflows:
           - AWS::EKS::CLUSTER
       blueprint_id:
         description: The ID of the blueprint that should be used to deploy the new resources. Default is current blueprint.
-        type: string
+        type: Blueprint_ID
         default: 'existing-eks-cluster'
+
+blueprint_labels:
+  obj-type:
+    values:
+      - aws
+
+labels:
+  obj-type:
+    values:
+      - aws
+
+resource_tags:
+  tenant: get_sys [tenant, name]
+  deployment_id: get_sys [deplyment, id]
+  owner: get_sys [deplyment, owner]

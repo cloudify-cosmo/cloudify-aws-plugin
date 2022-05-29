@@ -1,0 +1,1 @@
+{'values_changed': {"root['workflows']['discover_and_deploy']['parameters']['blueprint_id']['type']": {'new_value': 'Blueprint_ID', 'old_value': 'string'}}}
