@@ -4273,7 +4273,7 @@ workflows:
     mapping: aws.cloudify_aws.workflows.discover.discover_and_deploy
     parameters:
       node_id:
-        type: string
+        type: node_id
         description: >
           The node_id. Not required.
         default: ''
@@ -4286,7 +4286,7 @@ workflows:
           - AWS::EKS::CLUSTER
       blueprint_id:
         description: The ID of the blueprint that should be used to deploy the new resources. Default is current blueprint.
-        type: Blueprint_ID
+        type: blueprint_id
         default: 'existing-eks-cluster'
 
 blueprint_labels:
