@@ -1,4 +1,6 @@
-3.0.8: RD-4811-SessionToken with cloudify-ecosystem-test
+3.0.8:
+ - RD-4811-SessionToken with cloudify-ecosystem-test
+ - Fix resource tags.
 3.0.7: Add Blueprint_ID to workflow.
 3.0.6:
     - RD-4912-spot-fleet-instances-reporting Rewrite the message to be more clear
