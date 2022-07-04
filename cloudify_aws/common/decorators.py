@@ -440,7 +440,8 @@ def _aws_resource(function,
     # boto3 config in order to use the S3 API
     aws_config = ctx.instance.runtime_properties.get('aws_config')
     aws_config_kwargs = kwargs.get('aws_config')
-    if 'aws_session_token' in aws_config_kwargs and not aws_config_kwargs['session_token']:
+    if 'aws_session_token' in aws_config_kwargs and not \
+            aws_config_kwargs['session_token']:
         aws_config_kwargs.pop('aws_session_token')
 
     resource_name = None
