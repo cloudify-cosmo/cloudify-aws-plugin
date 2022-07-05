@@ -118,7 +118,7 @@ def _wait_for_status(kwargs,
     status = kwargs['iface'].status
 
     # Get a resource interface and query for the status
-    ctx.logger.debug('%s ID# "%s" reported status: %s.' % (
+    ctx.logger.info('%s ID# "%s" reported status: %s.' % (
         resource_type, resource_id, status))
 
     if kwargs['iface'].wait_for_status():
