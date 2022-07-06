@@ -23,12 +23,13 @@ from datetime import datetime
 
 # Third party imports
 from botocore.exceptions import ClientError
+from cloudify.exceptions import NonRecoverableError
 
 # Local imports
 from cloudify_aws.common._compat import text_type
 from cloudify_aws.common import decorators, utils
-from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
 from cloudify_aws.cloudformation import AWSCloudFormationBase
+from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
 
 RESOURCE_TYPE = 'CloudFormation Stack'
 RESOURCE_NAME = 'StackName'
@@ -166,8 +167,10 @@ def prepare(ctx, resource_config, **_):
 
 @decorators.aws_resource(CloudFormationStack, RESOURCE_TYPE)
 @decorators.wait_for_status(
-    status_good=['CREATE_COMPLETE'],
-    status_pending=['CREATE_IN_PROGRESS'])
+    status_good=['CREATE_COMPLETE', 'UPDATE_COMPLETE'],
+    status_pending=['CREATE_IN_PROGRESS',
+                    'REVIEW_IN_PROGRESS',
+                    'UPDATE_IN_PROGRESS'])
 def create(ctx, iface, resource_config, minimum_wait_time=None, **_):
     """Creates an AWS CloudFormation Stack"""
     resource_id = \
@@ -185,8 +188,23 @@ def create(ctx, iface, resource_config, minimum_wait_time=None, **_):
         resource_config[TEMPLATEBODY] = json.dumps(template_body)
     if not iface.resource_id:
         setattr(iface, 'resource_id', resource_config.get(RESOURCE_NAME))
-    # Actually create the resource
-    iface.create(resource_config)
+
+    # Our status is not configured for failing on create,
+    # so this is handled here.
+    if not iface.exists:
+        # Actually create the resource
+        iface.create(resource_config)
+    elif iface.exists and iface.status in ['CREATE_COMPLETE',
+                                           'UPDATE_COMPLETE',
+                                           'CREATE_IN_PROGRESS',
+                                           'UPDATE_IN_PROGRESS',
+                                           'REVIEW_IN_PROGRESS',
+                                           'UPDATE_COMPLETE_'
+                                           'CLEANUP_IN_PROGRESS']:
+        raise NonRecoverableError(
+            'Stack deployment failed in status {}, reason: {}'.format(
+                iface.resource_id, iface.status, iface.properties.get(
+                    'StackStatusReason')))
 
     if minimum_wait_time is not None and minimum_wait_time > 0:
         arrived_at_min_wait_time(ctx, minimum_wait_time)
