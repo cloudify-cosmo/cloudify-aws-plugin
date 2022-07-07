@@ -1,4 +1,5 @@
 from unittest import TestCase
+from cloudify.state import current_ctx
 from mock import patch, call, MagicMock
 
 from .. import resources, discover
@@ -169,6 +170,7 @@ class AWSWorkflowTests(TestCase):
         }
         expected = {'region1': {'AWS::EKS::CLUSTER': {}},
                     'region2': {'AWS::EKS::CLUSTER': {}}}
+        current_ctx.set(mock_ctx)
         self.assertEqual(resources.get_resources(**params), expected)
 
     @patch('cloudify_aws.common.connection.boto3')

@@ -131,6 +131,12 @@ def prepare(ctx, iface, resource_config, **_):
     if ctx.node.properties.get('use_external_resource'):
         ctx.instance.runtime_properties['resource_config'] = resource_config
         iface.prepare_describe_image_filter(resource_config)
+        try:
+            iface.properties.get(IMAGE_ID)
+        except AttributeError:
+            raise NonRecoverableError(
+                'Failed to find AMI with parameters: {}'.format(
+                    resource_config))
         utils.update_resource_id(ctx.instance, iface.properties.get(IMAGE_ID))
 
 
@@ -162,7 +168,8 @@ def create(ctx, iface, resource_config, **_):
 def delete(ctx, iface, resource_config, **_):
     """delete/deregister an AWS EC2 Image"""
     if not ctx.node.properties.get('use_external_resource'):
-        params = {'ImageId': iface.resource_id}
+        dry_run = resource_config.get(DRY_RUN, False)
+        params = {'ImageId': iface.resource_id, 'DryRun': dry_run}
         try:
             iface.delete(params)
         except ClientError as e:

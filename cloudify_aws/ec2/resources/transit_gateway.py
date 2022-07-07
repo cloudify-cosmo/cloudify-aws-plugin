@@ -168,9 +168,9 @@ def create(ctx, iface, resource_config, **_):
                          ignore_properties=True,
                          waits_for_status=False)
 @decorators.untag_resources
-def delete(iface, resource_config, **_):
+def delete(iface, resource_config, dry_run=False, **_):
     '''Deletes an AWS EC2 Transit Gateway'''
-
+    resource_config['DryRun'] = dry_run
     if TG_ID not in resource_config:
         resource_config.update({TG_ID: iface.resource_id})
 

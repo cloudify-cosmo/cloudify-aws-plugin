@@ -2,7 +2,11 @@ plugins:
   aws:
     executor: central_deployment_agent
     package_name: cloudify-aws-plugin
-    package_version: '3.0.10'
+<<<<<<< HEAD
+    package_version: '3.0.11'
+=======
+    package_version: '3.1.0'
+>>>>>>> 26bf4b7 (support cognito)
 
 data_types:
 
@@ -248,7 +252,7 @@ data_types:
       Path:
         type: string
         description: The path to the policy.
-        required: true
+        required: false
       PolicyDocument:
         type: string
         description: The policy document.
@@ -1251,6 +1255,205 @@ data_types:
     properties:
       kwargs:
         description: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/codepipeline.html#CodePipeline.Client.create_pipeline
+        default: {}
+
+
+  cloudify.datatypes.aws.cognitoidp.UserPool.config:
+    properties:
+      PoolName:
+        type: string
+        description: The name of the user pool
+        required: true
+      Policies:
+        type: dict
+        required: false
+      LambdaConfig:
+        type: dict
+        required: false
+      AutoVerifiedAttributes:
+        type: list
+        required: false
+      AliasAttributes:
+        type: list
+        required: false
+      UsernameAttributes:
+        type: list
+        required: false
+      SmsVerificationMessage:
+        type: string
+        required: false
+      EmailVerificationMessage:
+        type: string
+        required: false
+      EmailVerificationSubject:
+        type: string
+        required: false
+      VerificationMessageTemplate:
+        type: dict
+        required: false
+      SmsAuthenticationMessage:
+        type: string
+        required: false
+      MfaConfiguration:
+        type: string
+      UserAttributeUpdateSettings:
+        type: dict
+        required: false
+      DeviceConfiguration:
+        type: dict
+        required: false
+      EmailConfiguration:
+        type: dict
+        required: false
+      SmsConfiguration:
+        type: dict
+        required: false
+      UserPoolTags:
+        type: dict
+        required: false
+      AdminCreateUserConfig:
+        type: dict
+        required: false
+      Schema:
+        type: list
+        required: false
+      UserPoolAddOns:
+        type: dict
+        required: false
+      UsernameConfiguration:
+        type: dict
+        required: false
+      AccountRecoverySetting:
+        type: dict
+        required: false
+      kwargs:
+        description: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/cognito-idp.html#CognitoIdentityProvider.Client.create_user_pool
+        default: {}
+
+  cloudify.datatypes.aws.cognitoidp.UserPoolClient.config:
+    properties:
+      UserPoolId:
+        type: string
+        required: true
+      ClientName:
+        type: string
+        required: true
+      GenerateSecret:
+        type: boolean
+        required: false
+      RefreshTokenValidity:
+        type: integer
+        required: false
+      AccessTokenValidity:
+        type: integer
+        required: false
+      IdTokenValidity:
+        type: integer
+        required: false
+      TokenValidityUnits:
+        type: dict
+        required: false
+      ReadAttributes:
+        type: list
+        required: false
+      CallbackURLs:
+        type: list
+        required: false
+      ExplicitAuthFlows:
+        type: list
+        required: false
+      SupportedIdentityProviders:
+        type: list
+        required: false
+      LogoutURLs:
+        type: list
+        required: false
+      DefaultRedirectURI:
+        type: string
+        required: false
+      AllowedOAuthFlows:
+        type: list
+        required: false
+      AllowedOAuthScopes:
+        type: list
+        required: false
+      AllowedOAuthFlowsUserPoolClient:
+        type: boolean
+        required: false
+      AnalyticsConfiguration:
+        type: dict
+        required: false
+      PreventUserExistenceErrors:
+        type: string
+        required: false
+      EnableTokenRevocation:
+        type: boolean
+        required: false
+      EnablePropagateAdditionalUserContextData:
+        type: boolean
+        required: false
+      AuthSessionValidity:
+        type: integer
+        required: false
+      kwargs:
+        description: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/cognito-idp.html#CognitoIdentityProvider.Client.create_user_pool_client
+        default: {}
+
+  cloudify.datatypes.aws.cognitoidp.IdentityProvider.config:
+    properties:
+      UserPoolId:
+        type: string
+        required: true
+      ProviderName:
+        type: string
+        required: true
+      ProviderType:
+        type: string
+        required: true
+      ProviderDetails:
+        type: dict
+        required: true
+      AttributeMapping:
+        type: dict
+        required: false
+      IdpIdentifiers:
+        type: list
+        required: false
+      kwargs:
+        description: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/cognito-idp.html#CognitoIdentityProvider.Client.create_identity_provider
+        default: {}
+
+  cloudify.datatypes.aws.cognito.IdentityPool.config:
+    properties:
+      IdentityPoolName:
+        type: string
+        required: true
+      AllowUnauthenticatedIdentities:
+        type: boolean
+        required: true
+      AllowClassicFlow:
+        type: boolean
+        required: false
+      SupportedLoginProviders:
+        type: dict
+        required: false
+      DeveloperProviderName:
+        type: string
+        required: false
+      OpenIdConnectProviderARNs:
+        type: list
+        required: false
+      CognitoIdentityProviders:
+        type: list
+        required: false
+      SamlProviderARNs:
+        type: list
+        required: false
+      IdentityPoolTags:
+        type: dict
+        required: false
+      kwargs:
+        description: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/cognito-identity.html#CognitoIdentity.Client.create_identity_pool
         default: {}
 
 dsl_definitions:
@@ -3227,6 +3430,9 @@ node_types:
         create:
           implementation: aws.cloudify_aws.ec2.resources.ebs.create
           inputs: *operation_inputs
+        poststart:
+          implementation: aws.cloudify_aws.ec2.resources.ebs.poststart
+          inputs: *operation_inputs
         delete:
           implementation: aws.cloudify_aws.ec2.resources.ebs.delete
           inputs: *operation_inputs
@@ -3857,6 +4063,98 @@ node_types:
           implementation: aws.cloudify_aws.codepipeline.resources.pipeline.execute
           inputs: *operation_inputs
 
+  cloudify.nodes.aws.cognitoidp.UserPool:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.cognitoidp.UserPool.config
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.cognito.resources.user_pool.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.cognito.resources.user_pool.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.cognito.resources.user_pool.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.cognitoidp.UserPoolClient:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.cognitoidp.UserPoolClient.config
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.cognito.resources.user_pool_client.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.cognito.resources.user_pool_client.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.cognito.resources.user_pool_client.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.cognitoidp.IdentityProvider:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.cognitoidp.IdentityProvider.config
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.cognito.resources.identity_provider.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.cognito.resources.identity_provider.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.cognito.resources.identity_provider.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.cognito.IdentityPool:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.cognito.IdentityPool.config
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.cognito.resources.identity_pool.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.cognito.resources.identity_pool.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.cognito.resources.identity_pool.delete
+          inputs: *operation_inputs
+
   cloudify.nodes.resources.AmazonWebServices:
     derived_from: cloudify.nodes.Root
     properties:
@@ -3990,6 +4288,12 @@ relationships:
         establish: { implementation: aws.cloudify_aws.iam.resources.role.attach_to }
         unlink: { implementation: aws.cloudify_aws.iam.resources.role.detach_from }
 
+  cloudify.relationships.aws.cognito.set_identity_pool_roles:
+    derived_from: cloudify.relationships.aws.connected_to
+    source_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish: { implementation: aws.cloudify_aws.cognito.resources.identity_pool.set }
+        unlink: { implementation: aws.cloudify_aws.cognito.resources.identity_pool.unset }
 
   ####
   # AWS Lambda

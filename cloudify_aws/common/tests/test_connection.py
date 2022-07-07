@@ -14,8 +14,9 @@
 
 import copy
 import unittest
-
 from mock import patch, MagicMock
+from cloudify.state import current_ctx
+
 
 from cloudify_aws.common.connection import Boto3Connection
 from cloudify_aws.common.tests.test_base import TestBase, CLIENT_CONFIG
@@ -42,6 +43,8 @@ class TestConnection(TestBase):
 
         node = MagicMock()
         node.properties = {}
+        _ctx = self.get_mock_ctx('test')
+        current_ctx.set(_ctx)
 
         connection = Boto3Connection(node, copy.deepcopy(CLIENT_CONFIG))
         connection.client('abc')
@@ -56,6 +59,8 @@ class TestConnection(TestBase):
         node.properties = {
             'client_config': copy.deepcopy(CLIENT_CONFIG)
         }
+        _ctx = self.get_mock_ctx('test')
+        current_ctx.set(_ctx)
 
         connection = Boto3Connection(node, {'a': 'b'})
         connection.client('abc')
@@ -75,6 +80,8 @@ class TestConnection(TestBase):
                 'region_name': 'bar'
             }
         }
+        _ctx = self.get_mock_ctx('test')
+        current_ctx.set(_ctx)
 
         connection = Boto3Connection(node, {'a': 'b'})
         connection.client('abc')
