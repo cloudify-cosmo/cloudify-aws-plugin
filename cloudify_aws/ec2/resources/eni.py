@@ -278,17 +278,22 @@ def check_drift(ctx, iface=None, **_):
 
 
 def _create_eni_params(params, ctx_instance):
+    _ctx.logger.info('** _create_eni_params **')
+
     subnet_id = params.get(SUBNET_ID)
     if not subnet_id:
         targ = \
             utils.find_rel_by_node_type(ctx_instance, SUBNET_TYPE) or \
             utils.find_rel_by_node_type(ctx_instance, SUBNET_TYPE_DEPRECATED)
+        _ctx.logger.info('** targ: {}'.format(targ))
 
-        # Attempt to use the VPC ID from parameters.
-        # Fallback to connected VPC.
-        params[SUBNET_ID] = \
-            subnet_id or \
-            targ.target.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
+        if targ:
+            # Attempt to use the VPC ID from parameters.
+            # Fallback to connected VPC.
+            _ctx.logger.info('** targ.target: {}'.format(targ.target))
+            params[SUBNET_ID] = \
+                subnet_id or \
+                targ.target.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
 
     groups = params.get(SEC_GROUPS, [])
     for targ in utils.find_rels_by_node_type(ctx_instance, SEC_GROUP_TYPE):
