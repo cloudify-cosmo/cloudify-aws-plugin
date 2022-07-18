@@ -2,7 +2,7 @@ plugins:
   aws:
     executor: central_deployment_agent
     package_name: cloudify-aws-plugin
-    package_version: '3.0.9'
+    package_version: '3.0.10'
 
 data_types:
 
@@ -4271,9 +4271,12 @@ workflows:
 #      This is restricted to provided credentials and region.
 #      Install new deployments for them.
     mapping: aws.cloudify_aws.workflows.discover.discover_and_deploy
+    availability_rules:
+      node_instances_active: ['all']
+      node_types_required: ['cloudify.nodes.resources.AmazonWebServices']
     parameters:
       node_id:
-        type: node_id
+        type: string
         description: >
           The node_id. Not required.
         default: ''
@@ -4286,7 +4289,7 @@ workflows:
           - AWS::EKS::CLUSTER
       blueprint_id:
         description: The ID of the blueprint that should be used to deploy the new resources. Default is current blueprint.
-        type: blueprint_id
+        type: string
         default: 'existing-eks-cluster'
 
 blueprint_labels:
