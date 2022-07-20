@@ -1,3 +1,4 @@
+3.0.10: Workflow availability.
 3.0.9: Add Status reports in CF.
 3.0.8:
  - RD-4811-SessionToken with cloudify-ecosystem-test
