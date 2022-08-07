@@ -37,8 +37,8 @@ from cloudify_common_sdk.utils import (
 )
 # Local imports
 from .constants import SUPPORT_DRIFT
-from cloudify_aws.eks import EksBase
-from cloudify_aws.elb import ElbBase
+from cloudify_aws.eks import EKSBase
+from cloudify_aws.elb import ELBBase
 from cloudify_aws.common import utils
 from cloudify_aws.common._compat import text_type
 from cloudify_common_sdk.utils import get_ctx_instance
@@ -852,10 +852,11 @@ def untag_resources(fn):
             ctx.node.properties.get('Tags'),
             ctx.instance.runtime_properties.get('Tags'),
             kwargs.get('Tags'))
-        if isinstance(iface, (ElbBase, EksBase)):
+        if isinstance(iface, (ELBBase, EKSBase)):
             can_be_deleted = True
         else:
-            can_be_deleted = utils.delete_will_succeed()
+            can_be_deleted = utils.delete_will_succeed(
+                iface, kwargs['resource_config'])
         if iface and tags and resource_ids and can_be_deleted:
             iface.untag({
                 'Tags': tags,
