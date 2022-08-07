@@ -1000,6 +1000,7 @@ def delete_will_succeed(iface, params):
     try:
         iface.delete(**params)
     except ClientError as e:
+        del params['DryRun']
         if 'would have succeeded' in str(e):
             return True
         return False
