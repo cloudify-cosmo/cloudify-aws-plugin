@@ -852,7 +852,7 @@ def untag_resources(fn):
             ctx.node.properties.get('Tags'),
             ctx.instance.runtime_properties.get('Tags'),
             kwargs.get('Tags'))
-        if isinstance(iface, (ELBBase, EksBase)):
+        if isinstance(iface, (ElbBase, EksBase)):
             can_be_deleted = True
         else:
             can_be_deleted = utils.delete_will_succeed()
