@@ -1,3 +1,4 @@
+3.0.11: Handle malformed xml in s3 empty CreateBucketConfiguration.
 3.0.10: Workflow availability.
 3.0.9: Add Status reports in CF.
 3.0.8:
