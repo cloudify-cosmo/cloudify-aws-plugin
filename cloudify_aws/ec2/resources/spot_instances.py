@@ -181,9 +181,11 @@ def stop(ctx, iface, resource_config, **_):
                          RESOURCE_TYPE,
                          waits_for_status=False)
 @decorators.tag_resources
-def delete(ctx, iface, resource_config, **_):
+def delete(ctx, iface, resource_config, dry_run=False, **_):
     '''Deletes an AWS EC2 Spot Instance Request'''
-    ctx.logger.info('Deleting spot instance request...')
+    resource_config['DryRun'] = dry_run
+    if not dry_run:
+        ctx.logger.info('Deleting spot instance request...')
     iface.delete(iface.prepare_request_id_param(resource_config))
 
 

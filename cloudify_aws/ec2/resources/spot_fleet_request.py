@@ -185,11 +185,14 @@ def poststart(ctx, iface, resource_config, wait_for_target_capacity=True, **_):
                          ignore_properties=True,
                          waits_for_status=False)
 @decorators.untag_resources
-def delete(iface, resource_config, terminate_instances=True, **_):
+def delete(
+        iface, resource_config, terminate_instances=True, dry_run=False, **_):
     '''Deletes an AWS EC2 Vpc'''
+    resource_config['DryRun'] = dry_run
     params = dict()
     params.update({SpotFleetRequestIds: [iface.resource_id]})
     params.update({'TerminateInstances': terminate_instances})
+    params.update({'DryRun': dry_run})
     try:
         iface.delete(params)
     except ClientError:

@@ -156,12 +156,12 @@ def create(ctx, iface, resource_config, **_):
 
 @decorators.aws_resource(EC2Keypair, RESOURCE_TYPE)
 @decorators.untag_resources
-def delete(iface, resource_config, **_):
+def delete(iface, resource_config, dry_run=False, **_):
     '''Deletes AWS EC2 Keypairs'''
 
     key_name = resource_config.get(KEYNAME, iface.resource_id)
 
-    iface.delete({KEYNAME: key_name})
+    iface.delete({KEYNAME: key_name, 'DryRun': dry_run})
 
     if ctx.node.properties['create_secret']:
         try:

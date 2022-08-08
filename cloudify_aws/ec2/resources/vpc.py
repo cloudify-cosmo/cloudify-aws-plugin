@@ -209,9 +209,9 @@ def check_drift(ctx, iface=None, **_):
 @decorators.aws_resource(EC2Vpc, RESOURCE_TYPE,
                          ignore_properties=True)
 @decorators.untag_resources
-def delete(iface, resource_config, **_):
+def delete(iface, resource_config, dry_run=False, **_):
     '''Deletes an AWS EC2 Vpc'''
-
+    resource_config['DryRun'] = dry_run
     if VPC_ID not in resource_config:
         resource_config.update({VPC_ID: iface.resource_id})
 
