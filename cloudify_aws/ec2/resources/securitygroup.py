@@ -158,9 +158,15 @@ def delete(ctx, iface, resource_config, dry_run=False, **_):
     if not group_id:
         group_id = iface.resource_id
 
+    if dry_run:
+        utils.exit_on_substring(iface,
+                                'delete',
+                                {GROUPID: group_id, 'DryRun': dry_run},
+                                'Request would have succeeded')
+
     utils.exit_on_substring(iface,
                             'delete',
-                            {GROUPID: group_id, 'DryRun': dry_run},
+                            {GROUPID: group_id},
                             'InvalidGroup.NotFound')
 
 
