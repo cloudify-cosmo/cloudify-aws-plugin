@@ -22,8 +22,8 @@ from time import sleep
 
 from botocore.exceptions import ClientError
 
-from cloudify.exceptions import NonRecoverableError, OperationRetry
 from cloudify.utils import exception_to_error_cause
+from cloudify.exceptions import NonRecoverableError, OperationRetry
 
 # Local imports
 from cloudify_aws.ec2 import EC2Base

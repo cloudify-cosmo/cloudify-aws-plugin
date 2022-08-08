@@ -995,12 +995,11 @@ class SkipWaitingOperation(Exception):
     pass
 
 
-def delete_will_succeed(iface, params):
-    params['DryRun'] = True
+def delete_will_succeed(fn, resource_config, ctx, iface):
+    params = {'ctx': ctx, 'iface': iface, 'resource_config': resource_config}
     try:
-        iface.delete(**params)
+        fn(**params)
     except ClientError as e:
-        del params['DryRun']
         if 'would have succeeded' in str(e):
             return True
         return False

@@ -20,6 +20,7 @@
 
 # Standard Imports
 import sys
+from copy import deepcopy
 from time import sleep
 
 # Third party imports
@@ -855,8 +856,11 @@ def untag_resources(fn):
         if isinstance(iface, (ELBBase, EKSBase)):
             can_be_deleted = True
         else:
+            ctx.logger.info("kwargs before deepcopy = {}".format(kwargs))
+            cfg_copy = deepcopy(kwargs['resource_config'])
+            cfg_copy['DryRun'] = True
             can_be_deleted = utils.delete_will_succeed(
-                iface, kwargs['resource_config'])
+                fn, cfg_copy, ctx, iface)
         if iface and tags and resource_ids and can_be_deleted:
             iface.untag({
                 'Tags': tags,
