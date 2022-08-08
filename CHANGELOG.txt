@@ -1,3 +1,7 @@
+3.0.11:
+ - updated cleanup_vpc_internet_gateways, so detaching of igw has vpc id as well.
+ - ec2 resources will check that deletion will be successful using dry run before deleting tags
+ - image resources check node properties instead of runtime properties
 3.0.10: Workflow availability.
 3.0.9: Add Status reports in CF.
 3.0.8:
