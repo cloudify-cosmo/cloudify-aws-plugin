@@ -129,7 +129,7 @@ def create(ctx, iface, resource_config, **_):
 
 @decorators.aws_resource(EC2NetworkAclEntry, RESOURCE_TYPE,
                          ignore_properties=True)
-def delete(ctx, iface, resource_config, **_):
+def delete(ctx, iface, resource_config, dry_run=False, **_):
     """Deletes an AWS EC2 NetworkAcl Entry"""
     network_acl_id = resource_config.get(NETWORKACL_ID)
     rule_number = resource_config.get(RULE_NUMBER) or \

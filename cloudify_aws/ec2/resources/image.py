@@ -159,7 +159,7 @@ def create(ctx, iface, resource_config, **_):
                          resource_type=RESOURCE_TYPE,
                          waits_for_status=False)
 @decorators.wait_for_delete(status_deleted=['deregistered'])
-def delete(ctx, iface, resource_config, **_):
+def delete(ctx, iface, resource_config, dry_run=False, **_):
     """delete/deregister an AWS EC2 Image"""
     if not ctx.instance.runtime_properties.get('use_external_resource'):
         params = {'ImageId': iface.resource_id}

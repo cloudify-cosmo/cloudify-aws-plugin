@@ -174,7 +174,7 @@ def create(ctx, iface, resource_config, **_):
 
 @decorators.aws_resource(EC2ElasticIP, RESOURCE_TYPE,
                          ignore_properties=True)
-def delete(ctx, iface, resource_config, **_):
+def delete(ctx, iface, resource_config, dry_run=False, **_):
     """Deletes an AWS EC2 ElasticIP"""
 
     allocation_id = resource_config.get(ALLOCATION_ID)
