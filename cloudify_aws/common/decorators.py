@@ -20,7 +20,6 @@
 
 # Standard Imports
 import sys
-from copy import deepcopy
 from time import sleep
 
 # Third party imports

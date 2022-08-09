@@ -195,8 +195,11 @@ def delete(
     params.update({'DryRun': dry_run})
     try:
         iface.delete(params)
-    except ClientError:
-        pass
+    except ClientError as e:
+        if 'would have succeeded' in str(e):
+            raise
+        else:
+            pass
     finally:
         if iface.active_instances:
             raise OperationRetry(
