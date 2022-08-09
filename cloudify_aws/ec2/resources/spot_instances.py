@@ -180,7 +180,7 @@ def stop(ctx, iface, resource_config, **_):
 @decorators.aws_resource(EC2SpotInstances,
                          RESOURCE_TYPE,
                          waits_for_status=False)
-@decorators.tag_resources
+@decorators.untag_resources
 def delete(ctx, iface, resource_config, dry_run=False, **_):
     '''Deletes an AWS EC2 Spot Instance Request'''
     resource_config['DryRun'] = dry_run
