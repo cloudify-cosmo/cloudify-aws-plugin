@@ -854,10 +854,8 @@ def untag_resources(fn):
             ctx.instance.runtime_properties.get('Tags'),
             kwargs.get('Tags'))
         if isinstance(iface, (ELBBase, EKSBase)):
-            can_be_deleted = True
+            can_be_deleted = False
         else:
-            cfg_copy = deepcopy(kwargs['resource_config'])
-            cfg_copy['DryRun'] = True
             can_be_deleted = utils.delete_will_succeed(fn=fn, params=kwargs)
         if iface and tags and resource_ids and can_be_deleted:
             iface.untag({
