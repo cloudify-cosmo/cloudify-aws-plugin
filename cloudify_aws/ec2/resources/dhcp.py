@@ -108,9 +108,8 @@ def create(ctx, iface, resource_config, **_):
                          RESOURCE_TYPE,
                          ignore_properties=True,
                          waits_for_status=False)
-def delete(ctx, iface, resource_config, dry_run=False, **_):
+def delete(ctx, iface, resource_config, **_):
     """Deletes an AWS EC2 DhcpOptions"""
-    resource_config['DryRun'] = dry_run
     # Create a copy of the resource config for clean manipulation.
     dhcp_options_id = resource_config.get(DHCPOPTIONS_ID)
 
