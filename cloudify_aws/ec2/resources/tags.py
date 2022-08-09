@@ -83,9 +83,8 @@ def create(ctx, iface, resource_config, **_):
 
 
 @decorators.aws_resource(EC2Tags, RESOURCE_TYPE, waits_for_status=False)
-def delete(ctx, iface, resource_config, dry_run=False, **_):
+def delete(ctx, iface, resource_config, **_):
     '''Deletes an AWS EC2 Tags'''
-    resource_config['DryRun'] = dry_run
     resources = resource_config.get('Resources')
     if not resources:
         targets = \

@@ -117,7 +117,7 @@ def create(ctx, iface, resource_config, **_):
 @decorators.wait_for_delete(
     status_deleted=['deleted'],
     status_pending=['available', 'deleting', 'pending'])
-def delete(ctx, iface, resource_config, dry_run=False, **_):
+def delete(ctx, iface, resource_config, **_):
     """Deletes an AWS EC2 VPN Connection"""
     deleted_params = dict()
     resource_id = \
@@ -125,5 +125,5 @@ def delete(ctx, iface, resource_config, dry_run=False, **_):
     deleted_params[VPN_CONNECTION_ID] = resource_id
 
     vpn_connection_config = ctx.instance.runtime_properties['resource_config']
-    deleted_params['DryRun'] = vpn_connection_config.get('DryRun') or dry_run
+    deleted_params['DryRun'] = vpn_connection_config.get('DryRun') or False
     iface.delete(deleted_params)
