@@ -193,18 +193,20 @@ def delete(
     params.update({SpotFleetRequestIds: [iface.resource_id]})
     params.update({'TerminateInstances': terminate_instances})
     params.update({'DryRun': dry_run})
-    try:
-        iface.delete(params)
-    except ClientError as e:
-        if 'would have succeeded' in str(e):
-            raise
-        else:
+    if dry_run:
+        utils.exit_on_substring(iface,
+                                'delete',
+                                params,
+                                'Request would have succeeded')
+    else:
+        try:
+            iface.delete(params)
+        except ClientError:
             pass
-    finally:
-        if iface.active_instances:
-            raise OperationRetry(
-                'Waiting while all spot fleet instances are terminated.')
-
+        finally:
+            if iface.active_instances:
+                raise OperationRetry(
+                    'Waiting while all spot fleet instances are terminated.')
 
 def update_launch_spec_security_groups(groups):
     groups = groups or []
