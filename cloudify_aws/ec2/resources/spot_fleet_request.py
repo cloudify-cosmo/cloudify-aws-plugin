@@ -208,6 +208,7 @@ def delete(
                 raise OperationRetry(
                     'Waiting while all spot fleet instances are terminated.')
 
+
 def update_launch_spec_security_groups(groups):
     groups = groups or []
     group_ids = get_groups_from_rels()
