@@ -3227,6 +3227,9 @@ node_types:
         create:
           implementation: aws.cloudify_aws.ec2.resources.ebs.create
           inputs: *operation_inputs
+        poststart:
+          implementation: aws.cloudify_aws.ec2.resources.ebs.poststart
+          inputs: *operation_inputs
         delete:
           implementation: aws.cloudify_aws.ec2.resources.ebs.delete
           inputs: *operation_inputs
