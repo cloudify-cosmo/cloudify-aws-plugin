@@ -74,6 +74,7 @@ class EC2VolumeMixin(object):
             if self.properties and self.properties.get(VOLUME_STATE) else None
 
     def attach(self, params):
+
         return self.make_client_call('attach_volume', params)
 
     def detach(self, params={}):
@@ -145,6 +146,7 @@ def _attach_ebs(params, iface, _ctx):
     """
     # Attach ebs volume to ec2 instance resource
     create_response = iface.create(params)
+
     # Check if the resource attaching done
     if create_response:
         _ctx.instance.runtime_properties['ebs_attach'] =\
@@ -389,6 +391,5 @@ def poststart(ctx, iface, resource_config, **_):
     :param resource_config:
     :param _:
     """
-    ctx.logger.info('** poststart')
+    ctx.logger.info('** poststart: {}'.format(iface.properties))
     ctx.instance.runtime_properties['ebs_attach'] = iface.properties
-    ctx.logger.info('post_start-iface.properties: {}'.format(iface.properties))
