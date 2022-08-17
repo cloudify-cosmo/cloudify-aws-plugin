@@ -20,6 +20,8 @@
 from botocore.exceptions import CapacityNotAvailableError
 
 # Cloudify
+from cloudify import ctx
+
 from cloudify.exceptions import NonRecoverableError
 from cloudify_aws.common import decorators
 from cloudify_aws.common import constants
@@ -144,9 +146,12 @@ def _attach_ebs(params, iface, _ctx):
     :param iface:
     :param _ctx:
     """
+    ctx.logger.info('** _attach_ebs **')
+
     # Attach ebs volume to ec2 instance resource
     create_response = iface.create(params)
-
+    ctx.logger.info('** create_response: {}'.format(create_response))
+    ctx.logger.info('** params: {}'.format(params))
     # Check if the resource attaching done
     if create_response:
         _ctx.instance.runtime_properties['ebs_attach'] =\
@@ -211,7 +216,6 @@ def prepare(ctx, resource_config, **_):
     """
     # Save the parameters
     ctx.instance.runtime_properties['resource_config'] = resource_config
-    ctx.logger.info('** prepare {}'.format(resource_config))
 
 
 @decorators.aws_resource(EC2Volume, RESOURCE_TYPE_VOLUME)
@@ -226,11 +230,16 @@ def create(ctx, iface, resource_config, **_):
     :param _:
     :return:
     """
+    ctx.logger.info('** create **')
+
     # Actually create ebs resource
     region_name = ctx.node.properties['client_config']['region_name']
     use_available_zones = ctx.node.properties.get('use_available_zones', False)
     try:
         create_response = iface.create(resource_config)
+        ctx.logger.info('** create_response: {}'.format(create_response))
+        ctx.logger.info('** resource_config: {}'.format(resource_config))
+
     except CapacityNotAvailableError:
         if use_available_zones:
             ctx.logger.warn(
@@ -269,7 +278,6 @@ def create(ctx, iface, resource_config, **_):
     ebs_id = create_response.get(VOLUME_ID, '')
     utils.update_resource_id(ctx.instance, ebs_id)
     iface.update_resource_id(ebs_id)
-    ctx.logger.info('** create done')
 
 
 @decorators.aws_resource(EC2Volume, RESOURCE_TYPE_VOLUME,
@@ -391,5 +399,6 @@ def poststart(ctx, iface, resource_config, **_):
     :param resource_config:
     :param _:
     """
+    ctx.logger.info('** poststart ** ')
     ctx.logger.info('** poststart: {}'.format(iface.properties))
-    ctx.instance.runtime_properties['ebs_attach'] = iface.properties
+    # ctx.instance.runtime_properties['ebs_attach'] = iface.properties
