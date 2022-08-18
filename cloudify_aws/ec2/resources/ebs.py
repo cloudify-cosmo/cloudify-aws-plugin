@@ -149,7 +149,7 @@ def _attach_ebs(params, iface, _ctx):
 
     # Check if the resource attaching done
     if create_response:
-        _ctx.instance.runtime_properties['eps_attach'] =\
+        _ctx.instance.runtime_properties['ebs_attach'] =\
             utils.JsonCleanuper(create_response).to_dict()
         return create_response
 
@@ -184,10 +184,10 @@ def _create_attachment(ctx, iface, resource_config):
     :param resource_config:
     """
     response = _attach_ebs(resource_config, iface, ctx)
-    # Update the esp_id (volume_id)
-    esp_id = response.get(VOLUME_ID, '')
-    utils.update_resource_id(ctx.instance, esp_id)
-    iface.update_resource_id(esp_id)
+    # Update the ebs_id (volume_id)
+    ebs_id = response.get(VOLUME_ID, '')
+    utils.update_resource_id(ctx.instance, ebs_id)
+    iface.update_resource_id(ebs_id)
 
 
 def _delete_attachment(ctx, iface, **kwargs):
@@ -261,13 +261,13 @@ def create(ctx, iface, resource_config, **_):
             '{0} ID# "{1}" reported an empty response'.format(
                 RESOURCE_TYPE_VOLUME, iface.resource_id))
 
-    ctx.instance.runtime_properties['eps_create'] = \
+    ctx.instance.runtime_properties['ebs_create'] = \
         utils.JsonCleanuper(create_response).to_dict()
 
-    # Update the esp_id (volume_id)
-    esp_id = create_response.get(VOLUME_ID, '')
-    utils.update_resource_id(ctx.instance, esp_id)
-    iface.update_resource_id(esp_id)
+    # Update the ebs_id (volume_id)
+    ebs_id = create_response.get(VOLUME_ID, '')
+    utils.update_resource_id(ctx.instance, ebs_id)
+    iface.update_resource_id(ebs_id)
 
 
 @decorators.aws_resource(EC2Volume, RESOURCE_TYPE_VOLUME,
@@ -377,3 +377,17 @@ def detach(ctx, iface, resource_config, **kwargs):
     :param _:
     """
     _delete_attachment(ctx, iface, **kwargs)
+
+
+@decorators.aws_resource(EC2VolumeAttachment, RESOURCE_TYPE_VOLUME_ATTACHMENT)
+def poststart(ctx, iface, resource_config, **_):
+    """
+    Attaches an AWS EC2 EBS Volume TO Instance
+    :param ctx:
+    :param iface:
+    :param resource_config:
+    :param _:
+    """
+
+    ctx.instance.runtime_properties['ebs_attach'] = utils.JsonCleanuper(
+        iface.properties).to_dict()
