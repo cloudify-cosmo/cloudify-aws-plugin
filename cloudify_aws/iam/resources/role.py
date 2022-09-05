@@ -19,11 +19,11 @@
 from json import dumps as json_dumps
 
 from botocore.exceptions import ClientError
+from cloudify.exceptions import NonRecoverableError
 
 # Cloudify
-from cloudify.exceptions import NonRecoverableError
-from cloudify_aws.common import decorators, utils
 from cloudify_aws.iam import IAMBase
+from cloudify_aws.common import decorators, utils
 
 RESOURCE_TYPE = 'IAM Role'
 RESOURCE_NAME = 'RoleName'
@@ -147,6 +147,9 @@ def create(ctx, iface, resource_config, params, **_):
     utils.update_resource_id(ctx.instance, resource_id)
     utils.update_resource_arn(
         ctx.instance, create_response['Role']['Arn'])
+    create_response.pop('ResponseMetadata', None)
+    ctx.instance.runtime_properties['create_response'] = \
+        utils.JsonCleanuper(create_response).to_dict()
 
     # attach policy role
     policies_arn = []
