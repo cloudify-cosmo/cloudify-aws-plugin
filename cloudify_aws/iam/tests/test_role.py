@@ -75,7 +75,13 @@ NODE_PROPERTIES_ASSUME_STR = {
 RUNTIME_PROPERTIES_AFTER_CREATE = {
     'aws_resource_arn': 'arn_id',
     'aws_resource_id': 'role_name_id',
-    'resource_config': {}
+    'resource_config': {},
+    'create_response': {
+        'Role': {
+            'RoleName': 'role_name_id',
+            'Arn': 'arn_id'
+        }
+    }
 }
 
 
@@ -172,7 +178,10 @@ class TestIAMRole(TestBase):
             AssumeRolePolicyDocument=ASSUME_STR,
             Path='/service-role/',
             RoleName='aws_resource')
-
+        # raise Exception('{} != {}'.format(
+        #     _ctx.instance.runtime_properties,
+        #     RUNTIME_PROPERTIES_AFTER_CREATE
+        # ))
         self.assertEqual(
             _ctx.instance.runtime_properties,
             RUNTIME_PROPERTIES_AFTER_CREATE
