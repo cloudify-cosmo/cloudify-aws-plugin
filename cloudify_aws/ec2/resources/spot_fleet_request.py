@@ -126,7 +126,8 @@ class EC2SpotFleetRequest(EC2Base):
             Checks current instances of AWS EC2 Spot Fleet Request.
         '''
         params = params or {SpotFleetRequestId: self.resource_id}
-        return self.make_client_call('describe_spot_fleet_instances', params)
+        return self.make_client_call('describe_spot_fleet_request_history',
+                                     params)
 
 
 @decorators.aws_resource(EC2SpotFleetRequest,
