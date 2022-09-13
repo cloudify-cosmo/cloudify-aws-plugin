@@ -16,9 +16,13 @@
     ~~~~~~~~~~~~~~
     AWS EC2 VPC interface
 '''
+import re
 import time
 
+
 # Third Party imports
+from datetime import strptime
+
 from botocore.exceptions import ClientError
 
 from cloudify.exceptions import OperationRetry, NonRecoverableError
@@ -40,6 +44,7 @@ SpotFleetRequestIds = 'SpotFleetRequestIds'
 SpotFleetRequestConfig = 'SpotFleetRequestConfig'
 SpotFleetRequestConfigs = 'SpotFleetRequestConfigs'
 LaunchSpecifications = 'LaunchSpecifications'
+DATETIME_FORMAT = '%Y-%m-%d'
 
 
 class EC2SpotFleetRequest(EC2Base):
@@ -65,7 +70,7 @@ class EC2SpotFleetRequest(EC2Base):
         try:
             return self.make_client_call(
                 'describe_spot_fleet_requests', params)
-        except (NonRecoverableError):
+        except NonRecoverableError:
             return
 
     @property
@@ -110,6 +115,13 @@ class EC2SpotFleetRequest(EC2Base):
         return self.make_client_call('cancel_spot_fleet_requests', params)
 
     def list_spot_fleet_instances(self, params=None):
+        '''
+            Checks current instances of AWS EC2 Spot Fleet Request.
+        '''
+        params = params or {SpotFleetRequestId: self.resource_id}
+        return self.make_client_call('describe_spot_fleet_instances', params)
+
+    def describe_spot_fleet_request_history(self, params=None):
         '''
             Checks current instances of AWS EC2 Spot Fleet Request.
         '''
@@ -169,10 +181,31 @@ def poststart(ctx, iface, resource_config, wait_for_target_capacity=True, **_):
     active = spot_fleet_instances.get('ActiveInstances', [])
 
     if not len(active) == target_capacity:
+
+        time_of_request = iface.properties.get(
+            'CreateTime', "2022-09-13")
+        match = re.search(r'(\d+-\d+-\d+)', time_of_request)
+        cleaned_time = match.group(1)
+
+        date = strptime(cleaned_time, DATETIME_FORMAT)
+        params = {
+            "StartTime": date,
+            "SpotFleetRequestId": iface.resource_id
+        }
+        described_response = iface.describe_spot_fleet_request_history(params)
+        sfr_dict = described_response['HistoryRecords']
+        info_string = ""
+
+        for dic in sfr_dict:
+            if dic['EventInformation']['EventSubType'] == 'launchSpecUnusable':
+                info_string = dic['EventInformation']['EventDescription']
+
         raise OperationRetry(
             'Waiting for active instance number to match target capacity.'
             ' Current instances: {}, Target: {}.'.format(len(active),
-                                                         target_capacity))
+                                                         target_capacity)
+            + info_string
+        )
     if 'instance_ids' not in ctx.instance.runtime_properties:
         ctx.instance.runtime_properties['instance_ids'] = []
     for instance in active:
