@@ -21,7 +21,8 @@ import time
 
 
 # Third Party imports
-from datetime import strptime
+
+from datetime import datetime
 
 from botocore.exceptions import ClientError
 
@@ -185,28 +186,27 @@ def poststart(ctx, iface, resource_config, wait_for_target_capacity=True, **_):
 
         time_of_request = iface.properties.get(
             'CreateTime', "2022-09-13")
-        match = re.search(r'(\d+-\d+-\d+)', time_of_request)
+        ctx.logger.info("time of request = {}".format(time_of_request))
+        match = re.search(r'(\d+-\d+-\d+)', str(time_of_request))
         cleaned_time = match.group(1)
 
-        date = strptime(cleaned_time, DATETIME_FORMAT)
+        date = datetime.strptime(cleaned_time, DATETIME_FORMAT)
         params = {
             "StartTime": date,
             "SpotFleetRequestId": iface.resource_id
         }
         described_response = iface.describe_spot_fleet_request_history(params)
         sfr_dict = described_response['HistoryRecords']
-        info_string = ""
 
         for dic in sfr_dict:
             if dic['EventInformation']['EventSubType'] == 'launchSpecUnusable':
-                info_string = dic['EventInformation']['EventDescription']
+                ctx.logger.error(dic['EventInformation']['EventDescription'])
+
 
         raise OperationRetry(
             'Waiting for active instance number to match target capacity.'
             ' Current instances: {}, Target: {}.'.format(len(active),
-                                                         target_capacity)
-            + info_string
-        )
+                                                         target_capacity))
     if 'instance_ids' not in ctx.instance.runtime_properties:
         ctx.instance.runtime_properties['instance_ids'] = []
     for instance in active:
