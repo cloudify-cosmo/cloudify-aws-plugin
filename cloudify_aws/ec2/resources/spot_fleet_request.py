@@ -202,7 +202,6 @@ def poststart(ctx, iface, resource_config, wait_for_target_capacity=True, **_):
             if dic['EventInformation']['EventSubType'] == 'launchSpecUnusable':
                 ctx.logger.error(dic['EventInformation']['EventDescription'])
 
-
         raise OperationRetry(
             'Waiting for active instance number to match target capacity.'
             ' Current instances: {}, Target: {}.'.format(len(active),
