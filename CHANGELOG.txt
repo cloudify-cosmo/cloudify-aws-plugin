@@ -1,3 +1,4 @@
+3.0.11: RD 5833 DSL 1.5 Plugin YAML.
 3.0.10: Workflow availability.
 3.0.9: Add Status reports in CF.
 3.0.8:

@@ -27,6 +27,7 @@ from .utils import (
     get_uuid,
     desecretize_client_config
 )
+from cloudify import ctx
 from cloudify_aws.common.constants import AWS_CONFIG_PROPERTY
 
 # pylint: disable=R0903
@@ -49,11 +50,19 @@ class Boto3Connection(object):
             'aws_session_token',
             'api_version']
 
+        config_from_plugin_props = {}
         config_from_props = node.properties.get(AWS_CONFIG_PROPERTY, dict())
         # Get additional config from node configuration.
         additional_config = config_from_props.pop('additional_config', None)
 
-        self.aws_config = desecretize_client_config(config_from_props)
+        # Handle the Plugin properties
+        config_from_plugin_props = ctx.plugin.properties
+        additional_config_plugin = config_from_plugin_props.pop(
+            'additional_config', None)
+
+        config_from_plugin_props.update(config_from_props)
+        self.aws_config = desecretize_client_config(
+            config_from_plugin_props)
         # Merge user-provided AWS config with generated config
         if aws_config:
             self.aws_config.update(aws_config)
@@ -73,6 +82,9 @@ class Boto3Connection(object):
         # Add additional config after whitelist filter.
         if additional_config and isinstance(additional_config, dict):
             self.aws_config['config'] = Config(**additional_config)
+        if additional_config_plugin and isinstance(
+                additional_config_plugin, dict):
+            self.aws_config['config'].update(additional_config_plugin)
 
     def get_sts_credentials(self, role, config):
         sts_client = boto3.client("sts", **config)
