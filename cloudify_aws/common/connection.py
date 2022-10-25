@@ -56,7 +56,7 @@ class Boto3Connection(object):
         additional_config = config_from_props.pop('additional_config', None)
 
         # Handle the Plugin properties
-        config_from_plugin_props = ctx.plugin.properties
+        config_from_plugin_props = getattr(ctx.plugin, 'properties', {})
         additional_config_plugin = config_from_plugin_props.pop(
             'additional_config', None)
 

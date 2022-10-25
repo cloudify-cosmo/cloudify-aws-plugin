@@ -166,4 +166,5 @@ class TestCognitoIdentityPool(TestBase):
             test_source=_source_ctx,
             test_target=_target_ctx,
         )
+        current_ctx.set(_ctx)
         identity_pool.set(ctx=_ctx, iface=None, params=None)
