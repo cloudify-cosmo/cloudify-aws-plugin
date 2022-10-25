@@ -1,4 +1,9 @@
-3.0.11: RD 5833 DSL 1.5 Plugin YAML.
+3.0.11: 
+ - RD 5833 DSL 1.5 Plugin YAML.
+ - updated cleanup_vpc_internet_gateways, so deatching of igw has vpc id as well.
+ - Handle malformed xml in s3 empty CreateBucketConfiguration.
+ - ec2 resources will check that deletion will be successful using dry run before deleting tags
+ - image resources check node properties instead of runtime properties
 3.0.10: Workflow availability.
 3.0.9: Add Status reports in CF.
 3.0.8:

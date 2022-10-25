@@ -78,7 +78,7 @@ class EC2Vpc(EC2Base):
             Filters=[{'Name': 'attachment.vpc-id', 'Values': [vpc]}])
         for ig in igs.get('InternetGateways', []):
             self.client.detach_internet_gateway(
-                InternetGatewayId=ig.get('InternetGatewayId'))
+                InternetGatewayId=ig.get('InternetGatewayId'), VpcId=vpc)
 
     def cleanup_vpc_route_tables(self, vpc=None):
         vpc = vpc or self.resource_id
