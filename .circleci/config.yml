@@ -30,6 +30,9 @@ commands:
     steps:
       - run: ls -alR
       - run: ecosystem-test prepare-test-manager -l $TEST_LICENSE -es aws_access_key_id=$aws_access_key_id -es aws_secret_access_key=$aws_secret_access_key --bundle-path workspace/build/cloudify-plugins-bundle.tgz --yum-package python-netaddr --yum-package git
+      - run: |
+          docker exec -it cfy_manager mkdir -p /etc/cloudify/.cloudify/profiles/manager-local/
+          docker exec -it cfy_manager cp /root/.cloudify/profiles/manager-local/context.json /etc/cloudify/.cloudify/profiles/manager-local/context.json
 
   run_hello_world_test:
     steps:
