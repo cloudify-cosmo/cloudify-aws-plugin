@@ -96,12 +96,13 @@ def create(ctx, iface, resource_config, **_):
 
 @decorators.aws_resource(EC2TransitGatewayRoute,
                          RESOURCE_TYPE)
-def delete(ctx, iface, resource_config, **_):
+def delete(ctx, iface, resource_config, dry_run=False, **_):
     '''Deletes an AWS EC2 Transit Gateway Route'''
     routetable_id = get_routetable_id(ctx.instance, resource_config)
     request = {
         CIDR: resource_config.get(CIDR),
-        ROUTETABLE_ID: routetable_id
+        ROUTETABLE_ID: routetable_id,
+        'DryRun': dry_run
     }
     # Actually create the resource
     response = iface.delete(request)[ROUTE]

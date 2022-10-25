@@ -168,9 +168,9 @@ def create(ctx, iface, resource_config, **_):
 @decorators.aws_resource(EC2RouteTable, RESOURCE_TYPE,
                          ignore_properties=True)
 @decorators.untag_resources
-def delete(ctx, iface, resource_config, **_):
+def delete(ctx, iface, resource_config, dry_run=False, **_):
     '''Deletes an AWS EC2 Route Table'''
-
+    resource_config['DryRun'] = dry_run
     route_table_id = resource_config.get(ROUTETABLE_ID)
     if not route_table_id:
         resource_config[ROUTETABLE_ID] = \

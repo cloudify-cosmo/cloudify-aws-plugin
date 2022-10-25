@@ -119,8 +119,9 @@ def create(ctx, iface, resource_config, **_):
 @decorators.wait_for_delete(status_deleted=['deleted'],
                             status_pending=['available', 'deleting'])
 @decorators.untag_resources
-def delete(iface, resource_config, **_):
+def delete(iface, resource_config, dry_run=False, **_):
     """Deletes an AWS EC2 Customer Gateway"""
+    resource_config['DryRun'] = dry_run
 
     customer_gateway_id = resource_config.get(CUSTOMERGATEWAY_ID)
 
