@@ -4102,7 +4102,7 @@ node_types:
           implementation: aws.cloudify_aws.cognito.resources.user_pool_client.delete
           inputs: *operation_inputs
 
-  cloudify.nodes.aws.cognitoidp.IdentityPoolProvider:
+  cloudify.nodes.aws.cognitoidp.IdentityProvider:
     derived_from: cloudify.nodes.Root
     properties:
       <<: *external_resource
@@ -4112,7 +4112,7 @@ node_types:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
           Boto3 method. Key names must match the case that Boto3 requires.
-        type: typecloudify.datatypes.aws.cognitoidp.IdentityProvider.config
+        type: cloudify.datatypes.aws.cognitoidp.IdentityProvider.config
     interfaces:
       cloudify.interfaces.lifecycle:
         precreate:
