@@ -152,12 +152,17 @@ def create(ctx, iface, resource_config, **_):
 
 @decorators.aws_resource(EC2SecurityGroup, RESOURCE_TYPE)
 @decorators.untag_resources
-def delete(ctx, iface, resource_config, **_):
+def delete(ctx, iface, resource_config, dry_run=False, **_):
     '''Deletes an AWS EC2 Security Group'''
-
     group_id = resource_config.get(GROUPID)
     if not group_id:
         group_id = iface.resource_id
+
+    if dry_run:
+        utils.exit_on_substring(iface,
+                                'delete',
+                                {GROUPID: group_id, 'DryRun': dry_run},
+                                'Request would have succeeded')
 
     utils.exit_on_substring(iface,
                             'delete',

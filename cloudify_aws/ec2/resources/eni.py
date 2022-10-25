@@ -155,9 +155,10 @@ def create(ctx, iface, resource_config, **_):
 @decorators.aws_resource(EC2NetworkInterface, RESOURCE_TYPE,
                          ignore_properties=True)
 @decorators.untag_resources
-def delete(ctx, iface, resource_config, **_):
+def delete(ctx, iface, resource_config, dry_run=False, **_):
     """Deletes an AWS EC2 NetworkInterface"""
 
+    resource_config['DryRun'] = dry_run
     # Create a copy of the resource config for clean manipulation.
     eni_id = resource_config.get(NETWORKINTERFACE_ID)
 

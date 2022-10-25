@@ -564,11 +564,17 @@ class TestBase(unittest.TestCase):
 
             fake_boto.assert_called_with(type_name, **CLIENT_CONFIG)
 
-    def _create_common_relationships(self, node_id, source_type_hierarchy,
-                                     target_type_hierarchy):
+    def _create_common_relationships(self,
+                                     node_id,
+                                     source_type_hierarchy,
+                                     target_type_hierarchy,
+                                     source_node_id=None,
+                                     target_node_id=None,
+                                     source_node_properties=None,
+                                     target_node_properties=None,):
         _source_ctx = self.get_mock_ctx(
-            'test_attach_source',
-            test_properties={
+            source_node_id or 'test_attach_source',
+            test_properties=source_node_properties or {
                 'client_config': CLIENT_CONFIG
             },
             test_runtime_properties={
@@ -581,8 +587,8 @@ class TestBase(unittest.TestCase):
         )
 
         _target_ctx = self.get_mock_ctx(
-            'test_attach_target',
-            test_properties={},
+            target_node_id or 'test_attach_target',
+            test_properties=target_node_properties or {},
             test_runtime_properties={
                 'resource_id': 'prepare_attach_target',
                 'aws_resource_id': 'aws_target_mock_id',

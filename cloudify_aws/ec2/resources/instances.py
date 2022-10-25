@@ -260,9 +260,9 @@ def stop(ctx, iface, resource_config, **_):
 @decorators.wait_for_delete(
     status_deleted=[TERMINATED],
     status_pending=[PENDING, STOPPING, STOPPED, SHUTTING_DOWN])
-def delete(iface, resource_config, **_):
+def delete(iface, resource_config, dry_run=False, **_):
     '''Deletes AWS EC2 Instances'''
-
+    resource_config['DryRun'] = dry_run
     if MULTI_ID in ctx.instance.runtime_properties:
         resource_config[INSTANCE_IDS] = \
             ctx.instance.runtime_properties[MULTI_ID]

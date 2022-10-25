@@ -155,7 +155,6 @@ def create(ctx, iface, resource_config, **_):
                          waits_for_status=False)
 def delete(ctx, iface, resource_config, **_):
     '''Deletes an AWS EC2 Route'''
-
     routetable_id = resource_config.get(ROUTETABLE_ID)
     if DESTINATION_CIDR_BLOCK in ctx.instance.runtime_properties:
         resource_config[DESTINATION_CIDR_BLOCK] = \
