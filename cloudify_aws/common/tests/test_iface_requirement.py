@@ -127,6 +127,8 @@ class testIfaceRequirement(TestBase):
         _ctx.instance.runtime_properties['instances'] = ['foo']
         _ctx.instance.runtime_properties['resources'] = {}
         _ctx.instance.runtime_properties['resource_config'] = {
+            'UserPoolId': 'foo',
+            'ProviderName': 'foo',
             'HostedZoneId': 'foo',
             'ChangeBatch': {
                 'Changes': [{'ResourceRecordSet': 'foo'}]
@@ -144,7 +146,11 @@ class testIfaceRequirement(TestBase):
         }
         _ctx.node.properties['client_config'] = \
             {'region_name': 'eu-west-1'}
-        _ctx.node.properties['resource_config'] = {'kwargs': {}}
+        _ctx.node.properties['resource_config'] = {
+            'UserPoolId': 'foo',
+            'ProviderName': 'foo',
+            'kwargs': {}
+        }
         _ctx.node.properties['log_create_response'] = False
         _ctx.node.properties['create_secret'] = False
         _ctx.node.properties['store_kube_config_in_runtime'] = \
