@@ -144,7 +144,7 @@ def prepare(ctx, iface, resource_config, **_):
 @decorators.wait_for_status(status_good=['available'], fail_on_missing=False)
 def create(ctx, iface, resource_config, **_):
     """Create an AWS EC2 Image"""
-    if ctx.instance.runtime_properties.get('use_external_resource'):
+    if ctx.node.properties.get('use_external_resource'):
         # if use_external_resource there we are using an existing image
         return
 

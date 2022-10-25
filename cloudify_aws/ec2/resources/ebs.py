@@ -273,7 +273,7 @@ def create(ctx, iface, resource_config, **_):
 @decorators.aws_resource(EC2Volume, RESOURCE_TYPE_VOLUME,
                          ignore_properties=True)
 @decorators.untag_resources
-def delete(ctx, iface, resource_config, **_):
+def delete(ctx, iface, resource_config, dry_run=False, **_):
     """
     Deletes an AWS EC2 EBS Volume
     :param ctx:
@@ -289,7 +289,7 @@ def delete(ctx, iface, resource_config, **_):
 
     volume_config = ctx.instance.runtime_properties['resource_config']
     if isinstance(volume_config, dict):
-        deleted_params['DryRun'] = volume_config.get('DryRun') or False
+        deleted_params['DryRun'] = volume_config.get('DryRun') or dry_run
     iface.delete(deleted_params)
 
 
