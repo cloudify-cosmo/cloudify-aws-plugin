@@ -993,3 +993,12 @@ def check_drift(resource_type, iface, logger):
 
 class SkipWaitingOperation(Exception):
     pass
+
+
+def delete_will_succeed(fn, params):
+    try:
+        fn(**params, dry_run=True)
+    except ClientError as e:
+        if 'would have succeeded' in str(e):
+            return True
+        return False

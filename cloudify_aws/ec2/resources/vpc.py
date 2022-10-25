@@ -22,8 +22,8 @@ from time import sleep
 
 from botocore.exceptions import ClientError
 
-from cloudify.exceptions import NonRecoverableError, OperationRetry
 from cloudify.utils import exception_to_error_cause
+from cloudify.exceptions import NonRecoverableError, OperationRetry
 
 # Local imports
 from cloudify_aws.ec2 import EC2Base
@@ -209,9 +209,9 @@ def check_drift(ctx, iface=None, **_):
 @decorators.aws_resource(EC2Vpc, RESOURCE_TYPE,
                          ignore_properties=True)
 @decorators.untag_resources
-def delete(iface, resource_config, **_):
+def delete(iface, resource_config, dry_run=False, **_):
     '''Deletes an AWS EC2 Vpc'''
-
+    resource_config['DryRun'] = dry_run
     if VPC_ID not in resource_config:
         resource_config.update({VPC_ID: iface.resource_id})
 

@@ -152,9 +152,9 @@ def create(ctx, iface, resource_config, **_):
     status_deleted=['deleted'],
     status_pending=['deleting', 'pending', 'available'])
 @decorators.untag_resources
-def delete(iface, resource_config, **_):
+def delete(iface, resource_config, dry_run=False, **_):
     """Deletes an AWS EC2 NAT Gateway"""
-
+    resource_config['DryRun'] = dry_run
     nat_gateway_id = resource_config.get(NATGATEWAY_ID)
 
     if not nat_gateway_id:

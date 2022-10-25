@@ -16,9 +16,14 @@
     ~~~~~~~~~~~~~~
     AWS EC2 VPC interface
 '''
+import re
 import time
 
+
 # Third Party imports
+
+from datetime import datetime
+
 from botocore.exceptions import ClientError
 
 from cloudify.exceptions import OperationRetry, NonRecoverableError
@@ -40,6 +45,7 @@ SpotFleetRequestIds = 'SpotFleetRequestIds'
 SpotFleetRequestConfig = 'SpotFleetRequestConfig'
 SpotFleetRequestConfigs = 'SpotFleetRequestConfigs'
 LaunchSpecifications = 'LaunchSpecifications'
+DATETIME_FORMAT = '%Y-%m-%d'
 
 
 class EC2SpotFleetRequest(EC2Base):
@@ -65,7 +71,7 @@ class EC2SpotFleetRequest(EC2Base):
         try:
             return self.make_client_call(
                 'describe_spot_fleet_requests', params)
-        except (NonRecoverableError):
+        except NonRecoverableError:
             return
 
     @property
@@ -115,6 +121,14 @@ class EC2SpotFleetRequest(EC2Base):
         '''
         params = params or {SpotFleetRequestId: self.resource_id}
         return self.make_client_call('describe_spot_fleet_instances', params)
+
+    def describe_spot_fleet_request_history(self, params=None):
+        '''
+            Checks current instances of AWS EC2 Spot Fleet Request.
+        '''
+        params = params or {SpotFleetRequestId: self.resource_id}
+        return self.make_client_call('describe_spot_fleet_request_history',
+                                     params)
 
 
 @decorators.aws_resource(EC2SpotFleetRequest,
@@ -169,6 +183,25 @@ def poststart(ctx, iface, resource_config, wait_for_target_capacity=True, **_):
     active = spot_fleet_instances.get('ActiveInstances', [])
 
     if not len(active) == target_capacity:
+
+        time_of_request = iface.properties.get(
+            'CreateTime', "2022-09-13")
+        ctx.logger.info("time of request = {}".format(time_of_request))
+        match = re.search(r'(\d+-\d+-\d+)', str(time_of_request))
+        cleaned_time = match.group(1)
+
+        date = datetime.strptime(cleaned_time, DATETIME_FORMAT)
+        params = {
+            "StartTime": date,
+            "SpotFleetRequestId": iface.resource_id
+        }
+        described_response = iface.describe_spot_fleet_request_history(params)
+        sfr_dict = described_response['HistoryRecords']
+
+        for dic in sfr_dict:
+            if dic['EventInformation']['EventSubType'] == 'launchSpecUnusable':
+                ctx.logger.error(dic['EventInformation']['EventDescription'])
+
         raise OperationRetry(
             'Waiting for active instance number to match target capacity.'
             ' Current instances: {}, Target: {}.'.format(len(active),
@@ -185,19 +218,28 @@ def poststart(ctx, iface, resource_config, wait_for_target_capacity=True, **_):
                          ignore_properties=True,
                          waits_for_status=False)
 @decorators.untag_resources
-def delete(iface, resource_config, terminate_instances=True, **_):
+def delete(
+        iface, resource_config, terminate_instances=True, dry_run=False, **_):
     '''Deletes an AWS EC2 Vpc'''
+    resource_config['DryRun'] = dry_run
     params = dict()
     params.update({SpotFleetRequestIds: [iface.resource_id]})
     params.update({'TerminateInstances': terminate_instances})
-    try:
-        iface.delete(params)
-    except ClientError:
-        pass
-    finally:
-        if iface.active_instances:
-            raise OperationRetry(
-                'Waiting while all spot fleet instances are terminated.')
+    params.update({'DryRun': dry_run})
+    if dry_run:
+        utils.exit_on_substring(iface,
+                                'delete',
+                                params,
+                                'Request would have succeeded')
+    else:
+        try:
+            iface.delete(params)
+        except ClientError:
+            pass
+        finally:
+            if iface.active_instances:
+                raise OperationRetry(
+                    'Waiting while all spot fleet instances are terminated.')
 
 
 def update_launch_spec_security_groups(groups):

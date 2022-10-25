@@ -27,7 +27,7 @@ inputs:
   ami_name_filter:
     type: string
     description: The name of the AWS AMI in the AWS region.
-    default: 'CentOS 7.7.1908 x86_64 with cloud-init (HVM)'
+    default: 'CentOS 7.9.2009 - HVM'
 
   instance_type:
     type: string
