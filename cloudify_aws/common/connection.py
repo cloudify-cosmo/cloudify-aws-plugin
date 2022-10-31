@@ -50,7 +50,6 @@ class Boto3Connection(object):
             'aws_session_token',
             'api_version']
 
-        config_from_plugin_props = {}
         config_from_props = node.properties.get(AWS_CONFIG_PROPERTY, dict())
         # Get additional config from node configuration.
         additional_config = config_from_props.pop('additional_config', None)
@@ -85,6 +84,10 @@ class Boto3Connection(object):
         if additional_config_plugin and isinstance(
                 additional_config_plugin, dict):
             self.aws_config['config'].update(additional_config_plugin)
+        else:
+            ctx.logger.debug(
+                'No plugin properties were provided. '
+                'Defaulting client_config credentials.')
 
     def get_sts_credentials(self, role, config):
         sts_client = boto3.client("sts", **config)
