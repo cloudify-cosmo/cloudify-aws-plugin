@@ -2,11 +2,7 @@ plugins:
   aws:
     executor: central_deployment_agent
     package_name: cloudify-aws-plugin
-<<<<<<< HEAD
-    package_version: '3.0.11'
-=======
     package_version: '3.1.0'
->>>>>>> 26bf4b7 (support cognito)
 
 data_types:
 
