@@ -1,3 +1,10 @@
+3.1.0:
+ - RD 5833 DSL 1.5 Plugin YAML.
+ - Handle malformed xml in s3 empty CreateBucketConfiguration.
+ - updated cleanup_vpc_internet_gateways, so detaching of igw has vpc id as well.
+ - ec2 resources will check that deletion will be successful using dry run before deleting tags
+ - image resources check node properties instead of runtime properties
+ - Add cognito.
 3.0.10: Workflow availability.
 3.0.9: Add Status reports in CF.
 3.0.8:

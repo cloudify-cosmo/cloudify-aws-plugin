@@ -104,6 +104,9 @@ def create(ctx, iface, resource_config, params, **_):
         if params['CreateBucketConfiguration'].get(
                 'LocationConstraint') == 'us-east-1':
             del params['CreateBucketConfiguration']['LocationConstraint']
+        # to avoid malformed XML because of empty dict
+        if not params['CreateBucketConfiguration']:
+            del params['CreateBucketConfiguration']
 
     # Actually create the resource
     bucket = iface.create(params)

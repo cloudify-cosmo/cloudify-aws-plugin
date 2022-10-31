@@ -17,12 +17,13 @@ import unittest
 
 # Third party imports
 from mock import patch, MagicMock
+from cloudify.state import current_ctx
 
 # Local imports
-from cloudify_aws.common._compat import reload_module
-from cloudify_aws.ec2.resources.vpn_connection import EC2VPNConnection
-from cloudify_aws.ec2.resources import vpn_connection
 from cloudify_aws.common import constants
+from cloudify_aws.common._compat import reload_module
+from cloudify_aws.ec2.resources import vpn_connection
+from cloudify_aws.ec2.resources.vpn_connection import EC2VPNConnection
 from cloudify_aws.common.tests.test_base import (
     TestBase,
     mock_decorator
@@ -34,6 +35,7 @@ class TestEC2VPNConnection(TestBase):
     def setUp(self):
         super(TestEC2VPNConnection, self).setUp()
         ctx = self.get_mock_ctx("TestEC2VPNConnection")
+        current_ctx.set(ctx)
         self.vpn_connection = EC2VPNConnection(ctx.node, resource_id='foo',
                                                client=None, logger=None)
         mock1 = patch('cloudify_aws.common.decorators.aws_resource',

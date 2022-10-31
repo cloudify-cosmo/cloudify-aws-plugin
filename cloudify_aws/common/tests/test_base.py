@@ -12,22 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
 import copy
+import unittest
 from functools import wraps
 
 from mock import MagicMock, patch
 
-from botocore.exceptions import UnknownServiceError
 from botocore.exceptions import ClientError
+from botocore.exceptions import UnknownServiceError
 
-from cloudify.mocks import MockCloudifyContext
 from cloudify.state import current_ctx
+from cloudify.mocks import MockCloudifyContext
 from cloudify.manager import DirtyTrackingDict
 from cloudify.constants import RELATIONSHIP_INSTANCE
 
-from cloudify_aws.common._compat import text_type
 from cloudify_aws.common import AWSResourceBase
+from cloudify_aws.common._compat import text_type
 
 
 CLIENT_CONFIG = {
@@ -91,6 +91,17 @@ class MockRelationshipContext(MockCloudifyContext):
         self._type_hierarchy = value
 
 
+class SpecialMockCloudifyContext(MockCloudifyContext):
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._plugin = MagicMock(properties={})
+
+    @property
+    def plugin(self):
+        return self._plugin
+
+
 class TestBase(unittest.TestCase):
 
     sleep_mock = None
@@ -148,7 +159,7 @@ class TestBase(unittest.TestCase):
 
         test_runtime_properties = test_runtime_properties or {}
 
-        ctx = MockCloudifyContext(
+        ctx = SpecialMockCloudifyContext(
             node_id=test_name,
             node_name=test_name,
             deployment_id=test_name,
@@ -162,7 +173,6 @@ class TestBase(unittest.TestCase):
         ctx.node._type = type_node
         ctx.node.type_hierarchy = type_hierarchy or ['cloudify.nodes.Root']
         ctx.instance.refresh = MagicMock()
-
         return ctx
 
     def get_mock_relationship_ctx(self,
@@ -564,11 +574,17 @@ class TestBase(unittest.TestCase):
 
             fake_boto.assert_called_with(type_name, **CLIENT_CONFIG)
 
-    def _create_common_relationships(self, node_id, source_type_hierarchy,
-                                     target_type_hierarchy):
+    def _create_common_relationships(self,
+                                     node_id,
+                                     source_type_hierarchy,
+                                     target_type_hierarchy,
+                                     source_node_id=None,
+                                     target_node_id=None,
+                                     source_node_properties=None,
+                                     target_node_properties=None,):
         _source_ctx = self.get_mock_ctx(
-            'test_attach_source',
-            test_properties={
+            source_node_id or 'test_attach_source',
+            test_properties=source_node_properties or {
                 'client_config': CLIENT_CONFIG
             },
             test_runtime_properties={
@@ -581,8 +597,8 @@ class TestBase(unittest.TestCase):
         )
 
         _target_ctx = self.get_mock_ctx(
-            'test_attach_target',
-            test_properties={},
+            target_node_id or 'test_attach_target',
+            test_properties=target_node_properties or {},
             test_runtime_properties={
                 'resource_id': 'prepare_attach_target',
                 'aws_resource_id': 'aws_target_mock_id',

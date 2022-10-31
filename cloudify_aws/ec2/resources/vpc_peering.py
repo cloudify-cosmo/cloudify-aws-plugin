@@ -176,7 +176,7 @@ def modify(ctx, iface, resource_config, **_):
 
 @decorators.aws_resource(EC2VpcPeering, RESOURCE_TYPE)
 @decorators.untag_resources
-def delete(ctx, iface, resource_config, **_):
+def delete(ctx, iface, resource_config, dry_run=False, **_):
     """Deletes an AWS EC2 Vpc"""
     deleted_params = dict()
 
@@ -185,7 +185,7 @@ def delete(ctx, iface, resource_config, **_):
         ctx.instance.runtime_properties[constants.EXTERNAL_RESOURCE_ID]
 
     if resource_config:
-        deleted_params['DryRun'] = resource_config.get('DryRun') or False
+        deleted_params['DryRun'] = resource_config.get('DryRun') or dry_run
     if resource_id:
         deleted_params[VPC_PEERING_CONNECTION_ID] = resource_id
 

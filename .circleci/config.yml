@@ -2,9 +2,9 @@ version: 2.1
 
 orbs:
   node: cloudify/public-unittest-orb@1 #orb version
-  wagonorb: cloudify/wagon-bulder-orb@2.4.0 #orb version
-  releaseorb: cloudify/release-orb@1.4.0 #orb version
-  managerorb: cloudify/manager-orb@2.0.1
+  wagonorb: cloudify/wagon-bulder-orb@2 #orb version
+  releaseorb: cloudify/release-orb@1 #orb version
+  managerorb: cloudify/manager-orb@2
 
 checkout:
   post:
@@ -29,7 +29,13 @@ commands:
   prepare_test_manager:
     steps:
       - run: ls -alR
-      - run: ecosystem-test prepare-test-manager -l $TEST_LICENSE -es aws_access_key_id=$aws_access_key_id -es aws_secret_access_key=$aws_secret_access_key --bundle-path workspace/build/cloudify-plugins-bundle.tgz --yum-package python-netaddr --yum-package git
+      - run: ecosystem-test prepare-test-manager -l $TEST_LICENSE -es aws_access_key_id=$aws_access_key_id -es aws_secret_access_key=$aws_secret_access_key --yum-package python-netaddr --yum-package git
+      - run: ecosystem-test upload-plugin -PN utilities
+      - run: ecosystem-test upload-plugin -PN ansible
+      - run: ecosystem-test upload-plugin -PN kubernetes
+      - run: |
+          docker exec -it cfy_manager mkdir -p /etc/cloudify/.cloudify/profiles/manager-local/
+          docker exec -it cfy_manager cp /root/.cloudify/profiles/manager-local/context.json /etc/cloudify/.cloudify/profiles/manager-local/context.json
 
   run_hello_world_test:
     steps:

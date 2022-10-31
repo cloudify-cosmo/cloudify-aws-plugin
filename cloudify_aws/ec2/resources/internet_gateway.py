@@ -139,8 +139,9 @@ def create(ctx, iface, resource_config, **_):
                          ignore_properties=True,
                          waits_for_status=False)
 @decorators.untag_resources
-def delete(iface, resource_config, **_):
+def delete(iface, resource_config, dry_run=False, **_):
     '''Deletes an AWS EC2 Internet Gateway'''
+    resource_config['DryRun'] = dry_run
     internet_gateway_id = resource_config.get(INTERNETGATEWAY_ID)
     if not internet_gateway_id:
         internet_gateway_id = iface.resource_id
