@@ -100,8 +100,22 @@ def prepare(ctx, resource_config, **_):
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS RDS Instance'''
     resource_config.update(dict(DBInstanceIdentifier=iface.resource_id))
+    # Each item has rel.target.node/instance
+    rels = utils.find_rels_by_type(
+        ctx.instance,
+        'cloudify.relationships.connected_to')
+    master_resource_config = {}
+    for rel in rels:
+        _prepare_assoc(ctx, rel.target)
+        rel_resource_config = ctx.instance.runtime_properties.get(
+            'resource_config', {})
+        for k, v in rel_resource_config.items():
+            master_resource_config[k] = v
+    for k, v in resource_config.items():
+        master_resource_config[k] = v
+
     # Actually create the resource
-    res = iface.create(resource_config)
+    res = iface.create(master_resource_config)
     db_instance = res['DBInstance']
     for key, value in db_instance.items():
         if key == 'DBInstanceIdentifier':
@@ -146,54 +160,60 @@ def delete(iface, resource_config, **_):
 
 @decorators.aws_relationship(DBInstance, RESOURCE_TYPE)
 def prepare_assoc(ctx, iface, resource_config, **inputs):
+    assert iface is None or iface is not None  # qa
+    assert resource_config is None or resource_config is not None  # qa
+    _prepare_assoc(ctx.source, ctx.target, inputs)
+
+
+def _prepare_assoc(ctx_source, ctx_target, inputs=None):
     '''Prepares to associate an RDS Instance to something else'''
-    if utils.is_node_type(ctx.target.node,
+    inputs = inputs or {}
+    if utils.is_node_type(ctx_target.node,
                           'cloudify.nodes.aws.rds.SubnetGroup'):
-        ctx.source.instance.runtime_properties[
+        ctx_source.instance.runtime_properties[
             'resource_config']['DBSubnetGroupName'] = utils.get_resource_id(
-            node=ctx.target.node,
-            instance=ctx.target.instance,
+            node=ctx_target.node,
+            instance=ctx_target.instance,
             raise_on_missing=True)
-    elif utils.is_node_type(ctx.target.node,
+    elif utils.is_node_type(ctx_target.node,
                             'cloudify.nodes.aws.rds.OptionGroup'):
-        ctx.source.instance.runtime_properties[
+        ctx_source.instance.runtime_properties[
             'resource_config']['OptionGroupName'] = utils.get_resource_id(
-            node=ctx.target.node,
-            instance=ctx.target.instance,
+            node=ctx_target.node,
+            instance=ctx_target.instance,
             raise_on_missing=True)
-    elif utils.is_node_type(ctx.target.node,
+    elif utils.is_node_type(ctx_target.node,
                             'cloudify.nodes.aws.rds.ParameterGroup'):
-        ctx.source.instance.runtime_properties[
+        ctx_source.instance.runtime_properties[
             'resource_config']['DBParameterGroupName'] = utils.get_resource_id(
-            node=ctx.target.node,
-            instance=ctx.target.instance,
+            node=ctx_target.node,
+            instance=ctx_target.instance,
             raise_on_missing=True)
     elif (utils.is_node_type(
-            ctx.target.node, 'cloudify.aws.ec2.SecurityGroup') or
+            ctx_target.node, 'cloudify.aws.ec2.SecurityGroup') or
           utils.is_node_type(
-            ctx.target.node, 'cloudify.nodes.aws.ec2.SecurityGroup')):
+            ctx_target.node, 'cloudify.nodes.aws.ec2.SecurityGroup')):
         security_groups = \
-            ctx.source.instance.runtime_properties['resource_config'].get(
+            ctx_source.instance.runtime_properties['resource_config'].get(
                 'VpcSecurityGroupIds', list())
         security_groups.append(
             utils.get_resource_id(
-                node=ctx.target.node,
-                instance=ctx.target.instance,
+                node=ctx_target.node,
+                instance=ctx_target.instance,
                 raise_on_missing=True))
-        ctx.source.instance.runtime_properties[
+        ctx_source.instance.runtime_properties[
             'resource_config']['VpcSecurityGroupIds'] = security_groups
-    elif utils.is_node_type(ctx.target.node,
-                            'cloudify.nodes.aws.iam.Role'):
+    elif utils.is_node_type(ctx_target.node, 'cloudify.nodes.aws.iam.Role'):
         if not inputs.get('iam_role_type_key') or \
                 not inputs.get('iam_role_id_key'):
             raise NonRecoverableError(
                 'Missing required relationship inputs "iam_role_type_key" '
                 'and/or "iam_role_id_key".')
-        ctx.source.instance.runtime_properties[
+        ctx_source.instance.runtime_properties[
             'resource_config'][inputs['iam_role_type_key']] = \
             utils.get_resource_string(
-                node=ctx.target.node,
-                instance=ctx.target.instance,
+                node=ctx_target.node,
+                instance=ctx_target.instance,
                 attribute_key=inputs['iam_role_id_key'])
 
 

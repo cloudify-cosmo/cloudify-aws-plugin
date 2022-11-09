@@ -208,9 +208,12 @@ class TestRDSInstanceReadReplica(TestBase):
                                    'cloudify.nodes.aws.rds.SubnetGroup']
         )
         current_ctx.set(_ctx)
-
+        inputs = dict(
+            iam_role_id_key='foo',
+            iam_role_type_key='bar'
+        )
         instance_read_replica.prepare_assoc(
-            ctx=_ctx, resource_config=None, iface=None
+            ctx=_ctx, resource_config=None, iface=None, inputs=inputs
         )
         self.assertEqual(
             _source_ctx.instance.runtime_properties, {
@@ -331,10 +334,10 @@ class TestRDSInstanceReadReplica(TestBase):
         )
         self.assertEqual(
             _source_ctx.instance.runtime_properties, {
-                '_set_changed': True,
+                'resource_id': 'prepare_attach_source',
                 'aws_resource_id': 'aws_resource_mock_id',
-                'resource_config': {},
-                'resource_id': 'prepare_attach_source'
+                '_set_changed': True,
+                'resource_config': {}
             }
         )
 
