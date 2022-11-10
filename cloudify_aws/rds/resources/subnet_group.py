@@ -90,7 +90,21 @@ def prepare(ctx, resource_config, **_):
 @decorators.wait_for_status(status_good=['Complete'])
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS RDS Subnet Group'''
-    node_subnet_ids = resource_config.get('SubnetIds', list())
+
+    rels = utils.find_rels_by_type(
+        ctx.instance,
+        'cloudify.relationships.connected_to')
+    master_resource_config = {}
+    for rel in rels:
+        _prepare_assoc(ctx, rel.target)
+        rel_resource_config = ctx.instance.runtime_properties.get(
+            'resource_config', {})
+        for k, v in rel_resource_config.items():
+            master_resource_config[k] = v
+    for k, v in resource_config.items():
+        master_resource_config[k] = v
+
+    node_subnet_ids = master_resource_config.get('SubnetIds', list())
     instance_subnet_ids = \
         ctx.instance.runtime_properties['resource_config'].get('SubnetIds',
                                                                list())
@@ -99,7 +113,7 @@ def create(ctx, iface, resource_config, **_):
             raise NonRecoverableError(
                 'Missing required parameter in input: SubnetIds')
 
-        resource_config['SubnetIds'] = instance_subnet_ids
+        master_resource_config['SubnetIds'] = instance_subnet_ids
 
     # if it is set then we need to combine them to what we already have as
     # runtime_properties
@@ -108,11 +122,11 @@ def create(ctx, iface, resource_config, **_):
             if subnet_id not in node_subnet_ids:
                 node_subnet_ids.append(subnet_id)
 
-        resource_config['SubnetIds'] = node_subnet_ids
+        master_resource_config['SubnetIds'] = node_subnet_ids
 
     if iface.resource_id:
-        resource_config.update({'DBSubnetGroupName': iface.resource_id})
-    create_response = iface.create(resource_config)
+        master_resource_config.update({'DBSubnetGroupName': iface.resource_id})
+    create_response = iface.create(master_resource_config)
     resource_id = create_response['DBSubnetGroup']['DBSubnetGroupName']
     utils.update_resource_id(ctx.instance, resource_id)
     utils.update_resource_arn(
@@ -130,16 +144,22 @@ def delete(iface, resource_config, **_):
 
 @decorators.aws_relationship(SubnetGroup, RESOURCE_TYPE)
 def prepare_assoc(ctx, iface, resource_config, **_):
+    assert iface is None or iface is not None  # qa
+    assert resource_config is None or resource_config is not None  # qa
+    _prepare_assoc(ctx.source, ctx.target)
+
+
+def _prepare_assoc(ctx_source, ctx_target):
     '''Prepares to associate an RDS SubnetGroup to something else'''
-    if utils.is_node_type(ctx.target.node, 'cloudify.nodes.aws.ec2.Subnet'):
-        subnet_ids = ctx.source.instance.runtime_properties[
+    if utils.is_node_type(ctx_target.node, 'cloudify.nodes.aws.ec2.Subnet'):
+        subnet_ids = ctx_source.instance.runtime_properties[
             'resource_config'].get('SubnetIds', list())
         subnet_ids.append(
             utils.get_resource_id(
-                node=ctx.target.node,
-                instance=ctx.target.instance,
+                node=ctx_target.node,
+                instance=ctx_target.instance,
                 raise_on_missing=True))
-        ctx.source.instance.runtime_properties[
+        ctx_source.instance.runtime_properties[
             'resource_config']['SubnetIds'] = subnet_ids
 
 

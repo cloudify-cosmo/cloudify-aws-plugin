@@ -144,6 +144,7 @@ class EC2Vpc(EC2Base):
         except (NonRecoverableError, ClientError) as e:
             raise OperationRetry(
                 'Failed to delete VPC dependencies: {}.'.format(str(e)))
+        raise OperationRetry('Retrying to delete vpc.')
 
     def modify_vpc_attribute(self, params):
         '''

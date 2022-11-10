@@ -4,7 +4,7 @@ description: >
   Example blueprint showing AWS Lambda functionality.
 
 imports:
-  - http://www.getcloudify.org/spec/cloudify/4.5/types.yaml
+  - https://cloudify.co/spec/cloudify/6.3.0/types.yaml
   - plugin:cloudify-aws-plugin
 
 inputs:
@@ -19,7 +19,7 @@ inputs:
 
   aws_region_name:
     type: string
-    default: { get_secret: ec2_region_name }
+    default: { get_secret: aws_region_name }
 
   aws_cloudwatch_log_arn:
     type: string

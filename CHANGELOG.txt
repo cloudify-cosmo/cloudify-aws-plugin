@@ -1,3 +1,5 @@
+3.1.1:
+  - RD 6213 RDS provisioned in wrong vpc.
 3.1.0:
  - RD 5833 DSL 1.5 Plugin YAML.
  - Handle malformed xml in s3 empty CreateBucketConfiguration.

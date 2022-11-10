@@ -104,7 +104,6 @@ class LambdaFunction(LambdaBase):
             res = self.client.invoke(**invoke_params)
         if res and res.get('Payload'):
             res['Payload'] = self._decode_payload(res['Payload'])
-        self.logger.debug('Response: %s' % res)
         return res
 
     @contextmanager
@@ -119,16 +118,19 @@ class LambdaFunction(LambdaBase):
 
     def _decode_payload(self, payload_stream):
         payload = payload_stream.read()
+        self.logger.info('payload: {}'.format(payload))
         if isinstance(payload, bytes):
             payload = payload.decode(self.resource_encoding)
         try:
             payload = json.loads(payload)
+            if not isinstance(payload, dict):
+                return payload
             if payload.get('body'):
                 try:
                     payload['body'] = json.loads(payload['body'])
                 except ValueError:
                     pass
-        except (ValueError, UnicodeDecodeError):
+        except (ValueError, AttributeError, UnicodeDecodeError):
             pass
         return payload
 

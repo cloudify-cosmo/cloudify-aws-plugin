@@ -997,8 +997,13 @@ class SkipWaitingOperation(Exception):
 
 def delete_will_succeed(fn, params):
     try:
-        fn(**params, dry_run=True)
-    except ClientError as e:
+        iface = params.pop('iface')
+        __ctx = params.pop('ctx')
+        fn_params = deepcopy(params)
+        params['ctx'] = __ctx
+        params['iface'] = iface
+        fn(**fn_params, ctx=__ctx, iface=iface, dry_run=True)
+    except (ClientError, NonRecoverableError) as e:
         if 'would have succeeded' in str(e):
             return True
         return False

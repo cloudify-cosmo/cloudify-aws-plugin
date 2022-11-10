@@ -35,17 +35,37 @@ def prepare(ctx, iface, resource_config, **_):
 @decorators.aws_resource(Route53HostedZone, RESOURCE_TYPE)
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS Route53 Resource Record Set'''
-    if 'ChangeBatch' not in resource_config:
-        resource_config = {
+    rels = utils.find_rels_by_type(
+        ctx.instance,
+        'cloudify.relationships.connected_to')
+    master_resource_config = {}
+    for rel in rels:
+        _prepare_assoc(ctx, rel.target)
+        rel_resource_config = ctx.instance.runtime_properties.get(
+            'resource_config', {})
+        for k, v in rel_resource_config.items():
+            master_resource_config[k] = v
+    for k, v in resource_config.items():
+        master_resource_config[k] = v
+
+    if 'ChangeBatch' not in master_resource_config:
+        master_resource_config = {
             'ChangeBatch': {
-                'Changes': [resource_config]
+                'Changes': [master_resource_config]
             }
         }
     rel = utils.find_rel_by_node_type(
         ctx.instance, 'cloudify.nodes.aws.route53.HostedZone')
     if rel:
-        resource_config = associate(rel.target, ctx, resource_config)
-    iface.change_resource_record_sets(resource_config)
+        master_resource_config = associate(
+            rel.target, ctx, master_resource_config)
+    # There's other stuff in resource_config that is not currently used
+    # by Boto.
+    payload = dict(
+        HostedZoneId=master_resource_config.get('HostedZoneId'),
+        ChangeBatch=master_resource_config.get('ChangeBatch'),
+    )
+    iface.change_resource_record_sets(payload)
 
 
 @decorators.aws_resource(Route53HostedZone, RESOURCE_TYPE)
@@ -75,11 +95,15 @@ def delete(ctx, iface, resource_config, resource_type, **_):
 @decorators.aws_relationship(Route53HostedZone, RESOURCE_TYPE)
 def prepare_assoc(ctx, iface, **_):
     '''Prepares to associate an Route53 Resource Record Set to something'''
-    if utils.is_node_type(ctx.target.node,
-                          'cloudify.nodes.aws.route53.HostedZone'):
-        cfg = ctx.source.instance.runtime_properties['resource_config']
-        cfg = associate(ctx.target, ctx.source, cfg)
-        ctx.source.instance.runtime_properties['resource_config'] = cfg
+    _prepare_assoc(ctx.source, ctx.target)
+
+
+def _prepare_assoc(ctx_source, ctx_target):
+    if utils.is_node_type(
+            ctx_target.node, 'cloudify.nodes.aws.route53.HostedZone'):
+        cfg = ctx_source.instance.runtime_properties['resource_config']
+        cfg = associate(ctx_target, ctx_source, cfg)
+        ctx_source.instance.runtime_properties['resource_config'] = cfg
 
 
 @decorators.aws_relationship(resource_type=RESOURCE_TYPE)
