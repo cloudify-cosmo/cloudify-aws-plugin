@@ -29,7 +29,7 @@ commands:
   eks_prepare_test_manager:
     steps:
       - run: ls -alR
-      - run: ecosystem-test prepare-test-manager -es aws_access_key_id2=$aws_access_key_id -es aws_secret_access_key2=$aws_secret_access_key
+      - run: ecosystem-test prepare-test-manager -l $TEST_LICENSE -es aws_access_key_id2=$aws_access_key_id -es aws_secret_access_key2=$aws_secret_access_key
 
   prepare_test_manager:
     steps:
@@ -358,6 +358,7 @@ workflows:
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
+            - eks_integration_tests_py3
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
@@ -376,6 +377,7 @@ workflows:
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
+            - eks_integration_tests_py3
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
