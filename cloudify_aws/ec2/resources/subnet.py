@@ -16,14 +16,16 @@
     ~~~~~~~~~~~~~~
     AWS EC2 Subnet interface
 '''
+
 # Boto
+from botocore.exceptions import ClientError
 from botocore.exceptions import CapacityNotAvailableError
 
 # Cloudify
-from cloudify.exceptions import NonRecoverableError
+from cloudify.exceptions import NonRecoverableError, OperationRetry
 
-from cloudify_aws.common import decorators, utils
 from cloudify_aws.ec2 import EC2Base
+from cloudify_aws.common import decorators, utils
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
 
 RESOURCE_TYPE = 'EC2 Subnet'
@@ -70,11 +72,14 @@ class EC2Subnet(EC2Base):
         '''
             Deletes an existing AWS EC2 Subnet.
         '''
-        self.logger.debug('Deleting %s with parameters: %s'
-                          % (self.type_name, params))
-        res = self.client.delete_subnet(**params)
-        self.logger.debug('Response: %s' % res)
-        return res
+        try:
+            return self.make_client_call('delete_subnet', params)
+        except (ClientError, NonRecoverableError) as e:
+            if 'DependencyViolation' in str(e):
+                self.cleanup_subnet_enis()
+                raise OperationRetry('Retrying to delete subnet: {}'.format(
+                    self.resource_id))
+            raise
 
     def modify_subnet_attribute(self, params=None):
         '''
@@ -86,6 +91,14 @@ class EC2Subnet(EC2Base):
         res = self.client.modify_subnet_attribute(**params)
         self.logger.debug('Response: %s' % res)
         return res
+
+    def cleanup_subnet_enis(self, subnet=None):
+        subnet = subnet or self.resource_id
+        enis = self.client.describe_network_interfaces(
+            Filters=[{'Name': 'subnet-id', 'Values': [subnet]}])
+        for e in enis.get('NetworkInterfaces', []):
+            self.client.delete_network_interface(
+                NetworkInterfaceId=e.get('NetworkInterfaceId'))
 
 
 @decorators.aws_resource(EC2Subnet,
@@ -114,8 +127,11 @@ def create(ctx, iface, resource_config, **_):
 @decorators.untag_resources
 def delete(ctx, iface, resource_config, dry_run=False, **_):
     '''Deletes an AWS EC2 Subnet'''
-    resource_config['DryRun'] = dry_run
+
+    if dry_run:
+        resource_config['DryRun'] = dry_run
     subnet_id = resource_config.get(SUBNET_ID)
+
     if not subnet_id:
         resource_config[SUBNET_ID] = \
             iface.resource_id or \
@@ -126,6 +142,7 @@ def delete(ctx, iface, resource_config, dry_run=False, **_):
                           resource_config,
                           exit_substrings='NotFound',
                           raise_substrings='DependencyViolation')
+
     ctx.logger.info("handle_response")
 
 

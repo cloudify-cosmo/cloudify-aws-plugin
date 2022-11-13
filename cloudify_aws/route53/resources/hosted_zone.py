@@ -105,21 +105,37 @@ def prepare(ctx, resource_config, iface, **_):
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS Route53 Hosted Zone'''
     # Build API params
+
+    rels = utils.find_rels_by_type(
+        ctx.instance,
+        'cloudify.relationships.connected_to')
+    master_resource_config = {}
+    for rel in rels:
+        _prepare_assoc(ctx, rel.target)
+        rel_resource_config = ctx.instance.runtime_properties.get(
+            'resource_config', {})
+        for k, v in rel_resource_config.items():
+            master_resource_config[k] = v
+    for k, v in resource_config.items():
+        master_resource_config[k] = v
+
     if iface.resource_id:
-        resource_config.update({'Name': iface.resource_id})
-    if not resource_config.get('CallerReference'):
-        resource_config.update(
+        master_resource_config.update({'Name': iface.resource_id})
+    if not master_resource_config.get('CallerReference'):
+        master_resource_config.update(
             dict(CallerReference=text_type(ctx.instance.id)))
     # Actually create the resource
     rel = utils.find_rel_by_node_type(
         ctx.instance, 'cloudify.nodes.aws.ec2.Vpc')
     if rel:
-        resource_config = associate(rel.target, ctx, resource_config)
+        master_resource_config = associate(
+            rel.target, ctx, master_resource_config)
 
-    create_response = iface.create(resource_config)['HostedZone']['Id']
-    iface.update_resource_id(create_response)
-    utils.update_resource_id(ctx.instance, create_response)
-    utils.update_resource_arn(ctx.instance, create_response)
+    create_response = iface.create(master_resource_config)
+    resource_id = create_response['HostedZone']['Id']
+    iface.update_resource_id(resource_id)
+    utils.update_resource_id(ctx.instance, resource_id)
+    utils.update_resource_arn(ctx.instance, resource_id)
 
 
 @decorators.aws_resource(Route53HostedZone, RESOURCE_TYPE,
@@ -154,12 +170,16 @@ def delete(ctx, iface, resource_config, resource_type,
 @decorators.aws_relationship(Route53HostedZone, RESOURCE_TYPE)
 def prepare_assoc(ctx, iface, resource_config, **inputs):
     '''Prepares to associate an Route53 Hosted Zone to something else'''
-    if utils.is_node_type(ctx.target.node, 'cloudify.nodes.aws.ec2.Vpc'):
-        ctx.source.instance.runtime_properties[
+    _prepare_assoc(ctx.source, ctx.target)
+
+
+def _prepare_assoc(ctx_source, ctx_target):
+    if utils.is_node_type(ctx_target.node, 'cloudify.nodes.aws.ec2.Vpc'):
+        ctx_source.instance.runtime_properties[
             'resource_config'] = associate(
-            ctx.target,
-            ctx.source,
-            ctx.source.instance.runtime_properties['resource_config'])
+            ctx_target,
+            ctx_source,
+            ctx_source.instance.runtime_properties['resource_config'])
 
 
 @decorators.aws_relationship(Route53HostedZone, RESOURCE_TYPE)

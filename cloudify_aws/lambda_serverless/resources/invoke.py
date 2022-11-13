@@ -24,14 +24,14 @@ from cloudify_aws.ec2.resources import eni
 RESOURCE_TYPE = 'Lambda Function Invocation'
 
 
-@decorators.aws_resource(LambdaFunction, RESOURCE_TYPE)
+@decorators.aws_resource(None, RESOURCE_TYPE)
 def configure(ctx, resource_config, **_):
     '''Configures an AWS Lambda Invoke'''
     # Save the parameters
     ctx.instance.runtime_properties['resource_config'] = resource_config
 
 
-@decorators.aws_relationship(LambdaFunction, RESOURCE_TYPE)
+@decorators.aws_relationship(None, RESOURCE_TYPE)
 def attach_to(ctx, resource_config, **_):
     '''Attaches an Lambda Invoke to something else'''
     rtprops = ctx.source.instance.runtime_properties
@@ -52,7 +52,7 @@ def attach_to(ctx, resource_config, **_):
         ctx.source.instance.runtime_properties['output'] = result
 
 
-@decorators.aws_relationship(LambdaFunction, RESOURCE_TYPE)
+@decorators.aws_relationship(None, RESOURCE_TYPE)
 def detach_from(ctx, **_):
     '''Detaches an Lambda Invoke from something else'''
     props = ctx.target.instance.runtime_properties

@@ -24,6 +24,7 @@ from cloudify_aws.rds import RDSBase
 from botocore.exceptions import ClientError, ParamValidationError
 
 RESOURCE_TYPE = 'RDS DB Instance Read Replica'
+RC = 'resource_config'
 
 
 class DBInstanceReadReplica(RDSBase):
@@ -79,7 +80,7 @@ class DBInstanceReadReplica(RDSBase):
 def prepare(ctx, resource_config, **_):
     '''Prepares an AWS RDS Instance Read Replica'''
     # Save the parameters
-    ctx.instance.runtime_properties['resource_config'] = resource_config
+    ctx.instance.runtime_properties[RC] = resource_config
 
 
 @decorators.aws_resource(DBInstanceReadReplica, RESOURCE_TYPE)
@@ -88,10 +89,23 @@ def prepare(ctx, resource_config, **_):
     status_pending=['creating', 'modifying', 'backing-up'])
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS RDS Instance Read Replica'''
+
+    rels = utils.find_rels_by_type(
+        ctx.instance,
+        'cloudify.relationships.connected_to')
+    master_resource_config = {}
+    for rel in rels:
+        _prepare_assoc(ctx, rel.target)
+        rel_resource_config = ctx.instance.runtime_properties.get(RC, {})
+        for k, v in rel_resource_config.items():
+            master_resource_config[k] = v
+    for k, v in resource_config.items():
+        master_resource_config[k] = v
     if iface.resource_id:
-        resource_config.update({'DBInstanceIdentifier': iface.resource_id})
+        master_resource_config.update(
+            {'DBInstanceIdentifier': iface.resource_id})
     # Actually create the resource
-    create_response = iface.create(resource_config)
+    create_response = iface.create(master_resource_config)
     resource_id = create_response['DBInstance']['DBInstanceIdentifier']
     iface.update_resource_id(resource_id)
     utils.update_resource_id(ctx.instance, resource_id)
@@ -110,41 +124,47 @@ def delete(iface, resource_config, **_):
 @decorators.aws_relationship(DBInstanceReadReplica, RESOURCE_TYPE)
 def prepare_assoc(ctx, iface, resource_config, **inputs):
     '''Prepares to associate an RDS Instance Read Replica to something else'''
-    if utils.is_node_type(ctx.target.node,
-                          'cloudify.nodes.aws.rds.SubnetGroup'):
-        ctx.source.instance.runtime_properties[
-            'resource_config']['DBSubnetGroupName'] = utils.get_resource_id(
-                node=ctx.target.node,
-                instance=ctx.target.instance,
-                raise_on_missing=True)
-    elif utils.is_node_type(ctx.target.node,
-                            'cloudify.nodes.aws.rds.OptionGroup'):
-        ctx.source.instance.runtime_properties[
-            'resource_config']['OptionGroupName'] = utils.get_resource_id(
-                node=ctx.target.node,
-                instance=ctx.target.instance,
-                raise_on_missing=True)
-    elif utils.is_node_type(ctx.target.node,
-                            'cloudify.nodes.aws.rds.Instance'):
-        ctx.source.instance.runtime_properties[
-            'resource_config']['SourceDBInstanceIdentifier'] = \
+    assert iface is None or iface is not None  # qa
+    assert resource_config is None or resource_config is not None  # qa
+    _prepare_assoc(ctx.source, ctx.target, inputs)
+
+
+def _prepare_assoc(ctx_source, ctx_target, inputs=None):
+    inputs = inputs or {}
+    if utils.is_node_type(
+            ctx_target.node, 'cloudify.nodes.aws.rds.SubnetGroup'):
+        ctx_source.instance.runtime_properties[RC]['DBSubnetGroupName'] = \
             utils.get_resource_id(
-                node=ctx.target.node,
-                instance=ctx.target.instance,
+                node=ctx_target.node,
+                instance=ctx_target.instance,
                 raise_on_missing=True)
-    elif utils.is_node_type(ctx.target.node,
-                            'cloudify.nodes.aws.iam.Role'):
-        if not inputs.get('iam_role_type_key') or \
-                not inputs.get('iam_role_id_key'):
+    elif utils.is_node_type(
+            ctx_target.node, 'cloudify.nodes.aws.rds.OptionGroup'):
+        ctx_source.instance.runtime_properties[RC]['OptionGroupName'] = \
+            utils.get_resource_id(
+                node=ctx_target.node,
+                instance=ctx_target.instance,
+                raise_on_missing=True)
+    elif utils.is_node_type(
+            ctx_target.node, 'cloudify.nodes.aws.rds.Instance'):
+        SOURCE_DB_ID = 'SourceDBInstanceIdentifier'
+        ctx_source.instance.runtime_properties[RC][SOURCE_DB_ID] = \
+            utils.get_resource_id(
+                node=ctx_target.node,
+                instance=ctx_target.instance,
+                raise_on_missing=True)
+    elif utils.is_node_type(ctx_target.node, 'cloudify.nodes.aws.iam.Role'):
+        iam_role_type_key = inputs.get('iam_role_type_key')
+        iam_role_id_key = inputs.get('iam_role_id_key')
+        if not iam_role_type_key or not iam_role_id_key:
             raise NonRecoverableError(
                 'Missing required relationship inputs "iam_role_type_key" '
                 'and/or "iam_role_id_key".')
-        ctx.source.instance.runtime_properties[
-            'resource_config'][inputs['iam_role_type_key']] = \
+        ctx_source.instance.runtime_properties[RC][iam_role_type_key] = \
             utils.get_resource_string(
-                node=ctx.target.node,
-                instance=ctx.target.instance,
-                attribute_key=inputs['iam_role_id_key'])
+                node=ctx_target.node,
+                instance=ctx_target.instance,
+                attribute_key=iam_role_id_key)
 
 
 @decorators.aws_relationship(DBInstanceReadReplica, RESOURCE_TYPE)
