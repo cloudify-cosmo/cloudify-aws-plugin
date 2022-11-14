@@ -50,8 +50,8 @@ class TestEC2Image(TestBase):
         reload_module(image)
         self.image._describe_image_filters = \
             {'Filters': {
-                'name': 'CentOS 7.7.1908 x86_64 with cloud-init (HVM)',
-                'owner-id': '057448758665'}}
+                'name': 'CentOS7-cloudify-examples-image',
+                'owner-id': '263721492972'}}
 
     def test_class_properties(self):
         effect = self.get_client_error_exception(name='EC2 Image')
