@@ -26,10 +26,14 @@ executors:
       image: ubuntu-2004:202201-02
 
 commands:
+
   eks_prepare_test_manager:
     steps:
       - run: ls -alR
       - run: ecosystem-test prepare-test-manager -l $TEST_LICENSE -es aws_access_key_id2=$aws_access_key_id -es aws_secret_access_key2=$aws_secret_access_key
+      - run: ecosystem-test upload-plugin -PN utilities
+      - run: ecosystem-test upload-plugin -PN ansible
+      - run: ecosystem-test upload-plugin -PN kubernetes
 
   prepare_test_manager:
     steps:
@@ -52,7 +56,7 @@ commands:
 
   run_eks_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/blueprint-examples/kubernetes/aws-eks/blueprint.yaml --test-id=aws-eks -i eks_cluster_name=test-$CIRCLE_BUILD_NUM -i aws_access_key_id=aws_access_key_id2 -i aws_secret_access_key=aws_secret_access_key2 --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/blueprint-examples/kubernetes/aws-eks/blueprint.yaml --test-id=aws-eks -i .circleci/eks-inputs.yaml -i eks_cluster_name=test-$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000
 
   run_ec2_image_test:
     steps:
