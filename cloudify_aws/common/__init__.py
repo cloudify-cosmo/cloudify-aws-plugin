@@ -67,7 +67,7 @@ class AWSResourceBase(object):
     def compare_configuration(self):
         result = DeepDiff(self.expected_configuration,
                           self.remote_configuration)
-        delta = Delta(result)
+        delta = utils.JsonCleanuper(result)
         return delta.to_dict()
 
     def import_configuration(self, resource_config, runtime_props):
