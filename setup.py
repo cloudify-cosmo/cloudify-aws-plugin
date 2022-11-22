@@ -48,7 +48,7 @@ setup(
         'cloudify-utilities-plugins-sdk>=0.0.61',
         'botocore',
         'pycryptodome==3.9.7',
-        'deepdiff==3.3.0',
+        'deepdiff==5.7.0',
         'datetime'
     ]
 )

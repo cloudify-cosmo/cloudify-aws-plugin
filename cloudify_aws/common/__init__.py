@@ -29,7 +29,7 @@ from cloudify.logs import init_cloudify_logger
 from cloudify.utils import exception_to_error_cause
 from cloudify_aws.common._compat import text_type
 
-from deepdiff import DeepDiff
+from deepdiff import DeepDiff, Delta
 
 from . import utils
 
@@ -65,8 +65,10 @@ class AWSResourceBase(object):
             return {}
 
     def compare_configuration(self):
-        return DeepDiff(self.expected_configuration,
-                        self.remote_configuration)
+        result = DeepDiff(self.expected_configuration,
+                          self.remote_configuration)
+        delta = Delta(result)
+        return delta.to_dict()
 
     def import_configuration(self, resource_config, runtime_props):
         """ Read all of the various runtime properties where we store
