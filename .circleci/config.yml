@@ -289,7 +289,7 @@ jobs:
       - attach_workspace:
           at: workspace
       - managerorb/create_manager_container_latest
-      - prepare_test_manager
+      - eks_prepare_test_manager
       - run_sns_test
 
   sqs_integration_tests_py3:
@@ -477,10 +477,10 @@ workflows:
               only: /([0-9\.]*\-build|master|dev)/
       - sns_integration_tests_py3:
           requires:
-            - wagonorb/build_bundle
-            - wagonorb/wagon
-            - wagonorb/rhel_wagon
-            - wagonorb/arch64_wagon
+            - ec2_vpc_integration_tests_py3
+            - ec2_instance_integration_tests_py3
+            - ebs_integration_tests_py3
+            - cf_integration_tests_py3
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
