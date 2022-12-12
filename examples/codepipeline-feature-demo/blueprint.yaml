@@ -4,7 +4,7 @@ description: >
   Example blueprint showing AWS Codepipeline functionality.
 
 imports:
-  - http://www.getcloudify.org/spec/cloudify/5.0.5/types.yaml
+  - http://cloudify.co/spec/cloudify/6.4.0/types.yaml
   - plugin:cloudify-aws-plugin
 
 
