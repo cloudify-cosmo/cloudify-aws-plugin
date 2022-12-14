@@ -12,16 +12,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import logging
+
 from os import environ
 from contextlib import contextmanager
 
 import pytest
 
-from boto3 import client
 from ecosystem_tests.dorkl.constansts import logger
 from ecosystem_tests.dorkl import cleanup_on_failure
-from ecosystem_tests.dorkl.exceptions import EcosystemTestException
 from ecosystem_tests.dorkl.cloudify_api import (
     cloudify_exec,
     blueprints_upload,
@@ -56,9 +54,9 @@ def test_cloudwatch(*_, **__):
                                {"aws_instance_id": str(instance_id),
                                 "aws_region_name": "us-west-2"})
             # Install Cloud Watch Deployment
-            executions_start('install', deployment_id)
+            executions_start('install', deployment_id, 1800)
             # Uninstall Cloud Watch Deployment
-            executions_start('uninstall', deployment_id)
+            executions_start('uninstall', deployment_id, 1800)
         except:
             cleanup_on_failure(deployment_id)
 
