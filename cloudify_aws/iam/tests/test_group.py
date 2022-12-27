@@ -48,8 +48,14 @@ RUNTIME_PROPERTIES_AFTER_CREATE = {
     'aws_resource_id': 'group_name_id',
     'resource_config': {}
 }
+ctx_node = MagicMock(
+    properties=NODE_PROPERTIES,
+    plugin=MagicMock(properties={})
+)
 
 
+@patch('cloudify_aws.common.connection.ctx')
+@patch('cloudify_aws.common.connection.Boto3Connection.get_account_id')
 class TestIAMGroup(TestBase):
 
     def setUp(self):
@@ -67,14 +73,15 @@ class TestIAMGroup(TestBase):
 
         super(TestIAMGroup, self).tearDown()
 
-    def test_create_raises_UnknownServiceError(self):
-        self._prepare_create_raises_UnknownServiceError(
+    def test_create_raises_UnknownServiceError(self, *_):
+        fake_boto = self._prepare_create_raises_UnknownServiceError(
             type_hierarchy=GROUP_TH,
             type_name='iam',
             type_class=group
         )
+        fake_boto.assert_called_with('iam')
 
-    def test_create(self):
+    def test_create(self, *_):
         _ctx = self.get_mock_ctx(
             'test_create',
             test_properties=NODE_PROPERTIES,
@@ -94,7 +101,7 @@ class TestIAMGroup(TestBase):
 
         group.create(ctx=_ctx, resource_config=None, iface=None, params=None)
 
-        self.fake_boto.assert_called_with('iam', **CLIENT_CONFIG)
+        self.fake_boto.assert_called_with('iam')
 
         self.fake_client.create_group.assert_called_with(
             GroupName='group_name_id', Path='some_path'
@@ -105,7 +112,7 @@ class TestIAMGroup(TestBase):
             RUNTIME_PROPERTIES_AFTER_CREATE
         )
 
-    def test_delete(self):
+    def test_delete(self, *_):
         _ctx = self.get_mock_ctx(
             'test_delete',
             test_properties=NODE_PROPERTIES,
@@ -120,7 +127,7 @@ class TestIAMGroup(TestBase):
 
         group.delete(ctx=_ctx, resource_config=None, iface=None)
 
-        self.fake_boto.assert_called_with('iam', **CLIENT_CONFIG)
+        self.fake_boto.assert_called_with('iam')
 
         self.fake_client.delete_group.assert_called_with(
             GroupName='group_name_id'
@@ -133,7 +140,7 @@ class TestIAMGroup(TestBase):
             }
         )
 
-    def test_attach_to_User(self):
+    def test_attach_to_User(self, *_):
         _source_ctx, _target_ctx, _ctx = self._create_common_relationships(
             'test_attach_to',
             GROUP_TH,
@@ -161,7 +168,7 @@ class TestIAMGroup(TestBase):
             }
         )
 
-    def test_detach_from_User(self):
+    def test_detach_from_User(self, *_):
         _source_ctx, _target_ctx, _ctx = self._create_common_relationships(
             'test_detach_from',
             GROUP_TH,
@@ -191,7 +198,7 @@ class TestIAMGroup(TestBase):
             }
         )
 
-    def test_detach_from_Policy(self):
+    def test_detach_from_Policy(self, *_):
         _source_ctx, _target_ctx, _ctx = self._create_common_relationships(
             'test_detach_from',
             GROUP_TH,
@@ -219,7 +226,7 @@ class TestIAMGroup(TestBase):
             }
         )
 
-    def test_attach_to_Policy(self):
+    def test_attach_to_Policy(self, *_):
         _source_ctx, _target_ctx, _ctx = self._create_common_relationships(
             'test_attach_to',
             GROUP_TH,
@@ -247,7 +254,7 @@ class TestIAMGroup(TestBase):
             }
         )
 
-    def test_IAMGroupClass_properties(self):
+    def test_IAMGroupClass_properties(self, *_):
         self.fake_client.get_group = MagicMock(return_value={
             'Group': {
                 'GroupName': "group_name_id",
@@ -255,7 +262,7 @@ class TestIAMGroup(TestBase):
             }
         })
 
-        test_instance = group.IAMGroup("ctx_node", resource_id='group_id',
+        test_instance = group.IAMGroup(ctx_node, resource_id='group_id',
                                        client=self.fake_client,
                                        logger=None)
 
@@ -268,7 +275,7 @@ class TestIAMGroup(TestBase):
             GroupName='group_id'
         )
 
-    def test_IAMGroupClass_status(self):
+    def test_IAMGroupClass_status(self, *_):
         self.fake_client.get_group = MagicMock(return_value={
             'Group': {
                 'GroupName': "group_name_id",
@@ -276,7 +283,7 @@ class TestIAMGroup(TestBase):
             }
         })
 
-        test_instance = group.IAMGroup("ctx_node", resource_id='group_id',
+        test_instance = group.IAMGroup(ctx_node, resource_id='group_id',
                                        client=self.fake_client,
                                        logger=None)
 

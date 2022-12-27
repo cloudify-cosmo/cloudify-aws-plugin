@@ -2,7 +2,7 @@ plugins:
   aws:
     executor: central_deployment_agent
     package_name: cloudify-aws-plugin
-    package_version: '3.1.2'
+    package_version: '3.1.3'
 
 data_types:
 
@@ -1678,6 +1678,9 @@ node_types:
         required: false
     interfaces:
       cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.iam.resources.role.precreate
+          inputs: *operation_inputs
         create:
           implementation: aws.cloudify_aws.iam.resources.role.create
           inputs: *operation_inputs

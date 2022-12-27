@@ -212,6 +212,7 @@ class testIfaceRequirement(TestBase):
     @patch('cloudify_aws.common.decorators._wait_for_delete')
     @patch('cloudify_aws.common.AWSResourceBase.make_client_call')
     @patch('cloudify_aws.common.connection.Boto3Connection.client')
+    @patch('cloudify_aws.common.connection.Boto3Connection.get_account_id')
     @patch('cloudify.context.CloudifyContext._verify_in_relationship_context')
     def test_iface_requirement(self, *_):
         plugin_yaml = self.get_plugin_yaml()

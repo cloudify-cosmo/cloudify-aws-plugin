@@ -89,8 +89,11 @@ class Boto3Connection(object):
                 'No plugin properties were provided. '
                 'Defaulting client_config credentials.')
 
+    def get_sts_client(self, config):
+        return boto3.client("sts", **config)
+
     def get_sts_credentials(self, role, config):
-        sts_client = boto3.client("sts", **config)
+        sts_client = self.get_sts_client(config)
 
         sts_credentials = sts_client.assume_role(
             RoleArn=role,
@@ -102,6 +105,12 @@ class Boto3Connection(object):
             "aws_session_token": sts_credentials["SessionToken"],
             "region_name": self.aws_config["region_name"]
         }
+
+    def get_account_id(self):
+        sts_client = self.get_sts_client(self.aws_config)
+        caller_id = sts_client.get_caller_identity()
+        if 'Account' in caller_id:
+            return caller_id['Account']
 
     def client(self, service_name):
         '''

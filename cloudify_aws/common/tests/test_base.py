@@ -572,7 +572,10 @@ class TestBase(unittest.TestCase):
                 )
             )
 
-            fake_boto.assert_called_with(type_name, **CLIENT_CONFIG)
+            if type_name == 'iam':
+                return fake_boto
+            else:
+                fake_boto.assert_called_with(type_name, **CLIENT_CONFIG)
 
     def _create_common_relationships(self,
                                      node_id,

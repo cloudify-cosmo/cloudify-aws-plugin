@@ -14,18 +14,28 @@
 
 # Standard imports
 import unittest
+from mock import patch, MagicMock
 
 # Local imports
-from cloudify_aws.common.tests.test_base import TestServiceBase
 from cloudify_aws.iam import IAMBase
+from cloudify_aws.common.tests.test_base import TestServiceBase
+
+ctx_node = MagicMock(
+    properties={},
+    plugin=MagicMock(properties={})
+)
 
 
 class TestIAMBase(TestServiceBase):
 
-    def setUp(self):
+    @patch('cloudify_aws.common.connection.ctx')
+    @patch('cloudify_aws.common.connection.Boto3Connection.get_account_id')
+    def setUp(self, _, _ctx):
+        _ctx = MagicMock(  # noqa
+            node=ctx_node, plugin=MagicMock(properties={}))
         super(TestIAMBase, self).setUp()
-        self.base = IAMBase("ctx_node", resource_id=True,
-                            client=True, logger=None)
+        self.base = IAMBase(
+            ctx_node, resource_id=True, client=True, logger=None)
 
 
 if __name__ == '__main__':
