@@ -126,6 +126,12 @@ def validate_polices(policies, policies_from_properties):
 
 @decorators.aws_resource(IAMRole, RESOURCE_TYPE, waits_for_status=False)
 @decorators.aws_params(RESOURCE_NAME)
+def precreate(ctx, iface, **_):
+    ctx.instance.runtime_properties['account_id'] = iface.account_id
+
+
+@decorators.aws_resource(IAMRole, RESOURCE_TYPE, waits_for_status=False)
+@decorators.aws_params(RESOURCE_NAME)
 def create(ctx, iface, resource_config, params, **_):
     '''Creates an AWS IAM Role'''
 

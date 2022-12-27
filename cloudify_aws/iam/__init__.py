@@ -31,6 +31,7 @@ class IAMBase(AWSResourceBase):
         AWSResourceBase.__init__(
             self, client or Boto3Connection(ctx_node).client('iam'),
             resource_id=resource_id, logger=logger)
+        self.account_id = Boto3Connection(ctx_node).get_account_id()
 
     @property
     def properties(self):
