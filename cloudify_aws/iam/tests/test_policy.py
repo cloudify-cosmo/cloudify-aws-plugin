@@ -79,8 +79,14 @@ RUNTIME_PROPERTIES_AFTER_CREATE = {
     'aws_resource_id': 'policy_name_id',
     'resource_config': {}
 }
+ctx_node = MagicMock(
+    properties=NODE_PROPERTIES,
+    plugin=MagicMock(properties={})
+)
 
 
+@patch('cloudify_aws.common.connection.ctx')
+@patch('cloudify_aws.common.connection.Boto3Connection.get_account_id')
 class TestIAMPolicy(TestBase):
 
     def setUp(self):
@@ -98,14 +104,15 @@ class TestIAMPolicy(TestBase):
 
         super(TestIAMPolicy, self).tearDown()
 
-    def test_create_raises_UnknownServiceError(self):
-        self._prepare_create_raises_UnknownServiceError(
+    def test_create_raises_UnknownServiceError(self, *_):
+        fake_boto = self._prepare_create_raises_UnknownServiceError(
             type_hierarchy=POLICY_TH,
             type_name='iam',
             type_class=policy
         )
+        fake_boto.assert_called_with('iam')
 
-    def test_create(self):
+    def test_create(self, *_):
         _ctx = self.get_mock_ctx(
             'test_create',
             test_properties=NODE_PROPERTIES,
@@ -124,14 +131,14 @@ class TestIAMPolicy(TestBase):
 
         policy.create(ctx=_ctx, resource_config=None, iface=None)
 
-        self.fake_boto.assert_called_with('iam', **CLIENT_CONFIG)
+        self.fake_boto.assert_called_with('iam')
 
         self.assertEqual(
             _ctx.instance.runtime_properties,
             RUNTIME_PROPERTIES_AFTER_CREATE
         )
 
-    def test_create_policy_str(self):
+    def test_create_policy_str(self, *_):
         _ctx = self.get_mock_ctx(
             'test_create',
             test_properties=NODE_PROPERTIES_POLICY_STR,
@@ -150,7 +157,7 @@ class TestIAMPolicy(TestBase):
 
         policy.create(ctx=_ctx, resource_config=None, iface=None)
 
-        self.fake_boto.assert_called_with('iam', **CLIENT_CONFIG)
+        self.fake_boto.assert_called_with('iam')
 
         self.fake_client.create_policy.assert_called_with(
             Description='Grants access to EC2 network components',
@@ -164,7 +171,7 @@ class TestIAMPolicy(TestBase):
             RUNTIME_PROPERTIES_AFTER_CREATE
         )
 
-    def test_delete(self):
+    def test_delete(self, *_):
         _ctx = self.get_mock_ctx(
             'test_delete',
             test_properties=NODE_PROPERTIES,
@@ -179,7 +186,7 @@ class TestIAMPolicy(TestBase):
 
         policy.delete(ctx=_ctx, resource_config=None, iface=None)
 
-        self.fake_boto.assert_called_with('iam', **CLIENT_CONFIG)
+        self.fake_boto.assert_called_with('iam')
 
         self.fake_client.delete_policy.assert_called_with(
             PolicyArn='arn_id'
@@ -192,7 +199,7 @@ class TestIAMPolicy(TestBase):
             }
         )
 
-    def test_IAMPolicyClass_properties(self):
+    def test_IAMPolicyClass_properties(self, *_):
         self.fake_client.get_policy = MagicMock(return_value={
             'Policy': {
                 'PolicyName': 'policy_name_id',
@@ -200,7 +207,7 @@ class TestIAMPolicy(TestBase):
             }
         })
 
-        test_instance = policy.IAMPolicy("ctx_node",
+        test_instance = policy.IAMPolicy(ctx_node,
                                          resource_id='queue_id',
                                          client=self.fake_client,
                                          logger=None)
@@ -214,7 +221,7 @@ class TestIAMPolicy(TestBase):
             PolicyArn='queue_id'
         )
 
-    def test_IAMPolicyClass_status(self):
+    def test_IAMPolicyClass_status(self, *_):
         self.fake_client.get_policy = MagicMock(return_value={
             'Policy': {
                 'PolicyName': 'policy_name_id',
@@ -222,7 +229,7 @@ class TestIAMPolicy(TestBase):
             }
         })
 
-        test_instance = policy.IAMPolicy("ctx_node",
+        test_instance = policy.IAMPolicy(ctx_node,
                                          resource_id='queue_id',
                                          client=self.fake_client,
                                          logger=None)

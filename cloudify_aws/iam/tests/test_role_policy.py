@@ -16,7 +16,7 @@ import unittest
 import collections
 
 # Third party imports
-from mock import patch
+from mock import patch, MagicMock
 
 from cloudify.state import current_ctx
 
@@ -46,6 +46,10 @@ NODE_PROPERTIES = {
     },
     'client_config': CLIENT_CONFIG
 }
+ctx_node = MagicMock(
+    properties=NODE_PROPERTIES,
+    plugin=MagicMock(properties={})
+)
 
 RUNTIME_PROPERTIES_AFTER_CREATE = {
     'aws_resource_id': 'aws_resource',
@@ -53,6 +57,8 @@ RUNTIME_PROPERTIES_AFTER_CREATE = {
 }
 
 
+@patch('cloudify_aws.common.connection.ctx')
+@patch('cloudify_aws.common.connection.Boto3Connection.get_account_id')
 class TestIAMRolePolicy(TestBase):
 
     def setUp(self):
@@ -70,44 +76,45 @@ class TestIAMRolePolicy(TestBase):
 
         super(TestIAMRolePolicy, self).tearDown()
 
-    def test_IAMRolePolicyClass_properties(self):
+    def test_IAMRolePolicyClass_properties(self, *_):
         test_instance = role_policy.IAMRolePolicy(
-            "ctx_node", resource_id='role_id',
+            ctx_node, resource_id='role_id',
             client=self.fake_client, logger=None)
 
         self.assertIsNone(test_instance.properties)
 
-    def test_IAMRolePolicyClass_status(self):
+    def test_IAMRolePolicyClass_status(self, *_):
         test_instance = role_policy.IAMRolePolicy(
-            "ctx_node", resource_id='role_id',
+            ctx_node, resource_id='role_id',
             client=self.fake_client, logger=None)
 
         self.assertIsNone(test_instance.status)
 
-    def test_IAMRolePolicyClass_create(self):
+    def test_IAMRolePolicyClass_create(self, *_):
         test_instance = role_policy.IAMRolePolicy(
-            "ctx_node", resource_id='role_id',
+            ctx_node, resource_id='role_id',
             client=self.fake_client, logger=None)
         self.fake_client.put_role_policy = self.mock_return({"c": "d"})
         self.assertEqual(test_instance.create({"a": "b"}), {"c": "d"})
         self.fake_client.put_role_policy.assert_called_with(a='b')
 
-    def test_IAMRolePolicyClass_delete(self):
+    def test_IAMRolePolicyClass_delete(self, *_):
         test_instance = role_policy.IAMRolePolicy(
-            "ctx_node", resource_id='role_id',
+            ctx_node, resource_id='role_id',
             client=self.fake_client, logger=None)
         self.fake_client.delete_role_policy = self.mock_return({"c": "d"})
         self.assertEqual(test_instance.delete({"a": "b"}), {"c": "d"})
         self.fake_client.delete_role_policy.assert_called_with(a='b')
 
-    def test_create_raises_UnknownServiceError(self):
-        self._prepare_create_raises_UnknownServiceError(
+    def test_create_raises_UnknownServiceError(self, *_):
+        fake_boto = self._prepare_create_raises_UnknownServiceError(
             type_hierarchy=ROLEPOLICY_TH,
             type_name='iam',
             type_class=role_policy
         )
+        fake_boto.assert_called_with('iam')
 
-    def test_create(self):
+    def test_create(self, *_):
         _ctx = self.get_mock_ctx(
             'test_create',
             test_properties=NODE_PROPERTIES,
@@ -132,7 +139,7 @@ class TestIAMRolePolicy(TestBase):
         role_policy.create(ctx=_ctx, resource_config=None, iface=None,
                            params=None)
 
-        self.fake_boto.assert_called_with('iam', **CLIENT_CONFIG)
+        self.fake_boto.assert_called_with('iam')
 
         self.fake_client.put_role_policy.assert_called_with(
             PolicyName='aws_resource', RoleName='subnet_id',
@@ -144,7 +151,7 @@ class TestIAMRolePolicy(TestBase):
             RUNTIME_PROPERTIES_AFTER_CREATE
         )
 
-    def test_delete(self):
+    def test_delete(self, *_):
         _ctx = self.get_mock_ctx(
             'test_create',
             test_properties=NODE_PROPERTIES,
@@ -170,7 +177,7 @@ class TestIAMRolePolicy(TestBase):
         role_policy.delete(ctx=_ctx, resource_config={}, iface=None,
                            params=None)
 
-        self.fake_boto.assert_called_with('iam', **CLIENT_CONFIG)
+        self.fake_boto.assert_called_with('iam')
 
         self.fake_client.delete_role_policy.assert_called_with(
             PolicyName='aws_resource', RoleName='subnet_id')

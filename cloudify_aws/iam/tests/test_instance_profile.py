@@ -34,12 +34,20 @@ NODE_PROPERTIES = {
     },
     'client_config': CLIENT_CONFIG
 }
+ctx_node = MagicMock(
+    properties=NODE_PROPERTIES,
+    plugin=MagicMock(properties={})
+)
 
 
 class TestIAMInstanceProfile(TestBase):
 
-    def setUp(self):
+    @patch('cloudify_aws.common.connection.ctx')
+    @patch('cloudify_aws.common.connection.Boto3Connection.get_account_id')
+    def setUp(self, _, _ctx):
         super(TestIAMInstanceProfile, self).setUp()
+        _ctx = MagicMock(  # noqa
+            node=ctx_node, plugin=MagicMock(properties={}))
 
         self.fake_boto, self.fake_client = self.fake_boto_client('iam')
 
@@ -47,7 +55,7 @@ class TestIAMInstanceProfile(TestBase):
         self.mock_patch.start()
         self.instance_profile = \
             instance_profile.IAMInstanceProfile(
-                "ctx_node",
+                ctx_node,
                 resource_id=True,
                 client=MagicMock(),
                 logger=None)
@@ -89,7 +97,7 @@ class TestIAMInstanceProfile(TestBase):
 
         instance_profile.create(ctx=_ctx, resource_config=None, iface=None)
 
-        self.fake_boto.assert_called_with('iam', **CLIENT_CONFIG)
+        self.fake_boto.assert_called_with('sts', **CLIENT_CONFIG)
 
         # This is just because I'm not interested in the content
         # of remote_configuration right now.
@@ -124,7 +132,7 @@ class TestIAMInstanceProfile(TestBase):
 
         instance_profile.create(ctx=_ctx, resource_config=None, iface=None)
 
-        self.fake_boto.assert_called_with('iam', **CLIENT_CONFIG)
+        self.fake_boto.assert_called_with('sts', **CLIENT_CONFIG)
 
         # This is just because I'm not interested in the content
         # of remote_configuration right now.
@@ -152,7 +160,7 @@ class TestIAMInstanceProfile(TestBase):
 
         instance_profile.delete(ctx=_ctx, resource_config=None, iface=None)
 
-        self.fake_boto.assert_called_with('iam', **CLIENT_CONFIG)
+        self.fake_boto.assert_called_with('sts', **CLIENT_CONFIG)
 
         self.assertEqual(_ctx.instance.runtime_properties, {})
 

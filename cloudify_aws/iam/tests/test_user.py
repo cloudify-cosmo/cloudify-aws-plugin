@@ -48,8 +48,14 @@ RUNTIME_PROPERTIES_AFTER_CREATE = {
     'aws_resource_id': 'user_name_id',
     'resource_config': {}
 }
+ctx_node = MagicMock(
+    properties=NODE_PROPERTIES,
+    plugin=MagicMock(properties={})
+)
 
 
+@patch('cloudify_aws.common.connection.ctx')
+@patch('cloudify_aws.common.connection.Boto3Connection.get_account_id')
 class TestIAMUser(TestBase):
 
     def setUp(self):
@@ -67,14 +73,15 @@ class TestIAMUser(TestBase):
 
         super(TestIAMUser, self).tearDown()
 
-    def test_create_raises_UnknownServiceError(self):
-        self._prepare_create_raises_UnknownServiceError(
+    def test_create_raises_UnknownServiceError(self, *_):
+        fake_boto = self._prepare_create_raises_UnknownServiceError(
             type_hierarchy=USER_TH,
             type_name='iam',
             type_class=user
         )
+        fake_boto.assert_called_with('iam')
 
-    def test_create(self):
+    def test_create(self, *_):
         _ctx = self.get_mock_ctx(
             'test_create',
             test_properties=NODE_PROPERTIES,
@@ -93,7 +100,7 @@ class TestIAMUser(TestBase):
         })
 
         user.create(ctx=_ctx, resource_config=None, iface=None, params=None)
-        self.fake_boto.assert_called_with('iam', **CLIENT_CONFIG)
+        self.fake_boto.assert_called_with('iam')
 
         self.fake_client.create_user.assert_called_with(
             Path='user_path', UserName='user_name_id'
@@ -104,7 +111,7 @@ class TestIAMUser(TestBase):
             RUNTIME_PROPERTIES_AFTER_CREATE
         )
 
-    def test_delete(self):
+    def test_delete(self, *_):
         _ctx = self.get_mock_ctx(
             'test_delete',
             test_properties=NODE_PROPERTIES,
@@ -119,7 +126,7 @@ class TestIAMUser(TestBase):
 
         user.delete(ctx=_ctx, resource_config=None, iface=None)
 
-        self.fake_boto.assert_called_with('iam', **CLIENT_CONFIG)
+        self.fake_boto.assert_called_with('iam')
 
         self.fake_client.delete_user.assert_called_with(
             UserName='user_name_id'
@@ -132,7 +139,7 @@ class TestIAMUser(TestBase):
             }
         )
 
-    def test_attach_to_Group(self):
+    def test_attach_to_Group(self, *_):
         _source_ctx, _target_ctx, _ctx = self._create_common_relationships(
             'test_attach_to',
             USER_TH,
@@ -160,7 +167,7 @@ class TestIAMUser(TestBase):
             }
         )
 
-    def test_attach_to_AccessKey(self):
+    def test_attach_to_AccessKey(self, *_):
         _source_ctx, _target_ctx, _ctx = self._create_common_relationships(
             'test_attach_to',
             USER_TH,
@@ -201,7 +208,7 @@ class TestIAMUser(TestBase):
             }
         )
 
-    def test_attach_to_Policy(self):
+    def test_attach_to_Policy(self, *_):
         _source_ctx, _target_ctx, _ctx = self._create_common_relationships(
             'test_attach_to',
             USER_TH,
@@ -229,7 +236,7 @@ class TestIAMUser(TestBase):
             }
         )
 
-    def test_attach_to_LoginProfile_Create(self):
+    def test_attach_to_LoginProfile_Create(self, *_):
         _source_ctx, _target_ctx, _ctx = self._create_common_relationships(
             'test_attach_to',
             USER_TH,
@@ -256,7 +263,7 @@ class TestIAMUser(TestBase):
             }
         )
 
-    def test_attach_to_LoginProfile_Update(self):
+    def test_attach_to_LoginProfile_Update(self, *_):
         _source_ctx, _target_ctx, _ctx = self._create_common_relationships(
             'test_attach_to',
             USER_TH,
@@ -287,7 +294,7 @@ class TestIAMUser(TestBase):
             }
         )
 
-    def test_detach_from_Group(self):
+    def test_detach_from_Group(self, *_):
         _source_ctx, _target_ctx, _ctx = self._create_common_relationships(
             'test_detach_from',
             USER_TH,
@@ -317,7 +324,7 @@ class TestIAMUser(TestBase):
             }
         )
 
-    def test_detach_from_AccessKey(self):
+    def test_detach_from_AccessKey(self, *_):
         _source_ctx, _target_ctx, _ctx = self._create_common_relationships(
             'test_detach_from',
             USER_TH,
@@ -345,7 +352,7 @@ class TestIAMUser(TestBase):
             }
         )
 
-    def test_detach_from_Policy(self):
+    def test_detach_from_Policy(self, *_):
         _source_ctx, _target_ctx, _ctx = self._create_common_relationships(
             'test_detach_from',
             USER_TH,
@@ -373,7 +380,7 @@ class TestIAMUser(TestBase):
             }
         )
 
-    def test_detach_from_LoginProfile(self):
+    def test_detach_from_LoginProfile(self, *_):
         _source_ctx, _target_ctx, _ctx = self._create_common_relationships(
             'test_detach_from',
             USER_TH,
@@ -400,7 +407,7 @@ class TestIAMUser(TestBase):
             }
         )
 
-    def test_IAMUserClass_properties(self):
+    def test_IAMUserClass_properties(self, *_):
         self.fake_client.get_user = MagicMock(return_value={
             'User': {
                 'UserName': 'user_name_id',
@@ -408,7 +415,7 @@ class TestIAMUser(TestBase):
             }
         })
 
-        test_instance = user.IAMUser("ctx_node", resource_id='user_id',
+        test_instance = user.IAMUser(ctx_node, resource_id='user_id',
                                      client=self.fake_client, logger=None)
 
         self.assertEqual(test_instance.properties, {
@@ -420,7 +427,7 @@ class TestIAMUser(TestBase):
             UserName='user_id'
         )
 
-    def test_IAMUserClass_status(self):
+    def test_IAMUserClass_status(self, *_):
         self.fake_client.get_user = MagicMock(return_value={
             'User': {
                 'UserName': 'user_name_id',
@@ -428,7 +435,7 @@ class TestIAMUser(TestBase):
             }
         })
 
-        test_instance = user.IAMUser("ctx_node", resource_id='user_id',
+        test_instance = user.IAMUser(ctx_node, resource_id='user_id',
                                      client=self.fake_client, logger=None)
 
         self.assertEqual(test_instance.status, 'available')

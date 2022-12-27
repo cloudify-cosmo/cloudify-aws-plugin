@@ -83,8 +83,14 @@ RUNTIME_PROPERTIES_AFTER_CREATE = {
         }
     }
 }
+ctx_node = MagicMock(
+    properties=NODE_PROPERTIES,
+    plugin=MagicMock(properties={})
+)
 
 
+@patch('cloudify_aws.common.connection.ctx')
+@patch('cloudify_aws.common.connection.Boto3Connection.get_account_id')
 class TestIAMRole(TestBase):
 
     def setUp(self):
@@ -102,7 +108,7 @@ class TestIAMRole(TestBase):
 
         super(TestIAMRole, self).tearDown()
 
-    def test_create_raises_UnknownServiceError(self):
+    def test_create_raises_UnknownServiceError(self, *_):
         self._prepare_create_raises_UnknownServiceError(
             type_hierarchy=ROLE_TH,
             type_name='iam',
@@ -145,9 +151,9 @@ class TestIAMRole(TestBase):
                 )
             )
 
-            fake_boto.assert_called_with(type_name, **CLIENT_CONFIG)
+            fake_boto.assert_called_with(type_name)
 
-    def test_create(self):
+    def test_create(self, *_):
         _ctx = self.get_mock_ctx(
             'test_create',
             test_properties=NODE_PROPERTIES,
@@ -172,7 +178,7 @@ class TestIAMRole(TestBase):
 
         role.create(ctx=_ctx, resource_config=None, iface=None, params=None)
 
-        self.fake_boto.assert_called_with('iam', **CLIENT_CONFIG)
+        self.fake_boto.assert_called_with('iam')
 
         self.fake_client.create_role.assert_called_with(
             AssumeRolePolicyDocument=ASSUME_STR,
@@ -187,7 +193,7 @@ class TestIAMRole(TestBase):
             RUNTIME_PROPERTIES_AFTER_CREATE
         )
 
-    def test_create_assume_str(self):
+    def test_create_assume_str(self, *_):
         _ctx = self.get_mock_ctx(
             'test_create',
             test_properties=NODE_PROPERTIES_ASSUME_STR,
@@ -216,7 +222,7 @@ class TestIAMRole(TestBase):
         role.create(ctx=_ctx, resource_config=None, iface=mock_iface,
                     params=None)
 
-        self.fake_boto.assert_called_with('iam', **CLIENT_CONFIG)
+        self.fake_boto.assert_called_with('iam')
 
         self.fake_client.create_role.assert_called_with(
             AssumeRolePolicyDocument=ASSUME_STR,
@@ -229,7 +235,7 @@ class TestIAMRole(TestBase):
             RUNTIME_PROPERTIES_AFTER_CREATE
         )
 
-    def test_delete(self):
+    def test_delete(self, *_):
         _ctx = self.get_mock_ctx(
             'test_delete',
             test_properties=NODE_PROPERTIES,
@@ -252,13 +258,13 @@ class TestIAMRole(TestBase):
         self.fake_client.get_role = MagicMock(return_value={})
         role.delete(ctx=_ctx, resource_config=None, iface=None)
 
-        self.fake_boto.assert_called_with('iam', **CLIENT_CONFIG)
+        self.fake_boto.assert_called_with('iam')
 
         self.fake_client.delete_role.assert_called_with(
             RoleName='role_name_id'
         )
 
-    def test_IAMRoleClass_properties(self):
+    def test_IAMRoleClass_properties(self, *_):
         self.fake_client.get_role = MagicMock(return_value={
             'Role': {
                 'RoleName': "role_name_id",
@@ -266,7 +272,7 @@ class TestIAMRole(TestBase):
             }
         })
 
-        test_instance = role.IAMRole("ctx_node", resource_id='role_id',
+        test_instance = role.IAMRole(ctx_node, resource_id='role_id',
                                      client=self.fake_client, logger=None)
 
         self.assertEqual(test_instance.properties, {
@@ -278,7 +284,7 @@ class TestIAMRole(TestBase):
             RoleName='role_id'
         )
 
-    def test_IAMRoleClass_status(self):
+    def test_IAMRoleClass_status(self, *_):
         self.fake_client.get_role = MagicMock(return_value={
             'Role': {
                 'RoleName': "role_name_id",
@@ -286,7 +292,7 @@ class TestIAMRole(TestBase):
             }
         })
 
-        test_instance = role.IAMRole("ctx_node", resource_id='role_id',
+        test_instance = role.IAMRole(ctx_node, resource_id='role_id',
                                      client=self.fake_client, logger=None)
 
         self.assertEqual(test_instance.status, 'available')
@@ -295,7 +301,7 @@ class TestIAMRole(TestBase):
             RoleName='role_id'
         )
 
-    def test_attach_to(self):
+    def test_attach_to(self, *_):
         _source_ctx, _target_ctx, _ctx = self._create_common_relationships(
             'test_attach_to',
             ROLE_TH,
@@ -323,7 +329,7 @@ class TestIAMRole(TestBase):
             }
         )
 
-    def test_detach_from(self):
+    def test_detach_from(self, *_):
         _source_ctx, _target_ctx, _ctx = self._create_common_relationships(
             'test_detach_from',
             ROLE_TH,
