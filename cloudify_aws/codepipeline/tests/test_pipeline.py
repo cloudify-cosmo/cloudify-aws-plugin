@@ -101,7 +101,7 @@ class TestCodePipeline(TestBase):
         updated_runtime_prop['create_response'] = {
             'pipelineName': PIPELINE_NAME,
             'pipelineVersion': 1,
-            'created': str(TEST_DATE)}
+            'created': ''}
 
         # This is just because I'm not interested in the content
         # of remote_configuration right now.

@@ -16,6 +16,7 @@
     ~~~
     AWS EC2 base interface
 """
+
 # Cloudify AWS
 from cloudify_aws.common import AWSResourceBase
 from cloudify_aws.common.connection import Boto3Connection

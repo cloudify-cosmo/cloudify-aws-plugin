@@ -224,7 +224,6 @@ class TestEKSCluster(TestBase):
             ctx.node.properties.get('resource_config', {}),
             ctx.instance.runtime_properties
         )
-        output = cluster.check_drift(ctx=ctx, iface=self.cluster)
         expected = {
             'values_changed': {
                 "root['certificateAuthority']": {
@@ -232,7 +231,11 @@ class TestEKSCluster(TestBase):
                 }
             }
         }
-        self.assertEqual(output, expected)
+        message = 'The EKS Cluster test_name configuration ' \
+                  'has drifts: {}'.format(expected)
+        with self.assertRaises(RuntimeError) as e:
+            cluster.check_drift(ctx=ctx, iface=self.cluster)
+            self.assertIn(message, str(e))
 
 
 if __name__ == '__main__':

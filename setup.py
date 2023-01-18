@@ -45,7 +45,7 @@ setup(
     install_requires=[
         'boto3',
         'cloudify-common>=4.5',
-        'cloudify-utilities-plugins-sdk>=0.0.61',
+        'cloudify-utilities-plugins-sdk>=0.0.100',
         'botocore',
         'pycryptodome==3.9.7',
         'deepdiff==3.3.0',

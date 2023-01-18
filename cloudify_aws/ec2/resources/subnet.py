@@ -17,6 +17,8 @@
     AWS EC2 Subnet interface
 '''
 
+from deepdiff import DeepDiff
+
 # Boto
 from botocore.exceptions import ClientError
 from botocore.exceptions import CapacityNotAvailableError
@@ -59,6 +61,18 @@ class EC2Subnet(EC2Base):
         if self.status in ['available']:
             return 'OK'
         return 'NOT OK'
+
+    def compare_configuration(self):
+        expected = self.expected_configuration
+        remote = self.remote_configuration
+        if 'AvailableIpAddressCount' in expected:
+            del expected['AvailableIpAddressCount']
+        if 'AvailableIpAddressCount' in remote:
+            del remote['AvailableIpAddressCount']
+
+        result = DeepDiff(expected, remote)
+        delta = utils.JsonCleanuper(result)
+        return delta.to_dict()
 
     def create(self, params):
         '''

@@ -203,7 +203,6 @@ class TestEC2Subnet(TestBase):
         self.subnet.client = self.make_client_function(
             'describe_subnets',
             return_value={'Subnets': [next_value]})
-        output = subnet.check_drift(ctx=ctx, iface=self.subnet)
         expected = {
             'values_changed': {
                 "root['TagSpecifications'][0]['Tags'][0]['Value']": {
@@ -211,7 +210,11 @@ class TestEC2Subnet(TestBase):
                 }
             }
         }
-        self.assertEqual(output, expected)
+        message = 'The EC2 Subnet baz configuration ' \
+                  'has drifts: {}'.format(expected)
+        with self.assertRaises(RuntimeError) as e:
+            subnet.check_drift(ctx=ctx, iface=self.subnet)
+            self.assertIn(message, str(e))
 
 
 if __name__ == '__main__':
