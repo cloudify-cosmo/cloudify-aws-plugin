@@ -176,7 +176,6 @@ class TestEC2Vpc(TestBase):
             ctx.node.properties.get('resource_config', {}),
             ctx.instance.runtime_properties
         )
-        output = vpc.check_drift(ctx=ctx, iface=self.vpc)
         expected = {
             'values_changed': {
                 "root['Tags'][0]['Value']": {
@@ -184,7 +183,11 @@ class TestEC2Vpc(TestBase):
                 }
             }
         }
-        self.assertEqual(output, expected)
+        message = 'The EC2 Vpc test_name configuration ' \
+                  'has drifts: {}'.format(expected)
+        with self.assertRaises(RuntimeError) as e:
+            vpc.check_drift(ctx=ctx, iface=self.vpc)
+            self.assertIn(message, str(e))
 
     def test_modify_vpc_attribute(self):
         ctx = self.get_mock_ctx("Vpc")

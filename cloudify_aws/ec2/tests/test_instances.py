@@ -306,7 +306,8 @@ class TestEC2Instances(TestBase):
             pass
         self.assertTrue(iface.modify_instance_attribute.called)
 
-    def test_poststart(self):
+    @patch('cloudify_aws.common.utils.get_rest_client')
+    def test_poststart(self, *_):
         ctx = self.get_mock_ctx(
             "EC2Instances",
             test_properties={'os_family': 'linux',
@@ -445,7 +446,6 @@ class TestEC2Instances(TestBase):
         self.instances.client = self.make_client_function(
             'describe_instances',
             return_value=describe_result)
-        output = instances.check_drift(ctx=ctx, iface=self.instances)
         expected = {
             'values_changed': {
                 "root['NetworkInterfaces'][0]['NetworkInterfaceId']": {
@@ -457,7 +457,11 @@ class TestEC2Instances(TestBase):
                 }
             }
         }
-        self.assertEqual(output, expected)
+        message = 'The EC2 Subnet baz configuration ' \
+                  'has drifts: {}'.format(expected)
+        with self.assertRaises(RuntimeError) as e:
+            instances.check_drift(ctx=ctx, iface=self.instances)
+            self.assertIn(message, str(e))
 
 
 if __name__ == '__main__':

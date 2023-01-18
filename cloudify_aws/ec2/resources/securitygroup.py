@@ -16,12 +16,13 @@
     ~~~~~~~~~~~~~~
     AWS EC2 Security Group interface
 '''
+
 from time import sleep
 
 # Cloudify
+from cloudify_aws.ec2 import EC2Base
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
-from cloudify_aws.ec2 import EC2Base
 
 RESOURCE_TYPE = 'EC2 Security Group'
 GROUP = 'SecurityGroup'
@@ -185,6 +186,7 @@ def authorize_ingress_rules(ctx, iface, resource_config, **_):
         resource_config[GROUPID] = group_id
 
     iface.authorize_ingress(resource_config)
+    utils.update_expected_configuration(iface, ctx.instance.runtime_properties)
 
 
 @decorators.aws_resource(EC2SecurityGroup, RESOURCE_TYPE)
@@ -202,6 +204,20 @@ def authorize_egress_rules(ctx, iface, resource_config, **_):
         resource_config[GROUPID] = group_id
 
     iface.authorize_egress(resource_config)
+
+
+@decorators.aws_resource(EC2SecurityGroup, RESOURCE_TYPE)
+def poststart_authorize(ctx, iface, resource_config, **_):
+    group_id = resource_config.get(GROUPID)
+    if not group_id:
+        group = \
+            utils.find_rel_by_type(
+                ctx.instance, CONTIN)
+        group_id = \
+            group.target.instance.runtime_properties.get(
+                EXTERNAL_RESOURCE_ID, iface.resource_id)
+        resource_config[GROUPID] = group_id
+    utils.update_expected_configuration(iface, ctx.instance.runtime_properties)
 
 
 @decorators.aws_resource(EC2SecurityGroup, RESOURCE_TYPE)
@@ -274,6 +290,16 @@ def _create_group_params(params, ctx_instance):
                          resource_type=RESOURCE_TYPE,
                          waits_for_status=False)
 def check_drift(ctx, iface=None, **_):
+    if 'cloudify.nodes.aws.ec2.SecurityGroup' in ctx.node.type_hierarchy:
+        expected = iface.expected_configuration
+        remote = iface.remote_configuration
+        if 'IpPermissions' in expected:
+            expected['IpPermissions'] = []
+            ctx.instance.runtime_properties['expected_configuration'] = \
+                expected
+        if 'IpPermissions' in remote:
+            remote['IpPermissions'] = []
+            iface.remote_configuration = remote
     return utils.check_drift(RESOURCE_TYPE, iface, ctx.logger)
 
 
