@@ -2,7 +2,7 @@ plugins:
   aws:
     executor: central_deployment_agent
     package_name: cloudify-aws-plugin
-    package_version: '3.1.3'
+    package_version: '3.1.4'
 
 data_types:
 
@@ -2729,10 +2729,13 @@ node_types:
       cloudify.interfaces.lifecycle:
         start:
           implementation: aws.cloudify_aws.ec2.resources.securitygroup.authorize_ingress_rules
-#          inputs: *operation_inputs
+        poststart:
+          implementation: aws.cloudify_aws.ec2.resources.securitygroup.poststart_authorize
         stop:
           implementation: aws.cloudify_aws.ec2.resources.securitygroup.revoke_ingress_rules
-#          inputs: *operation_inputs
+        check_drift:
+          implementation: aws.cloudify_aws.ec2.resources.securitygroup.check_drift
+          inputs: {}
 
   cloudify.nodes.aws.ec2.SecurityGroupRuleEgress:
     derived_from: cloudify.nodes.Root
@@ -2751,9 +2754,15 @@ node_types:
         start:
           implementation: aws.cloudify_aws.ec2.resources.securitygroup.authorize_egress_rules
           inputs: *operation_inputs
+        poststart:
+          implementation: aws.cloudify_aws.ec2.resources.securitygroup.poststart_authorize
+          inputs: *operation_inputs
         stop:
           implementation: aws.cloudify_aws.ec2.resources.securitygroup.revoke_egress_rules
           inputs: *operation_inputs
+        check_drift:
+          implementation: aws.cloudify_aws.ec2.resources.securitygroup.check_drift
+          inputs: {}
 
   cloudify.nodes.aws.ec2.NATGateway:
     derived_from: cloudify.nodes.aws.ec2.BaseType

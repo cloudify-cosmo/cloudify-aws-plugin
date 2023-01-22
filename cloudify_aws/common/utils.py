@@ -39,6 +39,7 @@ from cloudify_rest_client.exceptions import (
     CloudifyClientError,
     DeploymentEnvironmentCreationPendingError,
     DeploymentEnvironmentCreationInProgressError)
+from cloudify_common_sdk.clean_json import JsonCleanuper  # noqa
 
 # Local imports
 from cloudify_aws.common import constants, _compat
@@ -403,49 +404,6 @@ def validate_arn(arn_candidate, arn_regex=constants.ARN_REGEX):
 
 def get_uuid():
     return text_type(uuid.uuid4())
-
-
-class JsonCleanuper(object):
-
-    def __init__(self, ob):
-        try:
-            resource = ob.to_dict()
-        except AttributeError:
-            resource = ob
-
-        if isinstance(resource, list):
-            self._cleanuped_list(resource)
-        elif isinstance(resource, dict):
-            self._cleanuped_dict(resource)
-
-        self.value = resource
-
-    def _cleanuped_list(self, resource):
-        for k, v in enumerate(resource):
-            if not v:
-                continue
-            if isinstance(v, list):
-                self._cleanuped_list(v)
-            elif isinstance(v, dict):
-                self._cleanuped_dict(v)
-            elif (not isinstance(v, int) and  # integer and bool
-                  not isinstance(v, text_type)):
-                resource[k] = text_type(v)
-
-    def _cleanuped_dict(self, resource):
-        for k in resource:
-            if not resource[k]:
-                continue
-            if isinstance(resource[k], list):
-                self._cleanuped_list(resource[k])
-            elif isinstance(resource[k], dict):
-                self._cleanuped_dict(resource[k])
-            elif (not isinstance(resource[k], int) and  # integer and bool
-                  not isinstance(resource[k], text_type)):
-                resource[k] = text_type(resource[k])
-
-    def to_dict(self):
-        return self.value
 
 
 def generate_swift_access_config(auth_url, username, password):
@@ -959,6 +917,19 @@ def update_expected_configuration(iface, runtime_props):
     assign_expected_configuration(iface, runtime_props, iface.properties)
 
 
+@with_rest_client
+def post_start_related_nodes(node_instance_ids, deployment_id, rest_client):
+    return rest_client.executions.start(
+        deployment_id,
+        'execute_operation',
+        parameters={
+            'operation': 'cloudify.interfaces.lifecycle.poststart',
+            'node_instance_ids': node_instance_ids
+        },
+        force=True,
+    )
+
+
 def assign_previous_configuration(iface, runtime_props, prop=None):
     prop = prop or iface.expected_configuration
     assign_parameter(iface, 'previous_configuration', runtime_props, prop)
@@ -968,22 +939,21 @@ def check_drift(resource_type, iface, logger):
     logger.info(
         'Checking drift state for {resource_type} {resource_id}.'.format(
             resource_type=resource_type, resource_id=iface.resource_id))
-    ctx.instance.refresh()
+    ctx.instance.refresh(force=True)
     iface.expected_configuration = ctx.instance.runtime_properties.get(
         'expected_configuration')
     result = iface.compare_configuration()
     if result:
-        logger.error(
-            'The {resource_type} {resource_id} '
-            'configuration has drifts: {res}.'.format(
-                resource_type=resource_type,
-                resource_id=iface.resource_id,
-                res=result))
+        message = 'The {resource_type} {resource_id} configuration has ' \
+                  'drifts: {res}.'.format(
+                      resource_type=resource_type,
+                      resource_id=iface.resource_id,
+                      res=result)
         logger.error('Expected configuration: {}'.format(
             iface.expected_configuration))
         logger.error('Remote configuration: {}'.format(
             iface.remote_configuration))
-        return result
+        raise RuntimeError(message)
     logger.info(
         'The {resource_type} {resource_id} '
         'configuration has not drifted.'.format(

@@ -35,9 +35,8 @@ class AWSCheckStatus(TestCase):
             }
         )
         ctx.node.type_hierarchy = ['cloudify.nodes.aws.NotSupported']
-        with self.assertRaises(ValueError):
-            with check_status.node_interface(ctx):
-                pass
+        with check_status.node_interface(ctx) as foo:
+            self.assertIsNone(foo)
 
     @patch('cloudify_aws.eks.Boto3Connection')
     def test_node_interface(self, *_):
@@ -82,9 +81,9 @@ class AWSCheckStatus(TestCase):
 
         with patch('cloudify_aws.workflows.check_status.node_interface',
                    mock_y):
-            self.assertEqual('ok', check_status.check_status(ctx))
+            self.assertIsNone(check_status.check_status(ctx))
 
         with patch('cloudify_aws.workflows.check_status.node_interface',
                    mock_y_bad):
-            with self.assertRaises(ValueError):
+            with self.assertRaises(RuntimeError):
                 check_status.check_status(ctx)

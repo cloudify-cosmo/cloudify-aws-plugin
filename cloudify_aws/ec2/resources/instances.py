@@ -235,6 +235,9 @@ def poststart(ctx, iface, *_, **__):
     ctx.instance.runtime_properties['resource'] = utils.JsonCleanuper(
         iface.properties).to_dict()
     utils.update_expected_configuration(iface, ctx.instance.runtime_properties)
+    node_instance_ids = [
+        ni.target.instance.id for ni in ctx.instance.relationships]
+    utils.post_start_related_nodes(node_instance_ids, ctx.deployment.id)
 
 
 @decorators.multiple_aws_resource(EC2Instances, RESOURCE_TYPE)

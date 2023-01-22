@@ -288,7 +288,6 @@ class TestEKSNodeGroup(TestBase):
             ctx.node.properties.get('resource_config', {}),
             ctx.instance.runtime_properties
         )
-        output = node_group.check_drift(ctx=ctx, iface=self.node_group)
         expected = {
             'iterable_item_added': {
                 "root['health']['issues'][0]": {
@@ -298,7 +297,11 @@ class TestEKSNodeGroup(TestBase):
                 }
             }
         }
-        self.assertEqual(output, expected)
+        message = 'The EKS Node Group test_name configuration ' \
+                  'has drifts: {}'.format(expected)
+        with self.assertRaises(RuntimeError) as e:
+            node_group.check_drift(ctx=ctx, iface=self.node_group)
+            self.assertIn(message, str(e))
 
 
 if __name__ == '__main__':
