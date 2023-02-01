@@ -37,7 +37,7 @@ node_templates:
     type: cloudify.nodes.aws.s3.Bucket
     properties:
       resource_config:
-        Bucket: test-cloudify-bucket
+        Bucket: cloudify-aws-testing-bucket
         ACL: public-read-write
         CreateBucketConfiguration:
           LocationConstraint: { get_input: aws_region_name }

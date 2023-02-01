@@ -21,6 +21,9 @@ inputs:
     type: string
     default: { get_secret: ec2_region_name }
 
+
+ dsl_definitions:
+
   client_config: &client_config
     aws_access_key_id: { get_input: aws_access_key_id }
     aws_secret_access_key: { get_input: aws_secret_access_key }
