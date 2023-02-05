@@ -48,79 +48,79 @@ commands:
 
   run_hello_world_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/blueprint-examples/hello-world-example/aws.yaml --test-id=hello-world-example -i aws_region_name=us-east-1 --on-failure=uninstall-force --timeout=1800 --nested-test=.circleci/test_cloudwatch.py
+      - run: ecosystem-test local-blueprint-test -b examples/blueprint-examples/hello-world-example/aws.yaml --test-id=hello-world-example -i aws_region_name=eu-west-3 --on-failure=uninstall-force --timeout=1800 --nested-test=.circleci/test_cloudwatch.py
 
   run_cf_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/blueprint-examples/virtual-machine/aws-cloudformation.yaml --test-id=virtual-machine -i aws_region_name=us-east-1 -i resource_suffix=$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/blueprint-examples/virtual-machine/aws-cloudformation.yaml --test-id=virtual-machine -i aws_region_name=eu-west-3 -i resource_suffix=$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000
 
   run_eks_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/blueprint-examples/kubernetes/aws-eks/blueprint.yaml --test-id=aws-eks -i .circleci/eks-inputs.yaml -i eks_cluster_name=test-$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/blueprint-examples/kubernetes/aws-eks/blueprint.yaml --test-id=aws-eks -i aws_region_name=eu-west-3 -i .circleci/eks-inputs.yaml -i eks_cluster_name=test-$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000
 
   run_ec2_image_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/ec2-image-feature-demo/blueprint.yaml --test-id=ec2_image -i aws_region_name=us-east-1 --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/ec2-image-feature-demo/blueprint.yaml --test-id=ec2_image -i aws_region_name=eu-west-3 --on-failure=uninstall-force --timeout=3000
 
   run_autoscaling_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/autoscaling-feature-demo/blueprint.yaml --test-id=autoscaling --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/autoscaling-feature-demo/blueprint.yaml -i aws_region_name=eu-west-3 --test-id=autoscaling --on-failure=uninstall-force --timeout=3000
 
   run_cloudformation_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/cloudformation-feature-demo/blueprint.yaml --test-id=cloudformation -i aws_region_name=eu-west-1 --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/cloudformation-feature-demo/blueprint.yaml --test-id=cloudformation -i aws_region_name=eu-west-3 --on-failure=uninstall-force --timeout=3000
 
   run_dynamodb_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/dynamodb-feature-demo/blueprint.yaml --test-id=dynamodb -i aws_region_name=eu-west-1 --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/dynamodb-feature-demo/blueprint.yaml --test-id=dynamodb -i aws_region_name=eu-west-3 --on-failure=uninstall-force --timeout=3000
 
   run_ebs_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/ebs-feature-demo/blueprint.yaml --test-id=ebs -i aws_region_name=eu-west-1 --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/ebs-feature-demo/blueprint.yaml --test-id=ebs -i aws_region_name=eu-west-3 --on-failure=uninstall-force --timeout=3000
 
   run_ec2_instance_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/ec2-vpc-feature-demo/ipv6.yaml --test-id=ec2-ipv6 --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/ec2-vpc-feature-demo/ipv6.yaml -i aws_region_name=eu-west-3 --test-id=ec2-ipv6 --on-failure=uninstall-force --timeout=3000
 
   run_ec2_keys_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/ec2-keys-feature-demo/blueprint.yaml --test-id=ec2_keys -i aws_region_name=eu-west-1 --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/ec2-keys-feature-demo/blueprint.yaml --test-id=ec2_keys -i aws_region_name=eu-west-3 --on-failure=uninstall-force --timeout=3000
 
   run_ec2_transit_gateway_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/ec2-transit-gateway-feature-demo/blueprint.yaml --test-id=ec2_transit_gateway -i aws_region_name_a=eu-west-1 -i aws_region_name_b=eu-west-1 --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/ec2-transit-gateway-feature-demo/blueprint.yaml --test-id=ec2_transit_gateway -i aws_region_name_a=eu-west-3 -i aws_region_name_b=eu-west-3 --on-failure=uninstall-force --timeout=3000
 
   run_ec2_vpc_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/ec2-vpc-feature-demo/blueprint.yaml --test-id=ec2_vpc -i aws_region_name=eu-west-1 --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/ec2-vpc-feature-demo/blueprint.yaml --test-id=ec2_vpc -i aws_region_name=eu-west-3 --on-failure=uninstall-force --timeout=3000
 
   run_natgateway_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/natgateway-feature-demo/blueprint.yaml --test-id=natgateway -i aws_region_name=eu-west-1 --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/natgateway-feature-demo/blueprint.yaml --test-id=natgateway -i aws_region_name=eu-west-3 --on-failure=uninstall-force --timeout=3000
 
   run_s3_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/s3-feature-demo/blueprint.yaml --test-id=s3 -i aws_region_name=eu-west-1 --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/s3-feature-demo/blueprint.yaml --test-id=s3 -i aws_region_name=eu-west-3 --on-failure=uninstall-force --timeout=3000
 
   run_sns_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/sns-feature-demo/blueprint.yaml --test-id=sns -i aws_region_name=eu-west-1 --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/sns-feature-demo/blueprint.yaml --test-id=sns -i aws_region_name=eu-west-3 --on-failure=uninstall-force --timeout=3000
 
   run_sqs_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/sqs-feature-demo/blueprint.yaml --test-id=sqs -i aws_region_name=eu-west-1 --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/sqs-feature-demo/blueprint.yaml --test-id=sqs -i aws_region_name=eu-west-3 --on-failure=uninstall-force --timeout=3000
 
   run_kms_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/kms-feature-demo/blueprint.yaml --test-id=kms -i aws_region_name=eu-west-1 -i iam_arn=arn:aws:iam::919239153674:user/plugins_test_user --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/kms-feature-demo/blueprint.yaml --test-id=kms -i aws_region_name=eu-west-3 -i iam_arn=arn:aws:iam::919239153674:user/plugins_test_user --on-failure=uninstall-force --timeout=3000
 
   run_ecs_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/ecs-feature-demo/blueprint.yaml -i ecs_cluster_name=ecs-$CIRCLE_BUILD_NUM -i aws_region_name=us-east-2 --test-id=ecs --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/ecs-feature-demo/blueprint.yaml -i ecs_cluster_name=ecs-$CIRCLE_BUILD_NUM -i aws_region_name=eu-west-3 --test-id=ecs --on-failure=uninstall-force --timeout=3000
 
   run_route53_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/route53-feature-demo/blueprint.yaml --test-id=route53-test --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/route53-feature-demo/blueprint.yaml -i aws_region_name=eu-west-3 --test-id=route53-test --on-failure=uninstall-force --timeout=3000
 
 jobs:
 
