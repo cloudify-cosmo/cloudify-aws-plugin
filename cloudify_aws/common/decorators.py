@@ -288,6 +288,7 @@ def get_special_condition(external,
                           node_type,
                           op_name,
                           create_op,
+                          stop_op,
                           delete_op,
                           force,
                           waits_for_status):
@@ -310,6 +311,8 @@ def get_special_condition(external,
     elif 'cloudify.relationships.aws.iam.access_key.connected_to' \
             in node_type and op_name == 'establish':
         return True
+    elif stop_op and (external and not force):
+        return False
     return not create_op and not delete_op or force
 
 
@@ -323,6 +326,17 @@ def get_create_op(op_name):
     """
     return 'create' == op_name
     # return 'create' in op or 'configure' in op
+
+
+def get_stop_operation(op_name):
+    """ Determine if we are dealing with a stop operation.
+    Normally we just do the logic in the last return. However, we may want
+    special behavior for some types.
+
+    :param op_name: ctx.operation.name.split('.')[-1].
+    :return: bool
+    """
+    return 'stop' == op_name
 
 
 def get_delete_op(op_name):
@@ -420,6 +434,7 @@ def _aws_resource(function,
     operation_name = ctx.operation.name.split(
         'cloudify.interfaces.lifecycle.')[-1]
     create_operation = get_create_op(operation_name)
+    stop_operation = get_stop_operation(operation_name)
     delete_operation = get_delete_op(operation_name)
     if create_operation and '__deleted' in ctx.instance.runtime_properties:
         del ctx.instance.runtime_properties['__deleted']
@@ -494,6 +509,7 @@ def _aws_resource(function,
             ctx.node.type_hierarchy,
             operation_name,
             create_operation,
+            stop_operation,
             delete_operation,
             kwargs.get('force_operation'),
             kwargs.pop('waits_for_status', False))

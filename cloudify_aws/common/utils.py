@@ -919,15 +919,16 @@ def update_expected_configuration(iface, runtime_props):
 
 @with_rest_client
 def post_start_related_nodes(node_instance_ids, deployment_id, rest_client):
-    return rest_client.executions.start(
-        deployment_id,
-        'execute_operation',
-        parameters={
-            'operation': 'cloudify.interfaces.lifecycle.poststart',
-            'node_instance_ids': node_instance_ids
-        },
-        force=True,
-    )
+    if node_instance_ids:
+        return rest_client.executions.start(
+            deployment_id,
+            'execute_operation',
+            parameters={
+                'operation': 'cloudify.interfaces.lifecycle.poststart',
+                'node_instance_ids': node_instance_ids
+            },
+            force=True,
+        )
 
 
 def assign_previous_configuration(iface, runtime_props, prop=None):
