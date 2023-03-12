@@ -68,7 +68,7 @@ commands:
 
   run_cloudformation_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/cloudformation-feature-demo/blueprint.yaml --test-id=cloudformation -i aws_region_name=eu-west-3 --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/cloudformation-feature-demo/blueprint.yaml --test-id=cloudformation -i aws_region_name=eu-west-2 --on-failure=uninstall-force --timeout=3000
 
   run_dynamodb_test:
     steps:
