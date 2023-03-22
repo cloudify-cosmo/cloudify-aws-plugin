@@ -683,6 +683,29 @@ def generate_deployment_ids(deployment_id, resources):
     return '{}-{}'.format(deployment_id, resources)
 
 
+def get_aws_config_from_sources(node=None,
+                                plugin=None,
+                                node_prop_name='client_config'):
+    node = node or ctx.node
+    plugin = plugin or ctx.plugin
+    config_from_props = node.properties.get(node_prop_name, dict())
+    # Get additional config from node configuration.
+    additional_config = config_from_props.pop('additional_config', None)
+
+    # Handle the Plugin properties
+    config_from_plugin_props = getattr(plugin, 'properties', {})
+    ctx.logger.info('From plugin properties: {}'
+                    .format(config_from_plugin_props))
+    additional_config_plugin = config_from_plugin_props.pop(
+        'additional_config', None)
+    ctx.logger.info('From node template {}'.format(config_from_props))
+    config_from_plugin_props.update(config_from_props)
+    ctx.logger.info('*** {}'.format(desecretize_client_config(config_from_plugin_props)))
+
+    return desecretize_client_config(config_from_plugin_props), \
+           additional_config_plugin, additional_config
+
+
 def desecretize_client_config(config):
     for key, value in config.items():
         config[key] = resolve_intrinsic_functions(value)
@@ -695,7 +718,10 @@ def resolve_intrinsic_functions(prop, dep_id=None):
             prop = prop.get('get_secret')
             if isinstance(prop, dict):
                 prop = resolve_intrinsic_functions(prop, dep_id)
-            return get_secret(prop)
+            secret_dict = get_secret(prop)
+            if 'value' in secret_dict:
+                return secret_dict['value']
+            return secret_dict
         if 'get_input' in prop:
             prop = prop.get('get_input')
             if isinstance(prop, dict):

@@ -25,7 +25,7 @@ from botocore.config import Config
 # Local imports
 from .utils import (
     get_uuid,
-    desecretize_client_config
+    get_aws_config_from_sources
 )
 from cloudify import ctx
 from cloudify_aws.common.constants import AWS_CONFIG_PROPERTY
@@ -50,18 +50,11 @@ class Boto3Connection(object):
             'aws_session_token',
             'api_version']
 
-        config_from_props = node.properties.get(AWS_CONFIG_PROPERTY, dict())
-        # Get additional config from node configuration.
-        additional_config = config_from_props.pop('additional_config', None)
 
-        # Handle the Plugin properties
-        config_from_plugin_props = getattr(ctx.plugin, 'properties', {})
-        additional_config_plugin = config_from_plugin_props.pop(
-            'additional_config', None)
+        self.aws_config, additional_config_plugin, additional_config = \
+            get_aws_config_from_sources(node, ctx.plugin, AWS_CONFIG_PROPERTY)
+        ctx.logger.info('Final: {}'.format(self.aws_config))
 
-        config_from_plugin_props.update(config_from_props)
-        self.aws_config = desecretize_client_config(
-            config_from_plugin_props)
         # Merge user-provided AWS config with generated config
         if aws_config:
             self.aws_config.update(aws_config)
