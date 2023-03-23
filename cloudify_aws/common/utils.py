@@ -683,10 +683,42 @@ def generate_deployment_ids(deployment_id, resources):
     return '{}-{}'.format(deployment_id, resources)
 
 
+# def get_aws_config_from_sources(node=None,
+#                                 plugin=None,
+#                                 node_prop_name='client_config'):
+#     node = node or ctx.node
+#     plugin = plugin or ctx.plugin
+#     config_from_props = node.properties.get(node_prop_name, dict())
+#     # Get additional config from node configuration.
+#     additional_config = config_from_props.pop('additional_config', None)
+#
+#     # Handle the Plugin properties
+#     config_from_plugin_props = getattr(plugin, 'properties', {})
+#     ctx.logger.info('config_from_plugin_props: {}'.format(config_from_plugin_props))
+#     for k, v in list(config_from_plugin_props.items()):
+#         if 'value' in v:
+#             config_from_plugin_props[k] = v.get('value')
+#         else:
+#             del config_from_plugin_props[k]
+#
+#     ctx.logger.info('From plugin properties: {}'
+#                     .format(config_from_plugin_props))
+#
+#     additional_config_plugin = config_from_plugin_props.pop(
+#         'additional_config', None)
+#
+#     ctx.logger.info('From node template {}'.format(config_from_props))
+#     config_from_plugin_props.update(config_from_props)
+#     return desecretize_client_config(config_from_plugin_props), \
+#            additional_config_plugin, additional_config
+
+
 def get_aws_config_from_sources(node=None,
+                                instance=None,
                                 plugin=None,
                                 node_prop_name='client_config'):
     node = node or ctx.node
+    instance = instance or ctx.instance
     plugin = plugin or ctx.plugin
     config_from_props = node.properties.get(node_prop_name, dict())
     # Get additional config from node configuration.
@@ -694,17 +726,22 @@ def get_aws_config_from_sources(node=None,
 
     # Handle the Plugin properties
     config_from_plugin_props = getattr(plugin, 'properties', {})
+    for k, v in list(config_from_plugin_props.items()):
+        if 'value' in v:
+            config_from_plugin_props[k] = v.get('value')
+        else:
+            del config_from_plugin_props[k]
     ctx.logger.info('From plugin properties: {}'
                     .format(config_from_plugin_props))
     additional_config_plugin = config_from_plugin_props.pop(
         'additional_config', None)
     ctx.logger.info('From node template {}'.format(config_from_props))
     config_from_plugin_props.update(config_from_props)
-    ctx.logger.info('*** {}'.format(desecretize_client_config(config_from_plugin_props)))
 
+    ctx.instance.runtime_properties['aws_config'] = desecretize_client_config(
+        config_from_plugin_props)
     return desecretize_client_config(config_from_plugin_props), \
            additional_config_plugin, additional_config
-
 
 def desecretize_client_config(config):
     for key, value in config.items():

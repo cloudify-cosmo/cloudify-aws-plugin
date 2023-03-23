@@ -51,8 +51,7 @@ class Boto3Connection(object):
             'api_version']
 
 
-        self.aws_config, additional_config_plugin, additional_config = \
-            get_aws_config_from_sources(node, ctx.plugin, AWS_CONFIG_PROPERTY)
+        self.aws_config, additional_config_plugin, additional_config = get_aws_config_from_sources(node, ctx.plugin, AWS_CONFIG_PROPERTY)
         ctx.logger.info('Final: {}'.format(self.aws_config))
 
         # Merge user-provided AWS config with generated config
