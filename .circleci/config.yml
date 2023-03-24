@@ -92,13 +92,6 @@ executors:
       image: ubuntu-2004:202201-02
 
 commands:
-  pass_cmd:
-    steps:
-      - run: echo 'hello'
-
-  fail_cmd:
-    steps:
-      - run: asdasd
 
   eks_prepare_test_manager:
     steps:
