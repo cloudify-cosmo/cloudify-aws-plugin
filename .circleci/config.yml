@@ -1,10 +1,76 @@
 version: 2.1
 
+slack-fail-post-step: &slack-fail-post-step
+  post-steps:
+    - slack/notify:
+        event: fail
+        custom: |
+          {
+            "text" : "CircleCI job failed.",
+            "blocks": [
+              {
+                "type": "header",
+                "text": {
+                  "type": "plain_text",
+                  "text": "Job Failed. :red_circle:",
+                  "emoji": true
+                }
+              },
+              {
+                "type": "section",
+                "fields": [
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Job*: ${CIRCLE_JOB}"
+                  }
+                ]
+              },
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "*Project*: ${CIRCLE_PROJECT_REPONAME}"
+                }
+              },
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "*Branch*: ${CIRCLE_BRANCH}"
+                }
+              },
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "*Author*: ${CIRCLE_USERNAME}"
+                }
+              },
+              {
+                "type": "divider"
+              },
+              {
+                "type": "actions",
+                "elements": [
+                  {
+                    "type": "button",
+                    "text": {
+                      "type": "plain_text",
+                      "text": "View Job"
+                    },
+                    "url": "${CIRCLE_BUILD_URL}"
+                  }
+                ]
+              }
+            ]
+          } 
+
 orbs:
   node: cloudify/public-unittest-orb@1 #orb version
   wagonorb: cloudify/wagon-bulder-orb@2 #orb version
   releaseorb: cloudify/release-orb@1 #orb version
   managerorb: cloudify/manager-orb@2
+  slack: circleci/slack@4.9.3
 
 checkout:
   post:
@@ -26,6 +92,13 @@ executors:
       image: ubuntu-2004:202201-02
 
 commands:
+  pass_cmd:
+    steps:
+      - run: echo 'hello'
+
+  fail_cmd:
+    steps:
+      - run: asdasd
 
   eks_prepare_test_manager:
     steps:
@@ -333,7 +406,10 @@ workflows:
   tests:
     jobs:
       - node/check_py3_compat_job
-      - node/unittests_job
+      - node/unittests_job:
+          context: 
+            - slack-secrets
+            <<: *slack-fail-post-step
       - node/validate_version_job
       - node/validate_documentation_job
       - wagonorb/rhel_wagon:
@@ -357,6 +433,9 @@ workflows:
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
       - cf_integration_tests_py3:
+          context: 
+            - slack-secrets
+            <<: *slack-fail-post-step
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -367,6 +446,9 @@ workflows:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - eks_integration_tests_py3:
+          context: 
+            - slack-secrets
+            <<: *slack-fail-post-step
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -376,6 +458,9 @@ workflows:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - hw_integration_tests_py3:
+          context: 
+            - slack-secrets
+            <<: *slack-fail-post-step
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -406,6 +491,7 @@ workflows:
           requires:
             - releaseorb/release
             - node/validate_documentation_job
+          
 
   sunday_wednesday:
     triggers:
@@ -417,7 +503,10 @@ workflows:
               - master
     jobs:
       - node/check_py3_compat_job
-      - node/unittests_job
+      - node/unittests_job:
+          context: 
+              - slack-secrets
+              <<: *slack-fail-post-step
       - node/validate_version_job
       - wagonorb/rhel_wagon:
           filters:
@@ -440,6 +529,9 @@ workflows:
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
       - cf_integration_tests_py3:
+          context: 
+            - slack-secrets
+            <<: *slack-fail-post-step
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -449,6 +541,9 @@ workflows:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - ebs_integration_tests_py3:
+          context: 
+            - slack-secrets
+            <<: *slack-fail-post-step
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -458,6 +553,9 @@ workflows:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - ec2_instance_integration_tests_py3:
+          context: 
+            - slack-secrets
+            <<: *slack-fail-post-step
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -467,6 +565,9 @@ workflows:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - ec2_vpc_integration_tests_py3:
+          context: 
+            - slack-secrets
+            <<: *slack-fail-post-step
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -476,6 +577,9 @@ workflows:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - sns_integration_tests_py3:
+          context: 
+            - slack-secrets
+            <<: *slack-fail-post-step
           requires:
             - ec2_vpc_integration_tests_py3
             - ec2_instance_integration_tests_py3
@@ -496,7 +600,10 @@ workflows:
               - master
     jobs:
       - node/check_py3_compat_job
-      - node/unittests_job
+      - node/unittests_job:
+          context: 
+              - slack-secrets
+              <<: *slack-fail-post-step
       - node/validate_version_job
       - wagonorb/rhel_wagon:
           filters:
@@ -519,6 +626,9 @@ workflows:
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
       - eks_integration_tests_py3:
+          context: 
+            - slack-secrets
+            <<: *slack-fail-post-step
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -528,6 +638,9 @@ workflows:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - ec2_image_integration_tests_py3:
+          context: 
+            - slack-secrets
+            <<: *slack-fail-post-step
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -537,6 +650,9 @@ workflows:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - autoscaleing_integration_tests_py3:
+          context: 
+            - slack-secrets
+            <<: *slack-fail-post-step
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -546,6 +662,9 @@ workflows:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - ec2_transit_gateway_integration_tests_py3:
+          context: 
+            - slack-secrets
+            <<: *slack-fail-post-step
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -555,6 +674,9 @@ workflows:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - s3_integration_tests_py3:
+          context: 
+            - slack-secrets
+            <<: *slack-fail-post-step
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -564,6 +686,9 @@ workflows:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - kms_integration_tests_py3:
+          context: 
+            - slack-secrets
+            <<: *slack-fail-post-step
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -607,6 +732,9 @@ workflows:
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
       - hw_integration_tests_py3:
+          context: 
+            - slack-secrets
+            <<: *slack-fail-post-step
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -616,6 +744,9 @@ workflows:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - cloudformation_integration_tests_py3:
+          context: 
+            - slack-secrets
+            <<: *slack-fail-post-step
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -625,6 +756,9 @@ workflows:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - dynamodb_integration_tests_py3:
+          context: 
+            - slack-secrets
+            <<: *slack-fail-post-step
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -634,6 +768,9 @@ workflows:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - ec2_keys_integration_tests_py3:
+          context: 
+            - slack-secrets
+            <<: *slack-fail-post-step
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -643,6 +780,9 @@ workflows:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - natgateway_integration_tests_py3:
+          context: 
+            - slack-secrets
+            <<: *slack-fail-post-step
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -652,6 +792,9 @@ workflows:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - sqs_integration_tests_py3:
+          context: 
+            - slack-secrets
+            <<: *slack-fail-post-step
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
