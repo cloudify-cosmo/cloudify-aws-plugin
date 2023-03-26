@@ -1,3 +1,4 @@
+3.1.6: add __version__.py file in cloudify_aws folder.
 3.1.5: RD-6735 Do not stop existing resource.
 3.1.4: Update Check Drift Status
 3.1.3: Add account ID property to roles in precreate.
