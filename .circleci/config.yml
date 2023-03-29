@@ -354,8 +354,6 @@ workflows:
           <<: *custom-post-steps
       - node/validate_version_job
       - node/validate_documentation_job
-      - eks_integration_tests_py3:
-          <<: *store-test-artifact
       - wagonorb/rhel_wagon:
           filters:
             branches:
@@ -392,15 +390,12 @@ workflows:
       - eks_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *custom-post-steps
+          <<: *store-test-artifact
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
-          filters:
-            branches:
-              only: /([0-9\.]*\-build|master|dev)/
       - hw_integration_tests_py3:
           context: 
             - slack-secrets
