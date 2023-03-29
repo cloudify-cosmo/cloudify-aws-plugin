@@ -9,6 +9,9 @@ slack-fail-post-step: &slack-fail-post-step
   post-steps:
     - store_test_results:
         path: /home/circleci/project/nosetests.xml
+    - store_artifacts: # upload test coverage as artifact
+        path: /home/circleci/project/coverage.xml
+        prefix: tests
     - slack/notify:
         event: fail
         custom: |
