@@ -1,17 +1,14 @@
 version: 2.1
 
-store_unitttest: &store_unitttest
-  post-steps:
-    - store_test_results:
-        path: /home/circleci/project/
-
-slack-fail-post-step: &slack-fail-post-step
+custom-post-steps: &custom-post-steps
   post-steps:
     - store_test_results:
         path: /home/circleci/project/nosetests.xml
     - store_artifacts: # upload test coverage as artifact
         path: /home/circleci/project/coverage.xml
         prefix: tests
+    - store_artifacts:
+        path: /tmp/artifact.log
     - slack/notify_failed
 
 orbs:
@@ -71,7 +68,7 @@ commands:
 
   run_eks_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/blueprint-examples/kubernetes/aws-eks/blueprint.yaml --test-id=aws-eks -i aws_region_name=eu-west-3 -i availability_zone_1=eu-west-3a -i availability_zone_2=eu-west-3b -i .circleci/eks-inputs.yaml -i eks_cluster_name=test-$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/blueprint-examples/kubernetes/aws-eks/blueprint.yaml --test-id=aws-eks -i aws_region_name=eu-west-3 -i availability_zone_1=eu-west-3a -i availability_zone_2=eu-west-3b -i .circleci/eks-inputs.yaml -i eks_cluster_name=test-$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000 | | tee -a /tmp/artifact.log
 
   run_ec2_image_test:
     steps:
@@ -351,10 +348,10 @@ workflows:
       - node/unittests_job:
           context: 
             - slack-secrets
-          <<: *slack-fail-post-step
-          <<: *store_unitttest
+          <<: *custom-post-steps
       - node/validate_version_job
       - node/validate_documentation_job
+      - eks_integration_tests_py3
       - wagonorb/rhel_wagon:
           filters:
             branches:
@@ -378,7 +375,7 @@ workflows:
       - cf_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *slack-fail-post-step
+          <<: *custom-post-steps
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -391,7 +388,7 @@ workflows:
       - eks_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *slack-fail-post-step
+          <<: *custom-post-steps
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -403,7 +400,7 @@ workflows:
       - hw_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *slack-fail-post-step
+          <<: *custom-post-steps
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -449,7 +446,7 @@ workflows:
       - node/unittests_job:
           context: 
             - slack-secrets
-          <<: *slack-fail-post-step
+          <<: *custom-post-steps
       - node/validate_version_job
       - wagonorb/rhel_wagon:
           filters:
@@ -474,7 +471,7 @@ workflows:
       - cf_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *slack-fail-post-step
+          <<: *custom-post-steps
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -486,7 +483,7 @@ workflows:
       - ebs_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *slack-fail-post-step
+          <<: *custom-post-steps
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -498,7 +495,7 @@ workflows:
       - ec2_instance_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *slack-fail-post-step
+          <<: *custom-post-steps
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -510,7 +507,7 @@ workflows:
       - ec2_vpc_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *slack-fail-post-step
+          <<: *custom-post-steps
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -522,7 +519,7 @@ workflows:
       - sns_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *slack-fail-post-step
+          <<: *custom-post-steps
           requires:
             - ec2_vpc_integration_tests_py3
             - ec2_instance_integration_tests_py3
@@ -546,7 +543,7 @@ workflows:
       - node/unittests_job:
           context: 
               - slack-secrets
-          <<: *slack-fail-post-step
+          <<: *custom-post-steps
       - node/validate_version_job
       - wagonorb/rhel_wagon:
           filters:
@@ -571,7 +568,7 @@ workflows:
       - eks_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *slack-fail-post-step
+          <<: *custom-post-steps
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -583,7 +580,7 @@ workflows:
       - ec2_image_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *slack-fail-post-step
+          <<: *custom-post-steps
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -595,7 +592,7 @@ workflows:
       - autoscaleing_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *slack-fail-post-step
+          <<: *custom-post-steps
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -607,7 +604,7 @@ workflows:
       - ec2_transit_gateway_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *slack-fail-post-step
+          <<: *custom-post-steps
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -619,7 +616,7 @@ workflows:
       - s3_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *slack-fail-post-step
+          <<: *custom-post-steps
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -631,7 +628,7 @@ workflows:
       - kms_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *slack-fail-post-step
+          <<: *custom-post-steps
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -677,7 +674,7 @@ workflows:
       - hw_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *slack-fail-post-step
+          <<: *custom-post-steps
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -689,7 +686,7 @@ workflows:
       - cloudformation_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *slack-fail-post-step
+          <<: *custom-post-steps
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -701,7 +698,7 @@ workflows:
       - dynamodb_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *slack-fail-post-step
+          <<: *custom-post-steps
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -713,7 +710,7 @@ workflows:
       - ec2_keys_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *slack-fail-post-step
+          <<: *custom-post-steps
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -725,7 +722,7 @@ workflows:
       - natgateway_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *slack-fail-post-step
+          <<: *custom-post-steps
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -737,7 +734,7 @@ workflows:
       - sqs_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *slack-fail-post-step
+          <<: *custom-post-steps
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
