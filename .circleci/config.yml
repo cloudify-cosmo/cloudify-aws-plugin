@@ -140,7 +140,10 @@ commands:
 
   run_sample_test:
     steps:
-      - run: echo "hello hello hello" | tee -a /tmp/artifact.log
+      - run: echo "hello hello hello" | tee -a artifact.log
+      - store_artifacts:
+          path: artifact.log
+
 jobs:
 
   run_sample_job:
@@ -365,8 +368,7 @@ workflows:
           <<: *custom-post-steps
       - node/validate_version_job
       - node/validate_documentation_job
-      - run_sample_job:
-          <<: *store-test-artifact
+      - run_sample_job
       - wagonorb/rhel_wagon:
           filters:
             branches:
