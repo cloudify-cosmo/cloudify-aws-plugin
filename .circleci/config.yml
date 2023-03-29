@@ -8,7 +8,7 @@ store_unitttest: &store_unitttest
 slack-fail-post-step: &slack-fail-post-step
   post-steps:
     - store_test_results:
-        path: /home/circleci/project/
+        path: /home/circleci/project/nosetests.xml
     - slack/notify:
         event: fail
         custom: |
