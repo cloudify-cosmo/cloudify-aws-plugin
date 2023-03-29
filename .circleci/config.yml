@@ -599,21 +599,21 @@ workflows:
           <<: *unittest-post-steps
       - node/validate_version_job
       - wagonorb/rhel_wagon:
-          # filters:
-          #   branches:
-          #     only: /([0-9\.]*\-build|master|dev)/
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - wagonorb/wagon:
-          # filters:
-          #   branches:
-          #     only: /([0-9\.]*\-build|master|dev)/
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - wagonorb/arch64_wagon:
-          # filters:
-          #   branches:
-          #     only: /([0-9\.]*\-build|master|dev)/
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - wagonorb/build_bundle:
-          # filters:
-          #   branches:
-          #     only: /master/
+          filters:
+            branches:
+              only: /master/
           requires:
             - wagonorb/wagon
             - wagonorb/rhel_wagon
@@ -626,9 +626,9 @@ workflows:
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
-          # filters:
-          #   branches:
-          #     only: /([0-9\.]*\-build|master|dev)/
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - ec2_image_integration_tests_py3:
           context: 
             - slack-secrets
@@ -637,9 +637,9 @@ workflows:
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
-          # filters:
-          #   branches:
-          #     only: /([0-9\.]*\-build|master|dev)/
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - autoscaleing_integration_tests_py3:
           context: 
             - slack-secrets
