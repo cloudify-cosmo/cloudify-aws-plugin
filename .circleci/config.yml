@@ -12,75 +12,14 @@ slack-fail-post-step: &slack-fail-post-step
     - store_artifacts: # upload test coverage as artifact
         path: /home/circleci/project/coverage.xml
         prefix: tests
-    - slack/notify:
-        event: fail
-        custom: |
-          {
-            "text" : "CircleCI job failed.",
-            "blocks": [
-              {
-                "type": "header",
-                "text": {
-                  "type": "plain_text",
-                  "text": "Job Failed. :red_circle:",
-                  "emoji": true
-                }
-              },
-              {
-                "type": "section",
-                "fields": [
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Job*: ${CIRCLE_JOB}"
-                  }
-                ]
-              },
-              {
-                "type": "section",
-                "text": {
-                  "type": "mrkdwn",
-                  "text": "*Project*: ${CIRCLE_PROJECT_REPONAME}"
-                }
-              },
-              {
-                "type": "section",
-                "text": {
-                  "type": "mrkdwn",
-                  "text": "*Branch*: ${CIRCLE_BRANCH}"
-                }
-              },
-              {
-                "type": "section",
-                "text": {
-                  "type": "mrkdwn",
-                  "text": "*Author*: ${CIRCLE_USERNAME}"
-                }
-              },
-              {
-                "type": "divider"
-              },
-              {
-                "type": "actions",
-                "elements": [
-                  {
-                    "type": "button",
-                    "text": {
-                      "type": "plain_text",
-                      "text": "View Job"
-                    },
-                    "url": "${CIRCLE_BUILD_URL}"
-                  }
-                ]
-              }
-            ]
-          } 
+    - slack/notify_failed
 
 orbs:
   node: cloudify/public-unittest-orb@1 #orb version
   wagonorb: cloudify/wagon-bulder-orb@2 #orb version
   releaseorb: cloudify/release-orb@1 #orb version
   managerorb: cloudify/manager-orb@2
-  slack: circleci/slack@4.9.3
+  slack: cloudify/notify-slack@2
 
 checkout:
   post:
