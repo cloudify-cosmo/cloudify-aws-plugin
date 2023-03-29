@@ -1,15 +1,10 @@
 version: 2.1
 
-store-test-artifact: &store-test-artifact
-  post-steps:
-    - store_artifacts:
-        path: /tmp/artifact.log
-
-custom-post-steps: &custom-post-steps
+unittest-post-steps: &unittest-post-steps
   post-steps:
     - store_test_results:
         path: /home/circleci/project/nosetests.xml
-    - store_artifacts: # upload test coverage as artifact
+    - store_artifacts:
         path: /home/circleci/project/coverage.xml
         prefix: tests
     - slack/notify_failed
@@ -63,83 +58,137 @@ commands:
 
   run_hello_world_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/blueprint-examples/hello-world-example/aws.yaml --test-id=hello-world-example -i aws_region_name=eu-west-3 --on-failure=uninstall-force --timeout=1800 --nested-test=.circleci/test_cloudwatch.py
+      - run: ecosystem-test local-blueprint-test -b examples/blueprint-examples/hello-world-example/aws.yaml --test-id=hello-world-example -i aws_region_name=eu-west-3 --on-failure=uninstall-force --timeout=1800 --nested-test=.circleci/test_cloudwatch.py | tee -a run_hello_world_test.log
+      - store_artifacts:
+          path: hello_world_test.log
+      - slack/notify_failed
 
   run_cf_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/blueprint-examples/virtual-machine/aws-cloudformation.yaml --test-id=virtual-machine -i aws_region_name=eu-west-3 -i resource_suffix=$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/blueprint-examples/virtual-machine/aws-cloudformation.yaml --test-id=virtual-machine -i aws_region_name=eu-west-3 -i resource_suffix=$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000 | tee -a run_cf_test.log
+      - store_artifacts:
+          path: run_cf_test.log
+      - slack/notify_failed
 
   run_eks_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/blueprint-examples/kubernetes/aws-eks/blueprint.yaml --test-id=aws-eks -i aws_region_name=eu-west-3 -i availability_zone_1=eu-west-3a -i availability_zone_2=eu-west-3b -i .circleci/eks-inputs.yaml -i eks_cluster_name=test-$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000 | | tee -a /tmp/artifact.log
+      - run: ecosystem-test local-blueprint-test -b examples/blueprint-examples/kubernetes/aws-eks/blueprint.yaml --test-id=aws-eks -i aws_region_name=eu-west-3 -i availability_zone_1=eu-west-3a -i availability_zone_2=eu-west-3b -i .circleci/eks-inputs.yaml -i eks_cluster_name=test-$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000 | tee -a run_eks_test.log
+      - store_artifacts:
+          path: run_eks_test.log
+      - slack/notify_failed
 
   run_ec2_image_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/ec2-image-feature-demo/blueprint.yaml --test-id=ec2_image -i aws_region_name=eu-west-3 --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/ec2-image-feature-demo/blueprint.yaml --test-id=ec2_image -i aws_region_name=eu-west-3 --on-failure=uninstall-force --timeout=3000 | tee -a run_ec2_image_test.log
+      - store_artifacts:
+          path: run_ec2_image_test.log
+      - slack/notify_failed
 
   run_autoscaling_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/autoscaling-feature-demo/blueprint.yaml -i aws_region_name=eu-west-3 --test-id=autoscaling --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/autoscaling-feature-demo/blueprint.yaml -i aws_region_name=eu-west-3 --test-id=autoscaling --on-failure=uninstall-force --timeout=3000 | tee -a run_autoscaling_test.log
+      - store_artifacts:
+          path: run_autoscaling_test.log
+      - slack/notify_failed
 
   run_cloudformation_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/cloudformation-feature-demo/blueprint.yaml --test-id=cloudformation -i aws_region_name=eu-west-2 --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/cloudformation-feature-demo/blueprint.yaml --test-id=cloudformation -i aws_region_name=eu-west-2 --on-failure=uninstall-force --timeout=3000 | tee -a run_cloudformation_test.log
+      - store_artifacts:
+          path: run_cloudformation_test.log
+      - slack/notify_failed
 
   run_dynamodb_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/dynamodb-feature-demo/blueprint.yaml --test-id=dynamodb -i aws_region_name=eu-west-3 --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/dynamodb-feature-demo/blueprint.yaml --test-id=dynamodb -i aws_region_name=eu-west-3 --on-failure=uninstall-force --timeout=3000 | tee -a run_dynamodb_test.log
+      - store_artifacts:
+          path: run_dynamodb_test.log
+      - slack/notify_failed
 
   run_ebs_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/ebs-feature-demo/blueprint.yaml --test-id=ebs -i aws_region_name=eu-west-3 --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/ebs-feature-demo/blueprint.yaml --test-id=ebs -i aws_region_name=eu-west-3 --on-failure=uninstall-force --timeout=3000 | tee -a run_ebs_test.log
+      - store_artifacts:
+          path: run_ebs_test.log
+      - slack/notify_failed
 
   run_ec2_instance_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/ec2-vpc-feature-demo/ipv6.yaml -i aws_region_name=eu-west-3 --test-id=ec2-ipv6 --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/ec2-vpc-feature-demo/ipv6.yaml -i aws_region_name=eu-west-3 --test-id=ec2-ipv6 --on-failure=uninstall-force --timeout=3000 | tee -a run_ec2_instance_test.log
+      - store_artifacts:
+          path: run_ec2_instance_test.log
+      - slack/notify_failed
 
   run_ec2_keys_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/ec2-keys-feature-demo/blueprint.yaml --test-id=ec2_keys -i aws_region_name=eu-west-3 --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/ec2-keys-feature-demo/blueprint.yaml --test-id=ec2_keys -i aws_region_name=eu-west-3 --on-failure=uninstall-force --timeout=3000 | tee -a run_ec2_keys_test.log
+      - store_artifacts:
+          path: run_ec2_keys_test.log
+      - slack/notify_failed
 
   run_ec2_transit_gateway_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/ec2-transit-gateway-feature-demo/blueprint.yaml --test-id=ec2_transit_gateway -i aws_region_name_a=eu-west-3 -i aws_region_name_b=eu-west-3 --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/ec2-transit-gateway-feature-demo/blueprint.yaml --test-id=ec2_transit_gateway -i aws_region_name_a=eu-west-3 -i aws_region_name_b=eu-west-3 --on-failure=uninstall-force --timeout=3000 | tee -a run_ec2_transit_gateway_test.log
+      - store_artifacts:
+          path: run_ec2_transit_gateway_test.log
+      - slack/notify_failed
 
   run_ec2_vpc_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/ec2-vpc-feature-demo/blueprint.yaml --test-id=ec2_vpc -i aws_region_name=eu-west-3 --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/ec2-vpc-feature-demo/blueprint.yaml --test-id=ec2_vpc -i aws_region_name=eu-west-3 --on-failure=uninstall-force --timeout=3000 | tee -a run_ec2_vpc_test.log
+      - store_artifacts:
+          path: run_ec2_vpc_test.log
+      - slack/notify_failed
 
   run_natgateway_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/natgateway-feature-demo/blueprint.yaml --test-id=natgateway -i aws_region_name=eu-west-3 --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/natgateway-feature-demo/blueprint.yaml --test-id=natgateway -i aws_region_name=eu-west-3 --on-failure=uninstall-force --timeout=3000 | tee -a run_natgateway_test.log
+      - store_artifacts:
+          path: run_natgateway_test.log
+      - slack/notify_failed
 
   run_s3_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/s3-feature-demo/blueprint.yaml --test-id=s3 -i aws_region_name=eu-west-3 --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/s3-feature-demo/blueprint.yaml --test-id=s3 -i aws_region_name=eu-west-3 --on-failure=uninstall-force --timeout=3000 | tee -a run_s3_test.log
+      - store_artifacts:
+          path: run_s3_test.log
+      - slack/notify_failed
 
   run_sns_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/sns-feature-demo/blueprint.yaml --test-id=sns -i aws_region_name=eu-west-3 --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/sns-feature-demo/blueprint.yaml --test-id=sns -i aws_region_name=eu-west-3 --on-failure=uninstall-force --timeout=3000 | tee -a run_sns_test.log
+      - store_artifacts:
+          path: run_sns_test.log
+      - slack/notify_failed
 
   run_sqs_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/sqs-feature-demo/blueprint.yaml --test-id=sqs -i aws_region_name=eu-west-3 --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/sqs-feature-demo/blueprint.yaml --test-id=sqs -i aws_region_name=eu-west-3 --on-failure=uninstall-force --timeout=3000 | tee -a run_sqs_test.log
+      - store_artifacts: 
+          path: run_s3_test.log
+      - slack/notify_failed
 
   run_kms_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/kms-feature-demo/blueprint.yaml --test-id=kms -i aws_region_name=eu-west-3 -i iam_arn=arn:aws:iam::919239153674:user/plugins_test_user --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/kms-feature-demo/blueprint.yaml --test-id=kms -i aws_region_name=eu-west-3 -i iam_arn=arn:aws:iam::919239153674:user/plugins_test_user --on-failure=uninstall-force --timeout=3000 | tee -a run_kms_test.log
+      - store_artifacts:
+          path: run_kms_test.log
+      - slack/notify_failed
 
   run_ecs_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/ecs-feature-demo/blueprint.yaml -i ecs_cluster_name=ecs-$CIRCLE_BUILD_NUM -i aws_region_name=eu-west-3 --test-id=ecs --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/ecs-feature-demo/blueprint.yaml -i ecs_cluster_name=ecs-$CIRCLE_BUILD_NUM -i aws_region_name=eu-west-3 --test-id=ecs --on-failure=uninstall-force --timeout=3000 | tee -a run_ecs_test.log
+      - store_artifacts:
+          path: run_ecs_test.log
+      - slack/notify_failed
 
   run_route53_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/route53-feature-demo/blueprint.yaml -i aws_region_name=eu-west-3 --test-id=route53-test --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/route53-feature-demo/blueprint.yaml -i aws_region_name=eu-west-3 --test-id=route53-test --on-failure=uninstall-force --timeout=3000 | tee -a run_route53_test.log
+      - store_artifacts:
+          path: run_route53_test.log
+      - slack/notify_failed
 
-  run_sample_test:
-    steps:
-      - run: echo "hello hello hello" | tee -a /tmp/artifact.log
 jobs:
 
   run_sample_job:
@@ -361,11 +410,9 @@ workflows:
       - node/unittests_job:
           context: 
             - slack-secrets
-          <<: *custom-post-steps
+          <<: *unittest-post-steps
       - node/validate_version_job
       - node/validate_documentation_job
-      - run_sample_job:
-          <<: *store-test-artifact
       - wagonorb/rhel_wagon:
           filters:
             branches:
@@ -389,7 +436,6 @@ workflows:
       - cf_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *custom-post-steps
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -402,7 +448,6 @@ workflows:
       - eks_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *store-test-artifact
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -414,7 +459,6 @@ workflows:
       - hw_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *custom-post-steps
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -460,7 +504,7 @@ workflows:
       - node/unittests_job:
           context: 
             - slack-secrets
-          <<: *custom-post-steps
+          <<: *unittest-post-steps
       - node/validate_version_job
       - wagonorb/rhel_wagon:
           filters:
@@ -485,7 +529,6 @@ workflows:
       - cf_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *custom-post-steps
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -497,7 +540,6 @@ workflows:
       - ebs_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *custom-post-steps
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -509,7 +551,6 @@ workflows:
       - ec2_instance_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *custom-post-steps
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -521,7 +562,6 @@ workflows:
       - ec2_vpc_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *custom-post-steps
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -533,7 +573,6 @@ workflows:
       - sns_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *custom-post-steps
           requires:
             - ec2_vpc_integration_tests_py3
             - ec2_instance_integration_tests_py3
@@ -557,24 +596,24 @@ workflows:
       - node/unittests_job:
           context: 
               - slack-secrets
-          <<: *custom-post-steps
+          <<: *unittest-post-steps
       - node/validate_version_job
       - wagonorb/rhel_wagon:
-          filters:
-            branches:
-              only: /([0-9\.]*\-build|master|dev)/
+          # filters:
+          #   branches:
+          #     only: /([0-9\.]*\-build|master|dev)/
       - wagonorb/wagon:
-          filters:
-            branches:
-              only: /([0-9\.]*\-build|master|dev)/
+          # filters:
+          #   branches:
+          #     only: /([0-9\.]*\-build|master|dev)/
       - wagonorb/arch64_wagon:
-          filters:
-            branches:
-              only: /([0-9\.]*\-build|master|dev)/
+          # filters:
+          #   branches:
+          #     only: /([0-9\.]*\-build|master|dev)/
       - wagonorb/build_bundle:
-          filters:
-            branches:
-              only: /master/
+          # filters:
+          #   branches:
+          #     only: /master/
           requires:
             - wagonorb/wagon
             - wagonorb/rhel_wagon
@@ -582,31 +621,28 @@ workflows:
       - eks_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *custom-post-steps
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
-          filters:
-            branches:
-              only: /([0-9\.]*\-build|master|dev)/
+          # filters:
+          #   branches:
+          #     only: /([0-9\.]*\-build|master|dev)/
       - ec2_image_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *custom-post-steps
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
-          filters:
-            branches:
-              only: /([0-9\.]*\-build|master|dev)/
+          # filters:
+          #   branches:
+          #     only: /([0-9\.]*\-build|master|dev)/
       - autoscaleing_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *custom-post-steps
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -618,7 +654,6 @@ workflows:
       - ec2_transit_gateway_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *custom-post-steps
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -630,7 +665,6 @@ workflows:
       - s3_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *custom-post-steps
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -642,7 +676,6 @@ workflows:
       - kms_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *custom-post-steps
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -663,7 +696,10 @@ workflows:
               - master
     jobs:
       - node/check_py3_compat_job
-      - node/unittests_job
+      - node/unittests_job:
+          context: 
+            - slack-secrets
+          <<: *unittest-post-steps
       - node/validate_version_job
       - wagonorb/rhel_wagon:
           filters:
@@ -688,7 +724,6 @@ workflows:
       - hw_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *custom-post-steps
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -700,7 +735,6 @@ workflows:
       - cloudformation_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *custom-post-steps
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -712,7 +746,6 @@ workflows:
       - dynamodb_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *custom-post-steps
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -724,7 +757,6 @@ workflows:
       - ec2_keys_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *custom-post-steps
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -736,7 +768,6 @@ workflows:
       - natgateway_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *custom-post-steps
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
@@ -748,7 +779,6 @@ workflows:
       - sqs_integration_tests_py3:
           context: 
             - slack-secrets
-          <<: *custom-post-steps
           requires:
             - wagonorb/build_bundle
             - wagonorb/wagon
