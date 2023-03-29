@@ -195,7 +195,7 @@ jobs:
       CLOUDIFY_SSL_TRUST_ALL: true
     steps: 
       - store_test_results:
-          path: /
+          path: /home/circleci/project/
     
   cf_integration_tests_py3:
     executor: cloudify-machine-py3
