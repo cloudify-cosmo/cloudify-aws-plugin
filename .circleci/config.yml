@@ -4,6 +4,7 @@ store-test-artifact: &store-test-artifact
   post-steps:
     - store_artifacts:
         path: /tmp/artifact.log
+        name: sample
 
 custom-post-steps: &custom-post-steps
   post-steps:
