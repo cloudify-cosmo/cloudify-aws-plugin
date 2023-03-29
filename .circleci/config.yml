@@ -348,17 +348,8 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-      - wagonorb/build_bundle:
-          filters:
-            branches:
-              only: /([0-9\.]*\-build|master|dev)/
-          requires:
-            - wagonorb/wagon
-            - wagonorb/rhel_wagon
-            - wagonorb/arch64_wagon
       - cf_integration_tests_py3:
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -368,7 +359,6 @@ workflows:
               only: /([0-9\.]*\-build|master|dev)/
       - eks_integration_tests_py3:
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -377,7 +367,6 @@ workflows:
               only: /([0-9\.]*\-build|master|dev)/
       - hw_integration_tests_py3:
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -431,17 +420,8 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-      - wagonorb/build_bundle:
-          filters:
-            branches:
-              only: /master/
-          requires:
-            - wagonorb/wagon
-            - wagonorb/rhel_wagon
-            - wagonorb/arch64_wagon
       - cf_integration_tests_py3:
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -450,7 +430,6 @@ workflows:
               only: /([0-9\.]*\-build|master|dev)/
       - ebs_integration_tests_py3:
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -459,7 +438,6 @@ workflows:
               only: /([0-9\.]*\-build|master|dev)/
       - ec2_instance_integration_tests_py3:
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -468,7 +446,6 @@ workflows:
               only: /([0-9\.]*\-build|master|dev)/
       - ec2_vpc_integration_tests_py3:
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -510,17 +487,8 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-      - wagonorb/build_bundle:
-          filters:
-            branches:
-              only: /master/
-          requires:
-            - wagonorb/wagon
-            - wagonorb/rhel_wagon
-            - wagonorb/arch64_wagon
       - eks_integration_tests_py3:
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -529,7 +497,6 @@ workflows:
               only: /([0-9\.]*\-build|master|dev)/
       - ec2_image_integration_tests_py3:
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -538,7 +505,6 @@ workflows:
               only: /([0-9\.]*\-build|master|dev)/
       - autoscaleing_integration_tests_py3:
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -547,7 +513,6 @@ workflows:
               only: /([0-9\.]*\-build|master|dev)/
       - ec2_transit_gateway_integration_tests_py3:
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -556,7 +521,6 @@ workflows:
               only: /([0-9\.]*\-build|master|dev)/
       - s3_integration_tests_py3:
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -565,7 +529,6 @@ workflows:
               only: /([0-9\.]*\-build|master|dev)/
       - kms_integration_tests_py3:
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -598,17 +561,8 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-      - wagonorb/build_bundle:
-          filters:
-            branches:
-              only: /master/
-          requires:
-            - wagonorb/wagon
-            - wagonorb/rhel_wagon
-            - wagonorb/arch64_wagon
       - hw_integration_tests_py3:
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -617,7 +571,6 @@ workflows:
               only: /([0-9\.]*\-build|master|dev)/
       - cloudformation_integration_tests_py3:
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -626,7 +579,6 @@ workflows:
               only: /([0-9\.]*\-build|master|dev)/
       - dynamodb_integration_tests_py3:
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -635,7 +587,6 @@ workflows:
               only: /([0-9\.]*\-build|master|dev)/
       - ec2_keys_integration_tests_py3:
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -644,7 +595,6 @@ workflows:
               only: /([0-9\.]*\-build|master|dev)/
       - natgateway_integration_tests_py3:
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -653,7 +603,6 @@ workflows:
               only: /([0-9\.]*\-build|master|dev)/
       - sqs_integration_tests_py3:
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
