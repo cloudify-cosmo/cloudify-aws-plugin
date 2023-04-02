@@ -8,18 +8,22 @@ imports:
 inputs:
 
   aws_access_key_id:
+    display_label: Aws Access Key Id
     type: string
     default: { get_secret: aws_access_key_id }
 
   aws_secret_access_key:
+    display_label: Aws Secret Access Key
     type: string
     default: { get_secret: aws_secret_access_key }
 
   aws_region_name:
+    display_label: Aws Region Name
     type: string
     default: eu-west-1
 
   availability_zone:
+    display_label: Availability Zone
     type: string
     default: eu-west-1a
 
@@ -59,9 +63,9 @@ node_templates:
             commands:
               - mkdir /efs
               - concat:
-                - 'mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 '
-                - { get_attribute: [ mount_target, IpAddress ] }
-                - ':/ /efs'
+                  - 'mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 '
+                  - { get_attribute: [ mount_target, IpAddress ] }
+                  - ':/ /efs'
             fabric_env: *mount_fabric_env
     relationships:
       - type: cloudify.relationships.depends_on
@@ -73,12 +77,12 @@ node_templates:
       resource_config:
         kwargs:
           Filters:
-          - Name: name
-            Values:
-            - 'CentOS7-cloudify-examples-image'
-          - Name: owner-id
-            Values:
-            - '263721492972'
+            - Name: name
+              Values:
+                - 'CentOS7-cloudify-examples-image'
+              - Name: owner-id
+                Values:
+                  - '263721492972'
       client_config: *client_config
 
   instance:
@@ -129,7 +133,7 @@ node_templates:
           Description: Created by efs-feature-demo blueprint.yaml.
           SubnetId: { get_attribute: [ subnet, aws_resource_id] }
           Groups:
-          - { get_attribute: [ security_group, aws_resource_id ] }
+            - { get_attribute: [ security_group, aws_resource_id ] }
       client_config: *client_config
     relationships:
       - type: cloudify.relationships.connected_to
@@ -145,12 +149,12 @@ node_templates:
       resource_config: {}
       client_config: *client_config
     relationships:
-    - type: cloudify.relationships.depends_on
-      target: security_group
-    - type: cloudify.relationships.depends_on
-      target: subnet
-    - type: cloudify.relationships.depends_on
-      target: file_system
+      - type: cloudify.relationships.depends_on
+        target: security_group
+      - type: cloudify.relationships.depends_on
+        target: subnet
+      - type: cloudify.relationships.depends_on
+        target: file_system
 
   file_system_tags:
     type: cloudify.nodes.aws.efs.FileSystemTags
@@ -158,12 +162,12 @@ node_templates:
       resource_config:
         kwargs:
           Tags:
-          - Key: Name
-            Value: file_system_tags
+            - Key: Name
+              Value: file_system_tags
       client_config: *client_config
     relationships:
-    - type: cloudify.relationships.depends_on
-      target: file_system
+      - type: cloudify.relationships.depends_on
+        target: file_system
 
   file_system:
     type: cloudify.nodes.aws.efs.FileSystem
@@ -178,7 +182,7 @@ node_templates:
         GroupName: security_group1
         Description: efs security group
         kwargs:
-          VpcId:  { get_attribute: [ vpc, aws_resource_id ] }
+          VpcId: { get_attribute: [ vpc, aws_resource_id ] }
       client_config: *client_config
     relationships:
       - type: cloudify.relationships.depends_on
@@ -191,12 +195,12 @@ node_templates:
       resource_config:
         kwargs:
           IpPermissions:
-           - IpProtocol: "-1"
-             FromPort: -1
-             ToPort: -1
-             IpRanges:
-              - CidrIp: 0.0.0.0/0
-             UserIdGroupPairs: [  { GroupId: { get_attribute: [ security_group, aws_resource_id ] } } ]
+            - IpProtocol: "-1"
+              FromPort: -1
+              ToPort: -1
+              IpRanges:
+                - CidrIp: 0.0.0.0/0
+               UserIdGroupPairs: [ { GroupId: { get_attribute: [ security_group, aws_resource_id ] } } ]
     relationships:
       - type: cloudify.relationships.contained_in
         target: security_group
@@ -206,10 +210,10 @@ node_templates:
     properties:
       client_config: *client_config
     relationships:
-    - type: cloudify.relationships.contained_in
-      target: vpc
-    - type: cloudify.relationships.connected_to
-      target: subnet
+      - type: cloudify.relationships.contained_in
+        target: vpc
+      - type: cloudify.relationships.connected_to
+        target: subnet
 
   route_subnet_internet_gateway:
     type: cloudify.nodes.aws.ec2.Route
@@ -219,13 +223,13 @@ node_templates:
           DestinationCidrBlock: '0.0.0.0/0'
       client_config: *client_config
     relationships:
-    - type: cloudify.relationships.contained_in
-      target: route_table
-    - type: cloudify.relationships.connected_to
-      target: igw
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        stop: {}
+      - type: cloudify.relationships.contained_in
+        target: route_table
+      - type: cloudify.relationships.connected_to
+        target: igw
+      interfaces:
+        cloudify.interfaces.lifecycle:
+            stop: {}
 
   subnet:
     type: cloudify.nodes.aws.ec2.Subnet

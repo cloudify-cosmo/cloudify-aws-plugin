@@ -7,21 +7,24 @@ imports:
 inputs:
 
   aws_access_key_id:
-   type: string
-   default: { get_secret: aws_access_key_id }
+    display_label: Aws Access Key Id
+    type: string
+    default: { get_secret: aws_access_key_id }
 
   aws_secret_access_key:
+    display_label: Aws Secret Access Key
     type: string
     default: { get_secret: aws_secret_access_key }
 
   aws_region_name:
+    display_label: Aws Region Name
     type: string
     default: { get_secret: ec2_region_name }
 
   availability_zone:
+    display_label: Availability Zone
     type: string
     default: { concat: [ { get_input: aws_region_name}, 'b' ] }
-
 
 dsl_definitions:
 
@@ -49,18 +52,18 @@ node_templates:
       resource_config:
         LifecycleConfiguration:
           Rules:
-          - ID: Standard Rule LFC
-            Prefix: boto3
-            Status: Disabled
-            Transition:
-              Days: 31
-              StorageClass: STANDARD_IA
-            Expiration:
-              Days: 95
+            - ID: Standard Rule LFC
+              Prefix: boto3
+              Status: Disabled
+              Transition:
+                Days: 31
+                StorageClass: STANDARD_IA
+              Expiration:
+                Days: 95
       client_config: *client_config
     relationships:
-    - type: cloudify.relationships.depends_on
-      target: bucket
+      - type: cloudify.relationships.depends_on
+        target: bucket
 
   bucket_policy:
     type: cloudify.nodes.aws.s3.BucketPolicy
@@ -69,16 +72,16 @@ node_templates:
         Policy:
           Version: '2012-10-17'
           Statement:
-          - Sid: EveryoneGetPlugin
-            Effect: Allow
-            Principal: "*"
-            Action:
-            - "s3:GetObject"
-            Resource: { concat: [ 'arn:aws:s3:::', { get_property: [ bucket, resource_config, Bucket ] } , '/*' ] }
+            - Sid: EveryoneGetPlugin
+              Effect: Allow
+              Principal: "*"
+              Action:
+                - "s3:GetObject"
+                Resource: { concat: [ 'arn:aws:s3:::', { get_property: [ bucket, resource_config, Bucket ] } , '/*' ] }
       client_config: *client_config
     relationships:
-    - type: cloudify.relationships.depends_on
-      target: bucket
+      - type: cloudify.relationships.depends_on
+        target: bucket
 
   bucket_tagging:
     type: cloudify.nodes.aws.s3.BucketTagging
@@ -86,12 +89,12 @@ node_templates:
       resource_config:
         Tagging:
           TagSet:
-          - Key: Name
-            Value: aws-test-bucket-tagging
+            - Key: Name
+              Value: aws-test-bucket-tagging
       client_config: *client_config
     relationships:
-    - type: cloudify.relationships.depends_on
-      target: bucket
+      - type: cloudify.relationships.depends_on
+        target: bucket
 
   bucket_object_bytes:
     type: cloudify.nodes.aws.s3.BucketObject
@@ -105,10 +108,10 @@ node_templates:
           Body: 'Test Bytes Mode'
       client_config: *client_config
     relationships:
-    - type: cloudify.relationships.depends_on
-      target: bucket
-    - type: cloudify.relationships.depends_on
-      target: bucket_object_local
+      - type: cloudify.relationships.depends_on
+        target: bucket
+      - type: cloudify.relationships.depends_on
+        target: bucket_object_local
 
   bucket_object_local:
     type: cloudify.nodes.aws.s3.BucketObject
@@ -121,10 +124,10 @@ node_templates:
         Key: 'local-s3-object.txt'
       client_config: *client_config
     relationships:
-    - type: cloudify.relationships.depends_on
-      target: bucket
-    - type: cloudify.relationships.depends_on
-      target: bucket_object_remote
+      - type: cloudify.relationships.depends_on
+        target: bucket
+      - type: cloudify.relationships.depends_on
+        target: bucket_object_remote
 
   bucket_object_remote:
     type: cloudify.nodes.aws.s3.BucketObject
@@ -137,5 +140,5 @@ node_templates:
         Key: 'dummy.pdf'
       client_config: *client_config
     relationships:
-    - type: cloudify.relationships.depends_on
-      target: bucket
+      - type: cloudify.relationships.depends_on
+        target: bucket

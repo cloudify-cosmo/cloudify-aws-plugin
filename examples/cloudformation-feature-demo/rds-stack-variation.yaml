@@ -7,14 +7,17 @@ imports:
 inputs:
 
   aws_access_key_id:
+    display_label: Aws Access Key Id
     type: string
     default: { get_secret: aws_access_key_id }
 
   aws_secret_access_key:
+    display_label: Aws Secret Access Key
     type: string
     default: { get_secret: aws_secret_access_key }
 
   aws_region_name:
+    display_label: Aws Region Name
     type: string
     default: { get_secret: ec2_region_name }
 
@@ -23,7 +26,6 @@ inputs:
 
   rds_db_instance_class:
     default: db.t2.large
-
 
 dsl_definitions:
 
@@ -72,7 +74,7 @@ node_templates:
                       MasterUsername: MyUser
                       MasterUserPassword: MyPassword
                       VPCSecurityGroups:
-                       - { get_attribute: [ rds_security_group, aws_resource_id ] }
+                        - { get_attribute: [ rds_security_group, aws_resource_id ] }
                       DBParameterGroupName: { get_property: [ rds_parameter_group, resource_id ] }
                       DBSubnetGroupName: { get_property: [ rds_subnet_group, resource_id ] }
                     DeletionPolicy: "Snapshot"
@@ -105,7 +107,6 @@ node_templates:
                 - ParameterName: lc_time_names
                   ParameterValue: en_US
                   ApplyMethod: immediate
-
 
   rds_subnet_group:
     type: cloudify.nodes.aws.rds.SubnetGroup
@@ -149,7 +150,7 @@ node_templates:
       resource_config:
         GroupName: security_group1
         Description: Example.
-        VpcId:  { get_attribute: [ rds_vpc, aws_resource_id ] }
+        VpcId: { get_attribute: [ rds_vpc, aws_resource_id ] }
       client_config: *client_config
     relationships:
       - type: cloudify.relationships.depends_on
@@ -161,12 +162,12 @@ node_templates:
       client_config: *client_config
       resource_config:
         IpPermissions:
-         - IpProtocol: "-1"
-           FromPort: -1
-           ToPort: -1
-           IpRanges:
-            - CidrIp: 0.0.0.0/0
-           UserIdGroupPairs: [  { GroupId: { get_attribute: [ rds_security_group, aws_resource_id ] } } ]
+          - IpProtocol: "-1"
+            FromPort: -1
+            ToPort: -1
+            IpRanges:
+              - CidrIp: 0.0.0.0/0
+             UserIdGroupPairs: [ { GroupId: { get_attribute: [ rds_security_group, aws_resource_id ] } } ]
     relationships:
       - type: cloudify.relationships.contained_in
         target: rds_security_group
@@ -183,6 +184,6 @@ outputs:
   Endpoint:
     value:
       concat:
-      - { get_attribute: [ mydb, Outputs, 0, OutputValue ] }
-      - ':'
-      - { get_attribute: [ mydb, Outputs, 1, OutputValue ] }
+        - { get_attribute: [ mydb, Outputs, 0, OutputValue ] }
+        - ':'
+        - { get_attribute: [ mydb, Outputs, 1, OutputValue ] }

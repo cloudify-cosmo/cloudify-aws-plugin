@@ -7,21 +7,25 @@ imports:
 inputs:
 
   aws_access_key_id:
+    display_label: Aws Access Key Id
     type: string
     default: { get_secret: aws_access_key_id }
 
   aws_secret_access_key:
+    display_label: Aws Secret Access Key
     type: string
     default: { get_secret: aws_secret_access_key }
 
   aws_region_name:
+    display_label: Aws Region Name
     type: string
     default: { get_secret: ec2_region_name }
 
   aws_instance_id:
+    display_label: Aws Instance Id
     type: string
     description: The AWS Resource ID of an EC2 Instance (i-xxxxxxxxxxxxxxxx)
-    required: True
+    required: true
 
 dsl_definitions:
 
@@ -38,7 +42,7 @@ node_templates:
       resource_config:
         kwargs:
           Targets:
-            - Id : topic1
+            - Id: topic1
               Arn: { get_attribute: [ topic1, aws_resource_arn ] }
       client_config: *client_config
     relationships:
@@ -64,7 +68,7 @@ node_templates:
           Entries:
             - Source: autoscaling.amazonaws.com
               Resources:
-               - { concat: [ 'arn:aws:automate:', { get_input: aws_region_name }, ':ec2:terminate'] }
+                - { concat: [ 'arn:aws:automate:', { get_input: aws_region_name }, ':ec2:terminate'] }
               DetailType: Cloudwatch Event Demo
               Detail: |
                 {

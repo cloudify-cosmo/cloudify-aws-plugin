@@ -7,70 +7,81 @@ imports:
 inputs:
 
   aws_access_key_id:
+    display_label: Aws Access Key Id
     type: string
     default: { get_secret: aws_access_key_id }
 
   aws_secret_access_key:
+    display_label: Aws Secret Access Key
     type: string
     default: { get_secret: aws_secret_access_key }
 
   aws_region_name:
+    display_label: Aws Region Name
     type: string
     default: { get_secret: ec2_region_name }
 
   aws_account_id:
+    display_label: Aws Account Id
     type: string
     default: { get_secret: aws_account_id }
 
   aws_region_zone1:
+    display_label: Aws Region Zone1
     type: string
     default:
       concat:
-      - { get_input: aws_region_name }
-      - 'a'
+        - { get_input: aws_region_name }
+        - 'a'
 
   aws_region_zone2:
+    display_label: Aws Region Zone2
     type: string
     default:
       concat:
-      - { get_input: aws_region_name }
-      - 'b'
+        - { get_input: aws_region_name }
+        - 'b'
 
   aws_cloudwatch_log_arn:
+    display_label: Aws Cloudwatch Log Arn
     type: string
     default:
       concat:
-      - 'arn:aws:logs:'
-      - { get_input: aws_region_name }
-      - ":"
-      - { get_input: aws_account_id }
+        - 'arn:aws:logs:'
+        - { get_input: aws_region_name }
+        - ":"
+        - { get_input: aws_account_id }
 
   launch_configuration_ami:
+    display_label: Launch Configuration Ami
     type: string
     default: ami-e1496384
 
   launch_configuration_instance_type:
+    display_label: Launch Configuration Instance Type
     type: string
     default: t2.micro
 
   aws_vpc_cidr:
+    display_label: Aws Vpc Cidr
     description: |
       AWS VPC CIDR
     type: string
     default: '10.0.0.0/16'
 
   aws_vpc_subnet_1_cidr:
+    display_label: Aws Vpc Subnet 1 Cidr
     description: |
       AWS VPC Subnet CIDR
     type: string
     default: '10.0.0.0/24'
 
   aws_vpc_subnet_2_cidr:
+    display_label: Aws Vpc Subnet 2 Cidr
     description: |
       AWS VPC Subnet CIDR
     type: string
     default: '10.0.1.0/24'
-
 
 dsl_definitions:
 
@@ -78,7 +89,6 @@ dsl_definitions:
     aws_access_key_id: { get_input: aws_access_key_id }
     aws_secret_access_key: { get_input: aws_secret_access_key }
     region_name: { get_input: aws_region_name }
-
 
 node_templates:
 
@@ -316,10 +326,10 @@ node_templates:
       resource_config:
         kwargs:
           Listeners:
-          - Protocol: HTTP
-            LoadBalancerPort: 80
-            InstancePort: 1081
-            InstanceProtocol: HTTP
+            - Protocol: HTTP
+              LoadBalancerPort: 80
+              InstancePort: 1081
+              InstanceProtocol: HTTP
       client_config: *client_config
     relationships:
       - type: cloudify.relationships.depends_on
@@ -331,11 +341,11 @@ node_templates:
       resource_config:
         kwargs:
           Tags:
-          - Key: name
-            Value: boto3-plugin-elb
-          LoadBalancerName: pmcfyelb
-          Listeners: { get_property: [ listener_elb, resource_config, kwargs, Listeners ] }
-          Scheme: internet-facing
+            - Key: name
+              Value: boto3-plugin-elb
+            LoadBalancerName: pmcfyelb
+            Listeners: { get_property: [ listener_elb, resource_config, kwargs, Listeners ] }
+            Scheme: internet-facing
       client_config: *client_config
     relationships:
       - type: cloudify.relationships.depends_on
@@ -367,7 +377,7 @@ node_templates:
         kwargs:
           GroupName: securitygroup
           Description: A non-security group that allows all traffic.
-          VpcId:  { get_attribute: [ vpc, aws_resource_id ] }
+          VpcId: { get_attribute: [ vpc, aws_resource_id ] }
       client_config: *client_config
     relationships:
       - type: cloudify.relationships.depends_on
@@ -380,12 +390,12 @@ node_templates:
       resource_config:
         kwargs:
           IpPermissions:
-           - IpProtocol: "-1"
-             FromPort: -1
-             ToPort: -1
-             IpRanges:
-              - CidrIp: 0.0.0.0/0
-             UserIdGroupPairs: [  { GroupId: { get_attribute: [ securitygroup, aws_resource_id ] } } ]
+            - IpProtocol: "-1"
+              FromPort: -1
+              ToPort: -1
+              IpRanges:
+                - CidrIp: 0.0.0.0/0
+               UserIdGroupPairs: [ { GroupId: { get_attribute: [ securitygroup, aws_resource_id ] } } ]
     relationships:
       - type: cloudify.relationships.contained_in
         target: securitygroup
@@ -474,10 +484,10 @@ node_templates:
           Domain: 'vpc'
       client_config: *client_config
     relationships:
-    - type: cloudify.relationships.depends_on
-      target: internet_gateway_vpc
-    - type: cloudify.relationships.depends_on
-      target: subnet2
+      - type: cloudify.relationships.depends_on
+        target: internet_gateway_vpc
+      - type: cloudify.relationships.depends_on
+        target: subnet2
 
   elasticip_natgateway1:
     type: cloudify.nodes.aws.ec2.ElasticIP
@@ -487,10 +497,10 @@ node_templates:
           Domain: 'vpc'
       client_config: *client_config
     relationships:
-    - type: cloudify.relationships.depends_on
-      target: internet_gateway_vpc
-    - type: cloudify.relationships.depends_on
-      target: subnet1
+      - type: cloudify.relationships.depends_on
+        target: internet_gateway_vpc
+      - type: cloudify.relationships.depends_on
+        target: subnet1
 
   internet_gateway_vpc:
     type: cloudify.nodes.aws.ec2.InternetGateway

@@ -11,25 +11,30 @@ imports:
 inputs:
 
   aws_region_name:
-      type: string
-      default: 'us-east-2'
+    display_label: Aws Region Name
+    type: string
+    default: 'us-east-2'
 
   availability_zone:
+    display_label: Availability Zone
     type: string
     description: The availability zone in the AWS Region.
     default: { concat: [ { get_input: aws_region_name }, 'b' ] }
 
   ami_owner_filter:
+    display_label: Ami Owner Filter
     type: string
     description: The AWS AMI owner number.
     default: '263721492972'
 
   ami_name_filter:
+    display_label: Ami Name Filter
     type: string
     description: The name of the AWS AMI in the AWS region.
     default: 'CentOS7-cloudify-examples-image'
 
   instance_type:
+    display_label: Instance Type
     type: string
     default: t2.micro
 
@@ -39,13 +44,16 @@ inputs:
     default: 'centos'
 
   agent_key_name:
+    display_label: Agent Key Name
     type: string
     default: agent_key
 
   key_name:
+    display_label: Key Name
     type: string
 
   suffix:
+    display_label: Suffix
     type: string
     default: '1'
 
@@ -82,8 +90,8 @@ node_templates:
             SpotPrice: '0.04'
             TargetCapacity: 4
     relationships:
-    - type: cloudify.relationships.depends_on
-      target: ami
+      - type: cloudify.relationships.depends_on
+        target: ami
     # - type: cloudify.relationships.depends_on
     #   target: security_group
     - type: cloudify.relationships.depends_on
@@ -135,10 +143,10 @@ node_templates:
         AssumeRolePolicyDocument:
           Version: !!str 2012-10-17
           Statement:
-          - Effect: Allow
-            Principal:
-              Service: !!str spotfleet.amazonaws.com
-            Action: !!str sts:AssumeRole
+            - Effect: Allow
+              Principal:
+                Service: !!str spotfleet.amazonaws.com
+              Action: !!str sts:AssumeRole
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
@@ -152,12 +160,12 @@ node_templates:
       resource_config:
         kwargs:
           Filters:
-          - Name: name
-            Values:
-            - { get_input: ami_name_filter }
-          - Name: owner-id
-            Values:
-            - { get_input: ami_owner_filter }
+            - Name: name
+              Values:
+                - { get_input: ami_name_filter }
+              - Name: owner-id
+                Values:
+                  - { get_input: ami_owner_filter }
       client_config: *client_config
 
   security_group_rules:
@@ -166,34 +174,34 @@ node_templates:
       client_config: *client_config
       resource_config:
         IpPermissions:
-        - IpProtocol: tcp
-          FromPort: 22
-          ToPort: 22
-          IpRanges:
-          - CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          IpRanges:
-          - CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 8080
-          ToPort: 8080
-          IpRanges:
-          - CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 9990
-          ToPort: 9990
-          IpRanges:
-          - CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 2375
-          ToPort: 2375
-          IpRanges:
-          - CidrIp: 0.0.0.0/0
+          - IpProtocol: tcp
+            FromPort: 22
+            ToPort: 22
+            IpRanges:
+              - CidrIp: 0.0.0.0/0
+            - IpProtocol: tcp
+              FromPort: 80
+              ToPort: 80
+              IpRanges:
+                - CidrIp: 0.0.0.0/0
+              - IpProtocol: tcp
+                FromPort: 8080
+                ToPort: 8080
+                IpRanges:
+                  - CidrIp: 0.0.0.0/0
+                - IpProtocol: tcp
+                  FromPort: 9990
+                  ToPort: 9990
+                  IpRanges:
+                    - CidrIp: 0.0.0.0/0
+                  - IpProtocol: tcp
+                    FromPort: 2375
+                    ToPort: 2375
+                    IpRanges:
+                        - CidrIp: 0.0.0.0/0
     relationships:
-    - type: cloudify.relationships.contained_in
-      target: security_group
+      - type: cloudify.relationships.contained_in
+        target: security_group
 
   security_group:
     type: cloudify.nodes.aws.ec2.SecurityGroup
@@ -204,8 +212,8 @@ node_templates:
         Description: Created by cloudify-getting-started-example.
         VpcId: { get_attribute: [ vpc, aws_resource_id ] }
     relationships:
-    - type: cloudify.relationships.depends_on
-      target: vpc
+      - type: cloudify.relationships.depends_on
+        target: vpc
 
   route_public_subnet_internet_gateway:
     type: cloudify.nodes.aws.ec2.Route
@@ -215,23 +223,23 @@ node_templates:
           DestinationCidrBlock: '0.0.0.0/0'
       client_config: *client_config
     relationships:
-    - type: cloudify.relationships.contained_in
-      target: routetable
-    - type: cloudify.relationships.connected_to
-      target: internet_gateway
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        stop: {}
+      - type: cloudify.relationships.contained_in
+        target: routetable
+      - type: cloudify.relationships.connected_to
+        target: internet_gateway
+      interfaces:
+        cloudify.interfaces.lifecycle:
+            stop: {}
 
   routetable:
     type: cloudify.nodes.aws.ec2.RouteTable
     properties:
       client_config: *client_config
     relationships:
-    - type: cloudify.relationships.contained_in
-      target: vpc
-    - type: cloudify.relationships.connected_to
-      target: subnet
+      - type: cloudify.relationships.contained_in
+        target: vpc
+      - type: cloudify.relationships.connected_to
+        target: subnet
 
   subnet:
     type: cloudify.nodes.aws.ec2.Subnet
@@ -241,16 +249,16 @@ node_templates:
         CidrBlock: 10.10.4.0/24
         AvailabilityZone: { get_input: availability_zone }
     relationships:
-    - type: cloudify.relationships.depends_on
-      target: vpc
+      - type: cloudify.relationships.depends_on
+        target: vpc
 
   internet_gateway:
     type: cloudify.nodes.aws.ec2.InternetGateway
     properties:
       client_config: *client_config
     relationships:
-    - type: cloudify.relationships.connected_to
-      target: vpc
+      - type: cloudify.relationships.connected_to
+        target: vpc
 
   vpc:
     type: cloudify.nodes.aws.ec2.Vpc

@@ -7,30 +7,37 @@ imports:
 inputs:
 
   aws_access_key_id:
+    display_label: Aws Access Key Id
     type: string
     default: { get_secret: aws_access_key_id }
 
   aws_secret_access_key:
+    display_label: Aws Secret Access Key
     type: string
     default: { get_secret: aws_secret_access_key }
 
   aws_region_name:
+    display_label: Aws Region Name
     type: string
     default: { get_secret: ec2_region_name }
 
   availability_zone:
+    display_label: Availability Zone
     type: string
     default: { concat: [ { get_input: aws_region_name }, 'b' ] }
 
   subnet_cidr:
+    display_label: Subnet Cidr
     type: string
     default: 172.30.0.0/24
 
   vpc_cidr:
+    display_label: Vpc Cidr
     type: string
     default: 172.30.0.0/16
 
   key_name:
+    display_label: Key Name
     type: string
     default: AWSTestKey
 
@@ -52,17 +59,17 @@ node_templates:
         kwargs:
           StackName: EC2Instance
           Parameters:
-          - ParameterKey: KeyName
-            ParameterValue: { get_input: key_name }
-          - ParameterKey: PrimaryIPAddress
-            ParameterValue: '172.30.0.10'
-          - ParameterKey: SecondaryIPAddress
-            ParameterValue: '172.30.0.11'
-          - ParameterKey: SubnetId
-            ParameterValue: { get_attribute: [ public_subnet, aws_resource_id ] }
-          - ParameterKey: VpcId
-            ParameterValue: { get_attribute: [ vpc, aws_resource_id ] }
-          TemplateURL: https://s3-ap-northeast-1.amazonaws.com/ecosystem-tests-no-delete/VPC_EC2_Instance_With_Multiple_Static_IPAddresses.yaml.txt
+            - ParameterKey: KeyName
+              ParameterValue: { get_input: key_name }
+            - ParameterKey: PrimaryIPAddress
+              ParameterValue: '172.30.0.10'
+            - ParameterKey: SecondaryIPAddress
+              ParameterValue: '172.30.0.11'
+            - ParameterKey: SubnetId
+              ParameterValue: { get_attribute: [ public_subnet, aws_resource_id ] }
+            - ParameterKey: VpcId
+              ParameterValue: { get_attribute: [ vpc, aws_resource_id ] }
+            TemplateURL: https://s3-ap-northeast-1.amazonaws.com/ecosystem-tests-no-delete/VPC_EC2_Instance_With_Multiple_Static_IPAddresses.yaml.txt
     relationships:
       - type: cloudify.relationships.depends_on
         target: key_pair_node
@@ -125,4 +132,4 @@ node_templates:
       resource_config:
         CidrBlock: { get_input: vpc_cidr }
         kwargs:
-          AmazonProvidedIpv6CidrBlock: True
+          AmazonProvidedIpv6CidrBlock: true

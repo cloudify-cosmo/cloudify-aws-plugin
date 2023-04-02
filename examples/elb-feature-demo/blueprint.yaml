@@ -7,15 +7,18 @@ imports:
 inputs:
 
   aws_region_name:
+    display_label: Aws Region Name
     type: string
     default: 'us-east-1'
 
   availability_zone1:
+    display_label: Availability Zone1
     type: string
     description: The availability zone in the AWS Region.
     default: { concat: [ { get_input: aws_region_name }, 'c' ] }
 
   availability_zone2:
+    display_label: Availability Zone2
     type: string
     description: The availability zone in the AWS Region.
     default: { concat: [ { get_input: aws_region_name }, 'd' ] }
@@ -35,12 +38,12 @@ node_templates:
       resource_config:
         kwargs:
           Filters:
-          - Name: name
-            Values:
-            - 'ubuntu/images/hvm-ssd/ubuntu-trusty-14.04-amd64-server-20170727'
-          - Name: owner-id
-            Values:
-            - '099720109477'
+            - Name: name
+              Values:
+                - 'ubuntu/images/hvm-ssd/ubuntu-trusty-14.04-amd64-server-20170727'
+              - Name: owner-id
+                Values:
+                  - '099720109477'
       client_config: *client_config
 
   instance2:
@@ -155,9 +158,9 @@ node_templates:
     properties:
       resource_config:
         Listeners:
-        - Protocol: HTTP
-          LoadBalancerPort: 80
-          InstancePort: 8080
+          - Protocol: HTTP
+            LoadBalancerPort: 80
+            InstancePort: 8080
       client_config: *client_config
     relationships:
       - type: cloudify.relationships.depends_on
@@ -210,11 +213,11 @@ node_templates:
     properties:
       resource_config:
         CidrBlock: '10.0.1.0/24'
-        AvailabilityZone: {  get_input: availability_zone1 }
+        AvailabilityZone: { get_input: availability_zone1 }
       client_config: *client_config
       Tags:
-      - Key: Name
-        Value: MySubnet1
+        - Key: Name
+          Value: MySubnet1
     relationships:
       - type: cloudify.relationships.depends_on
         target: vpc
@@ -225,7 +228,7 @@ node_templates:
       client_config: *client_config
       resource_config:
         CidrBlock: '10.0.2.0/24'
-        AvailabilityZone: {  get_input: availability_zone2 }
+        AvailabilityZone: { get_input: availability_zone2 }
       Tags:
         - Key: Name
           Value: MySubnet2

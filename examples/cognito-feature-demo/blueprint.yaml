@@ -10,6 +10,7 @@ imports:
 inputs:
 
   aws_region_name:
+    display_label: Aws Region Name
     type: string
     default: 'us-east-2'
 
@@ -33,9 +34,9 @@ node_templates:
         PolicyDocument:
           Version: '2012-10-17'
           Statement:
-          - Effect: Allow
-            Action: sns:publish
-            Resource: "*"
+            - Effect: Allow
+              Action: sns:publish
+              Resource: "*"
 
   sns_role:
     type: cloudify.nodes.aws.iam.Role
@@ -46,15 +47,15 @@ node_templates:
         AssumeRolePolicyDocument:
           Version: '2012-10-17'
           Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-              - cognito-idp.amazonaws.com
-            Action:
-            - sts:AssumeRole
+            - Effect: Allow
+              Principal:
+                Service:
+                  - cognito-idp.amazonaws.com
+                Action:
+                  - sts:AssumeRole
     relationships:
-    - type: cloudify.relationships.aws.iam.role.connected_to
-      target: sns_policy
+      - type: cloudify.relationships.aws.iam.role.connected_to
+        target: sns_policy
 
   user_pool:
     type: cloudify.nodes.aws.cognitoidp.UserPool
@@ -63,30 +64,30 @@ node_templates:
       resource_config:
         PoolName: MyUserPoolApp
         AutoVerifiedAttributes:
-        - phone_number
-        MfaConfiguration: 'ON'
-        SmsConfiguration:
-          ExternalId: MyUserPoolApp-external
-          SnsCallerArn: { get_attribute: [ sns_role, aws_resource_arn ] }
-        Schema:
-        - Name: name
-          AttributeDataType: String
-          Mutable: true
-          Required: true
-        - Name: email
-          AttributeDataType: String
-          Mutable: false
-          Required: true
-        - Name: phone_number
-          AttributeDataType: String
-          Mutable: false
-          Required: true
-        - Name: slackId
-          AttributeDataType: String
-          Mutable: true
+          - phone_number
+          MfaConfiguration: 'ON'
+          SmsConfiguration:
+            ExternalId: MyUserPoolApp-external
+            SnsCallerArn: { get_attribute: [ sns_role, aws_resource_arn ] }
+          Schema:
+            - Name: name
+              AttributeDataType: String
+              Mutable: true
+              Required: true
+            - Name: email
+              AttributeDataType: String
+              Mutable: false
+              Required: true
+            - Name: phone_number
+              AttributeDataType: String
+              Mutable: false
+              Required: true
+            - Name: slackId
+              AttributeDataType: String
+              Mutable: true
     relationships:
-    - type: cloudify.relationships.depends_on
-      target: sns_role
+      - type: cloudify.relationships.depends_on
+        target: sns_role
 
   user_pool_client:
     type: cloudify.nodes.aws.cognitoidp.UserPoolClient
@@ -97,8 +98,8 @@ node_templates:
         GenerateSecret: true
         UserPoolId: { get_attribute: [ user_pool, aws_resource_id ] }
     relationships:
-    - type: cloudify.relationships.depends_on
-      target: user_pool
+      - type: cloudify.relationships.depends_on
+        target: user_pool
 
   identity_pool_provider:
     type: cloudify.nodes.aws.cognitoidp.IdentityProvider
@@ -117,8 +118,8 @@ node_templates:
           phone_number: phone_number
           name: name
     relationships:
-    - type: cloudify.relationships.depends_on
-      target: user_pool_client
+      - type: cloudify.relationships.depends_on
+        target: user_pool_client
 
   identity_pool:
     type: cloudify.nodes.aws.cognito.IdentityPool
@@ -130,13 +131,13 @@ node_templates:
         SupportedLoginProviders:
           'www.amazon.com': { get_attribute: [ user_pool_client, create_response, UserPoolClient, ClientId ] }
         CognitoIdentityProviders:
-        - ClientId: { get_attribute: [ user_pool_client, create_response, UserPoolClient, ClientId ] }
-          ProviderName: { concat: [ 'cognito-idp.', { get_input: aws_region_name }, '.amazonaws.com/', { get_attribute: [ identity_pool_provider, create_response, IdentityProvider, UserPoolId ] } ] }
+          - ClientId: { get_attribute: [ user_pool_client, create_response, UserPoolClient, ClientId ] }
+            ProviderName: { concat: [ 'cognito-idp.', { get_input: aws_region_name }, '.amazonaws.com/', { get_attribute: [ identity_pool_provider, create_response, IdentityProvider, UserPoolId ] } ] }
     relationships:
-    - type: cloudify.relationships.depends_on
-      target: identity_pool_provider
-    - type: cloudify.relationships.depends_on
-      target: user_pool_client
+      - type: cloudify.relationships.depends_on
+        target: identity_pool_provider
+      - type: cloudify.relationships.depends_on
+        target: user_pool_client
 
   # Unauth Component
 
@@ -149,14 +150,14 @@ node_templates:
         PolicyDocument:
           Version: '2012-10-17'
           Statement:
-          - Effect: Allow
-            Action:
-            - mobileanalytics:PutEvents
-            - cognito-sync:*
-            Resource: "*"
+            - Effect: Allow
+              Action:
+                - mobileanalytics:PutEvents
+                - cognito-sync:*
+                Resource: "*"
     relationships:
-    - type: cloudify.relationships.depends_on
-      target: identity_pool
+      - type: cloudify.relationships.depends_on
+        target: identity_pool
 
   unauthenticated:
     type: cloudify.nodes.aws.iam.Role
@@ -167,21 +168,21 @@ node_templates:
         AssumeRolePolicyDocument:
           Version: '2012-10-17'
           Statement:
-          - Effect: Allow
-            Principal:
-              Federated: cognito-identity.amazonaws.com
-            Action:
-            - sts:AssumeRoleWithWebIdentity
-            Condition:
-              StringEquals:
-                cognito-identity.amazonaws.com:aud: { get_attribute: [ identity_pool, aws_resource_id ] }
-              ForAnyValue:StringLike:
-                cognito-identity.amazonaws.com:amr: unauthenticated
+            - Effect: Allow
+              Principal:
+                Federated: cognito-identity.amazonaws.com
+              Action:
+                - sts:AssumeRoleWithWebIdentity
+                Condition:
+                  StringEquals:
+                    cognito-identity.amazonaws.com:aud: { get_attribute: [ identity_pool, aws_resource_id ] }
+                  ForAnyValue:StringLike:
+                    cognito-identity.amazonaws.com:amr: unauthenticated
     relationships:
-    - type: cloudify.relationships.aws.cognito.set_identity_pool_roles
-      target: identity_pool
-    - type: cloudify.relationships.aws.iam.role.connected_to
-      target: unauth_policy
+      - type: cloudify.relationships.aws.cognito.set_identity_pool_roles
+        target: identity_pool
+      - type: cloudify.relationships.aws.iam.role.connected_to
+        target: unauth_policy
 
   # Auth Component
 
@@ -194,14 +195,14 @@ node_templates:
         PolicyDocument:
           Version: '2012-10-17'
           Statement:
-          - Effect: Allow
-            Action:
-            - mobileanalytics:PutEvents
-            - cognito-sync:*
-            Resource: "*"
+            - Effect: Allow
+              Action:
+                - mobileanalytics:PutEvents
+                - cognito-sync:*
+                Resource: "*"
     relationships:
-    - type: cloudify.relationships.depends_on
-      target: identity_pool
+      - type: cloudify.relationships.depends_on
+        target: identity_pool
 
   authenticated:
     type: cloudify.nodes.aws.iam.Role
@@ -212,18 +213,18 @@ node_templates:
         AssumeRolePolicyDocument:
           Version: '2012-10-17'
           Statement:
-          - Effect: Allow
-            Principal:
-              Federated: cognito-identity.amazonaws.com
-            Action:
-            - sts:AssumeRoleWithWebIdentity
-            Condition:
-              StringEquals:
-                cognito-identity.amazonaws.com:aud: { get_attribute: [ identity_pool, aws_resource_id ] }
-              ForAnyValue:StringLike:
-                cognito-identity.amazonaws.com:amr: authenticated
+            - Effect: Allow
+              Principal:
+                Federated: cognito-identity.amazonaws.com
+              Action:
+                - sts:AssumeRoleWithWebIdentity
+                Condition:
+                  StringEquals:
+                    cognito-identity.amazonaws.com:aud: { get_attribute: [ identity_pool, aws_resource_id ] }
+                  ForAnyValue:StringLike:
+                    cognito-identity.amazonaws.com:amr: authenticated
     relationships:
-    - type: cloudify.relationships.aws.cognito.set_identity_pool_roles
-      target: identity_pool
-    - type: cloudify.relationships.aws.iam.role.connected_to
-      target: auth_policy
+      - type: cloudify.relationships.aws.cognito.set_identity_pool_roles
+        target: identity_pool
+      - type: cloudify.relationships.aws.iam.role.connected_to
+        target: auth_policy

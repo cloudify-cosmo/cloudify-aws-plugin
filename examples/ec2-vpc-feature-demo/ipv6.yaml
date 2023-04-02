@@ -36,11 +36,13 @@ inputs:
     default: /dev/sdh
 
   ami_owner_filter:
+    display_label: Ami Owner Filter
     type: string
     description: The AWS AMI owner number.
     default: '263721492972'
 
   ami_name_filter:
+    display_label: Ami Name Filter
     type: string
     description: The name of the AWS AMI in the AWS region.
     default: 'CentOS7-cloudify-examples-image'
@@ -61,7 +63,7 @@ node_templates:
       resource_config:
         CidrBlock: { get_input: vpc_cidr }
         kwargs:
-          AmazonProvidedIpv6CidrBlock: True
+          AmazonProvidedIpv6CidrBlock: true
       client_config: *client_config
       Tags:
         - Key: Name
@@ -73,7 +75,7 @@ node_templates:
           inputs:
             modify_vpc_attribute_args:
               EnableDnsHostnames:
-                Value: True
+                Value: true
 
   public_subnet:
     type: cloudify.nodes.aws.ec2.Subnet
@@ -98,7 +100,7 @@ node_templates:
           inputs:
             modify_subnet_attribute_args:
               AssignIpv6AddressOnCreation:
-                Value: True
+                Value: true
 
   private_subnet:
     type: cloudify.nodes.aws.ec2.Subnet
@@ -140,7 +142,6 @@ node_templates:
       - type: cloudify.relationships.connected_to
         target: private_subnet
 
-
   security_group:
     type: cloudify.nodes.aws.ec2.SecurityGroup
     properties:
@@ -164,69 +165,69 @@ node_templates:
   security_group_rules:
     type: cloudify.nodes.aws.ec2.SecurityGroupRuleIngress
     properties:
-     client_config: *client_config
-     resource_config:
-      IpPermissions:
-      - IpProtocol: icmp
-        FromPort: -1
-        ToPort: -1
-        IpRanges:
-        - CidrIp: 0.0.0.0/0
-      - IpProtocol: tcp
-        FromPort: 22
-        ToPort: 22
-        IpRanges:
-        - CidrIp: 0.0.0.0/0
-      - IpProtocol: tcp
-        FromPort: 80
-        ToPort: 80
-        IpRanges:
-        - CidrIp: 0.0.0.0/0
-      - IpProtocol: tcp
-        FromPort: 443
-        ToPort: 443
-        IpRanges:
-        - CidrIp: 0.0.0.0/0
-      - IpProtocol: tcp
-        FromPort: 5671
-        ToPort: 5672
-        IpRanges:
-        - CidrIp: 0.0.0.0/0
-      - IpProtocol: tcp
-        FromPort: 8101
-        ToPort: 8101
-        IpRanges:
-        - CidrIp: 0.0.0.0/0
-      - IpProtocol: tcp
-        FromPort: 53333
-        ToPort: 53333
-        IpRanges:
-        - CidrIp: 0.0.0.0/0
-      - IpProtocol: tcp
-        FromPort: 8300
-        ToPort: 8300
-        IpRanges:
-        - CidrIp: 0.0.0.0/0
-      - IpProtocol: tcp
-        FromPort: 8301
-        ToPort: 8301
-        IpRanges:
-        - CidrIp: 0.0.0.0/0
-      - IpProtocol: tcp
-        FromPort: 8500
-        ToPort: 8500
-        IpRanges:
-        - CidrIp: 0.0.0.0/0
-      - IpProtocol: tcp
-        FromPort: 22000
-        ToPort: 22000
-        IpRanges:
-        - CidrIp: 0.0.0.0/0
-      - IpProtocol: tcp
-        FromPort: 15432
-        ToPort: 15432
-        IpRanges:
-        - CidrIp: 0.0.0.0/0
+      client_config: *client_config
+      resource_config:
+       IpPermissions:
+        - IpProtocol: icmp
+          FromPort: -1
+          ToPort: -1
+          IpRanges:
+            - CidrIp: 0.0.0.0/0
+          - IpProtocol: tcp
+            FromPort: 22
+            ToPort: 22
+            IpRanges:
+              - CidrIp: 0.0.0.0/0
+            - IpProtocol: tcp
+              FromPort: 80
+              ToPort: 80
+              IpRanges:
+                - CidrIp: 0.0.0.0/0
+              - IpProtocol: tcp
+                FromPort: 443
+                ToPort: 443
+                IpRanges:
+                    - CidrIp: 0.0.0.0/0
+                - IpProtocol: tcp
+                    FromPort: 5671
+                    ToPort: 5672
+                    IpRanges:
+                        - CidrIp: 0.0.0.0/0
+                    - IpProtocol: tcp
+                        FromPort: 8101
+                        ToPort: 8101
+                        IpRanges:
+                              - CidrIp: 0.0.0.0/0
+                        - IpProtocol: tcp
+                              FromPort: 53333
+                              ToPort: 53333
+                              IpRanges:
+                                    - CidrIp: 0.0.0.0/0
+                              - IpProtocol: tcp
+                                    FromPort: 8300
+                                    ToPort: 8300
+                                    IpRanges:
+                                            - CidrIp: 0.0.0.0/0
+                                    - IpProtocol: tcp
+                                            FromPort: 8301
+                                            ToPort: 8301
+                                            IpRanges:
+                                                      - CidrIp: 0.0.0.0/0
+                                            - IpProtocol: tcp
+                                                      FromPort: 8500
+                                                      ToPort: 8500
+                                                      IpRanges:
+                                                                  - CidrIp: 0.0.0.0/0
+                                                      - IpProtocol: tcp
+                                                                  FromPort: 22000
+                                                                  ToPort: 22000
+                                                                  IpRanges:
+                                                                                  - CidrIp: 0.0.0.0/0
+                                                                  - IpProtocol: tcp
+                                                                                  FromPort: 15432
+                                                                                  ToPort: 15432
+                                                                                  IpRanges:
+                                                                                                      - CidrIp: 0.0.0.0/0
     relationships:
       - type: cloudify.relationships.contained_in
         target: security_group

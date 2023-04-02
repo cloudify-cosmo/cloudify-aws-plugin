@@ -39,7 +39,6 @@ inputs:
   volume_attachment_device:
     default: /dev/sdh
 
-
 dsl_definitions:
 
   client_config: &client_config
@@ -133,12 +132,12 @@ node_templates:
       client_config: *client_config
       resource_config:
         IpPermissions:
-         - IpProtocol: "-1"
-           FromPort: -1
-           ToPort: -1
-           IpRanges:
-            - CidrIp: 0.0.0.0/0
-           UserIdGroupPairs: [  { GroupId: { get_attribute: [ security_group, aws_resource_id ] } } ]
+          - IpProtocol: "-1"
+            FromPort: -1
+            ToPort: -1
+            IpRanges:
+              - CidrIp: 0.0.0.0/0
+             UserIdGroupPairs: [ { GroupId: { get_attribute: [ security_group, aws_resource_id ] } } ]
     relationships:
       - type: cloudify.relationships.contained_in
         target: security_group
@@ -177,12 +176,12 @@ node_templates:
       resource_config:
         kwargs:
           Filters:
-          - Name: owner-id
-            Values:
-            - "263721492972"
-          - Name: name
-            Values:
-            - 'CentOS7-cloudify-examples-image'
+            - Name: owner-id
+              Values:
+                - "263721492972"
+              - Name: name
+                Values:
+                  - 'CentOS7-cloudify-examples-image'
 
   key:
     type: cloudify.nodes.aws.ec2.Keypair

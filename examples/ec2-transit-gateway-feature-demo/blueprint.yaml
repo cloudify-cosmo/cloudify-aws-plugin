@@ -15,18 +15,22 @@ inputs:
     default: { get_secret: aws_secret_access_key }
 
   aws_region_name_a:
-      type: string
-      default: 'us-east-1'
+    display_label: Aws Region Name A
+    type: string
+    default: 'us-east-1'
 
   aws_region_name_b:
-      type: string
-      default: 'us-east-1'
+    display_label: Aws Region Name B
+    type: string
+    default: 'us-east-1'
 
   vpc_a_cidr:
+    display_label: Vpc A Cidr
     type: string
     default: 10.10.0.0/16
 
   vpc_b_cidr:
+    display_label: Vpc B Cidr
     type: string
     default: 10.11.0.0/16
 
@@ -80,8 +84,8 @@ node_templates:
           TagSpecifications:
             - ResourceType: 'transit-gateway-route-table'
               Tags:
-              - Key: Made By
-                Value: Cloudify
+                - Key: Made By
+                  Value: Cloudify
     relationships:
       - type: cloudify.relationships.depends_on
         target: transit_gateway
@@ -106,8 +110,8 @@ node_templates:
           TagSpecifications:
             - ResourceType: 'transit-gateway'
               Tags:
-              - Key: Made By
-                Value: Cloudify
+                - Key: Made By
+                  Value: Cloudify
     relationships:
       - type: cloudify.relationships.aws.ec2.attach_transit_gateway_to_vpc
         target: vpc_a
@@ -130,13 +134,13 @@ node_templates:
         kwargs:
           DestinationCidrBlock: '0.0.0.0/0'
     relationships:
-    - type: cloudify.relationships.contained_in
-      target: routetable
-    - type: cloudify.relationships.connected_to
-      target: internet_gateway
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        stop: {}
+      - type: cloudify.relationships.contained_in
+        target: routetable
+      - type: cloudify.relationships.connected_to
+        target: internet_gateway
+      interfaces:
+        cloudify.interfaces.lifecycle:
+            stop: {}
 
   routetable:
     type: cloudify.nodes.aws.ec2.RouteTable
@@ -145,12 +149,12 @@ node_templates:
         region_name: { get_input: aws_region_name_a }
         <<: *client_config
     relationships:
-    - type: cloudify.relationships.contained_in
-      target: vpc_a
-    - type: cloudify.relationships.connected_to
-      target: subnet_a
-    - type: cloudify.relationships.depends_on
-      target: internet_gateway
+      - type: cloudify.relationships.contained_in
+        target: vpc_a
+      - type: cloudify.relationships.connected_to
+        target: subnet_a
+      - type: cloudify.relationships.depends_on
+        target: internet_gateway
 
   subnet_a:
     type: cloudify.nodes.aws.ec2.Subnet
@@ -162,8 +166,8 @@ node_templates:
         CidrBlock: 10.10.4.0/24
         AvailabilityZone: { concat: [ { get_input: aws_region_name_a }, 'a' ] }
     relationships:
-    - type: cloudify.relationships.aws.ec2.subnet_connected_to_vpc
-      target: vpc_a
+      - type: cloudify.relationships.aws.ec2.subnet_connected_to_vpc
+        target: vpc_a
 
   internet_gateway:
     type: cloudify.nodes.aws.ec2.InternetGateway
@@ -173,8 +177,8 @@ node_templates:
         <<: *client_config
     relationships:
     # Use of this relationship is required for Transit Gateway.
-    - type: cloudify.relationships.depends_on
-      target: vpc_a
+      - type: cloudify.relationships.depends_on
+        target: vpc_a
 
   vpc_a:
     type: cloudify.nodes.aws.ec2.Vpc
@@ -195,8 +199,8 @@ node_templates:
         CidrBlock: 10.11.4.0/24
         AvailabilityZone: { concat: [ { get_input: aws_region_name_b }, 'b' ] }
     relationships:
-    - type: cloudify.relationships.aws.ec2.subnet_connected_to_vpc
-      target: vpc_b
+      - type: cloudify.relationships.aws.ec2.subnet_connected_to_vpc
+        target: vpc_b
 
   vpc_b:
     type: cloudify.nodes.aws.ec2.Vpc

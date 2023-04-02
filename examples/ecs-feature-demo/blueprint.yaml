@@ -6,42 +6,48 @@ imports:
 
 inputs:
   aws_region_name:
+    display_label: Aws Region Name
     required: yes
     description: AWS Region Name
     type: string
     default: us-east-1
     constraints:
       - valid_values:
-        - us-east-1
-        - us-east-2
-        - us-west-1
-        - us-west-2
-        - ca-central-1
-        - eu-central-1
-        - eu-west-1
-        - eu-west-2
+          - us-east-1
+          - us-east-2
+          - us-west-1
+          - us-west-2
+          - ca-central-1
+          - eu-central-1
+          - eu-west-1
+          - eu-west-2
 
   ecs_cluster_name:
+    display_label: Ecs Cluster Name
     description: ECS Cluster Name
     type: string
     default: my_cluster
 
   container_instance_type:
+    display_label: Container Instance Type
     description: Container Instance Type
     type: string
     default: t2.large
 
   container_name:
+    display_label: Container Name
     description: Container Name
     type: string
     default: wordpress
 
   container_port:
+    display_label: Container Port
     description: Container Port
     type: integer
     default: 80
 
   container_instance_image:
+    display_label: Container Instance Image
     description: Container Instance Image (Amazon Linux AMI 2.0.20181112 x86_64 ECS HVM GP2 - amzn2-ami-ecs-hvm-2.0.20181112-x86_64-ebs)
     type: dict
     default:
@@ -61,7 +67,6 @@ dsl_definitions:
     aws_secret_access_key: { get_secret: aws_secret_access_key }
     region_name: { get_input: aws_region_name }
 
-
 node_templates:
 
   ecs_instance_iam_role:
@@ -75,10 +80,10 @@ node_templates:
         AssumeRolePolicyDocument:
           Version: !!str 2012-10-17
           Statement:
-          - Effect: Allow
-            Principal:
-              Service: !!str ec2.amazonaws.com
-            Action: !!str sts:AssumeRole
+            - Effect: Allow
+              Principal:
+                Service: !!str ec2.amazonaws.com
+              Action: !!str sts:AssumeRole
     relationships:
       - type: cloudify.relationships.aws.iam.role.connected_to
         target: ecs_instance_access
@@ -93,8 +98,8 @@ node_templates:
         Description: Grants access for ECS agent to Amazon ECS API
         Path: !!str /ecs-instance-access/
         PolicyDocument:
-            Version: !!str 2012-10-17
-            Statement:
+          Version: !!str 2012-10-17
+          Statement:
               - Effect: Allow
                 Action:
                   - !!str ecs:CreateCluster
@@ -136,10 +141,10 @@ node_templates:
         AssumeRolePolicyDocument:
           Version: !!str 2012-10-17
           Statement:
-          - Effect: Allow
-            Principal:
-              Service: !!str ecs.amazonaws.com
-            Action: !!str sts:AssumeRole
+            - Effect: Allow
+              Principal:
+                Service: !!str ecs.amazonaws.com
+              Action: !!str sts:AssumeRole
     relationships:
       - type: cloudify.relationships.aws.iam.role.connected_to
         target: ecs_service_access
@@ -191,9 +196,9 @@ node_templates:
               desiredCount: 1
               role: { get_attribute: [ ecs_service_iam_role, aws_resource_arn ] }
               loadBalancers:
-              - targetGroupArn: { get_attribute: [ forward_target_group, aws_resource_arn ] }
-                containerName: { get_input: container_name }
-                containerPort: { get_input: container_port }
+                - targetGroupArn: { get_attribute: [ forward_target_group, aws_resource_arn ] }
+                  containerName: { get_input: container_name }
+                  containerPort: { get_input: container_port }
 
   ecs_autoscaling_group:
     type: cloudify.nodes.aws.autoscaling.Group
@@ -207,9 +212,9 @@ node_templates:
           DesiredCapacity: 1
           DefaultCooldown: 20
           AvailabilityZones:
-          - { get_property: [ subnet1, resource_config, kwargs, AvailabilityZone ] }
-          VPCZoneIdentifier:
-          - { get_attribute: [ subnet1, aws_resource_id ] }
+            - { get_property: [ subnet1, resource_config, kwargs, AvailabilityZone ] }
+            VPCZoneIdentifier:
+              - { get_attribute: [ subnet1, aws_resource_id ] }
 
     relationships:
       - type: cloudify.relationships.depends_on
@@ -235,7 +240,7 @@ node_templates:
         kwargs:
           IamInstanceProfile: { concat: [ 'cfy_ecs_instance_profile', '-', { get_input: ecs_cluster_name } ] }
           # IamInstanceProfile: { get_attribute: [ ecs_instance_iam_role_instance_profile, aws_resource_arn ] }
-          AssociatePublicIpAddress: True
+          AssociatePublicIpAddress: true
           SecurityGroups:
             - { get_attribute: [ securitygroup1, aws_resource_id ] }
           BlockDeviceMappings:
@@ -476,7 +481,6 @@ node_templates:
         target: vpc
       - type: cloudify.relationships.depends_on
         target: igw
-
 
   subnet2:
     type: cloudify.nodes.aws.ec2.Subnet

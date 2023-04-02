@@ -7,18 +7,22 @@ imports:
 inputs:
 
   aws_access_key_id:
+    display_label: Aws Access Key Id
     type: string
     default: { get_secret: aws_access_key_id }
 
   aws_secret_access_key:
+    display_label: Aws Secret Access Key
     type: string
     default: { get_secret: aws_secret_access_key }
 
   aws_region_name:
+    display_label: Aws Region Name
     type: string
     default: { get_secret: aws_region_name }
 
   availability_zone:
+    display_label: Availability Zone
     type: string
     default: { concat: [ { get_input: aws_region_name}, 'b' ] }
 
@@ -44,23 +48,23 @@ node_templates:
       resource_config:
         kwargs: {}
     relationships:
-    - type: cloudify.relationships.aws.route53.record_set.connected_to
-      target: dns_hosted_zone
-    - type: cloudify.relationships.depends_on
-      target: instance
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        precreate:
-          implementation: aws.cloudify_aws.route53.resources.record_set.prepare
-          inputs:
-            resource_config:
-              Action: CREATE
-              ResourceRecordSet:
-                Name: { concat: ["dev.", { get_property: [dns_hosted_zone, resource_id] }] }
-                Type: !!str TXT
-                TTL: !!int 60
-                ResourceRecords:
-                - Value: { concat: [ '"', { get_attribute: [ instance, ip ] } , '"' ] }
+      - type: cloudify.relationships.aws.route53.record_set.connected_to
+        target: dns_hosted_zone
+      - type: cloudify.relationships.depends_on
+        target: instance
+      interfaces:
+        cloudify.interfaces.lifecycle:
+            precreate:
+              implementation: aws.cloudify_aws.route53.resources.record_set.prepare
+              inputs:
+                  resource_config:
+                    Action: CREATE
+                    ResourceRecordSet:
+                        Name: { concat: ["dev.", { get_property: [dns_hosted_zone, resource_id] }] }
+                        Type: !!str TXT
+                        TTL: !!int 60
+                        ResourceRecords:
+                          - Value: { concat: [ '"', { get_attribute: [ instance, ip ] } , '"' ] }
 
   dns_record_set_1:
     type: cloudify.nodes.aws.route53.RecordSet
@@ -74,10 +78,10 @@ node_templates:
             Type: !!str TXT
             TTL: !!int 60
             ResourceRecords:
-            - Value: '"Created using Cloudify"'
+              - Value: '"Created using Cloudify"'
     relationships:
-    - type: cloudify.relationships.aws.route53.record_set.connected_to
-      target: dns_hosted_zone
+      - type: cloudify.relationships.aws.route53.record_set.connected_to
+        target: dns_hosted_zone
 
   dns_hosted_zone:
     type: cloudify.nodes.aws.route53.HostedZone
@@ -93,9 +97,8 @@ node_templates:
             VPCRegion: { get_input: aws_region_name }
             VPCId: { get_attribute: [ dns_vpc, aws_resource_id ] }
     relationships:
-    - type: cloudify.relationships.aws.route53.hosted_zone.connected_to
-      target: dns_vpc
-
+      - type: cloudify.relationships.aws.route53.hosted_zone.connected_to
+        target: dns_vpc
 
   instance:
     type: cloudify.nodes.aws.ec2.Instances
@@ -109,10 +112,10 @@ node_templates:
         InstanceType: t2.micro
       client_config: *client_config
     relationships:
-    - type: cloudify.relationships.depends_on
-      target: dns_subnet
-    - type: cloudify.relationships.depends_on
-      target: ubuntu_trusty_ami
+      - type: cloudify.relationships.depends_on
+        target: dns_subnet
+      - type: cloudify.relationships.depends_on
+        target: ubuntu_trusty_ami
 
   ubuntu_trusty_ami:
     type: cloudify.nodes.aws.ec2.Image
@@ -120,12 +123,12 @@ node_templates:
       resource_config:
         kwargs:
           Filters:
-          - Name: name
-            Values:
-            - 'ubuntu/images/hvm-ssd/ubuntu-xenial-16.04-amd64-server-20210416'
-          - Name: owner-id
-            Values:
-            - '099720109477'
+            - Name: name
+              Values:
+                - 'ubuntu/images/hvm-ssd/ubuntu-xenial-16.04-amd64-server-20210416'
+              - Name: owner-id
+                Values:
+                  - '099720109477'
       client_config: *client_config
 
   dns_subnet:
@@ -136,8 +139,8 @@ node_templates:
         AvailabilityZone: { get_input: availability_zone }
       client_config: *client_config
     relationships:
-    - type: cloudify.relationships.depends_on
-      target: dns_vpc
+      - type: cloudify.relationships.depends_on
+        target: dns_vpc
 
   dns_vpc:
     type: cloudify.nodes.aws.ec2.Vpc
