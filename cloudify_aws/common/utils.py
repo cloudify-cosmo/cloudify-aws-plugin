@@ -19,7 +19,9 @@
 
 # Standard imports
 import re
+import os
 import sys
+import pathlib
 import uuid
 from time import sleep
 from copy import deepcopy
@@ -978,3 +980,11 @@ def delete_will_succeed(fn, params):
         if 'would have succeeded' in str(e):
             return True
         return False
+
+
+def edit_plugin_yaml_version():
+        current_dir = pathlib.Path(__file__).resolve()
+        with open(os.path.join(current_dir, 'cloudify_aws/__version__.py'),
+                  'r') as outfile:
+            var = outfile.read()
+            return re.search(r'\d+.\d+.\d+', var).group()
