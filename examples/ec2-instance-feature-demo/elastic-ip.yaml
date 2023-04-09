@@ -27,6 +27,7 @@ inputs:
     # default: { get_secret: availability_zone }
 
   existing_ip:
+    display_label: Existing Ip
     type: string
 
 dsl_definitions:

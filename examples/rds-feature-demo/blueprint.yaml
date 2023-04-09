@@ -7,10 +7,12 @@ imports:
 inputs:
 
   aws_region_name:
+    display_label: Aws Region Name
     type: string
     default: us-east-2
 
   env_name:
+    display_label: Env Name
     type: string
     default: 'a'
 
@@ -124,7 +126,7 @@ node_templates:
     relationships:
       - type: cloudify.relationships.aws.rds.option.connected_to
         target: rds_security_group
-              
+
   rds_subnet_group:
     type: cloudify.nodes.aws.rds.SubnetGroup
     properties:
@@ -138,7 +140,7 @@ node_templates:
       target: rds_subnet_1
     - type: cloudify.relationships.aws.rds.subnet_group.connected_to
       target: rds_subnet_2
-  
+
   rds_subnet_1:
     type: cloudify.nodes.aws.ec2.Subnet
     properties:
@@ -160,7 +162,7 @@ node_templates:
     relationships:
       - type: cloudify.relationships.depends_on
         target: rds_vpc
-  
+
   rds_security_group:
     type: cloudify.nodes.aws.ec2.SecurityGroup
     properties:
