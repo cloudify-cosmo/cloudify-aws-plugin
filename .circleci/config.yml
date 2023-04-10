@@ -138,6 +138,13 @@ commands:
 
 jobs:
 
+  run_sample_job:
+    executor: cloudify-machine-py3
+    environment:
+      CLOUDIFY_SSL_TRUST_ALL: true
+    steps:
+      - run_sample_test
+
   cf_integration_tests_py3:
     executor: cloudify-machine-py3
     environment:
@@ -412,6 +419,7 @@ workflows:
           requires:
             - releaseorb/release
             - node/validate_documentation_job
+          
 
   sunday_wednesday:
     triggers:
