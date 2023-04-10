@@ -518,7 +518,7 @@ workflows:
       - node/check_py3_compat_job
       - node/unittests_job:
           context: 
-              - slack-secrets
+            - slack-secrets
           <<: *unittest-post-steps
       - node/validate_version_job
       - wagonorb/rhel_wagon:
