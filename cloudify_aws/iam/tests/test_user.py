@@ -54,7 +54,7 @@ ctx_node = MagicMock(
 )
 
 
-@patch('cloudify_aws.common.connection.ctx')
+@patch('cloudify_common_sdk.utils.ctx_from_import')
 @patch('cloudify_aws.common.connection.Boto3Connection.get_account_id')
 class TestIAMUser(TestBase):
 
