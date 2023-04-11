@@ -20,7 +20,6 @@
 from cloudify_aws.ec2 import EC2Base
 from cloudify_aws.common import decorators, utils
 from cloudify.exceptions import NonRecoverableError
-from cloudify_aws.common.connection import Boto3Connection
 
 # Boto
 from botocore.exceptions import ClientError, ParamValidationError

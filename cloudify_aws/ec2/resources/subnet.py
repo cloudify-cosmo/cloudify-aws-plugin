@@ -220,7 +220,8 @@ def _create(ctx_node, iface, params, logger):
         config_from_utils = get_client_config(
             ctx_node=ctx_node, alternate_key='aws_config')
         region_name = config_from_utils.get('region_name')
-        use_available_zones = ctx_node.properties.get('use_available_zones', False)
+        use_available_zones = ctx_node.properties.get(
+            'use_available_zones', False)
         if use_available_zones:
             logger.error(
                 "The Availability Zone chosen {0} "

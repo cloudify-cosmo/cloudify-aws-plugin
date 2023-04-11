@@ -27,7 +27,6 @@ from .utils import (
     get_uuid,
     desecretize_client_config
 )
-from cloudify import ctx
 from cloudify_common_sdk.utils import get_client_config
 
 # pylint: disable=R0903
@@ -50,7 +49,8 @@ class Boto3Connection(object):
             'aws_session_token',
             'api_version']
 
-        config_from_utils = get_client_config(ctx_node=node, alternate_key='aws_config')
+        config_from_utils = get_client_config(
+            ctx_node=node, alternate_key='aws_config')
 
         # config_from_props = node.properties.get(AWS_CONFIG_PROPERTY, dict())
         # Get additional config from node configuration.

@@ -22,7 +22,6 @@ from cloudify_aws.common import AWSResourceBase
 from cloudify_common_sdk.utils import get_client_config
 from cloudify_aws.common.utils import check_region_name
 from cloudify_aws.common.connection import Boto3Connection
-from cloudify_aws.common.constants import AWS_CONFIG_PROPERTY
 
 # pylint: disable=R0903
 
