@@ -20,14 +20,17 @@
 from deepdiff import DeepDiff
 
 # Boto
-from botocore.exceptions import ClientError
-from botocore.exceptions import CapacityNotAvailableError
+from botocore.exceptions import (
+    ClientError,
+    CapacityNotAvailableError
+)
 
 # Cloudify
 from cloudify.exceptions import NonRecoverableError, OperationRetry
 
 from cloudify_aws.ec2 import EC2Base
 from cloudify_aws.common import decorators, utils
+from cloudify_common_sdk.utils import get_client_config
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
 
 RESOURCE_TYPE = 'EC2 Subnet'
@@ -208,11 +211,16 @@ def poststart(ctx, iface=None, **_):
 
 def _create(ctx_node, iface, params, logger):
     # Actually create the resource
-    region_name = ctx_node.properties['client_config']['region_name']
-    use_available_zones = ctx_node.properties.get('use_available_zones', False)
     try:
         iface.create(params)
-    except CapacityNotAvailableError:
+    except (NonRecoverableError, CapacityNotAvailableError) as e:
+        if isinstance(e, NonRecoverableError) and \
+                'InvalidParameterValue' not in str(e):
+            raise e
+        config_from_utils = get_client_config(
+            ctx_node=ctx_node, alternate_key='aws_config')
+        region_name = config_from_utils.get('region_name')
+        use_available_zones = ctx_node.properties.get('use_available_zones', False)
         if use_available_zones:
             logger.error(
                 "The Availability Zone chosen {0} "

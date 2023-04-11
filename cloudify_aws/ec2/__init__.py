@@ -19,9 +19,10 @@
 
 # Cloudify AWS
 from cloudify_aws.common import AWSResourceBase
+from cloudify_common_sdk.utils import get_client_config
+from cloudify_aws.common.utils import check_region_name
 from cloudify_aws.common.connection import Boto3Connection
 from cloudify_aws.common.constants import AWS_CONFIG_PROPERTY
-from cloudify_aws.common.utils import check_region_name
 
 # pylint: disable=R0903
 
@@ -37,8 +38,9 @@ class EC2Base(AWSResourceBase):
                  logger=None):
 
         if not client:
-            aws_config = ctx_node.properties.get(AWS_CONFIG_PROPERTY, dict())
-            check_region_name(aws_config['region_name'])
+            config_from_utils = get_client_config(
+               ctx_node=ctx_node, alternate_key='aws_config')
+            check_region_name(config_from_utils.get('region_name'))
         AWSResourceBase.__init__(
             self, client or Boto3Connection(ctx_node).client('ec2'),
             resource_id=resource_id, logger=logger)
