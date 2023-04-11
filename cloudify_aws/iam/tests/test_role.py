@@ -178,7 +178,11 @@ class TestIAMRole(TestBase):
 
         role.create(ctx=_ctx, resource_config=None, iface=None, params=None)
 
-        self.fake_boto.assert_called_with('iam')
+        self.fake_boto.assert_called_withmock(
+            'iam',
+            aws_access_key_id='xxx',
+            aws_secret_access_key='yyy',
+            region_name='aq-testzone-1')
 
         self.fake_client.create_role.assert_called_with(
             AssumeRolePolicyDocument=ASSUME_STR,
@@ -222,7 +226,11 @@ class TestIAMRole(TestBase):
         role.create(ctx=_ctx, resource_config=None, iface=mock_iface,
                     params=None)
 
-        self.fake_boto.assert_called_with('iam')
+        self.fake_boto.assert_called_withmock(
+            'iam',
+            aws_access_key_id='xxx',
+            aws_secret_access_key='yyy',
+            region_name='aq-testzone-1')
 
         self.fake_client.create_role.assert_called_with(
             AssumeRolePolicyDocument=ASSUME_STR,
@@ -258,7 +266,11 @@ class TestIAMRole(TestBase):
         self.fake_client.get_role = MagicMock(return_value={})
         role.delete(ctx=_ctx, resource_config=None, iface=None)
 
-        self.fake_boto.assert_called_with('iam')
+        self.fake_boto.assert_called_withmock(
+            'iam',
+            aws_access_key_id='xxx',
+            aws_secret_access_key='yyy',
+            region_name='aq-testzone-1')
 
         self.fake_client.delete_role.assert_called_with(
             RoleName='role_name_id'

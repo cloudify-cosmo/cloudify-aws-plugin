@@ -79,7 +79,11 @@ class TestIAMGroup(TestBase):
             type_name='iam',
             type_class=group
         )
-        fake_boto.assert_called_with('iam')
+        fake_boto.assert_called_withmock(
+            'iam',
+            aws_access_key_id='xxx',
+            aws_secret_access_key='yyy',
+            region_name='aq-testzone-1')
 
     def test_create(self, *_):
         _ctx = self.get_mock_ctx(
@@ -101,7 +105,11 @@ class TestIAMGroup(TestBase):
 
         group.create(ctx=_ctx, resource_config=None, iface=None, params=None)
 
-        self.fake_boto.assert_called_with('iam')
+        self.fake_boto.assert_called_withmock(
+            'iam',
+            aws_access_key_id='xxx',
+            aws_secret_access_key='yyy',
+            region_name='aq-testzone-1')
 
         self.fake_client.create_group.assert_called_with(
             GroupName='group_name_id', Path='some_path'
@@ -127,7 +135,11 @@ class TestIAMGroup(TestBase):
 
         group.delete(ctx=_ctx, resource_config=None, iface=None)
 
-        self.fake_boto.assert_called_with('iam')
+        self.fake_boto.assert_called_withmock(
+            'iam',
+            aws_access_key_id='xxx',
+            aws_secret_access_key='yyy',
+            region_name='aq-testzone-1')
 
         self.fake_client.delete_group.assert_called_with(
             GroupName='group_name_id'

@@ -131,7 +131,11 @@ class TestIAMPolicy(TestBase):
 
         policy.create(ctx=_ctx, resource_config=None, iface=None)
 
-        self.fake_boto.assert_called_with('iam')
+        self.fake_boto.assert_called_withmock(
+            'iam',
+            aws_access_key_id='xxx',
+            aws_secret_access_key='yyy',
+            region_name='aq-testzone-1')
 
         self.assertEqual(
             _ctx.instance.runtime_properties,
@@ -157,7 +161,11 @@ class TestIAMPolicy(TestBase):
 
         policy.create(ctx=_ctx, resource_config=None, iface=None)
 
-        self.fake_boto.assert_called_with('iam')
+        self.fake_boto.assert_called_withmock(
+            'iam',
+            aws_access_key_id='xxx',
+            aws_secret_access_key='yyy',
+            region_name='aq-testzone-1')
 
         self.fake_client.create_policy.assert_called_with(
             Description='Grants access to EC2 network components',
@@ -186,7 +194,11 @@ class TestIAMPolicy(TestBase):
 
         policy.delete(ctx=_ctx, resource_config=None, iface=None)
 
-        self.fake_boto.assert_called_with('iam')
+        self.fake_boto.assert_called_withmock(
+            'iam',
+            aws_access_key_id='xxx',
+            aws_secret_access_key='yyy',
+            region_name='aq-testzone-1')
 
         self.fake_client.delete_policy.assert_called_with(
             PolicyArn='arn_id'

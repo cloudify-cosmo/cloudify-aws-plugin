@@ -112,7 +112,11 @@ class TestIAMRolePolicy(TestBase):
             type_name='iam',
             type_class=role_policy
         )
-        fake_boto.assert_called_with('iam')
+        fake_boto.assert_called_withmock(
+            'iam',
+            aws_access_key_id='xxx',
+            aws_secret_access_key='yyy',
+            region_name='aq-testzone-1')
 
     def test_create(self, *_):
         _ctx = self.get_mock_ctx(
@@ -139,7 +143,11 @@ class TestIAMRolePolicy(TestBase):
         role_policy.create(ctx=_ctx, resource_config=None, iface=None,
                            params=None)
 
-        self.fake_boto.assert_called_with('iam')
+        self.fake_boto.assert_called_withmock(
+            'iam',
+            aws_access_key_id='xxx',
+            aws_secret_access_key='yyy',
+            region_name='aq-testzone-1')
 
         self.fake_client.put_role_policy.assert_called_with(
             PolicyName='aws_resource', RoleName='subnet_id',
@@ -177,7 +185,11 @@ class TestIAMRolePolicy(TestBase):
         role_policy.delete(ctx=_ctx, resource_config={}, iface=None,
                            params=None)
 
-        self.fake_boto.assert_called_with('iam')
+        self.fake_boto.assert_called_withmock(
+            'iam',
+            aws_access_key_id='xxx',
+            aws_secret_access_key='yyy',
+            region_name='aq-testzone-1')
 
         self.fake_client.delete_role_policy.assert_called_with(
             PolicyName='aws_resource', RoleName='subnet_id')

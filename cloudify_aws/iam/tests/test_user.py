@@ -79,7 +79,11 @@ class TestIAMUser(TestBase):
             type_name='iam',
             type_class=user
         )
-        fake_boto.assert_called_with('iam')
+        fake_boto.assert_called_withmock(
+            'iam',
+            aws_access_key_id='xxx',
+            aws_secret_access_key='yyy',
+            region_name='aq-testzone-1')
 
     def test_create(self, *_):
         _ctx = self.get_mock_ctx(
@@ -100,7 +104,11 @@ class TestIAMUser(TestBase):
         })
 
         user.create(ctx=_ctx, resource_config=None, iface=None, params=None)
-        self.fake_boto.assert_called_with('iam')
+        self.fake_boto.assert_called_withmock(
+            'iam',
+            aws_access_key_id='xxx',
+            aws_secret_access_key='yyy',
+            region_name='aq-testzone-1')
 
         self.fake_client.create_user.assert_called_with(
             Path='user_path', UserName='user_name_id'
@@ -126,7 +134,11 @@ class TestIAMUser(TestBase):
 
         user.delete(ctx=_ctx, resource_config=None, iface=None)
 
-        self.fake_boto.assert_called_with('iam')
+        self.fake_boto.assert_called_withmock(
+            'iam',
+            aws_access_key_id='xxx',
+            aws_secret_access_key='yyy',
+            region_name='aq-testzone-1')
 
         self.fake_client.delete_user.assert_called_with(
             UserName='user_name_id'
