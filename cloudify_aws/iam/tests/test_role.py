@@ -151,7 +151,12 @@ class TestIAMRole(TestBase):
                 )
             )
 
-            fake_boto.assert_called_with(type_name)
+            fake_boto.assert_called_with(
+                type_name,
+                aws_access_key_id='xxx',
+                aws_secret_access_key='yyy',
+                region_name='aq-testzone-1'
+            )
 
     def test_create(self, *_):
         _ctx = self.get_mock_ctx(
