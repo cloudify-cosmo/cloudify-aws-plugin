@@ -1,10 +1,24 @@
 version: 2.1
 
+job-post-steps: &job-post-steps
+  post-steps:
+   - slack/notify_failed
+
+unittest-post-steps: &unittest-post-steps
+  post-steps:
+    - store_test_results:
+        path: /home/circleci/project/nosetests.xml
+    - store_artifacts:
+        path: /home/circleci/project/coverage.xml
+        prefix: tests
+    - slack/notify_failed
+
 orbs:
-  node: cloudify/public-unittest-orb@1 #orb version
-  wagonorb: cloudify/wagon-bulder-orb@2 #orb version
-  releaseorb: cloudify/release-orb@1 #orb version
-  managerorb: cloudify/manager-orb@2
+  node: cloudify/public-unittest-orb@volatile
+  wagonorb: cloudify/wagon-bulder-orb@2.5.7
+  releaseorb: cloudify/release-orb@volatile
+  managerorb: cloudify/manager-orb@volatile
+  slack: cloudify/notify-slack@2
 
 checkout:
   post:
@@ -38,13 +52,13 @@ commands:
   prepare_test_manager:
     steps:
       - run: ls -alR
-      - run: ecosystem-test prepare-test-manager -l $TEST_LICENSE --generate-new-aws-token -es aws_access_key_id=$aws_access_key_id -es aws_secret_access_key=$aws_secret_access_key --yum-package python-netaddr --yum-package git
+      - run: ecosystem-test prepare-test-manager -l $TEST_LICENSE --generate-new-aws-token -es aws_access_key_id=$aws_access_key_id -es aws_secret_access_key=$aws_secret_access_key --yum-package python-netaddr --yum-package git --yum-package epel
       - run: ecosystem-test upload-plugin -PN utilities
       - run: ecosystem-test upload-plugin -PN ansible
       - run: ecosystem-test upload-plugin -PN kubernetes
       - run: |
-          docker exec -it cfy_manager mkdir -p /etc/cloudify/.cloudify/profiles/manager-local/
-          docker exec -it cfy_manager cp /root/.cloudify/profiles/manager-local/context.json /etc/cloudify/.cloudify/profiles/manager-local/context.json
+          docker exec cfy_manager mkdir -p /etc/cloudify/.cloudify/profiles/manager-local/
+          docker exec cfy_manager cp /root/.cloudify/profiles/manager-local/context.json /etc/cloudify/.cloudify/profiles/manager-local/context.json
 
   run_hello_world_test:
     steps:
@@ -123,6 +137,13 @@ commands:
       - run: ecosystem-test local-blueprint-test -b examples/route53-feature-demo/blueprint.yaml -i aws_region_name=eu-west-3 --test-id=route53-test --on-failure=uninstall-force --timeout=3000
 
 jobs:
+
+  run_sample_job:
+    executor: cloudify-machine-py3
+    environment:
+      CLOUDIFY_SSL_TRUST_ALL: true
+    steps:
+      - run_sample_test
 
   cf_integration_tests_py3:
     executor: cloudify-machine-py3
@@ -333,7 +354,10 @@ workflows:
   tests:
     jobs:
       - node/check_py3_compat_job
-      - node/unittests_job
+      - node/unittests_job:
+          context: 
+            - slack-secrets
+          <<: *unittest-post-steps
       - node/validate_version_job
       - node/validate_documentation_job
       - wagonorb/rhel_wagon:
@@ -348,17 +372,8 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-      - wagonorb/build_bundle:
-          filters:
-            branches:
-              only: /([0-9\.]*\-build|master|dev)/
-          requires:
-            - wagonorb/wagon
-            - wagonorb/rhel_wagon
-            - wagonorb/arch64_wagon
       - cf_integration_tests_py3:
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -368,7 +383,6 @@ workflows:
               only: /([0-9\.]*\-build|master|dev)/
       - eks_integration_tests_py3:
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -377,7 +391,6 @@ workflows:
               only: /([0-9\.]*\-build|master|dev)/
       - hw_integration_tests_py3:
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -406,6 +419,7 @@ workflows:
           requires:
             - releaseorb/release
             - node/validate_documentation_job
+          
 
   sunday_wednesday:
     triggers:
@@ -417,7 +431,10 @@ workflows:
               - master
     jobs:
       - node/check_py3_compat_job
-      - node/unittests_job
+      - node/unittests_job:
+          context: 
+            - slack-secrets
+          <<: *unittest-post-steps
       - node/validate_version_job
       - wagonorb/rhel_wagon:
           filters:
@@ -431,17 +448,11 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-      - wagonorb/build_bundle:
-          filters:
-            branches:
-              only: /master/
-          requires:
-            - wagonorb/wagon
-            - wagonorb/rhel_wagon
-            - wagonorb/arch64_wagon
       - cf_integration_tests_py3:
+          context: 
+            - slack-secrets
+          <<: *job-post-steps
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -449,8 +460,10 @@ workflows:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - ebs_integration_tests_py3:
+          context: 
+            - slack-secrets
+          <<: *job-post-steps
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -458,8 +471,10 @@ workflows:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - ec2_instance_integration_tests_py3:
+          context: 
+            - slack-secrets
+          <<: *job-post-steps
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -467,8 +482,10 @@ workflows:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - ec2_vpc_integration_tests_py3:
+          context: 
+            - slack-secrets
+          <<: *job-post-steps
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -476,6 +493,9 @@ workflows:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - sns_integration_tests_py3:
+          context: 
+            - slack-secrets
+          <<: *job-post-steps
           requires:
             - ec2_vpc_integration_tests_py3
             - ec2_instance_integration_tests_py3
@@ -496,7 +516,10 @@ workflows:
               - master
     jobs:
       - node/check_py3_compat_job
-      - node/unittests_job
+      - node/unittests_job:
+          context: 
+            - slack-secrets
+          <<: *unittest-post-steps
       - node/validate_version_job
       - wagonorb/rhel_wagon:
           filters:
@@ -510,17 +533,11 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-      - wagonorb/build_bundle:
-          filters:
-            branches:
-              only: /master/
-          requires:
-            - wagonorb/wagon
-            - wagonorb/rhel_wagon
-            - wagonorb/arch64_wagon
       - eks_integration_tests_py3:
+          context: 
+            - slack-secrets
+          <<: *job-post-steps
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -528,8 +545,10 @@ workflows:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - ec2_image_integration_tests_py3:
+          context: 
+            - slack-secrets
+          <<: *job-post-steps
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -537,8 +556,10 @@ workflows:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - autoscaleing_integration_tests_py3:
+          context: 
+            - slack-secrets
+          <<: *job-post-steps
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -546,8 +567,10 @@ workflows:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - ec2_transit_gateway_integration_tests_py3:
+          context: 
+            - slack-secrets
+          <<: *job-post-steps
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -555,8 +578,10 @@ workflows:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - s3_integration_tests_py3:
+          context: 
+            - slack-secrets
+          <<: *job-post-steps
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -564,8 +589,10 @@ workflows:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - kms_integration_tests_py3:
+          context: 
+            - slack-secrets
+          <<: *job-post-steps
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -584,7 +611,10 @@ workflows:
               - master
     jobs:
       - node/check_py3_compat_job
-      - node/unittests_job
+      - node/unittests_job:
+          context: 
+            - slack-secrets
+          <<: *unittest-post-steps
       - node/validate_version_job
       - wagonorb/rhel_wagon:
           filters:
@@ -598,17 +628,11 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-      - wagonorb/build_bundle:
-          filters:
-            branches:
-              only: /master/
-          requires:
-            - wagonorb/wagon
-            - wagonorb/rhel_wagon
-            - wagonorb/arch64_wagon
       - hw_integration_tests_py3:
+          context: 
+            - slack-secrets
+          <<: *job-post-steps
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -616,8 +640,10 @@ workflows:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - cloudformation_integration_tests_py3:
+          context: 
+            - slack-secrets
+          <<: *job-post-steps
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -625,8 +651,10 @@ workflows:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - dynamodb_integration_tests_py3:
+          context: 
+            - slack-secrets
+          <<: *job-post-steps
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -634,8 +662,10 @@ workflows:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - ec2_keys_integration_tests_py3:
+          context: 
+            - slack-secrets
+          <<: *job-post-steps
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -643,8 +673,10 @@ workflows:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - natgateway_integration_tests_py3:
+          context: 
+            - slack-secrets
+          <<: *job-post-steps
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -652,8 +684,10 @@ workflows:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - sqs_integration_tests_py3:
+          context: 
+            - slack-secrets
+          <<: *job-post-steps
           requires:
-            - wagonorb/build_bundle
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon

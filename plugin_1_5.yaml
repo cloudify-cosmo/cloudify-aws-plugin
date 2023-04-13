@@ -2,7 +2,7 @@ plugins:
   aws:
     executor: central_deployment_agent
     package_name: cloudify-aws-plugin
-    package_version: '3.1.5'
+    package_version: '3.1.6'
     properties_description: |
       Manage AWS resources.
       Credentials documentation: https://docs.cloudify.co/latest/working_with/official_plugins/infrastructure/aws/#authentication-with-aws.
@@ -44,20 +44,6 @@ plugins:
         type: string
         display_label: AWS assume role
         description: The role ARN that Cloudify manager instance is able to assume.
-      additional_config:
-        type: dict
-        display_label: Additional config
-        description: |
-          An abstraction of the 'config' parameter accepted by boto3.client function.
-          This parameter should only be used by experienced users. Example usage:
-          vm:
-            type: cloudify.nodes.aws.ec2.Instances
-            properties:
-              client_config:
-                additional_config:
-                  retries:
-                    max_attempts: 10
-                    mode: adaptive
 
 data_types:
 

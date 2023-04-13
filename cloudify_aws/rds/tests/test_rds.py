@@ -28,7 +28,9 @@ from cloudify_aws.common.constants import AWS_CONFIG_PROPERTY
 
 class TestRDSInit(TestServiceBase):
 
-    def test_credentials(self):
+    @mock.patch('cloudify_common_sdk.utils.get_ctx_instance')
+    @mock.patch('cloudify_common_sdk.utils.get_ctx_plugin')
+    def test_credentials(self, mock_plugin_ctx, *_):
         boto_client = mock.Mock()
         boto_mock = mock.Mock(return_value=boto_client)
         ctx_node = mock.Mock()
@@ -36,6 +38,9 @@ class TestRDSInit(TestServiceBase):
             AWS_CONFIG_PROPERTY: {
                 'region_name': 'wr-ongvalu-e'
             }
+        }
+        mock_plugin_ctx.return_value = {
+            'foo': 'bar'
         }
         with mock.patch(
             "cloudify_aws.rds.Boto3Connection", boto_mock
