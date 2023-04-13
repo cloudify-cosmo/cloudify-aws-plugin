@@ -85,7 +85,7 @@ ctx_node = MagicMock(
 )
 
 
-@patch('cloudify_aws.common.connection.ctx')
+@patch('cloudify_common_sdk.utils.ctx_from_import')
 @patch('cloudify_aws.common.connection.Boto3Connection.get_account_id')
 class TestIAMPolicy(TestBase):
 
@@ -110,7 +110,12 @@ class TestIAMPolicy(TestBase):
             type_name='iam',
             type_class=policy
         )
-        fake_boto.assert_called_with('iam')
+        fake_boto.assert_called_with(
+            'iam',
+            aws_access_key_id='xxx',
+            aws_secret_access_key='yyy',
+            region_name='aq-testzone-1'
+        )
 
     def test_create(self, *_):
         _ctx = self.get_mock_ctx(
@@ -131,7 +136,11 @@ class TestIAMPolicy(TestBase):
 
         policy.create(ctx=_ctx, resource_config=None, iface=None)
 
-        self.fake_boto.assert_called_with('iam')
+        self.fake_boto.assert_called_with(
+            'iam',
+            aws_access_key_id='xxx',
+            aws_secret_access_key='yyy',
+            region_name='aq-testzone-1')
 
         self.assertEqual(
             _ctx.instance.runtime_properties,
@@ -157,7 +166,11 @@ class TestIAMPolicy(TestBase):
 
         policy.create(ctx=_ctx, resource_config=None, iface=None)
 
-        self.fake_boto.assert_called_with('iam')
+        self.fake_boto.assert_called_with(
+            'iam',
+            aws_access_key_id='xxx',
+            aws_secret_access_key='yyy',
+            region_name='aq-testzone-1')
 
         self.fake_client.create_policy.assert_called_with(
             Description='Grants access to EC2 network components',
@@ -171,7 +184,8 @@ class TestIAMPolicy(TestBase):
             RUNTIME_PROPERTIES_AFTER_CREATE
         )
 
-    def test_delete(self, *_):
+    def test_delete(self, _, mock_import_ctx, *__):
+
         _ctx = self.get_mock_ctx(
             'test_delete',
             test_properties=NODE_PROPERTIES,
@@ -181,12 +195,19 @@ class TestIAMPolicy(TestBase):
         )
 
         current_ctx.set(_ctx)
+        mock_import_ctx.node = _ctx.node
+        mock_import_ctx.instance = _ctx.instance
+        mock_import_ctx.operation = _ctx.operation
 
         self.fake_client.delete_policy = self.mock_return(DELETE_RESPONSE)
 
         policy.delete(ctx=_ctx, resource_config=None, iface=None)
 
-        self.fake_boto.assert_called_with('iam')
+        self.fake_boto.assert_called_with(
+            'iam',
+            aws_access_key_id='xxx',
+            aws_secret_access_key='yyy',
+            region_name='aq-testzone-1')
 
         self.fake_client.delete_policy.assert_called_with(
             PolicyArn='arn_id'

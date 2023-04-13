@@ -49,7 +49,7 @@ class AWSResourceBase(object):
         set_stream_logger('botocore.parsers', level=DEBUG)
         self.logger = logger or init_cloudify_logger(NullHandler(),
                                                      'AWSResourceBase')
-        self.client = client
+        self._client = client
         self._resource_id = text_type(resource_id) if resource_id else None
         self._initial_configuration = None  # resource_config from node props
         self._create_response = None  # create_response
@@ -57,6 +57,14 @@ class AWSResourceBase(object):
         self._expected_configuration = None  # Current extrapolation
         self._previous_configuration = None  # Previous extrapolation
         self._describe_call = None
+
+    @property
+    def client(self):
+        return self._client
+
+    @client.setter
+    def client(self, value):
+        self._client = value
 
     def get_describe_result(self, params):
         try:

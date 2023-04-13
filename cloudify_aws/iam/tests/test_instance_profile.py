@@ -42,7 +42,7 @@ ctx_node = MagicMock(
 
 class TestIAMInstanceProfile(TestBase):
 
-    @patch('cloudify_aws.common.connection.ctx')
+    @patch('cloudify_common_sdk.utils.ctx_from_import')
     @patch('cloudify_aws.common.connection.Boto3Connection.get_account_id')
     def setUp(self, _, _ctx):
         super(TestIAMInstanceProfile, self).setUp()
