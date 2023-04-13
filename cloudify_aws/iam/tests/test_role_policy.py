@@ -112,7 +112,7 @@ class TestIAMRolePolicy(TestBase):
             type_name='iam',
             type_class=role_policy
         )
-        fake_boto.assert_called_withmock(
+        fake_boto.assert_called_with(
             'iam',
             aws_access_key_id='xxx',
             aws_secret_access_key='yyy',
@@ -143,7 +143,7 @@ class TestIAMRolePolicy(TestBase):
         role_policy.create(ctx=_ctx, resource_config=None, iface=None,
                            params=None)
 
-        self.fake_boto.assert_called_withmock(
+        self.fake_boto.assert_called_with(
             'iam',
             aws_access_key_id='xxx',
             aws_secret_access_key='yyy',
@@ -185,7 +185,7 @@ class TestIAMRolePolicy(TestBase):
         role_policy.delete(ctx=_ctx, resource_config={}, iface=None,
                            params=None)
 
-        self.fake_boto.assert_called_withmock(
+        self.fake_boto.assert_called_with(
             'iam',
             aws_access_key_id='xxx',
             aws_secret_access_key='yyy',

@@ -79,7 +79,7 @@ class TestIAMGroup(TestBase):
             type_name='iam',
             type_class=group
         )
-        fake_boto.assert_called_withmock(
+        fake_boto.assert_called_with(
             'iam',
             aws_access_key_id='xxx',
             aws_secret_access_key='yyy',
@@ -105,7 +105,7 @@ class TestIAMGroup(TestBase):
 
         group.create(ctx=_ctx, resource_config=None, iface=None, params=None)
 
-        self.fake_boto.assert_called_withmock(
+        self.fake_boto.assert_called_with(
             'iam',
             aws_access_key_id='xxx',
             aws_secret_access_key='yyy',
@@ -120,7 +120,7 @@ class TestIAMGroup(TestBase):
             RUNTIME_PROPERTIES_AFTER_CREATE
         )
 
-    def test_delete(self, *_):
+    def test_delete(self, _, mock_import_ctx, *__):
         _ctx = self.get_mock_ctx(
             'test_delete',
             test_properties=NODE_PROPERTIES,
@@ -130,12 +130,16 @@ class TestIAMGroup(TestBase):
         )
 
         current_ctx.set(_ctx)
+        current_ctx.set(_ctx)
+        mock_import_ctx.node = _ctx.node
+        mock_import_ctx.instance = _ctx.instance
+        mock_import_ctx.operation = _ctx.operation
 
         self.fake_client.delete_group = self.mock_return(DELETE_RESPONSE)
 
         group.delete(ctx=_ctx, resource_config=None, iface=None)
 
-        self.fake_boto.assert_called_withmock(
+        self.fake_boto.assert_called_with(
             'iam',
             aws_access_key_id='xxx',
             aws_secret_access_key='yyy',

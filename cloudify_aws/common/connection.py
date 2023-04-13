@@ -63,26 +63,34 @@ class Boto3Connection(object):
 
         # config_from_plugin_props.update(config_from_props)
         # Merge user-provided AWS config with generated config
-        if aws_config:
-            self.aws_config.update(aws_config)
-        self.aws_config = desecretize_client_config(
+        self._aws_config = desecretize_client_config(
             config_from_utils)
-        self.aws_config['region_name'] = self.aws_config.get('region_name')
+        self._aws_config['region_name'] = self._aws_config.get('region_name')
+        if aws_config:
+            self._aws_config.update(aws_config)
 
         # Prepare region name for Boto
 
         # This it check if "aws_config" contains "endpoint_url" or not
         for option in aws_config_options:
-            if self.aws_config.get(option):
+            if self._aws_config.get(option):
                 aws_config_whitelist.append(option)
 
         # Delete all non-whitelisted keys
-        self.aws_config = {k: v for k, v in self.aws_config.items()
-                           if k in aws_config_whitelist}
+        self._aws_config = {k: v for k, v in self.aws_config.items()
+                            if k in aws_config_whitelist}
 
         # Add additional config after whitelist filter.
         if additional_config and isinstance(additional_config, dict):
-            self.aws_config['config'] = Config(**additional_config)
+            self._aws_config['config'] = Config(**additional_config)
+
+    @property
+    def aws_config(self):
+        return self._aws_config
+
+    @aws_config.setter
+    def aws_config(self, value):
+        self._aws_config = value
 
     def get_sts_client(self, config):
         return boto3.client("sts", **config)
@@ -115,8 +123,8 @@ class Boto3Connection(object):
         :returns: An AWS service Boto3 client
         :raises: :exc:`cloudify.exceptions.NonRecoverableError`
         '''
-        config = self.aws_config
-        assume_role = self.aws_config.pop('assume_role', None) \
+        config = self._aws_config
+        assume_role = self._aws_config.pop('assume_role', None) \
             or os.environ.get("AWS_ASSUME_ROLE_ARN")
 
         if assume_role:
@@ -133,10 +141,10 @@ class Boto3Connection(object):
         :returns: An AWS service Boto3 client
         :raises: :exc:`cloudify.exceptions.NonRecoverableError`
         '''
-        config = self.aws_config
+        config = self._aws_config
         config['region_name'] = region_name
 
-        assume_role = self.aws_config.pop('assume_role', None) \
+        assume_role = self._aws_config.pop('assume_role', None) \
             or os.environ.get("AWS_ASSUME_ROLE_ARN")
 
         if assume_role:
