@@ -17,9 +17,10 @@
     AWS EC2 Image interface
 """
 # Cloudify
-from cloudify.exceptions import NonRecoverableError
-from cloudify_aws.common import decorators, utils
 from cloudify_aws.ec2 import EC2Base
+from cloudify_aws.common import decorators, utils
+from cloudify.exceptions import NonRecoverableError
+
 # Boto
 from botocore.exceptions import ClientError, ParamValidationError
 
@@ -56,13 +57,10 @@ class EC2Image(EC2Base):
     def properties(self):
         """Gets the properties of an external resource"""
         params = self.describe_image_filters
-        self.logger.info('Params: {}'.format(params))
         if not params:
             return
         try:
-            resources = \
-                self.client.describe_images(**params)
-            self.logger.info('Describe images returned: {}'.format(resources))
+            resources = self.client.describe_images(**params)
         except (ClientError, ParamValidationError):
             pass
         else:

@@ -32,8 +32,8 @@ from cloudify.exceptions import OperationRetry, NonRecoverableError
 from cloudify_common_sdk.utils import \
     skip_creative_or_destructive_operation as skip
 from cloudify_common_sdk.utils import (
+    v1_gteq_v2,
     get_cloudify_version,
-    v1_gteq_v2
 )
 # Local imports
 from .constants import SUPPORT_DRIFT
