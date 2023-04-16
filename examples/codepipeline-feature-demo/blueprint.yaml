@@ -7,28 +7,33 @@ imports:
   - http://cloudify.co/spec/cloudify/6.4.0/types.yaml
   - plugin:cloudify-aws-plugin
 
-
 inputs:
 
   aws_region_name:
+    display_label: Aws Region Name
     type: string
     default: 'eu-west-1'
 
   pipeline_name:
+    display_label: Pipeline Name
     type: string
     default: 'Demopipeline'
 
   code_pipeline_service_role:
+    display_label: Code Pipeline Service Role
     type: string
 
   artifact_store_bucket_name:
+    display_label: Artifact Store Bucket Name
     type: string
 
   source_code_bucket:
+    display_label: Source Code Bucket
     type: string
 
   deployment_bucket_name:
-   type: string
+    display_label: Deployment Bucket Name
+    type: string
 
 dsl_definitions:
   client_config: &client_config
