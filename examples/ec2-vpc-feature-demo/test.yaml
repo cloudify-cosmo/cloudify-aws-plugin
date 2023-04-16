@@ -7,14 +7,17 @@ imports:
 inputs:
 
   aws_access_key_id:
+    display_label: Aws Access Key Id
     type: string
     default: { get_secret: aws_access_key_id }
 
   aws_secret_access_key:
+    display_label: Aws Secret Access Key
     type: string
     default: { get_secret: aws_secret_access_key }
 
   aws_region_name:
+    display_label: Aws Region Name
     type: string
     default: { get_secret: ec2_region_name }
 
@@ -22,6 +25,7 @@ inputs:
     default: { get_secret: vpc_id }
 
   openstack_public_ip:
+    display_label: Openstack Public Ip
     type: string
 
 dsl_definitions:
@@ -48,8 +52,8 @@ node_templates:
           Type: 'ipsec.1'
       client_config: *client_config
     relationships:
-    - type: cloudify.relationships.connected_to
-      target: exists_vpc
+      - type: cloudify.relationships.connected_to
+        target: exists_vpc
 
   customer_gateway_one:
     type: cloudify.nodes.aws.ec2.CustomerGateway
@@ -61,8 +65,8 @@ node_templates:
           BgpAsn: 65000
       client_config: *client_config
     relationships:
-    - type: cloudify.relationships.connected_to
-      target: exists_vpc
+      - type: cloudify.relationships.connected_to
+        target: exists_vpc
 
   vpn_connection_vpc_requster:
     type: cloudify.nodes.aws.ec2.VPNConnection
@@ -77,9 +81,9 @@ node_templates:
               Type: 'ipsec.1'
               VpnGatewayId: { get_attribute: [vpn_gateway_one, aws_resource_id] }
               Options:
-                StaticRoutesOnly: False
+                StaticRoutesOnly: false
     relationships:
-     - type: cloudify.relationships.depends_on
-       target: vpn_gateway_one
-     - type: cloudify.relationships.depends_on
-       target: customer_gateway_one
+      - type: cloudify.relationships.depends_on
+        target: vpn_gateway_one
+      - type: cloudify.relationships.depends_on
+        target: customer_gateway_one
