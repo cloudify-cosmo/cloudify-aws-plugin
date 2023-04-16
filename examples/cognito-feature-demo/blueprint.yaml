@@ -10,6 +10,7 @@ imports:
 inputs:
 
   aws_region_name:
+    display_label: Aws Region Name
     type: string
     default: 'us-east-2'
 

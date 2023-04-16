@@ -39,7 +39,6 @@ inputs:
   volume_attachment_device:
     default: /dev/sdh
 
-
 dsl_definitions:
 
   client_config: &client_config
@@ -138,7 +137,7 @@ node_templates:
            ToPort: -1
            IpRanges:
             - CidrIp: 0.0.0.0/0
-           UserIdGroupPairs: [  { GroupId: { get_attribute: [ security_group, aws_resource_id ] } } ]
+           UserIdGroupPairs: [ { GroupId: { get_attribute: [ security_group, aws_resource_id ] } } ]
     relationships:
       - type: cloudify.relationships.contained_in
         target: security_group

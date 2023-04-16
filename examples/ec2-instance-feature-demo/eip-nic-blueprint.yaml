@@ -4,32 +4,40 @@ imports:
   - plugin:cloudify-aws-plugin
 inputs:
   aws_access_key_id:
+    display_label: Aws Access Key Id
     type: string
     description: YOUR AWS ACCESS KEY ID
     default: { get_secret: aws_access_key_id }
   aws_secret_access_key:
+    display_label: Aws Secret Access Key
     type: string
     description: YOUR AWS SECRET ACCESS KEY
     default: { get_secret: aws_secret_access_key }
   region_name:
+    display_label: Region Name
     type: string
     description: YOUR AWS Region
     default: { get_secret: aws_region_name }
   ec2_region_endpoint:
+    display_label: Ec2 Region Endpoint
     type: string
     description: YOUR AWS Region endpoint
     default: { get_secret: ec2_region_endpoint }
   availability_zone:
+    display_label: Availability Zone
     type: string
     description: Your AWS Region availability_zone.
     default: { get_secret: aws_availability_zone }
   use_external_ip:
+    display_label: Use External Ip
     type: boolean
-    default: False
+    default: false
   existing_ip:
+    display_label: Existing Ip
     type: string
     default: ''
   subnet_id:
+    display_label: Subnet Id
     type: string
 dsl_definitions:
   client_config: &client_config
