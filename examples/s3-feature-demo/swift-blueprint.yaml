@@ -7,18 +7,22 @@ imports:
 inputs:
 
   swift_username:
+    display_label: Swift Username
     type: string
     default: { get_input: swift_username }
 
   swift_password:
+    display_label: Swift Password
     type: string
     default: { get_input: swift_password }
 
   swift_auth_url:
+    display_label: Swift Auth Url
     type: string
     default: { get_input: swift_auth_url }
 
   swift_region_name:
+    display_label: Swift Region Name
     type: string
     default: { get_input: swift_region_name }
 
@@ -54,8 +58,8 @@ node_templates:
           Key: 'test-byte-data.txt'
       swift_config: *swift_config
     relationships:
-    - type: cloudify.relationships.depends_on
-      target: bucket
+      - type: cloudify.relationships.depends_on
+        target: bucket
 
   bucket_object_local:
     type: cloudify.nodes.swift.s3.BucketObject
@@ -69,8 +73,8 @@ node_templates:
           Key: 'local-s3-object.txt'
       swift_config: *swift_config
     relationships:
-    - type: cloudify.relationships.depends_on
-      target: bucket
+      - type: cloudify.relationships.depends_on
+        target: bucket
 
   bucket_object_remote:
     type: cloudify.nodes.swift.s3.BucketObject
@@ -84,5 +88,5 @@ node_templates:
           Key: 'dummy.pdf'
       swift_config: *swift_config
     relationships:
-    - type: cloudify.relationships.depends_on
-      target: bucket
+      - type: cloudify.relationships.depends_on
+        target: bucket
