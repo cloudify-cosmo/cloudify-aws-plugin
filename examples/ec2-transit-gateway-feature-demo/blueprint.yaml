@@ -15,18 +15,22 @@ inputs:
     default: { get_secret: aws_secret_access_key }
 
   aws_region_name_a:
+      display_label: Aws Region Name A
       type: string
       default: 'us-east-1'
 
   aws_region_name_b:
+      display_label: Aws Region Name B
       type: string
       default: 'us-east-1'
 
   vpc_a_cidr:
+    display_label: Vpc A Cidr
     type: string
     default: 10.10.0.0/16
 
   vpc_b_cidr:
+    display_label: Vpc B Cidr
     type: string
     default: 10.11.0.0/16
 

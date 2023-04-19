@@ -8,18 +8,22 @@ imports:
 inputs:
 
   aws_access_key_id:
+    display_label: Aws Access Key Id
     type: string
     default: { get_secret: aws_access_key_id }
 
   aws_secret_access_key:
+    display_label: Aws Secret Access Key
     type: string
     default: { get_secret: aws_secret_access_key }
 
   aws_region_name:
+    display_label: Aws Region Name
     type: string
     default: eu-west-1
 
   availability_zone:
+    display_label: Availability Zone
     type: string
     default: eu-west-1a
 
@@ -178,7 +182,7 @@ node_templates:
         GroupName: security_group1
         Description: efs security group
         kwargs:
-          VpcId:  { get_attribute: [ vpc, aws_resource_id ] }
+          VpcId: { get_attribute: [ vpc, aws_resource_id ] }
       client_config: *client_config
     relationships:
       - type: cloudify.relationships.depends_on
@@ -196,7 +200,7 @@ node_templates:
              ToPort: -1
              IpRanges:
               - CidrIp: 0.0.0.0/0
-             UserIdGroupPairs: [  { GroupId: { get_attribute: [ security_group, aws_resource_id ] } } ]
+             UserIdGroupPairs: [ { GroupId: { get_attribute: [ security_group, aws_resource_id ] } } ]
     relationships:
       - type: cloudify.relationships.contained_in
         target: security_group
