@@ -6,6 +6,7 @@ imports:
 
 inputs:
   aws_region_name:
+    display_label: Aws Region Name
     required: yes
     description: AWS Region Name
     type: string
@@ -22,26 +23,31 @@ inputs:
         - eu-west-2
 
   ecs_cluster_name:
+    display_label: Ecs Cluster Name
     description: ECS Cluster Name
     type: string
     default: my_cluster
 
   container_instance_type:
+    display_label: Container Instance Type
     description: Container Instance Type
     type: string
     default: t2.large
 
   container_name:
+    display_label: Container Name
     description: Container Name
     type: string
     default: wordpress
 
   container_port:
+    display_label: Container Port
     description: Container Port
     type: integer
     default: 80
 
   container_instance_image:
+    display_label: Container Instance Image
     description: Container Instance Image (Amazon Linux AMI 2.0.20181112 x86_64 ECS HVM GP2 - amzn2-ami-ecs-hvm-2.0.20181112-x86_64-ebs)
     type: dict
     default:
@@ -60,7 +66,6 @@ dsl_definitions:
     aws_access_key_id: { get_secret: aws_access_key_id }
     aws_secret_access_key: { get_secret: aws_secret_access_key }
     region_name: { get_input: aws_region_name }
-
 
 node_templates:
 
@@ -235,7 +240,7 @@ node_templates:
         kwargs:
           IamInstanceProfile: { concat: [ 'cfy_ecs_instance_profile', '-', { get_input: ecs_cluster_name } ] }
           # IamInstanceProfile: { get_attribute: [ ecs_instance_iam_role_instance_profile, aws_resource_arn ] }
-          AssociatePublicIpAddress: True
+          AssociatePublicIpAddress: true
           SecurityGroups:
             - { get_attribute: [ securitygroup1, aws_resource_id ] }
           BlockDeviceMappings:
@@ -476,7 +481,6 @@ node_templates:
         target: vpc
       - type: cloudify.relationships.depends_on
         target: igw
-
 
   subnet2:
     type: cloudify.nodes.aws.ec2.Subnet
