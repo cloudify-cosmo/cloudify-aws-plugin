@@ -7,14 +7,17 @@ imports:
 inputs:
 
   aws_access_key_id:
+    display_label: Aws Access Key Id
     type: string
     default: { get_secret: aws_access_key_id }
 
   aws_secret_access_key:
+    display_label: Aws Secret Access Key
     type: string
     default: { get_secret: aws_secret_access_key }
 
   aws_region_name:
+    display_label: Aws Region Name
     type: string
     default: { get_secret: aws_region_name }
 
@@ -63,7 +66,7 @@ node_templates:
           RuleNumber: 100
           Protocol: '-1'
           RuleAction: 'allow'
-          Egress: False
+          Egress: false
           CidrBlock: '0.0.0.0/0'
       client_config: *client_config
     relationships:
@@ -340,7 +343,7 @@ node_templates:
                Type: 'ipsec.1'
                VpnGatewayId: { get_attribute: [vpn_gateway_vpc_requester, aws_resource_id] }
                Options:
-                 StaticRoutesOnly: True
+                 StaticRoutesOnly: true
     relationships:
       - type: cloudify.relationships.depends_on
         target: vpn_gateway_vpc_requester
@@ -404,7 +407,7 @@ node_templates:
           RuleNumber: 100
           Protocol: '-1'
           RuleAction: 'allow'
-          Egress: False
+          Egress: false
           CidrBlock: '0.0.0.0/0'
       client_config: *client_config
     relationships:
@@ -681,7 +684,7 @@ node_templates:
               Type: 'ipsec.1'
               VpnGatewayId: { get_attribute: [vpn_gateway_vpc_accepter, aws_resource_id] }
               Options:
-                StaticRoutesOnly: True
+                StaticRoutesOnly: true
     relationships:
       - type: cloudify.relationships.depends_on
         target: vpn_gateway_vpc_accepter
@@ -743,4 +746,3 @@ node_templates:
     relationships:
       - type: cloudify.relationships.depends_on
         target: vpc_peering
-
