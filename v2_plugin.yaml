@@ -2,7 +2,7 @@ plugins:
   aws:
     executor: central_deployment_agent
     package_name: cloudify-aws-plugin
-    package_version: '3.1.6'
+    package_version: '3.1.7'
 
 data_types:
 
