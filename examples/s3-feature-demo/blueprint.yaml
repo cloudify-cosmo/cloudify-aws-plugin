@@ -22,13 +22,15 @@ inputs:
     type: string
     default: { concat: [ { get_input: aws_region_name}, 'b' ] }
 
+  name_bucket:
+    type: string
+    default: cloudify-aws-testing-bucket
 
 dsl_definitions:
 
   client_config: &client_config
     aws_access_key_id: { get_input: aws_access_key_id }
     aws_secret_access_key: { get_input: aws_secret_access_key }
-    aws_session_token: { get_secret: aws_session_token }
     region_name: { get_input: aws_region_name }
 
 node_templates:
@@ -36,12 +38,11 @@ node_templates:
   bucket:
     type: cloudify.nodes.aws.s3.Bucket
     properties:
+      client_config: *client_config
       resource_config:
-        Bucket: cloudify-aws-testing-bucket
-        ACL: public-read-write
+        Bucket: { get_input: name_bucket }
         CreateBucketConfiguration:
           LocationConstraint: { get_input: aws_region_name }
-      client_config: *client_config
 
   bucket_lifecycle_configuration:
     type: cloudify.nodes.aws.s3.BucketLifecycleConfiguration
@@ -98,7 +99,6 @@ node_templates:
     properties:
       source_type: 'bytes'
       resource_config:
-        ACL: 'public-read'
         Bucket: { get_property: [ bucket, resource_config, Bucket ] }
         Key: 'test-byte-data.txt'
         kwargs:
@@ -116,7 +116,6 @@ node_templates:
       source_type: 'local'
       path: './local-s3-object.txt'
       resource_config:
-        ACL: 'public-read'
         Bucket: { get_property: [ bucket, resource_config, Bucket ] }
         Key: 'local-s3-object.txt'
       client_config: *client_config
@@ -132,7 +131,6 @@ node_templates:
       source_type: 'remote'
       path: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'
       resource_config:
-        ACL: 'public-read'
         Bucket: { get_property: [ bucket, resource_config, Bucket ] }
         Key: 'dummy.pdf'
       client_config: *client_config

@@ -72,6 +72,21 @@ class S3Bucket(S3Base):
                           % (self.type_name, params))
         self.client.delete_bucket(**params)
 
+    def put_public_access_block(self, params):
+        """
+            put PublicAccessBlock configuration.
+        """
+        self.client.put_public_access_block(
+            Bucket = params['Bucket'], 
+            PublicAccessBlockConfiguration = {
+                'BlockPublicAcls': True,
+                'IgnorePublicAcls': True,
+                'BlockPublicPolicy': False,
+                'RestrictPublicBuckets': False
+            }
+        )
+
+
     def delete_objects(self, bucket):
         list_objects = self.client.list_objects(Bucket=bucket)
         for object in list_objects.get('Contents', []):
@@ -110,6 +125,10 @@ def create(ctx, iface, resource_config, params, **_):
 
     # Actually create the resource
     bucket = iface.create(params)
+
+    # PublicAccessBlockConfiguration 
+    iface.put_public_access_block(params)
+
     ctx.instance.runtime_properties[LOCATION] = bucket.get(LOCATION)
 
 
