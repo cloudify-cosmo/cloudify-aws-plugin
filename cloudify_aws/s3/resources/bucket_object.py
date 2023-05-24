@@ -250,17 +250,14 @@ def create(ctx, iface, resource_config, **_):
     try:
         iface.create(resource_config)
     except NonRecoverableError as e:
-        if 'AccessControlListNotSupported' in str(e) \
-            and 'The bucket does not allow ACLs' in str(e):
-            ctx.logger.error('Deprecation warning, the AWS API has changed \
-                            and ACL-public is no longer valid.')
-            acl = resource_config.pop('ACL', '')
-            if 'public-read' in acl:
-                iface.create(resource_config)
-            else:
-                raise e
-        else:
+        acl = resource_config.pop('ACL', '')
+        if 'AccessControlListNotSupported' not in str(e) \
+            and 'The bucket does not allow ACLs' not in str(e) \
+                and 'public-read' not in acl:
             raise e
+        ctx.logger.error('Deprecation warning, the AWS API has changed and \
+                         ACL-public is no longer valid.')
+        iface.create(resource_config)
 
 
 @decorators.check_swift_resource

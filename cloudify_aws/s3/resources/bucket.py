@@ -128,18 +128,15 @@ def create(ctx, iface, resource_config, params, **_):
     try:
         bucket = iface.create(params)
     except NonRecoverableError as e:
-        if "InvalidBucketAclWithObjectOwnership" in str(e) \
-                and "Bucket cannot have ACLs" in str(e):
-            ctx.logger.error('Deprecation warning, the AWS API has changed '
-                             'and ACL-public is no longer valid.')
-            acl = params.pop('ACL', '')
-            if 'public-read' in acl:
-                bucket = iface.create(params)
-            else:
-                raise e
-        else:
+        acl = params.pop('ACL', '')
+        if "InvalidBucketAclWithObjectOwnership" not in str(e) \
+                and "Bucket cannot have ACLs" not in str(e) \
+                    and 'public-read' not in acl:
             raise e
-    
+        ctx.logger.error('Deprecation warning, the AWS API has changed \
+            and ACL-public is no longer valid.')
+        bucket = iface.create(params)
+
     iface.put_public_access_block(params)
     ctx.instance.runtime_properties[LOCATION] = bucket.get(LOCATION)
 
