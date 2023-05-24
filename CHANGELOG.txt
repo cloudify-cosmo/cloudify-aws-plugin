@@ -1,3 +1,4 @@
+3.1.7: Support for ACL deprecation in s3 buckets.
 3.1.6: add __version__.py file in cloudify_aws folder.
 3.1.5: RD-6735 Do not stop existing resource.
 3.1.4: Update Check Drift Status
