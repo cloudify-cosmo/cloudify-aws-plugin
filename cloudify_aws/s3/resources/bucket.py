@@ -135,12 +135,12 @@ def create(ctx, iface, resource_config, params, **_):
             acl = params.pop('ACL', '')
             if 'public-read' in acl:
                 bucket = iface.create(params)
-                iface.put_public_access_block(params)
             else:
                 raise e
         else:
             raise e
-
+    
+    iface.put_public_access_block(params)
     ctx.instance.runtime_properties[LOCATION] = bucket.get(LOCATION)
 
 
