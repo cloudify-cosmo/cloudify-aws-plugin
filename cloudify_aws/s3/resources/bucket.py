@@ -77,15 +77,14 @@ class S3Bucket(S3Base):
             put PublicAccessBlock configuration.
         """
         self.client.put_public_access_block(
-            Bucket = params['Bucket'], 
-            PublicAccessBlockConfiguration = {
+            Bucket=params['Bucket'],
+            PublicAccessBlockConfiguration={
                 'BlockPublicAcls': True,
                 'IgnorePublicAcls': True,
                 'BlockPublicPolicy': False,
                 'RestrictPublicBuckets': False
             }
         )
-
 
     def delete_objects(self, bucket):
         list_objects = self.client.list_objects(Bucket=bucket)
@@ -129,7 +128,8 @@ def create(ctx, iface, resource_config, params, **_):
     except BaseException as e:
         ctx.logger.error(str(e))
         if 'ACL' in params:
-            ctx.logger.error('Deprecation warning, the AWS API has changed and ACL-public is no longer valid.')
+            ctx.logger.error('Deprecation warning, the AWS API has changed \
+                             and ACL-public is no longer valid.')
             acl = params.pop('ACL', '')
             if 'public-read' in acl:
                 bucket = iface.create(params)
@@ -139,9 +139,9 @@ def create(ctx, iface, resource_config, params, **_):
         else:
             raise e
 
-    # PublicAccessBlockConfiguration 
+    # PublicAccessBlockConfiguration
     iface.put_public_access_block(params)
-    
+
     ctx.instance.runtime_properties[LOCATION] = bucket.get(LOCATION)
 
 
