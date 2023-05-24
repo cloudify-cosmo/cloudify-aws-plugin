@@ -247,8 +247,18 @@ def create(ctx, iface, resource_config, **_):
     ctx.instance.runtime_properties[BUCKET] = bucket_name
 
     # Actually create the resource
-    iface.create(resource_config)
-
+    try:
+        iface.create(resource_config)
+    except BaseException as e:
+        if '''An error occurred (AccessControlListNotSupported) when calling the PutObject operation: The bucket does not allow ACLs''' in str(e):
+            ctx.logger.error('Deprecation warning, the AWS API has changed and ACL-public is no longer valid.')
+            acl = resource_config.pop('ACL', '')
+            if 'public-read' in acl:
+                iface.create(resource_config)
+            else:
+                raise e
+        else:
+            raise e
 
 @decorators.check_swift_resource
 @decorators.aws_resource(S3BucketObject, RESOURCE_TYPE,
