@@ -247,7 +247,17 @@ def create(ctx, iface, resource_config, **_):
     ctx.instance.runtime_properties[BUCKET] = bucket_name
 
     # Actually create the resource
-    iface.create(resource_config)
+    try:
+        iface.create(resource_config)
+    except NonRecoverableError as e:
+        acl = resource_config.pop('ACL', '')
+        if 'AccessControlListNotSupported' not in str(e) \
+            and 'The bucket does not allow ACLs' not in str(e) \
+                and 'public-read' not in acl:
+            raise e
+        ctx.logger.error('Deprecation warning, the AWS API has changed and \
+                         ACL-public is no longer valid.')
+        iface.create(resource_config)
 
 
 @decorators.check_swift_resource
