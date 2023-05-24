@@ -125,14 +125,14 @@ def create(ctx, iface, resource_config, params, **_):
 
     # Actually create the resource
     try:
-        ctx.logger.info('** params: {}'.format(params))
         bucket = iface.create(params)
     except BaseException as e:
-        if 'Bucket cannot have ACLs set with ObjectOwnerships BucketOwnerEnforced setting' in str(e):
+        ctx.logger.error(str(e))
+        if 'ACL' in params:
             ctx.logger.error('Deprecation warning, the AWS API has changed and ACL-public is no longer valid.')
             acl = params.pop('ACL', '')
             if 'public-read' in acl:
-                iface.create(params)
+                bucket = iface.create(params)
                 iface.put_public_access_block(params)
             else:
                 raise e
@@ -141,7 +141,7 @@ def create(ctx, iface, resource_config, params, **_):
 
     # PublicAccessBlockConfiguration 
     iface.put_public_access_block(params)
-
+    
     ctx.instance.runtime_properties[LOCATION] = bucket.get(LOCATION)
 
 
