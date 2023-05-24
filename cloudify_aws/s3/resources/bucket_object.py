@@ -249,9 +249,9 @@ def create(ctx, iface, resource_config, **_):
     # Actually create the resource
     try:
         iface.create(resource_config)
-    except BaseException as e:
-        ctx.logger.error(str(e))
-        if 'ACL' in resource_config:
+    except NonRecoverableError as e:
+        if 'AccessControlListNotSupported' in str(e) \
+            and 'The bucket does not allow ACLs' in str(e):
             ctx.logger.error('Deprecation warning, the AWS API has changed \
                             and ACL-public is no longer valid.')
             acl = resource_config.pop('ACL', '')

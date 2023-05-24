@@ -17,8 +17,10 @@
     AWS S3 Bucket interface
 """
 # Cloudify
-from cloudify_aws.common import decorators
 from cloudify_aws.s3 import S3Base
+from cloudify_aws.common import decorators
+from cloudify.exceptions import NonRecoverableError
+
 # Boto
 from botocore.exceptions import ClientError, ParamValidationError
 
@@ -125,11 +127,11 @@ def create(ctx, iface, resource_config, params, **_):
     # Actually create the resource
     try:
         bucket = iface.create(params)
-    except BaseException as e:
-        ctx.logger.error(str(e))
-        if 'ACL' in params:
-            ctx.logger.error('Deprecation warning, the AWS API has changed \
-                             and ACL-public is no longer valid.')
+    except NonRecoverableError as e:
+        if "InvalidBucketAclWithObjectOwnership" in str(e) \
+                and "Bucket cannot have ACLs" in str(e):
+            ctx.logger.error('Deprecation warning, the AWS API has changed '
+                             'and ACL-public is no longer valid.')
             acl = params.pop('ACL', '')
             if 'public-read' in acl:
                 bucket = iface.create(params)
@@ -138,9 +140,6 @@ def create(ctx, iface, resource_config, params, **_):
                 raise e
         else:
             raise e
-
-    # PublicAccessBlockConfiguration
-    iface.put_public_access_block(params)
 
     ctx.instance.runtime_properties[LOCATION] = bucket.get(LOCATION)
 
