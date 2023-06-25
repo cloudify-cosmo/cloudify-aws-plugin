@@ -49,7 +49,6 @@ commands:
           sudo ./aws/install
       - run: |
           aws configure set default.region us-east-1
-          aws configure set ec2_region_name us-east-1
           aws configure set aws_access_key_id $(echo $aws_access_key_id | base64 -d -w 0)
           aws configure set aws_secret_access_key $(echo $aws_secret_access_key | base64 -d -w 0)
           aws configure set output json
@@ -75,7 +74,7 @@ commands:
   prepare_test_manager:
     steps:
       - run: ls -alR
-      - run: ecosystem-test prepare-test-manager -l $TEST_LICENSE --generate-new-aws-token -es aws_access_key_id=$aws_access_key_id -es aws_secret_access_key=$aws_secret_access_key -es ec2_region_name=$ec2_region_name --yum-package python-netaddr --yum-package git --yum-package epel
+      - run: ecosystem-test prepare-test-manager -l $TEST_LICENSE --generate-new-aws-token -es aws_access_key_id=$aws_access_key_id -es aws_secret_access_key=$aws_secret_access_key --yum-package python-netaddr --yum-package git --yum-package epel
       - run: ecosystem-test upload-plugin -PN utilities
       - run: ecosystem-test upload-plugin -PN ansible
       - run: ecosystem-test upload-plugin -PN kubernetes
@@ -386,15 +385,15 @@ workflows:
       - wagonorb/rhel_wagon:
           filters:
             branches:
-              only: RND-599-cloud-formation-blueprint-failing
+              only: /([0-9\.]*\-build|master|dev)/
       - wagonorb/wagon:
           filters:
             branches:
-              only: RND-599-cloud-formation-blueprint-failing
+              only: /([0-9\.]*\-build|master|dev)/
       - wagonorb/arch64_wagon:
           filters:
             branches:
-              only: RND-599-cloud-formation-blueprint-failing
+              only: /([0-9\.]*\-build|master|dev)/
       - cf_integration_tests_py3:
           requires:
             - wagonorb/wagon
@@ -403,7 +402,7 @@ workflows:
             - eks_integration_tests_py3
           filters:
             branches:
-              only: RND-599-cloud-formation-blueprint-failing
+              only: /([0-9\.]*\-build|master|dev)/
       - eks_integration_tests_py3:
           requires:
             - wagonorb/wagon
@@ -411,7 +410,7 @@ workflows:
             - wagonorb/arch64_wagon
           filters:
             branches:
-              only: RND-599-cloud-formation-blueprint-failing
+              only: /([0-9\.]*\-build|master|dev)/
       - hw_integration_tests_py3:
           requires:
             - wagonorb/wagon
@@ -420,7 +419,7 @@ workflows:
             - eks_integration_tests_py3
           filters:
             branches:
-              only: RND-599-cloud-formation-blueprint-failing
+              only: /([0-9\.]*\-build|master|dev)/
       - releaseorb/release:
           filters:
             branches:
