@@ -385,15 +385,15 @@ workflows:
       - wagonorb/rhel_wagon:
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
+              only: RND-599-cloud-formation-blueprint-failing
       - wagonorb/wagon:
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
+              only: RND-599-cloud-formation-blueprint-failing
       - wagonorb/arch64_wagon:
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
+              only: RND-599-cloud-formation-blueprint-failing
       - cf_integration_tests_py3:
           requires:
             - wagonorb/wagon
@@ -402,7 +402,7 @@ workflows:
             - eks_integration_tests_py3
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
+              only: RND-599-cloud-formation-blueprint-failing
       - eks_integration_tests_py3:
           requires:
             - wagonorb/wagon
@@ -410,7 +410,7 @@ workflows:
             - wagonorb/arch64_wagon
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
+              only: RND-599-cloud-formation-blueprint-failing
       - hw_integration_tests_py3:
           requires:
             - wagonorb/wagon
@@ -419,7 +419,7 @@ workflows:
             - eks_integration_tests_py3
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
+              only: RND-599-cloud-formation-blueprint-failing
       - releaseorb/release:
           filters:
             branches:
