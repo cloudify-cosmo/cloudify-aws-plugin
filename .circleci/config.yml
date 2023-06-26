@@ -88,7 +88,7 @@ commands:
 
   run_cf_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/blueprint-examples/virtual-machine/aws-cloudformation.yaml --test-id=virtual-machine -i aws_region_name=eu-west-3 -i resource_suffix=$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/test/aws-cloudformation.yaml --test-id=virtual-machine -i aws_region_name=eu-west-3 -i resource_suffix=$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000
 
   run_eks_test:
     steps:

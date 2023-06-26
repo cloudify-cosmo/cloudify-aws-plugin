@@ -1,0 +1,137 @@
+tosca_definitions_version: cloudify_dsl_1_4
+
+imports:
+  - https://cloudify.co/spec/cloudify/6.4.0/types.yaml
+  - plugin:cloudify-aws-plugin
+  - plugin:cloudify-utilities-plugin?version= >=1.22.1
+
+inputs:
+
+  aws_region_name:
+    type: string
+    default: 'eu-west-3'
+    constraints:
+      - valid_values:
+          - us-east-1
+          - us-east-2
+          - us-west-1
+          - us-west-2
+          - eu-central-1
+          - eu-west-1
+          - eu-west-2
+          - eu-south-1
+          - eu-west-3
+          - eu-north-1
+          - af-south-1
+          - ap-east-1
+          - ap-south-1
+          - ap-northeast-3
+          - ap-northeast-2
+          - ap-southeast-1
+          - ap-southeast-2
+          - ap-northeast-1
+          - ca-central-1
+          - cn-north-1
+          - cn-northwest-1
+          - me-south-1
+          - sa-east-1
+
+  vpc_cidr:
+    type: string
+    default: 172.30.0.0/16
+
+  subnet_cidr:
+    type: string
+    default: 172.30.0.0/24
+
+  agent_key_name:
+    type: string
+    default: agent_key
+
+  template_url:
+    type: string
+    default: https://cloudify-blueprint-resources.s3.eu-west-3.amazonaws.com/aws-cloudformation/template.yaml
+
+  env_name:
+    type: string
+    description: Control parameters for names in resources.
+    default: '-a'
+
+  resource_suffix:
+    type: string
+    default: { get_input: env_name }
+
+  agent_user:
+    type: string
+    default: ec2-user
+
+dsl_definitions:
+
+  client_config: &client_config
+    aws_access_key_id: { get_secret: aws_access_key_id }
+    aws_secret_access_key: { get_secret: aws_secret_access_key }
+    aws_session_token: { get_secret: aws_session_token }
+    region_name: { get_input: aws_region_name }
+
+node_templates:
+
+  two_tier_keypair:
+    type: cloudify.nodes.aws.ec2.Keypair
+    properties:
+      client_config: *client_config
+      resource_config:
+        KeyName: { concat: [ 'two_tier_key', { get_input: resource_suffix } ] }
+        PublicKeyMaterial: { get_attribute: [agent_key, public_key_export] }
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: agent_key
+
+  two_tier_stack:
+    type: cloudify.nodes.aws.CloudFormation.Stack
+    properties:
+      client_config: *client_config
+      resource_config:
+        kwargs:
+          StackName: { concat: [ 'Two-Tier-Sample-Stack', { get_input: resource_suffix } ] }
+          Parameters:
+            - ParameterKey: InstanceType
+              ParameterValue: t2.small
+            - ParameterKey: KeyName
+              ParameterValue: { concat: [ 'two_tier_key', { get_input: resource_suffix } ] }
+            - ParameterKey: VpcCIDR
+              ParameterValue: { get_input: vpc_cidr }
+            - ParameterKey: SubnetCIDR
+              ParameterValue: { get_input: subnet_cidr }
+          TemplateURL: { get_input: template_url }
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: two_tier_keypair
+
+  agent_key:
+    type: cloudify.keys.nodes.RSAKey
+    properties:
+      resource_config:
+        key_name: { get_input: agent_key_name }
+        openssh_format: true
+      use_secret_store: true
+      use_secrets_if_exist: true
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: keys.cloudify_ssh_key.operations.create
+          inputs:
+            store_private_key_material: true
+
+capabilities:
+
+  endpoint:
+    description: The external endpoint of the application.
+    value: { get_attribute: [ two_tier_stack, Outputs, 0, OutputValue ] }
+
+  user:
+    description: user ID.
+    value: { get_input: agent_user }
+
+  key_content:
+    description: Private agent key
+    value: { get_attribute: [agent_key, private_key_export] }
