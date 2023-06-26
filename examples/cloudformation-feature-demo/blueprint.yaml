@@ -16,7 +16,7 @@ inputs:
 
   aws_region_name:
     type: string
-    default: { get_secret: ec2_region_name }
+    default: eu-west-2
 
   availability_zone:
     type: string
@@ -81,7 +81,6 @@ node_templates:
               HelloBucket:
                 Type: AWS::S3::Bucket
                 Properties:
-                  AccessControl: PublicRead
                   WebsiteConfiguration:
                     IndexDocument: index.html
                     ErrorDocument: error.html

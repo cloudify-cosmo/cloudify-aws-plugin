@@ -41,6 +41,28 @@ executors:
 
 commands:
 
+  ec2_image_verify:
+    steps:
+      - run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install
+      - run: |
+          aws configure set default.region us-east-1
+          aws configure set aws_access_key_id $(echo $aws_access_key_id | base64 -d -w 0)
+          aws configure set aws_secret_access_key $(echo $aws_secret_access_key | base64 -d -w 0)
+          aws configure set output json
+      - run: |
+          ret=`aws ec2 describe-images --filters Name=name,Values=CentOS7-cloudify-examples-image | jq '.Images' | jq -r '.[0].Name'`
+          if [ $ret != "CentOS7-cloudify-examples-image" ]; then
+              echo "The current AWS account cannot find the required examples image. Tests cannot pass.";
+              exit 1;
+          else
+              echo "Found it!";
+              exit 0;
+          fi
+
+
   eks_prepare_test_manager:
     steps:
       - run: ls -alR
@@ -66,7 +88,7 @@ commands:
 
   run_cf_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/blueprint-examples/virtual-machine/aws-cloudformation.yaml --test-id=virtual-machine -i aws_region_name=eu-west-3 -i resource_suffix=$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/virtual-machine/aws-cloudformation.yaml --test-id=virtual-machine -i aws_region_name=eu-west-3 -i resource_suffix=$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000
 
   run_eks_test:
     steps:
@@ -138,12 +160,11 @@ commands:
 
 jobs:
 
-  run_sample_job:
-    executor: cloudify-machine-py3
-    environment:
-      CLOUDIFY_SSL_TRUST_ALL: true
+  verify_ec2_image:
+    executor: py36
     steps:
-      - run_sample_test
+      - checkout
+      - ec2_image_verify
 
   cf_integration_tests_py3:
     executor: cloudify-machine-py3
@@ -353,6 +374,7 @@ workflows:
   version: 2
   tests:
     jobs:
+      - verify_ec2_image
       - node/check_py3_compat_job
       - node/unittests_job:
           context: 
@@ -430,6 +452,7 @@ workflows:
             only:
               - master
     jobs:
+      - verify_ec2_image
       - node/check_py3_compat_job
       - node/unittests_job:
           context: 
@@ -464,6 +487,7 @@ workflows:
             - slack-secrets
           <<: *job-post-steps
           requires:
+            - verify_ec2_image
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -475,6 +499,7 @@ workflows:
             - slack-secrets
           <<: *job-post-steps
           requires:
+            - verify_ec2_image
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -515,6 +540,7 @@ workflows:
             only:
               - master
     jobs:
+      - verify_ec2_image
       - node/check_py3_compat_job
       - node/unittests_job:
           context: 
@@ -549,6 +575,7 @@ workflows:
             - slack-secrets
           <<: *job-post-steps
           requires:
+            - verify_ec2_image
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -610,6 +637,7 @@ workflows:
             only:
               - master
     jobs:
+      - verify_ec2_image
       - node/check_py3_compat_job
       - node/unittests_job:
           context: 
@@ -633,6 +661,7 @@ workflows:
             - slack-secrets
           <<: *job-post-steps
           requires:
+            - verify_ec2_image
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
@@ -694,3 +723,4 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
+  
