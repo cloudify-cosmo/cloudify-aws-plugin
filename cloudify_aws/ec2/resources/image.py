@@ -62,7 +62,7 @@ class EC2Image(EC2Base):
         try:
             resources = self.client.describe_images(**params)
         except (ClientError, ParamValidationError):
-            pass
+            return {}
         else:
             images = [] if not resources else resources.get(IMAGES)
             if len(images):
