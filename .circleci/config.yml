@@ -385,15 +385,15 @@ workflows:
       - wagonorb/rhel_wagon:
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
+              only: /([0-9\.]*\-build|master|dev|RND-684-ami-feature-blueprint-test-failing)/
       - wagonorb/wagon:
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
+              only: /([0-9\.]*\-build|master|dev|RND-684-ami-feature-blueprint-test-failing)/
       - wagonorb/arch64_wagon:
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
+              only: /([0-9\.]*\-build|master|dev|RND-684-ami-feature-blueprint-test-failing)/
       - cf_integration_tests_py3:
           requires:
             - wagonorb/wagon
@@ -420,6 +420,19 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
+      - ec2_image_integration_tests_py3:
+          context: 
+            - slack-secrets
+          <<: *job-post-steps
+          requires:
+            - verify_ec2_image
+            - wagonorb/wagon
+            - wagonorb/rhel_wagon
+            - wagonorb/arch64_wagon
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev|RND-684-ami-feature-blueprint-test-failing)/
+
       - releaseorb/release:
           filters:
             branches:
@@ -532,13 +545,6 @@ workflows:
 
 
   monday_thursday:
-    triggers:
-    - schedule:
-        cron: "0 3 * * 1,4"
-        filters:
-          branches:
-            only:
-              - master
     jobs:
       - verify_ec2_image
       - node/check_py3_compat_job

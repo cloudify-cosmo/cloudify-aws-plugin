@@ -61,7 +61,9 @@ class EC2Image(EC2Base):
             return
         try:
             resources = self.client.describe_images(**params)
-        except (ClientError, ParamValidationError):
+        except (ClientError, ParamValidationError) as e:
+            self.logger.debug('Response from describe_images: {}'
+                              .format(str(e)))
             return {}
         else:
             images = [] if not resources else resources.get(IMAGES)
@@ -138,7 +140,9 @@ def prepare(ctx, iface, resource_config, **_):
         utils.update_resource_id(ctx.instance, iface.properties.get(IMAGE_ID))
 
 
-@decorators.aws_resource(EC2Image, resource_type=RESOURCE_TYPE)
+@decorators.aws_resource(EC2Image, 
+                        resource_type=RESOURCE_TYPE,
+                        waits_for_status=False)
 @decorators.wait_for_status(status_good=['available'], fail_on_missing=False)
 def create(ctx, iface, resource_config, **_):
     """Create an AWS EC2 Image"""
