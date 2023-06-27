@@ -88,7 +88,7 @@ commands:
 
   run_cf_test:
     steps:
-      - run: ecosystem-test local-blueprint-test -b examples/blueprint-examples/virtual-machine/aws-cloudformation.yaml --test-id=virtual-machine -i aws_region_name=eu-west-3 -i resource_suffix=$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000
+      - run: ecosystem-test local-blueprint-test -b examples/virtual-machine/aws-cloudformation.yaml --test-id=virtual-machine -i aws_region_name=eu-west-3 -i resource_suffix=$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000
 
   run_eks_test:
     steps:
@@ -429,10 +429,6 @@ workflows:
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
-          filters:
-            branches:
-              only: /([0-9\.]*\-build|master|dev|RND-684-ami-feature-blueprint-test-failing)/
-
       - releaseorb/release:
           filters:
             branches:
@@ -545,6 +541,13 @@ workflows:
 
 
   monday_thursday:
+    triggers:
+    - schedule:
+        cron: "0 3 * * 1,4"
+        filters:
+          branches:
+            only:
+              - master
     jobs:
       - verify_ec2_image
       - node/check_py3_compat_job
