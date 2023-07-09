@@ -427,6 +427,8 @@ workflows:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - releaseorb/release:
+          context: 
+            - plugins-inputs
           filters:
             branches:
               only: /master/
@@ -441,6 +443,8 @@ workflows:
             - eks_integration_tests_py3
             - hw_integration_tests_py3
       - releaseorb/merge_docs_job:
+          context: 
+            - plugins-inputs
           filters:
             branches:
               only: /master/
