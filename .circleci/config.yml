@@ -70,6 +70,7 @@ commands:
       - run: ecosystem-test upload-plugin -PN utilities
       - run: ecosystem-test upload-plugin -PN ansible
       - run: ecosystem-test upload-plugin -PN kubernetes
+      - run: ecosystem-test upload-plugin -PN aws
 
   prepare_test_manager:
     steps:
@@ -78,6 +79,7 @@ commands:
       - run: ecosystem-test upload-plugin -PN utilities
       - run: ecosystem-test upload-plugin -PN ansible
       - run: ecosystem-test upload-plugin -PN kubernetes
+      - run: ecosystem-test upload-plugin -PN aws
       - run: |
           docker exec cfy_manager mkdir -p /etc/cloudify/.cloudify/profiles/manager-local/
           docker exec cfy_manager cp /root/.cloudify/profiles/manager-local/context.json /etc/cloudify/.cloudify/profiles/manager-local/context.json
