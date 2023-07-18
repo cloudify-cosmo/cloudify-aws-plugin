@@ -3,55 +3,7 @@ plugins:
     executor: central_deployment_agent
     package_name: cloudify-aws-plugin
     package_version: 3.1.8
-    properties_description: >
-      Manage AWS resources.
 
-      Credentials documentation: https://docs.cloudify.co/latest/working_with/official_plugins/infrastructure/aws/#authentication-with-aws.
-    properties:
-      aws_session_token:
-        type: string
-        display_label: AWS session token
-        description: Session token.
-      aws_access_key_id:
-        type: string
-        display_label: AWS Access Key ID
-        description: The ID of your AWS ACCESS KEY ID.
-      aws_secret_access_key:
-        type: string
-        display_label: AWS Secret Access Key
-        description: The ID of your AWS SECRET ACCESS KEY.
-      region_name:
-        type: string
-        display_label: AWS Region name
-        description: >
-          The server region name, such as us-east-1.
-
-          (Not us-east-1b, which is an availability zone, or
-
-          US East, which is a Region.)
-      endpoint_url:
-        type: string
-        display_label: AWS Endpoint URL
-        description: >
-          The complete URL to use for the constructed
-
-          client. Normally, botocore will automatically construct the
-
-          appropriate URL to use when communicating with a service.  You
-
-          can specify a complete URL (including the "http/https" scheme)
-
-          to override this behavior.  If this value is provided,
-
-          then ``use_ssl`` is ignored.
-      api_version:
-        type: string
-        display_label: AWS API Version
-        description: The API Version to use, if not latest.
-      assume_role:
-        type: string
-        display_label: AWS assume role
-        description: The role ARN that Cloudify manager instance is able to assume.
 data_types:
   cloudify.datatypes.swift.Connection:
     properties:
