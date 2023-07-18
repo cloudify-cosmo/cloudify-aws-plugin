@@ -15,7 +15,7 @@ unittest-post-steps: &unittest-post-steps
 
 orbs:
   node: cloudify/public-unittest-orb@volatile
-  wagonorb: cloudify/wagon-bulder-orb@2.5.7
+  wagonorb: cloudify/wagon-bulder-orb@volatile
   releaseorb: cloudify/release-orb@volatile
   managerorb: cloudify/manager-orb@volatile
   slack: cloudify/notify-slack@2
@@ -66,18 +66,20 @@ commands:
   eks_prepare_test_manager:
     steps:
       - run: ls -alR
-      - run: ecosystem-test prepare-test-manager -l $TEST_LICENSE -es aws_access_key_id2=$aws_access_key_id -es aws_secret_access_key2=$aws_secret_access_key
+      - run: ecosystem-test prepare-test-manager -l $TEST_LICENSE -es aws_access_key_id2=$aws_access_key_id -es aws_secret_access_key2=$aws_secret_access_key --yum-package python-netaddr --yum-package git --yum-package epel -p $(find ~/project/workspace/build/ -name *manylinux-py311-none-linux_x86_64.wgn*) ~/project/plugin_1_4.yaml
       - run: ecosystem-test upload-plugin -PN utilities
       - run: ecosystem-test upload-plugin -PN ansible
       - run: ecosystem-test upload-plugin -PN kubernetes
+      # - run: ecosystem-test upload-plugin -PN aws
 
   prepare_test_manager:
     steps:
       - run: ls -alR
-      - run: ecosystem-test prepare-test-manager -l $TEST_LICENSE --generate-new-aws-token -es aws_access_key_id=$aws_access_key_id -es aws_secret_access_key=$aws_secret_access_key --yum-package python-netaddr --yum-package git --yum-package epel
+      - run: ecosystem-test prepare-test-manager -l $TEST_LICENSE --generate-new-aws-token -es aws_access_key_id=$aws_access_key_id -es aws_secret_access_key=$aws_secret_access_key --yum-package python-netaddr --yum-package git --yum-package epel -p $(find ~/project/workspace/build/ -name *manylinux-py311-none-linux_x86_64.wgn*) ~/project/plugin_1_4.yaml
       - run: ecosystem-test upload-plugin -PN utilities
       - run: ecosystem-test upload-plugin -PN ansible
       - run: ecosystem-test upload-plugin -PN kubernetes
+      # - run: ecosystem-test upload-plugin -PN aws
       - run: |
           docker exec cfy_manager mkdir -p /etc/cloudify/.cloudify/profiles/manager-local/
           docker exec cfy_manager cp /root/.cloudify/profiles/manager-local/context.json /etc/cloudify/.cloudify/profiles/manager-local/context.json
@@ -378,7 +380,7 @@ workflows:
       - node/check_py3_compat_job
       - node/unittests_job:
           context: 
-            - slack-secrets
+            - plugins-inputs
           <<: *unittest-post-steps
       - node/validate_version_job
       - node/validate_documentation_job
@@ -394,33 +396,48 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
+      - wagonorb/wagon_311:
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - cf_integration_tests_py3:
+          context: 
+            - plugins-inputs
           requires:
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
+            - wagonorb/wagon_311
             - eks_integration_tests_py3
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - eks_integration_tests_py3:
+          context: 
+            - plugins-inputs
           requires:
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
+            - wagonorb/wagon_311
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - hw_integration_tests_py3:
+          context: 
+            - plugins-inputs
           requires:
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
+            - wagonorb/wagon_311
             - eks_integration_tests_py3
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - releaseorb/release:
+          context: 
+            - plugins-inputs
           filters:
             branches:
               only: /master/
@@ -429,12 +446,15 @@ workflows:
             - wagonorb/rhel_wagon
             - wagonorb/wagon
             - wagonorb/arch64_wagon
+            - wagonorb/wagon_311
             - node/validate_version_job
             - node/validate_documentation_job
             - cf_integration_tests_py3
             - eks_integration_tests_py3
             - hw_integration_tests_py3
       - releaseorb/merge_docs_job:
+          context: 
+            - plugins-inputs
           filters:
             branches:
               only: /master/
@@ -456,7 +476,7 @@ workflows:
       - node/check_py3_compat_job
       - node/unittests_job:
           context: 
-            - slack-secrets
+            - plugins-inputs
           <<: *unittest-post-steps
       - node/validate_version_job
       - wagonorb/rhel_wagon:
@@ -471,55 +491,63 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
+      - wagonorb/wagon_311:
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - cf_integration_tests_py3:
           context: 
-            - slack-secrets
+            - plugins-inputs
           <<: *job-post-steps
           requires:
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
+            - wagonorb/wagon_311
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - ebs_integration_tests_py3:
           context: 
-            - slack-secrets
+            - plugins-inputs
           <<: *job-post-steps
           requires:
             - verify_ec2_image
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
+            - wagonorb/wagon_311
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - ec2_instance_integration_tests_py3:
           context: 
-            - slack-secrets
+            - plugins-inputs
           <<: *job-post-steps
           requires:
             - verify_ec2_image
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
+            - wagonorb/wagon_311
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - ec2_vpc_integration_tests_py3:
           context: 
-            - slack-secrets
+            - plugins-inputs
           <<: *job-post-steps
           requires:
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
+            - wagonorb/wagon_311
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - sns_integration_tests_py3:
           context: 
-            - slack-secrets
+            - plugins-inputs
           <<: *job-post-steps
           requires:
             - ec2_vpc_integration_tests_py3
@@ -544,7 +572,7 @@ workflows:
       - node/check_py3_compat_job
       - node/unittests_job:
           context: 
-            - slack-secrets
+            - plugins-inputs
           <<: *unittest-post-steps
       - node/validate_version_job
       - wagonorb/rhel_wagon:
@@ -559,70 +587,80 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
+      - wagonorb/wagon_311:
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - eks_integration_tests_py3:
           context: 
-            - slack-secrets
+            - plugins-inputs
           <<: *job-post-steps
           requires:
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
+            - wagonorb/wagon_311
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - ec2_image_integration_tests_py3:
           context: 
-            - slack-secrets
+            - plugins-inputs
           <<: *job-post-steps
           requires:
             - verify_ec2_image
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
+            - wagonorb/wagon_311
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - autoscaleing_integration_tests_py3:
           context: 
-            - slack-secrets
+            - plugins-inputs
           <<: *job-post-steps
           requires:
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
+            - wagonorb/wagon_311
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - ec2_transit_gateway_integration_tests_py3:
           context: 
-            - slack-secrets
+            - plugins-inputs
           <<: *job-post-steps
           requires:
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
+            - wagonorb/wagon_311
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - s3_integration_tests_py3:
           context: 
-            - slack-secrets
+            - plugins-inputs
           <<: *job-post-steps
           requires:
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
+            - wagonorb/wagon_311
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - kms_integration_tests_py3:
           context: 
-            - slack-secrets
+            - plugins-inputs
           <<: *job-post-steps
           requires:
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
+            - wagonorb/wagon_311
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
@@ -641,7 +679,7 @@ workflows:
       - node/check_py3_compat_job
       - node/unittests_job:
           context: 
-            - slack-secrets
+            - plugins-inputs
           <<: *unittest-post-steps
       - node/validate_version_job
       - wagonorb/rhel_wagon:
@@ -656,70 +694,80 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
+      - wagonorb/wagon_311:
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - hw_integration_tests_py3:
           context: 
-            - slack-secrets
+            - plugins-inputs
           <<: *job-post-steps
           requires:
             - verify_ec2_image
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
+            - wagonorb/wagon_311
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - cloudformation_integration_tests_py3:
           context: 
-            - slack-secrets
+            - plugins-inputs
           <<: *job-post-steps
           requires:
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
+            - wagonorb/wagon_311
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - dynamodb_integration_tests_py3:
           context: 
-            - slack-secrets
+            - plugins-inputs
           <<: *job-post-steps
           requires:
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
+            - wagonorb/wagon_311
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - ec2_keys_integration_tests_py3:
           context: 
-            - slack-secrets
+            - plugins-inputs
           <<: *job-post-steps
           requires:
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
+            - wagonorb/wagon_311
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - natgateway_integration_tests_py3:
           context: 
-            - slack-secrets
+            - plugins-inputs
           <<: *job-post-steps
           requires:
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
+            - wagonorb/wagon_311
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - sqs_integration_tests_py3:
           context: 
-            - slack-secrets
+            - plugins-inputs
           <<: *job-post-steps
           requires:
             - wagonorb/wagon
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
+            - wagonorb/wagon_311
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
