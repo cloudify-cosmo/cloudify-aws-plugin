@@ -301,7 +301,7 @@ def _create_eni_params(params, ctx_instance):
             groups.append(group_id)
     for group_id in groups:
         if not utils.is_valid_aws_id('sg', group_id):
-            #TODO add error message
+            # TODO add error message
             raise NonRecoverableError()
     params[SEC_GROUPS] = groups
     return params
