@@ -214,12 +214,9 @@ class EKSCluster(EKSBase):
         """
             Deletes an existing AWS EKS cluster.
         """
-        res = self.client.delete_cluster(
-            **{CLUSTER_NAME: params.get(CLUSTER_NAME)}
-        )
+        res = self.make_client_call('delete_cluster', params)
         self.logger.debug('Response: {}'.format(res))
         return res
-
 
 def prepare_describe_cluster_filter(params, iface):
     iface.describe_param = {
@@ -334,7 +331,11 @@ def poststart(ctx, iface, resource_config, **_):
 @decorators.aws_resource(EKSCluster, RESOURCE_TYPE, waits_for_status=False)
 def delete(ctx, iface, resource_config, **_):
     """Deletes an AWS EKS Cluster"""
-    iface.delete(resource_config)
+    utils.exit_on_substring(
+        iface,
+        'delete',
+        {CLUSTER_NAME: resource_config.get(CLUSTER_NAME)},
+        'ResourceNotFoundException')
     # wait for cluster to be deleted
     ctx.logger.info("Waiting for Cluster to be deleted")
     iface.wait_for_cluster(resource_config, 'cluster_deleted')
