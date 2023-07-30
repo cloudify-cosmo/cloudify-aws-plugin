@@ -218,6 +218,7 @@ class EKSCluster(EKSBase):
         self.logger.debug('Response: {}'.format(res))
         return res
 
+
 def prepare_describe_cluster_filter(params, iface):
     iface.describe_param = {
         CLUSTER_NAME: params.get(CLUSTER_NAME),
