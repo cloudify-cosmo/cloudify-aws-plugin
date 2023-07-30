@@ -20,6 +20,7 @@
 from cloudify import ctx as _ctx
 from cloudify.exceptions import OperationRetry
 
+
 # Cloudify
 from cloudify_aws.ec2 import EC2Base
 from cloudify_aws.common import decorators, utils
@@ -147,7 +148,9 @@ def create(ctx, iface, resource_config, **_):
     """Creates an AWS EC2 NetworkInterface"""
 
     # Create a copy of the resource config for clean manipulation.
-    resource_config = _create_eni_params(resource_config, ctx.instance)
+    resource_config = _create_eni_params(resource_config,
+                                         ctx.instance,
+                                         ctx.logger)
     _create(iface, resource_config, ctx.instance)
     _modify_attribute(iface, _.get('modify_network_interface_attribute_args'))
 
@@ -278,7 +281,7 @@ def check_drift(ctx, iface=None, **_):
     return utils.check_drift(RESOURCE_TYPE, iface, ctx.logger)
 
 
-def _create_eni_params(params, ctx_instance):
+def _create_eni_params(params, ctx_instance, logger):
     subnet_id = params.get(SUBNET_ID)
     if not subnet_id:
         targ = \
@@ -298,6 +301,15 @@ def _create_eni_params(params, ctx_instance):
                 EXTERNAL_RESOURCE_ID)
         if group_id and group_id not in groups:
             groups.append(group_id)
+    for group_id in groups:
+        if not utils.is_valid_aws_id('sg', group_id):
+            logger.error(
+                'Not adding provided security group to group list, because '
+                'it is malformed ID. Check that you provide a relationship '
+                'to a security group, so that it is created before the '
+                'vm.\n'
+                'Provided security group resource_id is = {}'.format(group_id)
+            )
     params[SEC_GROUPS] = groups
     return params
 
