@@ -77,7 +77,6 @@ class EC2SecurityGroup(EC2Base):
                           % (self.type_name, params))
         return self.make_client_call('delete_security_group', params)
 
-
     def authorize_ingress(self, params):
         '''
             Authorize existing AWS EC2 Security Group ingress rules.
@@ -159,17 +158,17 @@ def delete(ctx, iface, resource_config, dry_run=False, **_):
         group_id = iface.resource_id
 
     if dry_run:
-        utils.exit_on_substring(iface,
-                                'delete',
-                                {
-                                    GROUPID: group_id,
-                                    'DryRun': dry_run
-                                },
-                                [
-                                    'InvalidGroup.NotFound',
-                                    'Request would have succeeded'
-                                ]
-        )
+        utils.exit_on_substring(
+            iface,
+            'delete',
+            {
+                GROUPID: group_id,
+                'DryRun': dry_run
+            },
+            [
+                'InvalidGroup.NotFound',
+                'Request would have succeeded'
+            ])
 
     utils.exit_on_substring(iface,
                             'delete',
