@@ -517,7 +517,10 @@ def _aws_resource(function,
             kwargs.pop('waits_for_status', False))
 
     skip_delete = not kwargs.get(
-        'force_operation') and external_resource and exists and delete_operation
+        'force_operation') and \
+        external_resource and \
+        exists and \
+        delete_operation
 
     result = None
     if not skip(
