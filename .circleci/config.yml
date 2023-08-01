@@ -73,7 +73,7 @@ commands:
   prepare_test_manager:
     steps:
       - run: ls -alR
-      - run: ecosystem-test prepare-remote-test-manager --generate-new-aws-token -es aws_access_key_id=$aws_access_key_id -es aws_secret_access_key=$aws_secret_access_key
+      - run: ecosystem-test prepare-remote-test-manager --generate-new-aws-token -es aws_access_key_id=$aws_access_key_id -es aws_secret_access_key=$aws_secret_access_key -p $(find ~/project/workspace/build/ -name *manylinux-py311-none-linux_x86_64.wgn*) ~/project/plugin_1_4.yaml
       - run: ecosystem-test remote-upload-plugin -PN utilities
       - run: ecosystem-test remote-upload-plugin -PN ansible
       - run: ecosystem-test remote-upload-plugin -PN kubernetes
