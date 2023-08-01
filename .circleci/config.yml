@@ -62,29 +62,56 @@ commands:
               exit 0;
           fi
 
+
   eks_prepare_test_manager:
     steps:
       - run: ls -alR
-      - run: ecosystem-test prepare-remote-test-manager -es aws_access_key_id2=$aws_access_key_id -es aws_secret_access_key2=$aws_secret_access_key -p $(find ~/project/workspace/build/ -name *manylinux-py311-none-linux_x86_64.wgn*) ~/project/plugin_1_4.yaml
+      - run: |
+          ecosystem-test prepare-remote-test-manager \
+              -es aws_access_key_id2=$aws_access_key_id \
+              -es aws_secret_access_key2=$aws_secret_access_key \
+              -p $(find ~/project/workspace/build/ -name *manylinux-py311-none-linux_x86_64.wgn*) ~/project/plugin_1_4.yaml
       - run: ecosystem-test remote-upload-plugin -PN utilities
       - run: ecosystem-test remote-upload-plugin -PN ansible
       - run: ecosystem-test remote-upload-plugin -PN kubernetes
+
 
   prepare_test_manager:
     steps:
       - run: ls -alR
-      - run: ecosystem-test prepare-remote-test-manager --generate-new-aws-token -es aws_access_key_id=$aws_access_key_id -es aws_secret_access_key=$aws_secret_access_key -p $(find ~/project/workspace/build/ -name *manylinux-py311-none-linux_x86_64.wgn*) ~/project/plugin_1_4.yaml
+      - run: |
+          ecosystem-test prepare-remote-test-manager \
+              --generate-new-aws-token \
+              -es aws_access_key_id=$aws_access_key_id \
+              -es aws_secret_access_key=$aws_secret_access_key \
+              -p $(find ~/project/workspace/build/ -name *manylinux-py311-none-linux_x86_64.wgn*) ~/project/plugin_1_4.yaml
       - run: ecosystem-test remote-upload-plugin -PN utilities
       - run: ecosystem-test remote-upload-plugin -PN ansible
       - run: ecosystem-test remote-upload-plugin -PN kubernetes
 
+
   run_hello_world_test:
     steps:
-      - run: ecosystem-test remote-blueprint-test -b examples/blueprint-examples/hello-world-example/aws.yaml --test-id=hello-world-example -i aws_region_name=eu-west-3 --on-failure=uninstall-force --timeout=1800 --nested-test=.circleci/test_cloudwatch.py
+      - run: |
+          ecosystem-test remote-blueprint-test \
+            -i aws_region_name=eu-west-3 \
+            --on-failure=uninstall-force \
+            --timeout=1800 \
+            --nested-test=.circleci/test_cloudwatch.py \
+            -b examples/blueprint-examples/hello-world-example/aws.yaml \
+            --test-id=hello-world-example
+
 
   run_cf_test:
     steps:
-      - run: ecosystem-test remote-blueprint-test -b examples/virtual-machine/aws-cloudformation.yaml --test-id=virtual-machine -i aws_region_name=eu-west-3 -i resource_suffix=$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000
+      - run: |
+          ecosystem-test remote-blueprint-test \
+            -i aws_region_name=eu-west-3 -i resource_suffix=$CIRCLE_BUILD_NUM \
+            --on-failure=uninstall-force \
+            --timeout=1800 \
+            --nested-test=.circleci/test_cloudwatch.py \
+            -b examples/virtual-machine/aws-cloudformation.yaml \
+            --test-id=virtual-machine
 
   run_eks_test:
     steps:
