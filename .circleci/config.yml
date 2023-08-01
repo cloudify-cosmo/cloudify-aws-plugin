@@ -41,6 +41,29 @@ executors:
 
 commands:
 
+  setup_manager:
+    steps:
+      - run: |
+          if [[ -z "${CLOUDIFY_HOST}" ]]; then
+              exit 1
+          fi
+      - run: |
+          if [[ -z "${CLOUDIFY_TENANT}" ]]; then
+              exit 1
+          fi
+      - run: |
+          if [[ -z "${CLOUDIFY_TOKEN}" ]]; then
+              exit 1
+          fi
+      - run: |
+          response=$(curl --write-out '%{http_code}' --silent --insecure --header "Tenant: ${CLOUDIFY_TENANT}" --header "Authentication-Token: ${CLOUDIFY_TOKEN}" https://$CLOUDIFY_HOST/api/v3.1/status --output /dev/null)
+          if [[ $response != 200 ]]; then
+              echo "Failed to get manager status";
+              exit 1
+          fi
+      - run: pip3 install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/refs/heads/master.zip
+      - run: git submodule update --init --recursive --remote
+
   ec2_image_verify:
     steps:
       - run: |
@@ -362,7 +385,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: workspace
-      - managerorb/create_manager_container_latest
+      - setup_manager
       - prepare_test_manager
       - run_hello_world_test
 
