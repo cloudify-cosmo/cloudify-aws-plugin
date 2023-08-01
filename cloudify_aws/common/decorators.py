@@ -514,6 +514,9 @@ def _aws_resource(function,
             kwargs.get('force_operation'),
             kwargs.pop('waits_for_status', False))
 
+    skip_delete = not kwargs.get(
+        'force_operation') and exists and delete_operation
+
     result = None
     if not skip(
             resource_type=resource_type,
@@ -522,7 +525,7 @@ def _aws_resource(function,
             exists=exists,
             special_condition=special_condition,
             create_operation=create_operation,
-            delete_operation=delete_operation):
+            delete_operation=delete_operation) and not skip_delete:
         result = function(**kwargs)
     else:
         ctx.instance.runtime_properties['resource_config'] = resource_config

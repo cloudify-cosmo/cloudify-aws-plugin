@@ -75,9 +75,8 @@ class EC2SecurityGroup(EC2Base):
         '''
         self.logger.debug('Deleting %s with parameters: %s'
                           % (self.type_name, params))
-        res = self.client.delete_security_group(**params)
-        self.logger.debug('Response: %s' % res)
-        return res
+        return self.make_client_call('delete_security_group', params)
+
 
     def authorize_ingress(self, params):
         '''
@@ -162,8 +161,15 @@ def delete(ctx, iface, resource_config, dry_run=False, **_):
     if dry_run:
         utils.exit_on_substring(iface,
                                 'delete',
-                                {GROUPID: group_id, 'DryRun': dry_run},
-                                'Request would have succeeded')
+                                {
+                                    GROUPID: group_id,
+                                    'DryRun': dry_run
+                                },
+                                [
+                                    'InvalidGroup.NotFound',
+                                    'Request would have succeeded'
+                                ]
+        )
 
     utils.exit_on_substring(iface,
                             'delete',
