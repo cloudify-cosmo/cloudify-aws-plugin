@@ -20,6 +20,8 @@ import pytest
 
 from ecosystem_tests.nerdl.api import (
     upload_blueprint,
+    delete_blueprint,
+    delete_deployment,
     get_node_instance,
     create_deployment,
     wait_for_workflow,
@@ -61,6 +63,8 @@ def test_cloudwatch(*_, **__):
             wait_for_workflow(deployment_id, 'install', 1800)
             # Uninstall Cloud Watch Deployment
             wait_for_workflow(deployment_id, 'uninstall', 1800)
+            delete_deployment(deployment_id)
+            delete_blueprint(deployment_id)
         except:
             cleanup_on_failure(deployment_id)
 

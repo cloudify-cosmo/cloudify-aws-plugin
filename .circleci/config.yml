@@ -62,25 +62,21 @@ commands:
               exit 0;
           fi
 
-
   eks_prepare_test_manager:
     steps:
       - run: ls -alR
       - run: ecosystem-test prepare-remote-test-manager -es aws_access_key_id2=$aws_access_key_id -es aws_secret_access_key2=$aws_secret_access_key
-      - run: ecosystem-test upload-plugin -PN utilities
-      - run: ecosystem-test upload-plugin -PN ansible
-      - run: ecosystem-test upload-plugin -PN kubernetes
+      - run: ecosystem-test remote-upload-plugin -PN utilities
+      - run: ecosystem-test remote-upload-plugin -PN ansible
+      - run: ecosystem-test remote-upload-plugin -PN kubernetes
 
   prepare_test_manager:
     steps:
       - run: ls -alR
       - run: ecosystem-test prepare-remote-test-manager --generate-new-aws-token -es aws_access_key_id=$aws_access_key_id -es aws_secret_access_key=$aws_secret_access_key
-      - run: ecosystem-test upload-plugin -PN utilities # TODO: ADD REMOTE UPLOAD PLUGIN
-      - run: ecosystem-test upload-plugin -PN ansible
-      - run: ecosystem-test upload-plugin -PN kubernetes
-      # - run: |
-      #     docker exec cfy_manager mkdir -p /etc/cloudify/.cloudify/profiles/manager-local/
-      #     docker exec cfy_manager cp /root/.cloudify/profiles/manager-local/context.json /etc/cloudify/.cloudify/profiles/manager-local/context.json
+      - run: ecosystem-test remote-upload-plugin -PN utilities
+      - run: ecosystem-test remote-upload-plugin -PN ansible
+      - run: ecosystem-test remote-upload-plugin -PN kubernetes
 
   run_hello_world_test:
     steps:
