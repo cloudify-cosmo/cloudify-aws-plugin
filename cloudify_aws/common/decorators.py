@@ -495,6 +495,8 @@ def _aws_resource(function,
         iface.import_configuration(
             resource_config, runtime_instance_properties)
 
+    external_resource = props.get('use_external_resource')
+
     try:
         if iface.status in [None, {}]:
             exists = False
@@ -505,7 +507,7 @@ def _aws_resource(function,
         special_condition = True
     else:
         special_condition = get_special_condition(
-            props.get('use_external_resource'),
+            external_resource,
             ctx.node.type_hierarchy,
             operation_name,
             create_operation,
@@ -513,6 +515,12 @@ def _aws_resource(function,
             delete_operation,
             kwargs.get('force_operation'),
             kwargs.pop('waits_for_status', False))
+
+    skip_delete = not kwargs.get(
+        'force_operation') and \
+        external_resource and \
+        exists and \
+        delete_operation
 
     result = None
     if not skip(
@@ -522,7 +530,7 @@ def _aws_resource(function,
             exists=exists,
             special_condition=special_condition,
             create_operation=create_operation,
-            delete_operation=delete_operation):
+            delete_operation=delete_operation) and not skip_delete:
         result = function(**kwargs)
     else:
         ctx.instance.runtime_properties['resource_config'] = resource_config

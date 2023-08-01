@@ -18,13 +18,15 @@ from contextlib import contextmanager
 
 import pytest
 
-from ecosystem_tests.dorkl.constansts import logger
-from ecosystem_tests.dorkl import cleanup_on_failure
-from ecosystem_tests.dorkl.cloudify_api import (
-    cloudify_exec,
-    blueprints_upload,
-    deployments_create,
-    executions_start)
+from ecosystem_tests.nerdl.api import (
+    upload_blueprint,
+    delete_blueprint,
+    delete_deployment,
+    get_node_instance,
+    create_deployment,
+    wait_for_workflow,
+    cleanup_on_failure,
+    list_node_instances)
 
 TEST_ID = environ.get('__ECOSYSTEM_TEST_ID', 'hello-world-example')
 
@@ -38,7 +40,6 @@ def test_cleaner_upper():
         raise
 
 
-@pytest.mark.dependency(depends=['test_plan_protection'])
 def test_cloudwatch(*_, **__):
     with test_cleaner_upper():
         vm_props = cloud_resources_node_instance_runtime_properties()
@@ -46,31 +47,34 @@ def test_cloudwatch(*_, **__):
         deployment_id = TEST_ID + 'cloudwatch'
         try:
             # Upload Cloud Watch Blueprint
-            blueprints_upload(
+            upload_blueprint(
                 'examples/cloudwatch-feature-demo/blueprint.yaml',
                 deployment_id)
             # Create Cloud Watch Deployment with Instance ID input
-            deployments_create(deployment_id,
-                               {"aws_instance_id": str(instance_id),
-                                "aws_region_name": "us-west-2"})
+            create_deployment(
+                deployment_id,
+                deployment_id,
+                {
+                    "aws_instance_id": str(instance_id),
+                    "aws_region_name": "us-west-2"
+                }
+            )
             # Install Cloud Watch Deployment
-            executions_start('install', deployment_id, 1800)
+            wait_for_workflow(deployment_id, 'install', 1800)
             # Uninstall Cloud Watch Deployment
-            executions_start('uninstall', deployment_id, 1800)
+            wait_for_workflow(deployment_id, 'uninstall', 1800)
+            delete_deployment(deployment_id)
+            delete_blueprint(deployment_id)
         except:
             cleanup_on_failure(deployment_id)
 
 
 def cloud_resources_node_instance_runtime_properties():
     node_instance = node_instance_by_name('vm')
-    logger.info('Node instance: {node_instance}'.format(
-        node_instance=node_instance))
     if not node_instance:
         raise RuntimeError('No cloud_resources node instances found.')
     runtime_properties = node_instance_runtime_properties(
         node_instance['id'])
-    logger.info('Runtime properties: {runtime_properties}'.format(
-        runtime_properties=runtime_properties))
     if not runtime_properties:
         raise RuntimeError(
             'No cloud_resources runtime_properties found.')
@@ -78,21 +82,12 @@ def cloud_resources_node_instance_runtime_properties():
 
 
 def node_instance_by_name(name):
-    for node_instance in node_instances():
+    for node_instance in list_node_instances(TEST_ID):
         if node_instance['node_id'] == name:
             return node_instance
     raise Exception('No node instances found.')
 
 
 def node_instance_runtime_properties(name):
-    node_instance = cloudify_exec(
-        'cfy node-instance get {name}'.format(name=name))
+    node_instance = get_node_instance(name)
     return node_instance['runtime_properties']
-
-
-def nodes():
-    return cloudify_exec('cfy nodes list')
-
-
-def node_instances():
-    return cloudify_exec('cfy node-instances list -d {}'.format(TEST_ID))
