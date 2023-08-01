@@ -153,17 +153,17 @@ class TestEC2NetworkInterface(TestBase):
         mock_rels = [MagicMock()]
         fake_target = self.get_mock_ctx(
             "SecurityGroup",
-            test_runtime_properties={'aws_resource_id': 'group3'},
+            test_runtime_properties={'aws_resource_id': 'sg-123456789'},
             type_hierarchy=SEC_GROUP_TYPE)
         setattr(mock_rels[0], 'target', fake_target)
         ctx = self.get_mock_ctx(
             "NetworkInterface", test_relationships=mock_rels)
         config = {
             SUBNET_ID: 'subnet',
-            SEC_GROUPS: ['group1', 'group2']
+            SEC_GROUPS: ['sg-345678901', 'sg-234567890']
         }
         expected = copy.deepcopy(config[SEC_GROUPS])
-        expected.append('group3')
+        expected.append('sg-123456789')
         create_response = {
             'NetworkInterface': {
                 'NetworkInterfaceId': 'eni',
