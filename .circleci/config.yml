@@ -88,8 +88,7 @@ commands:
   eks_prepare_test_manager:
     steps:
       - run: ls -alR
-      - run: ecosystem-test prepare-remote-test-manager -es aws_access_key_id2=$aws_access_key_id -es aws_secret_access_key2=$aws_secret_access_key --yum-package python-netaddr -p $(find ~/project/workspace/build/ -name *manylinux-py311-none-linux_x86_64.wgn*) ~/project/plugin_1_4.yaml
-      # - run: ecosystem-test prepare-remote-test-manager -es aws_access_key_id2=$aws_access_key_id -es aws_secret_access_key2=$aws_secret_access_key --yum-package python-netaddr --yum-package git --yum-package epel -p $(find ~/project/workspace/build/ -name *manylinux-py311-none-linux_x86_64.wgn*) ~/project/plugin_1_4.yaml
+      - run: ecosystem-test prepare-remote-test-manager -es aws_access_key_id2=$aws_access_key_id -es aws_secret_access_key2=$aws_secret_access_key -p $(find ~/project/workspace/build/ -name *manylinux-py311-none-linux_x86_64.wgn*) ~/project/plugin_1_4.yaml
       - run: ecosystem-test remote-upload-plugin -PN utilities
       - run: ecosystem-test remote-upload-plugin -PN ansible
       - run: ecosystem-test remote-upload-plugin -PN kubernetes
