@@ -15,7 +15,7 @@ unittest-post-steps: &unittest-post-steps
 
 orbs:
   node: cloudify/public-unittest-orb@volatile
-  wagonorb: cloudify/wagon-bulder-orb@2.5.7
+  wagonorb: cloudify/wagon-bulder-orb@volatile
   releaseorb: cloudify/release-orb@volatile
   managerorb: cloudify/manager-orb@volatile
   slack: cloudify/notify-slack@2
