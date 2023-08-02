@@ -14,6 +14,10 @@ inputs:
     type: string
     default: { get_secret: aws_secret_access_key }
 
+  aws_session_token:
+    type: string
+    default: { get_secret: aws_session_token }
+
   aws_region_name:
     type: string
     default: { get_secret: ec2_region_name }
