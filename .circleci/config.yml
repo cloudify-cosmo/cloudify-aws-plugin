@@ -119,7 +119,7 @@ run_eks_test:
         name: run_eks_test
         no_output_timeout: 30m
         command: eks_test_command
- 
+
   run_ec2_image_test:
     steps:
       - run: ecosystem-test remote-blueprint-test -b examples/ec2-image-feature-demo/blueprint.yaml --test-id=ec2_image -i aws_region_name=eu-west-3 --on-failure=uninstall-force --timeout=3000
