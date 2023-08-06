@@ -109,13 +109,13 @@ commands:
     steps:
       - run: ecosystem-test remote-blueprint-test -b examples/virtual-machine/aws-cloudformation.yaml --test-id=virtual-machine -i aws_region_name=eu-west-3 -i resource_suffix=$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000
 
-  eks_test_command:
-    steps:
-      - run: ecosystem-test remote-blueprint-test -b examples/blueprint-examples/kubernetes/aws-eks/blueprint.yaml --test-id=aws-eks -i aws_region_name=eu-west-3 -i availability_zone_1=eu-west-3a -i availability_zone_2=eu-west-3b -i .circleci/eks-inputs.yaml -i eks_cluster_name=test-$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000
+  # eks_test_command:
+  #   steps:
+  #     - run: ecosystem-test remote-blueprint-test -b examples/blueprint-examples/kubernetes/aws-eks/blueprint.yaml --test-id=aws-eks -i aws_region_name=eu-west-3 -i availability_zone_1=eu-west-3a -i availability_zone_2=eu-west-3b -i .circleci/eks-inputs.yaml -i eks_cluster_name=test-$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000
 
   run_eks_test:
       steps:
-        - run: 
+        - run: ecosystem-test remote-blueprint-test -b examples/blueprint-examples/kubernetes/aws-eks/blueprint.yaml --test-id=aws-eks -i aws_region_name=eu-west-3 -i availability_zone_1=eu-west-3a -i availability_zone_2=eu-west-3b -i .circleci/eks-inputs.yaml -i eks_cluster_name=test-$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000
           name: run_eks_test
           no_output_timeout: 30m
           command: eks_test_command
