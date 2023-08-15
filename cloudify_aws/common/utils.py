@@ -981,8 +981,8 @@ def delete_will_succeed(fn, params):
 
 
 def is_valid_aws_id(prefix, test_string):
-    pattern = r'^{}-\d\d\d\d\d\d\d\d\d$'.format(prefix)
-    if re.match(pattern, test_string):
+    pattern = r'^{}-[0-9a-f]{{17}}$'.format(re.escape(prefix))
+    if re.match(pattern, str(test_string)):
         return True
     else:
         return False
