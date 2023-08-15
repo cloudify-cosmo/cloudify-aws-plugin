@@ -204,7 +204,7 @@ def attach(ctx, iface, resource_config, **_):
             target.target.instance.runtime_properties.get(EXTERNAL_RESOURCE_ID)
         association_id = iface.attach(resource_config).get(ASSOCIATION_ID)
         association_id_list.append(association_id)
-        
+
         if not utils.is_valid_aws_id('subnet', resource_config[SUBNET_ID]):
             ctx.logger.error('The Subnets ID {} is malformed'.format(
                 resource_config[SUBNET_ID]))
