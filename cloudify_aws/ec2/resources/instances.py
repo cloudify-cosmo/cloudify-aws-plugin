@@ -479,11 +479,10 @@ def assign_subnet_param(params):
                         EXTERNAL_RESOURCE_ID)
     if subnet_id:
         params[SUBNET_ID] = subnet_id
+        if not utils.is_valid_aws_id('subnet', subnet_id):
+            ctx.logger.error('The Subnets ID {} is malformed'.format(
+                subnet_id))
 
-    ctx.logger.info('*** subnet_id: {}'.format(subnet_id))
-    if not utils.is_valid_aws_id('subnet', subnet_id):
-        ctx.logger.error('The Subnets ID {} is malformed: {}'.format(
-            subnet_id))
 
 def assign_groups_param(params):
     # Add security groups from relationships if provided.
@@ -539,12 +538,13 @@ def assign_nics_param(params):
     # Merge the two lists.
     merged_nics = []
     nics = defaultdict(dict)
+
     for nic in (nics_from_rels, nics_from_params):
         for i in nic:
             nics[i[NIC_ID]].update(i)
             merged_nics = list(nics.values())
             if not utils.is_valid_aws_id('eni', i[NIC_ID]):
-                ctx.logger.error('The ENI ID {} is malformed: {}'.format(
+                ctx.logger.error('The ENI ID {} is malformed'.format(
                     i[NIC_ID]))
     sorted_devices = sort_devices(merged_nics)
     if sorted_devices:
