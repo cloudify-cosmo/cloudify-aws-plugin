@@ -1,3 +1,4 @@
+3.1.9: add validate resource id are properly created (vpc, eni and sg)
 3.1.8: updated circleci context.
 3.1.7: 
   - Fix bug after Cloudify 7 release.
