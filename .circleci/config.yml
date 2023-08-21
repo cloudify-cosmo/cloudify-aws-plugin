@@ -17,7 +17,6 @@ orbs:
   node: cloudify/public-unittest-orb@volatile
   wagonorb: cloudify/wagon-bulder-orb@volatile
   releaseorb: cloudify/release-orb@volatile
-  managerorb: cloudify/manager-orb@volatile
   slack: cloudify/notify-slack@2
 
 checkout:
@@ -48,7 +47,7 @@ commands:
               exit 1
           fi
       - run: |
-          if [[ -z "${CLOUDIFY_TENANT}" ]]; then
+          if [[ -z "${CLOUDIFY_TENANT}" ]] && [ -z "${CIRCLE_PROJECT_REPONAME}" ]; then
               exit 1
           fi
       - run: |
@@ -196,7 +195,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: workspace
-      - managerorb/create_manager_container_latest
+      - setup_manager
       - prepare_test_manager
       - run_cf_test
 
@@ -208,7 +207,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: workspace
-      - managerorb/create_manager_container_latest
+      - setup_manager
       - eks_prepare_test_manager
       - run_eks_test
 
@@ -220,7 +219,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: workspace
-      - managerorb/create_manager_container_latest
+      - setup_manager
       - prepare_test_manager
       - run_ec2_image_test
 
@@ -232,7 +231,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: workspace
-      - managerorb/create_manager_container_latest
+      - setup_manager
       - prepare_test_manager
       - run_ec2_instance_test
 
@@ -244,7 +243,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: workspace
-      - managerorb/create_manager_container_latest
+      - setup_manager
       - prepare_test_manager
       - run_ec2_keys_test
 
@@ -256,7 +255,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: workspace
-      - managerorb/create_manager_container_latest
+      - setup_manager
       - prepare_test_manager
       - run_ec2_transit_gateway_test
 
@@ -268,7 +267,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: workspace
-      - managerorb/create_manager_container_latest
+      - setup_manager
       - prepare_test_manager
       - run_ec2_vpc_test
 
@@ -280,7 +279,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: workspace
-      - managerorb/create_manager_container_latest
+      - setup_manager
       - prepare_test_manager
       - run_autoscaling_test
 
@@ -292,7 +291,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: workspace
-      - managerorb/create_manager_container_latest
+      - setup_manager
       - prepare_test_manager
       - run_cloudformation_test
 
@@ -304,7 +303,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: workspace
-      - managerorb/create_manager_container_latest
+      - setup_manager
       - prepare_test_manager
       - run_dynamodb_test
 
@@ -316,7 +315,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: workspace
-      - managerorb/create_manager_container_latest
+      - setup_manager
       - prepare_test_manager
       - run_ebs_test
 
@@ -328,7 +327,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: workspace
-      - managerorb/create_manager_container_latest
+      - setup_manager
       - prepare_test_manager
       - run_natgateway_test
 
@@ -340,7 +339,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: workspace
-      - managerorb/create_manager_container_latest
+      - setup_manager
       - prepare_test_manager
       - run_s3_test
 
@@ -352,7 +351,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: workspace
-      - managerorb/create_manager_container_latest
+      - setup_manager
       - eks_prepare_test_manager
       - run_sns_test
 
@@ -364,7 +363,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: workspace
-      - managerorb/create_manager_container_latest
+      - setup_manager
       - prepare_test_manager
       - run_sqs_test
 
@@ -376,7 +375,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: workspace
-      - managerorb/create_manager_container_latest
+      - setup_manager
       - prepare_test_manager
       - run_kms_test
 
