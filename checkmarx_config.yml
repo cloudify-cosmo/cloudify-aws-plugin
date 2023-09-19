@@ -1,4 +1,0 @@
-checkmarx:
-  scan_preset: Checkmarx Default
-  exclusion_folders:
-    - tests
