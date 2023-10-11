@@ -189,10 +189,10 @@ def _prepare_assoc(ctx_source, ctx_target, inputs=None):
             node=ctx_target.node,
             instance=ctx_target.instance,
             raise_on_missing=True)
-    elif (utils.is_node_type(
-            ctx_target.node, 'cloudify.aws.ec2.SecurityGroup') or
-          utils.is_node_type(
-            ctx_target.node, 'cloudify.nodes.aws.ec2.SecurityGroup')):
+    elif utils.is_node_type(
+            ctx_target.node,
+            'cloudify.aws.ec2.SecurityGroup') or utils.is_node_type(
+                ctx_target.node, 'cloudify.nodes.aws.ec2.SecurityGroup'):
         security_groups = \
             ctx_source.instance.runtime_properties['resource_config'].get(
                 'VpcSecurityGroupIds', list())

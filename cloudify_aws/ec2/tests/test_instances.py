@@ -425,11 +425,11 @@ class TestEC2Instances(TestBase):
             test_runtime_properties={'aws_resource_ids': ['baz']},
             type_hierarchy=['cloudify.nodes.Root', 'cloudify.nodes.Compute'])
         ctx.instance.runtime_properties.update({
-                'aws_resource_id': 'baz',
-                'expected_configuration': original_value,
-                'previous_configuration': {},
-                'create_response': original_value
-            })
+            'aws_resource_id': 'baz',
+            'expected_configuration': original_value,
+            'previous_configuration': {},
+            'create_response': original_value
+        })
         current_ctx.set(ctx)
         self.instances.resource_id = 'baz'
         self.instances.import_configuration(

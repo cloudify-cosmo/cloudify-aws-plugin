@@ -54,8 +54,6 @@ ctx_node = MagicMock(
 )
 
 
-@patch('cloudify_common_sdk.utils.ctx_from_import')
-@patch('cloudify_aws.common.connection.Boto3Connection.get_account_id')
 class TestIAMGroup(TestBase):
 
     def setUp(self):
@@ -74,11 +72,14 @@ class TestIAMGroup(TestBase):
         super(TestIAMGroup, self).tearDown()
 
     def test_create_raises_UnknownServiceError(self, *_):
-        fake_boto = self._prepare_create_raises_UnknownServiceError(
-            type_hierarchy=GROUP_TH,
-            type_name='iam',
-            type_class=group
-        )
+
+        with patch('cloudify_aws.common.connection.'
+                   'Boto3Connection.get_account_id'):
+            fake_boto = self._prepare_create_raises_UnknownServiceError(
+                type_hierarchy=GROUP_TH,
+                type_name='iam',
+                type_class=group
+            )
         fake_boto.assert_called_with(
             'iam',
             aws_access_key_id='xxx',
@@ -102,8 +103,18 @@ class TestIAMGroup(TestBase):
                 'Arn': 'arn_id'
             }
         })
-
-        group.create(ctx=_ctx, resource_config=None, iface=None, params=None)
+        with patch('cloudify_common_sdk.'
+                   'utils.ctx_from_import') as mock_import_ctx:
+            mock_import_ctx.node = _ctx.node
+            mock_import_ctx.instance = _ctx.instance
+            mock_import_ctx.operation = _ctx.operation
+            with patch('cloudify_aws.common.connection.'
+                       'Boto3Connection.get_account_id'):
+                group.create(
+                    ctx=_ctx,
+                    resource_config=None,
+                    iface=None,
+                    params=None)
 
         self.fake_boto.assert_called_with(
             'iam',
@@ -120,7 +131,7 @@ class TestIAMGroup(TestBase):
             RUNTIME_PROPERTIES_AFTER_CREATE
         )
 
-    def test_delete(self, _, mock_import_ctx, *__):
+    def test_delete(self, *_):
         _ctx = self.get_mock_ctx(
             'test_delete',
             test_properties=NODE_PROPERTIES,
@@ -128,16 +139,20 @@ class TestIAMGroup(TestBase):
             type_hierarchy=GROUP_TH,
             ctx_operation_name='cloudify.interfaces.lifecycle.delete'
         )
-
         current_ctx.set(_ctx)
-        current_ctx.set(_ctx)
-        mock_import_ctx.node = _ctx.node
-        mock_import_ctx.instance = _ctx.instance
-        mock_import_ctx.operation = _ctx.operation
-
-        self.fake_client.delete_group = self.mock_return(DELETE_RESPONSE)
-
-        group.delete(ctx=_ctx, resource_config=None, iface=None)
+        self.fake_client.delete_group = self.mock_return(
+            DELETE_RESPONSE)
+        with patch('cloudify_common_sdk.'
+                   'utils.ctx_from_import') as mock_import_ctx:
+            mock_import_ctx.node = _ctx.node
+            mock_import_ctx.instance = _ctx.instance
+            mock_import_ctx.operation = _ctx.operation
+            with patch('cloudify_aws.common.connection.'
+                       'Boto3Connection.get_account_id'):
+                group.delete(
+                    ctx=_ctx,
+                    resource_config=None,
+                    iface=None)
 
         self.fake_boto.assert_called_with(
             'iam',
@@ -165,10 +180,16 @@ class TestIAMGroup(TestBase):
         current_ctx.set(_ctx)
 
         self.fake_client.add_user_to_group = MagicMock(return_value={})
-
-        group.attach_to(
-            ctx=_ctx, resource_config=None, iface=None
-        )
+        with patch('cloudify_common_sdk.'
+                   'utils.ctx_from_import') as mock_import_ctx:
+            mock_import_ctx.operation = _ctx.operation
+            mock_import_ctx.source = _source_ctx
+            mock_import_ctx.target = _target_ctx
+            with patch('cloudify_aws.common.connection.'
+                       'Boto3Connection.get_account_id'):
+                group.attach_to(
+                    ctx=_ctx, resource_config=None, iface=None
+                )
 
         self.fake_client.add_user_to_group.assert_called_with(
             GroupName='aws_resource_mock_id',
@@ -252,9 +273,16 @@ class TestIAMGroup(TestBase):
 
         self.fake_client.attach_group_policy = MagicMock(return_value={})
 
-        group.attach_to(
-            ctx=_ctx, resource_config=None, iface=None
-        )
+        with patch('cloudify_common_sdk.'
+                   'utils.ctx_from_import') as mock_import_ctx:
+            mock_import_ctx.operation = _ctx.operation
+            mock_import_ctx.source = _source_ctx
+            mock_import_ctx.target = _target_ctx
+            with patch('cloudify_aws.common.connection.'
+                       'Boto3Connection.get_account_id'):
+                group.attach_to(
+                    ctx=_ctx, resource_config=None, iface=None
+                )
 
         self.fake_client.attach_group_policy.assert_called_with(
             GroupName='aws_resource_mock_id',
@@ -278,9 +306,26 @@ class TestIAMGroup(TestBase):
             }
         })
 
-        test_instance = group.IAMGroup(ctx_node, resource_id='group_id',
-                                       client=self.fake_client,
-                                       logger=None)
+        _ctx = self.get_mock_ctx(
+            'test_poststart',
+            test_properties=NODE_PROPERTIES,
+            test_runtime_properties=DEFAULT_RUNTIME_PROPERTIES,
+            type_hierarchy=GROUP_TH
+        )
+        current_ctx.set(_ctx)
+        with patch('cloudify_common_sdk.'
+                   'utils.ctx_from_import') as mock_import_ctx:
+            mock_import_ctx.node = _ctx.node
+            mock_import_ctx.instance = _ctx.instance
+            mock_import_ctx.operation = _ctx.operation
+            with patch('cloudify_aws.common.connection.'
+                       'Boto3Connection.get_account_id'):
+                test_instance = group.IAMGroup(
+                    ctx_node,
+                    resource_id='group_id',
+                    client=self.fake_client,
+                    logger=None
+                )
 
         self.assertEqual(test_instance.properties, {
             'GroupName': "group_name_id",
@@ -298,10 +343,26 @@ class TestIAMGroup(TestBase):
                 'Arn': 'arn_id'
             }
         })
-
-        test_instance = group.IAMGroup(ctx_node, resource_id='group_id',
-                                       client=self.fake_client,
-                                       logger=None)
+        _ctx = self.get_mock_ctx(
+            'test_poststart',
+            test_properties=NODE_PROPERTIES,
+            test_runtime_properties=DEFAULT_RUNTIME_PROPERTIES,
+            type_hierarchy=GROUP_TH
+        )
+        current_ctx.set(_ctx)
+        with patch('cloudify_common_sdk.'
+                   'utils.ctx_from_import') as mock_import_ctx:
+            mock_import_ctx.node = _ctx.node
+            mock_import_ctx.instance = _ctx.instance
+            mock_import_ctx.operation = _ctx.operation
+            with patch('cloudify_aws.common.connection.'
+                       'Boto3Connection.get_account_id'):
+                test_instance = group.IAMGroup(
+                    ctx_node,
+                    resource_id='group_id',
+                    client=self.fake_client,
+                    logger=None
+                )
 
         self.assertEqual(test_instance.status, 'available')
 

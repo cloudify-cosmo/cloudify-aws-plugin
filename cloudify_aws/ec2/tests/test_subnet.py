@@ -190,11 +190,11 @@ class TestEC2Subnet(TestBase):
         )
         self.subnet.resource_id = 'baz'
         ctx.instance.runtime_properties.update({
-                'aws_resource_id': 'baz',
-                'expected_configuration': original_value,
-                'previous_configuration': {},
-                'create_response': original_value
-            })
+            'aws_resource_id': 'baz',
+            'expected_configuration': original_value,
+            'previous_configuration': {},
+            'create_response': original_value
+        })
         current_ctx.set(ctx)
         self.subnet.import_configuration(
             ctx.node.properties.get('resource_config', {}),

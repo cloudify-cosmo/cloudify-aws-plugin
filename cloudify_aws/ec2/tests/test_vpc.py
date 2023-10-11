@@ -164,11 +164,11 @@ class TestEC2Vpc(TestBase):
         }
         ctx = self.get_mock_ctx("Vpc")
         ctx.instance.runtime_properties.update({
-                'aws_resource_id': 'test_name',
-                'expected_configuration': original_value,
-                'previous_configuration': {},
-                'create_response': original_value
-            })
+            'aws_resource_id': 'test_name',
+            'expected_configuration': original_value,
+            'previous_configuration': {},
+            'create_response': original_value
+        })
         current_ctx.set(ctx)
         self.vpc.client = self.make_client_function(
             'describe_vpcs', return_value=next_value)

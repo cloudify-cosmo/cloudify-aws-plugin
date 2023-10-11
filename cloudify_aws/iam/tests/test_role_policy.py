@@ -57,8 +57,6 @@ RUNTIME_PROPERTIES_AFTER_CREATE = {
 }
 
 
-@patch('cloudify_common_sdk.utils.ctx_from_import')
-@patch('cloudify_aws.common.connection.Boto3Connection.get_account_id')
 class TestIAMRolePolicy(TestBase):
 
     def setUp(self):
@@ -77,41 +75,100 @@ class TestIAMRolePolicy(TestBase):
         super(TestIAMRolePolicy, self).tearDown()
 
     def test_IAMRolePolicyClass_properties(self, *_):
-        test_instance = role_policy.IAMRolePolicy(
-            ctx_node, resource_id='role_id',
-            client=self.fake_client, logger=None)
+        _ctx = self.get_mock_ctx(
+            'test_poststart',
+            test_properties=NODE_PROPERTIES,
+            test_runtime_properties=RUNTIME_PROPERTIES_AFTER_CREATE,
+            type_hierarchy=ROLEPOLICY_TH,
+            ctx_operation_name='cloudify.interfaces.lifecycle.poststart'
+        )
+        current_ctx.set(_ctx)
+        with patch('cloudify_common_sdk.'
+                   'utils.ctx_from_import') as mock_import_ctx:
+            mock_import_ctx.node = _ctx.node
+            mock_import_ctx.instance = _ctx.instance
+            mock_import_ctx.operation = _ctx.operation
+            test_instance = role_policy.IAMRolePolicy(
+                ctx_node, resource_id='role_id',
+                client=self.fake_client, logger=None)
 
         self.assertIsNone(test_instance.properties)
 
     def test_IAMRolePolicyClass_status(self, *_):
-        test_instance = role_policy.IAMRolePolicy(
-            ctx_node, resource_id='role_id',
-            client=self.fake_client, logger=None)
-
+        _ctx = self.get_mock_ctx(
+            'test_poststart',
+            test_properties=NODE_PROPERTIES,
+            test_runtime_properties=RUNTIME_PROPERTIES_AFTER_CREATE,
+            type_hierarchy=ROLEPOLICY_TH,
+            ctx_operation_name='cloudify.interfaces.lifecycle.poststart'
+        )
+        current_ctx.set(_ctx)
+        with patch('cloudify_common_sdk.'
+                   'utils.ctx_from_import') as mock_import_ctx:
+            mock_import_ctx.node = _ctx.node
+            mock_import_ctx.instance = _ctx.instance
+            mock_import_ctx.operation = _ctx.operation
+            test_instance = role_policy.IAMRolePolicy(
+                ctx_node,
+                resource_id='role_id',
+                client=self.fake_client,
+                logger=None)
         self.assertIsNone(test_instance.status)
 
     def test_IAMRolePolicyClass_create(self, *_):
-        test_instance = role_policy.IAMRolePolicy(
-            ctx_node, resource_id='role_id',
-            client=self.fake_client, logger=None)
+        _ctx = self.get_mock_ctx(
+            'test_create',
+            test_properties=NODE_PROPERTIES,
+            test_runtime_properties={},
+            type_hierarchy=ROLEPOLICY_TH,
+            ctx_operation_name='cloudify.interfaces.lifecycle.create'
+        )
+        current_ctx.set(_ctx)
+        with patch('cloudify_common_sdk.'
+                   'utils.ctx_from_import') as mock_import_ctx:
+            mock_import_ctx.node = _ctx.node
+            mock_import_ctx.instance = _ctx.instance
+            mock_import_ctx.operation = _ctx.operation
+            test_instance = role_policy.IAMRolePolicy(
+                ctx_node,
+                resource_id='role_id',
+                client=self.fake_client,
+                logger=None)
         self.fake_client.put_role_policy = self.mock_return({"c": "d"})
         self.assertEqual(test_instance.create({"a": "b"}), {"c": "d"})
         self.fake_client.put_role_policy.assert_called_with(a='b')
 
     def test_IAMRolePolicyClass_delete(self, *_):
-        test_instance = role_policy.IAMRolePolicy(
-            ctx_node, resource_id='role_id',
-            client=self.fake_client, logger=None)
+        _ctx = self.get_mock_ctx(
+            'test_delete',
+            test_properties=NODE_PROPERTIES,
+            test_runtime_properties=RUNTIME_PROPERTIES_AFTER_CREATE,
+            type_hierarchy=ROLEPOLICY_TH,
+            ctx_operation_name='cloudify.interfaces.lifecycle.delete'
+        )
+        current_ctx.set(_ctx)
+        with patch('cloudify_common_sdk.'
+                   'utils.ctx_from_import') as mock_import_ctx:
+            mock_import_ctx.node = _ctx.node
+            mock_import_ctx.instance = _ctx.instance
+            mock_import_ctx.operation = _ctx.operation
+            test_instance = role_policy.IAMRolePolicy(
+                ctx_node,
+                resource_id='role_id',
+                client=self.fake_client,
+                logger=None)
         self.fake_client.delete_role_policy = self.mock_return({"c": "d"})
         self.assertEqual(test_instance.delete({"a": "b"}), {"c": "d"})
         self.fake_client.delete_role_policy.assert_called_with(a='b')
 
     def test_create_raises_UnknownServiceError(self, *_):
-        fake_boto = self._prepare_create_raises_UnknownServiceError(
-            type_hierarchy=ROLEPOLICY_TH,
-            type_name='iam',
-            type_class=role_policy
-        )
+        with patch('cloudify_aws.common.connection.'
+                   'Boto3Connection.get_account_id'):
+            fake_boto = self._prepare_create_raises_UnknownServiceError(
+                type_hierarchy=ROLEPOLICY_TH,
+                type_name='iam',
+                type_class=role_policy
+            )
         fake_boto.assert_called_with(
             'iam',
             aws_access_key_id='xxx',
@@ -140,8 +197,13 @@ class TestIAMRolePolicy(TestBase):
 
         self.fake_client.put_role_policy = self.mock_return({})
 
-        role_policy.create(ctx=_ctx, resource_config=None, iface=None,
-                           params=None)
+        with patch('cloudify_aws.common.connection.'
+                   'Boto3Connection.get_account_id'):
+            role_policy.create(
+                ctx=_ctx,
+                resource_config=None,
+                iface=None,
+                params=None)
 
         self.fake_boto.assert_called_with(
             'iam',
@@ -182,8 +244,13 @@ class TestIAMRolePolicy(TestBase):
 
         self.fake_client.delete_role_policy = self.mock_return({})
 
-        role_policy.delete(ctx=_ctx, resource_config={}, iface=None,
-                           params=None)
+        with patch('cloudify_aws.common.connection.'
+                   'Boto3Connection.get_account_id'):
+            role_policy.delete(
+                ctx=_ctx,
+                resource_config={},
+                iface=None,
+                params=None)
 
         self.fake_boto.assert_called_with(
             'iam',

@@ -259,10 +259,8 @@ class TestRDSParameterGroup(TestBase):
 
         self.assertEqual(
             text_type(error.exception),
-            (
-                'RDS Parameter Group ID# "dev-db-param-group"' +
-                ' is still in a pending state.'
-            )
+            'RDS Parameter Group ID# "dev-db-param-group" '
+            'is still in a pending state.'
         )
 
     def _create_parameter_relationships(self, node_id):

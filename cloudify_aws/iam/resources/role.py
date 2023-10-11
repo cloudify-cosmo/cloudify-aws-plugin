@@ -85,7 +85,7 @@ class IAMRole(IAMBase):
                         if self.resource_id in role.get('RoleName'):
                             pm = {
                                 'InstanceProfileName': instance_profile.get(
-                                       'InstanceProfileName'),
+                                    'InstanceProfileName'),
                                 'RoleName': role.get('RoleName')
                             }
                             self.client.remove_role_from_instance_profile(**pm)

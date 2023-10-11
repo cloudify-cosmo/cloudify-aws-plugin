@@ -90,7 +90,7 @@ class EC2SpotFleetRequest(EC2Base):
         '''Gets the status of an external resource'''
         if self.properties:
             return self.properties.get('SpotFleetRequestState') or \
-                   self.properties.get('ActivityStatus')
+                self.properties.get('ActivityStatus')
 
     @property
     def check_status(self):

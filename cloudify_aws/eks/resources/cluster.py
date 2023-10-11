@@ -57,14 +57,14 @@ def _inject_cluster_name_header(request, **kwargs):
 
 
 def _register_cluster_name_handlers(sts_client):
-        sts_client.meta.events.register(
-            'provide-client-params.sts.GetCallerIdentity',
-            _retrieve_cluster_name
-        )
-        sts_client.meta.events.register(
-            'before-sign.sts.GetCallerIdentity',
-            _inject_cluster_name_header
-        )
+    sts_client.meta.events.register(
+        'provide-client-params.sts.GetCallerIdentity',
+        _retrieve_cluster_name
+    )
+    sts_client.meta.events.register(
+        'before-sign.sts.GetCallerIdentity',
+        _inject_cluster_name_header
+    )
 
 
 class EKSCluster(EKSBase):
@@ -267,8 +267,8 @@ def create(ctx, iface, resource_config, **_):
 
 @decorators.aws_resource(EKSCluster, RESOURCE_TYPE, waits_for_status=False)
 def poststart(ctx, iface, resource_config, **_):
-    name = resource_config.get('name') or \
-           ctx.node.properties.get('resource_id')
+    name = resource_config.get('name') or ctx.node.properties.get(
+        'resource_id')
     if name:
         resource_config['name'] = name
     # wait for cluster to be active

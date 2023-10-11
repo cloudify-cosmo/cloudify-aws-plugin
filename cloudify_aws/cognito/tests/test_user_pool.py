@@ -46,9 +46,9 @@ NODE_PROPERTIES = {
         },
         "Schema": [
             {
-              "Name": "slackId",
-              "AttributeDataType": "String",
-              "Mutable": True
+                "Name": "slackId",
+                "AttributeDataType": "String",
+                "Mutable": True
             }
         ],
     },

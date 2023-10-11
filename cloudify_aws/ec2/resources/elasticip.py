@@ -116,9 +116,10 @@ class EC2ElasticIP(EC2Base):
         '''
             Attach an AWS EC2 ElasticIP to an Instance or a NetworkInterface.
         '''
-        self.logger.debug('Attaching %s with: %s'
-                          % (self.resource_id, params.get(INSTANCE_ID) or
-                             params.get(NETWORKINTERFACE_ID)))
+        self.logger.debug(
+            'Attaching {} with: {}'.format(
+                self.resource_id,
+                params.get(INSTANCE_ID) or params.get(NETWORKINTERFACE_ID)))
         res = self.client.associate_address(**params)
         self.logger.debug('Response: %s' % res)
         return res
@@ -127,9 +128,10 @@ class EC2ElasticIP(EC2Base):
         '''
             Detach an AWS EC2 ElasticIP from an Instance or a NetworkInterface.
         '''
-        self.logger.debug('Detaching %s from: %s'
-                          % (self.resource_id, params.get(INSTANCE_ID) or
-                             params.get(NETWORKINTERFACE_ID)))
+        self.logger.debug(
+            'Detaching {} with: {}'.format(
+                self.resource_id,
+                params.get(INSTANCE_ID) or params.get(NETWORKINTERFACE_ID)))
         res = self.client.disassociate_address(**params)
         self.logger.debug('Response: %s' % res)
         return res
@@ -211,7 +213,7 @@ def delete(ctx, iface, resource_config, **_):
     try:
         iface.delete(resource_config)
     except ClientError as e:
-        if 'AuthFailure' is text_type(e):
+        if 'AuthFailure' in text_type(e):
             raise OperationRetry('Address has not released yet.')
         else:
             pass

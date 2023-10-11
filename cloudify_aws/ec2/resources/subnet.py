@@ -247,7 +247,7 @@ def _create(ctx_node, iface, params, logger):
                 "{0} is not available".format(params['AvailabilityZone']))
 
 
-def _modify_attribute(iface,  modify_subnet_attribute_args):
+def _modify_attribute(iface, modify_subnet_attribute_args):
     if modify_subnet_attribute_args:
         modify_subnet_attribute_args[SUBNET_ID] = \
             iface.resource_id

@@ -211,11 +211,11 @@ class TestEKSCluster(TestBase):
 
         ctx = self.get_mock_ctx("Cluster")
         ctx.instance.runtime_properties.update({
-                'aws_resource_id': 'test_name',
-                'expected_configuration': original_value,
-                'previous_configuration': {},
-                'create_response': {'cluster': original_value}
-            })
+            'aws_resource_id': 'test_name',
+            'expected_configuration': original_value,
+            'previous_configuration': {},
+            'create_response': {'cluster': original_value}
+        })
         current_ctx.set(ctx)
         self.cluster.resource_id = 'test_name'
         self.cluster.client = self.make_client_function(
