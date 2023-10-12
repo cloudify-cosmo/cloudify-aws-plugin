@@ -329,7 +329,7 @@ class TestUtils(TestBase):
         out = utils.get_tags_list(a, b, c)
         self.assertTrue(
             all([isinstance(t['Value'], text_type) for t in out]))
-        self.assertTrue(len(out) is 3)
+        self.assertEqual(len(out), 3)
 
 
 if __name__ == '__main__':

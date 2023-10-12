@@ -12,27 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-    Cloudwatch
+    ECR
     ~~~
-    AWS Cloudwatch base interface
+    AWS ECR base interface
 """
 # Cloudify AWS
-from cloudify_aws.common import AWSResourceBase
-from cloudify_aws.common.connection import Boto3Connection
-
-# pylint: disable=R0903
+from cloudify_aws_sdk.client import GenericAWSConnection
 
 
-class AWSCloudwatchBase(AWSResourceBase):
-    """
-        AWS Cloudwatch interface
-    """
-    def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
-        AWSResourceBase.__init__(
-            self,
-            client or Boto3Connection(ctx_node).client('cloudwatch'),
-            resource_id=resource_id,
-            logger=logger)
+class ECRBase(GenericAWSConnection):
+
+    def __init__(self,
+                 ctx_node,
+                 resource_id=None,
+                 logger=None,
+                 **kwargs):
+        kwargs.update({'service_name': 'ecr'})
+        super().__init__(**kwargs)
+        self.ctx_node = ctx_node
+        self.resource_id = resource_id
 
     @property
     def properties(self):
@@ -44,10 +42,5 @@ class AWSCloudwatchBase(AWSResourceBase):
         """Gets the status of an external resource"""
         raise NotImplementedError()
 
-    def create(self, params):
-        """Creates a resource"""
-        raise NotImplementedError()
-
-    def delete(self, params=None):
-        """Deletes a resource"""
-        raise NotImplementedError()
+    def populate_resource(self, *_, **__):
+        pass

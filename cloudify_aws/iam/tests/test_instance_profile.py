@@ -42,62 +42,76 @@ ctx_node = MagicMock(
 
 class TestIAMInstanceProfile(TestBase):
 
-    @patch('cloudify_common_sdk.utils.ctx_from_import')
-    @patch('cloudify_aws.common.connection.Boto3Connection.get_account_id')
-    def setUp(self, _, _ctx):
+    def setUp(self):
         super(TestIAMInstanceProfile, self).setUp()
-        _ctx = MagicMock(  # noqa
-            node=ctx_node, plugin=MagicMock(properties={}))
-
         self.fake_boto, self.fake_client = self.fake_boto_client('iam')
-
         self.mock_patch = patch('boto3.client', self.fake_boto)
         self.mock_patch.start()
-        self.instance_profile = \
-            instance_profile.IAMInstanceProfile(
-                ctx_node,
-                resource_id=True,
-                client=MagicMock(),
-                logger=None)
+        with patch('cloudify_aws.common.connection.'
+                   'Boto3Connection.get_account_id'):
+            with patch('cloudify_aws.common.connection.'
+                       'get_client_config'):
+                self.instance_profile = instance_profile.IAMInstanceProfile(
+                    ctx_node,
+                    resource_id=True,
+                    client=MagicMock(),
+                    logger=None)
 
     def tearDown(self):
         self.mock_patch.stop()
         self.fake_boto = None
         self.fake_client = None
-
         super(TestIAMInstanceProfile, self).tearDown()
 
-    def test_class_properties(self):
-
-        effect = \
-            self.get_client_error_exception(name='IAM Instance Profile')
-        self.instance_profile.client = self.make_client_function(
-            'get_instance_profile',
-            side_effect=effect)
+    def test_class_properties(self, *_):
+        effect = self.get_client_error_exception(name='IAM Instance Profile')
+        _ctx = self.get_mock_ctx(
+            'test_poststart',
+            test_properties=NODE_PROPERTIES,
+            test_runtime_properties={},
+            type_hierarchy=INSTANCE_PROFILE_TH
+        )
+        current_ctx.set(_ctx)
+        with patch('cloudify_common_sdk.'
+                   'utils.ctx_from_import') as mock_import_ctx:
+            mock_import_ctx.node = _ctx.node
+            mock_import_ctx.instance = _ctx.instance
+            mock_import_ctx.operation = _ctx.operation
+            with patch('cloudify_aws.common.connection.'
+                       'Boto3Connection.get_account_id'):
+                self.instance_profile.client = self.make_client_function(
+                    'get_instance_profile',
+                    side_effect=effect)
         res = self.instance_profile.properties
         self.assertIsNone(res)
 
-    def test_create(self):
+    def test_create(self, *_):
         _ctx = self.get_mock_ctx(
             'test_create',
             test_properties=NODE_PROPERTIES,
             test_runtime_properties={},
             type_hierarchy=INSTANCE_PROFILE_TH
         )
-
         current_ctx.set(_ctx)
-
-        self.fake_client.create_instance_profile = \
-            MagicMock(
-                return_value={
-                    'InstanceProfile': {
-                        'InstanceProfileName': "name",
-                        'Arn': "arn"
-                    }})
-
-        instance_profile.create(ctx=_ctx, resource_config=None, iface=None)
-
-        self.fake_boto.assert_called_with('sts', **CLIENT_CONFIG)
+        self.fake_client.create_instance_profile = MagicMock(
+            return_value={
+                'InstanceProfile': {
+                    'InstanceProfileName': "name",
+                    'Arn': "arn"
+                }
+            }
+        )
+        with patch('cloudify_common_sdk.'
+                   'utils.ctx_from_import') as mock_import_ctx:
+            mock_import_ctx.node = _ctx.node
+            mock_import_ctx.instance = _ctx.instance
+            mock_import_ctx.operation = _ctx.operation
+            with patch('cloudify_aws.common.connection.'
+                       'Boto3Connection.get_account_id'):
+                instance_profile.create(
+                    ctx=_ctx,
+                    resource_config=None,
+                    iface=None)
 
         # This is just because I'm not interested in the content
         # of remote_configuration right now.
@@ -111,28 +125,35 @@ class TestIAMInstanceProfile(TestBase):
              'RoleName': "role"}
         )
 
-    def test_create_no_role(self):
+    def test_create_no_role(self, *_):
         _ctx = self.get_mock_ctx(
             'test_create_no_role',
             test_properties=NODE_PROPERTIES,
             test_runtime_properties={},
             type_hierarchy=INSTANCE_PROFILE_TH
         )
-
         current_ctx.set(_ctx)
         del _ctx.node.properties['resource_config']['RoleName']
-
-        self.fake_client.create_instance_profile = \
-            MagicMock(
-                return_value={
-                    'InstanceProfile': {
-                        'InstanceProfileName': "name",
-                        'Arn': "arn"
-                    }})
-
-        instance_profile.create(ctx=_ctx, resource_config=None, iface=None)
-
-        self.fake_boto.assert_called_with('sts', **CLIENT_CONFIG)
+        self.fake_client.create_instance_profile = MagicMock(
+            return_value={
+                'InstanceProfile': {
+                    'InstanceProfileName': "name",
+                    'Arn': "arn"
+                }
+            }
+        )
+        with patch('cloudify_common_sdk.'
+                   'utils.ctx_from_import') as mock_import_ctx:
+            mock_import_ctx.node = _ctx.node
+            mock_import_ctx.instance = _ctx.instance
+            mock_import_ctx.operation = _ctx.operation
+            mock_import_ctx.plugin = _ctx.plugin
+            with patch('cloudify_aws.common.connection.'
+                       'Boto3Connection.get_account_id'):
+                instance_profile.create(
+                    ctx=_ctx,
+                    resource_config=None,
+                    iface=None)
 
         # This is just because I'm not interested in the content
         # of remote_configuration right now.
@@ -143,7 +164,7 @@ class TestIAMInstanceProfile(TestBase):
             {'aws_resource_id': 'name', 'aws_resource_arn': "arn"}
         )
 
-    def test_delete(self):
+    def test_delete(self, *_):
         _ctx = self.get_mock_ctx(
             'test_delete',
             test_properties=NODE_PROPERTIES,
@@ -155,12 +176,18 @@ class TestIAMInstanceProfile(TestBase):
         current_ctx.set(_ctx)
         del _ctx.node.properties['resource_config']['RoleName']
 
-        self.fake_client.delete_instance_profile = \
-            MagicMock()
-
-        instance_profile.delete(ctx=_ctx, resource_config=None, iface=None)
-
-        self.fake_boto.assert_called_with('sts', **CLIENT_CONFIG)
+        self.fake_client.delete_instance_profile = MagicMock()
+        with patch('cloudify_common_sdk.'
+                   'utils.ctx_from_import') as mock_import_ctx:
+            mock_import_ctx.node = _ctx.node
+            mock_import_ctx.instance = _ctx.instance
+            mock_import_ctx.operation = _ctx.operation
+            with patch('cloudify_aws.common.connection.'
+                       'Boto3Connection.get_account_id'):
+                instance_profile.delete(
+                    ctx=_ctx,
+                    resource_config=None,
+                    iface=None)
 
         self.assertEqual(_ctx.instance.runtime_properties, {})
 

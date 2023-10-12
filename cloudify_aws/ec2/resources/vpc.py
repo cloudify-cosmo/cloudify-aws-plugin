@@ -245,7 +245,7 @@ def _create(iface, params):
             raise ex
 
 
-def _modify_attribute(iface,  modify_vpc_attribute_args):
+def _modify_attribute(iface, modify_vpc_attribute_args):
     if modify_vpc_attribute_args:
         modify_vpc_attribute_args[VPC_ID] = iface.resource_id
         iface.modify_vpc_attribute(modify_vpc_attribute_args)

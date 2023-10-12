@@ -324,7 +324,7 @@ def _create(iface, params, ctx_instance):
             ctx_instance.runtime_properties.get('device_index'))
 
 
-def _modify_attribute(iface,  modify_network_interface_attribute_args):
+def _modify_attribute(iface, modify_network_interface_attribute_args):
     if modify_network_interface_attribute_args:
         modify_network_interface_attribute_args[NETWORKINTERFACE_ID] = \
             iface.resource_id

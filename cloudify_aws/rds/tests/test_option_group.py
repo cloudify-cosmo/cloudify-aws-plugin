@@ -198,10 +198,8 @@ class TestRDSOptionGroup(TestBase):
 
         self.assertEqual(
             text_type(error.exception),
-            (
-                'RDS Option Group ID# "dev-db-option-group" is still ' +
-                'in a pending state.'
-            )
+            'RDS Option Group ID# "dev-db-option-group" is still '
+            'in a pending state.'
         )
 
     def test_delete_client_error(self):
@@ -249,10 +247,9 @@ class TestRDSOptionGroup(TestBase):
             )
 
         self.assertEqual(
-            text_type(error.exception), (
-                'An error occurred (InvalidFault) when calling the ' +
-                'client_error_test_delete operation: SomeMessage'
-            )
+            text_type(error.exception),
+            'An error occurred (InvalidFault) when calling the '
+            'client_error_test_delete operation: SomeMessage'
         )
 
     def test_attach_to(self):

@@ -1,0 +1,44 @@
+tosca_definitions_version: cloudify_dsl_1_5
+
+description: Generate Tokens and Create Repository
+
+imports:
+  - cloudify/types/types.yaml
+  - plugin:cloudify-aws-plugin:
+      aws_access_key_id: { get_secret: aws_access_key_id }
+      aws_secret_access_key: { get_secret: aws_secret_access_key }
+      region_name: us-east-2
+
+inputs:
+
+  registry_id:
+    type: string
+    description: Account ID associated with an ECR registry.
+
+  repo_name:
+    type: string
+    description: The name of a repo.
+
+node_templates:
+
+  token:
+    type: cloudify.nodes.aws.ecr.AuthenticationToken
+    properties:
+      resource_config:
+        registryIds:
+          - { get_input: registry_id }
+
+  repo:
+    type: cloudify.nodes.aws.ecr.Repository
+    properties:
+      resource_config:
+        registryId: { get_input: registry_id }
+        repositoryName: { get_input: repo_name }
+        tags:
+          - Key: created-by
+            Value: ecr-feature-demo
+        imageTagMutability: MUTABLE
+        imageScanningConfiguration:
+          scanOnPush: true
+        encryptionConfiguration:
+          encryptionType: AES256

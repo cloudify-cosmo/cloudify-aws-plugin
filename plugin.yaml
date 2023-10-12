@@ -2,7 +2,7 @@ plugins:
   aws:
     executor: central_deployment_agent
     package_name: cloudify-aws-plugin
-    package_version: 3.1.9
+    package_version: 3.2.0
 
 data_types:
   cloudify.datatypes.swift.Connection:
@@ -1060,6 +1060,33 @@ data_types:
         required: false
       kwargs:
         default: {}
+  cloudify.datatypes.aws.ecr.AuthenticationToken.config:
+    properties:
+      registryIds:
+        type: list
+  cloudify.datatypes.aws.ecr.Repository.config:
+    properties:
+      registryId:
+        type: string
+        required: false
+      repositoryName:
+        type: string
+        required: true
+      tags:
+        type: list
+        required: false
+      imageTagMutability:
+        type: string
+        default: MUTABLE
+      imageScanningConfiguration:
+        type: dict
+        default:
+          scanOnPush: true
+      encryptionConfiguration:
+        type: dict
+        default:
+          encryptionType: AES256
+
 dsl_definitions:
   use_external_resource_desc: >
     Indicate whether the resource exists or if Cloudify should create the resource, true if you are bringing an existing resource, false if you want cloudify to create it.
@@ -1106,6 +1133,7 @@ dsl_definitions:
     cloudify.interfaces.validation: &id009
       check_status:
         implementation: aws.cloudify_aws.workflows.check_status.check_status
+
 node_types:
   cloudify.nodes.aws.dynamodb.Table:
     derived_from: cloudify.nodes.Root
@@ -4399,6 +4427,61 @@ node_types:
             runtime_properties: *id005
             force_operation: *id006
             resource_config: *id007
+  cloudify.nodes.aws.ecr.AuthenticationToken:
+    derived_from: cloudify.nodes.Root
+    properties:
+      use_external_resource: *id001
+      client_config: *id002
+      resource_id: *id003
+      resource_config:
+        type: cloudify.datatypes.aws.ecr.AuthenticationToken.config
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.ecr.resources.authorization_token.prepare
+          inputs:
+            aws_resource_id: *id004
+            runtime_properties: *id005
+            force_operation: *id006
+            resource_config: *id007
+        create:
+          implementation: aws.cloudify_aws.ecr.resources.authorization_token.create
+          inputs:
+            aws_resource_id: *id004
+            runtime_properties: *id005
+            force_operation: *id006
+            resource_config: *id007
+  cloudify.nodes.aws.ecr.Repository:
+    derived_from: cloudify.nodes.Root
+    properties:
+      use_external_resource: *id001
+      client_config: *id002
+      resource_id: *id003
+      resource_config:
+        type: cloudify.datatypes.aws.ecr.Repository.config
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.ecr.resources.repository.prepare
+          inputs:
+            aws_resource_id: *id004
+            runtime_properties: *id005
+            force_operation: *id006
+            resource_config: *id007
+        create:
+          implementation: aws.cloudify_aws.ecr.resources.repository.create
+          inputs:
+            aws_resource_id: *id004
+            runtime_properties: *id005
+            force_operation: *id006
+            resource_config: *id007
+        delete:
+          implementation: aws.cloudify_aws.ecr.resources.repository.delete
+          inputs:
+            aws_resource_id: *id004
+            runtime_properties: *id005
+            force_operation: *id006
+            resource_config: *id007
   cloudify.nodes.resources.AmazonWebServices:
     derived_from: cloudify.nodes.Root
     properties:
@@ -4427,6 +4510,7 @@ node_types:
             runtime_properties: *id005
             force_operation: *id006
             resource_config: *id007
+
 relationships:
   cloudify.relationships.aws.connected_to:
     derived_from: cloudify.relationships.connected_to
@@ -4671,6 +4755,7 @@ relationships:
           implementation: aws.cloudify_aws.eks.resources.cluster.refresh_kubeconfig
         unlink:
           implementation: aws.cloudify_aws.eks.resources.cluster.refresh_kubeconfig
+
 workflows:
   discover_and_deploy:
     mapping: aws.cloudify_aws.workflows.discover.discover_and_deploy
@@ -4690,3 +4775,4 @@ workflows:
       blueprint_id:
         type: string
         default: existing-eks-cluster
+

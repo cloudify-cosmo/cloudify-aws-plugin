@@ -355,10 +355,8 @@ class TestRDSInstance(TestBase):
             )
         self.assertEqual(
             text_type(error.exception),
-            (
-                'Missing required relationship inputs ' +
-                '"iam_role_type_key" and/or "iam_role_id_key".'
-            )
+            'Missing required relationship inputs '
+            '"iam_role_type_key" and/or "iam_role_id_key".'
         )
 
     def test_prepare_assoc_Role(self):

@@ -202,7 +202,7 @@ def create(ctx, iface, resource_config, minimum_wait_time=None, **_):
                                            'UPDATE_COMPLETE_'
                                            'CLEANUP_IN_PROGRESS']:
         raise NonRecoverableError(
-            'Stack deployment failed in status {}, reason: {}'.format(
+            'Stack deployment {} failed in status {}, reason: {}'.format(
                 iface.resource_id, iface.status, iface.properties.get(
                     'StackStatusReason')))
 

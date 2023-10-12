@@ -1,4 +1,4 @@
-# Copyright (c) 2018 Cloudify Platform Ltd. All rights reserved
+# Copyright (c) 2023 Cloudify Platform LTD. All rights reserved
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -37,11 +37,11 @@ setup(
     description='A Cloudify plugin for AWS',
     install_requires=[
         'boto3',
-        'cloudify-common>=4.5',
-        'cloudify-utilities-plugins-sdk>=0.0.119',
         'botocore',
-        'pycryptodome==3.9.7',
+        'datetime',
         'deepdiff==3.3.0',
-        'datetime'
+        'cloudify-common>=4.5',
+        'pycryptodome==3.19.0',
+        'cloudify-utilities-plugins-sdk>=0.0.126',
     ]
 )
