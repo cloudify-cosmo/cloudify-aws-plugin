@@ -275,11 +275,11 @@ class TestEKSNodeGroup(TestBase):
 
         ctx = self.get_mock_ctx("NodeGroup")
         ctx.instance.runtime_properties.update({
-                'aws_resource_id': 'test_name',
-                'expected_configuration': original_value,
-                'previous_configuration': {},
-                'create_response': {'nodegroup': original_value}
-            })
+            'aws_resource_id': 'test_name',
+            'expected_configuration': original_value,
+            'previous_configuration': {},
+            'create_response': {'nodegroup': original_value}
+        })
         current_ctx.set(ctx)
         self.node_group.resource_id = 'test_name'
         self.node_group.client = self.make_client_function(

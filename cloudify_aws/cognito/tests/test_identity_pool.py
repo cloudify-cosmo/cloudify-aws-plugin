@@ -39,9 +39,7 @@ NODE_PROPERTIES = {
     'resource_config': {
         "IdentityPoolName": IDENTITY_POOL_NAME,
         "AllowUnauthenticatedIdentities": True,
-        "SupportedLoginProviders": {
-              "www.amazon.com": 'foo',
-        },
+        "SupportedLoginProviders": {"www.amazon.com": 'foo'},
         "CognitoIdentityProviders": [
             {
                 "ClientId": 'foo',

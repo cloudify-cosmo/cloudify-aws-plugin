@@ -13,6 +13,7 @@
 # limitations under the License.
 
 # Standard imports
+import json
 import unittest
 import collections
 
@@ -55,10 +56,19 @@ NODE_PROPERTIES = {
     'client_config': CLIENT_CONFIG
 }
 
-ASSUME_STR = (
-    '{"Version": "2012-10-17", "Statement": [{"Action": "sts:AssumeRole", ' +
-    '"Effect": "Allow", "Principal": {"Service": "lambda.amazonaws.com"}}]}'
-)
+ASSUME_JSON = {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Action": "sts:AssumeRole",
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "lambda.amazonaws.com"
+            }
+        }
+    ]
+}
+ASSUME_STR = json.dumps(ASSUME_JSON)
 
 NODE_PROPERTIES_ASSUME_STR = {
     'resource_id': 'CloudifyLambdaEC2Role',
@@ -89,8 +99,6 @@ ctx_node = MagicMock(
 )
 
 
-@patch('cloudify_common_sdk.utils.ctx_from_import')
-@patch('cloudify_aws.common.connection.Boto3Connection.get_account_id')
 class TestIAMRole(TestBase):
 
     def setUp(self):
@@ -116,9 +124,13 @@ class TestIAMRole(TestBase):
         )
 
     def _prepare_create_raises_UnknownServiceError(
-        self, type_hierarchy, type_name, type_class,
-        type_node='cloudify.nodes.Root', operation_name=None,
-    ):
+            self,
+            type_hierarchy,
+            type_name,
+            type_class,
+            type_node='cloudify.nodes.Root',
+            operation_name=None):
+
         _ctx = self.get_mock_ctx(
             'test_create',
             test_properties=DEFAULT_NODE_PROPERTIES,
@@ -127,28 +139,33 @@ class TestIAMRole(TestBase):
             type_node=type_node,
             ctx_operation_name=operation_name,
         )
-
         current_ctx.set(_ctx)
-
-        fake_boto, fake_client = self.fake_boto_client(type_name)
-
-        fake_client.get_role = MagicMock(return_value={
-            'Role': {
-                'RoleName': "role_name_id",
-                'Arn': "arn_id"
-            }
-        })
-        with patch('boto3.client', fake_boto):
-            with self.assertRaises(UnknownServiceError) as error:
-                type_class.create(ctx=_ctx, resource_config=None, iface=None)
+        with patch('cloudify_common_sdk.'
+                   'utils.ctx_from_import') as mock_import_ctx:
+            mock_import_ctx.node = _ctx.node
+            mock_import_ctx.instance = _ctx.instance
+            mock_import_ctx.operation = _ctx.operation
+            with patch('cloudify_aws.common.connection.'
+                       'Boto3Connection.get_account_id'):
+                fake_boto, fake_client = self.fake_boto_client(type_name)
+                fake_client.get_role = MagicMock(return_value={
+                    'Role': {
+                        'RoleName': "role_name_id",
+                        'Arn': "arn_id"
+                    }
+                })
+                with patch('boto3.client', fake_boto):
+                    with self.assertRaises(UnknownServiceError) as error:
+                        type_class.create(
+                            ctx=_ctx,
+                            resource_config=None,
+                            iface=None
+                        )
 
             self.assertEqual(
                 text_type(error.exception),
-                (
-                    "Unknown service: '" +
-                    type_name +
-                    "'. Valid service names are: ['rds']"
-                )
+                f"Unknown service: '{type_name}'. "
+                "Valid service names are: ['rds']"
             )
 
             fake_boto.assert_called_with(
@@ -180,8 +197,19 @@ class TestIAMRole(TestBase):
                 'Arn': "arn_id"
             }
         })
+        with patch('cloudify_common_sdk.'
+                   'utils.ctx_from_import') as mock_import_ctx:
+            mock_import_ctx.node = _ctx.node
+            mock_import_ctx.instance = _ctx.instance
+            mock_import_ctx.operation = _ctx.operation
+            with patch('cloudify_aws.common.connection.'
+                       'Boto3Connection.get_account_id'):
 
-        role.create(ctx=_ctx, resource_config=None, iface=None, params=None)
+                role.create(
+                    ctx=_ctx,
+                    resource_config=None,
+                    iface=None,
+                    params=None)
 
         self.fake_boto.assert_called_with(
             'iam',
@@ -209,9 +237,7 @@ class TestIAMRole(TestBase):
             test_runtime_properties=DEFAULT_RUNTIME_PROPERTIES,
             type_hierarchy=ROLE_TH
         )
-
         current_ctx.set(_ctx)
-
         self.fake_client.get_role = MagicMock(return_value={
             'Role': {
                 'RoleName': "role_name_id",
@@ -228,7 +254,19 @@ class TestIAMRole(TestBase):
 
         mock_iface = MagicMock()
         mock_iface.status = 'available'
-        role.create(ctx=_ctx, resource_config=None, iface=mock_iface,
+
+        with patch('cloudify_common_sdk.'
+                   'utils.ctx_from_import') as mock_import_ctx:
+            mock_import_ctx.node = _ctx.node
+            mock_import_ctx.instance = _ctx.instance
+            mock_import_ctx.operation = _ctx.operation
+            with patch('cloudify_aws.common.connection.'
+                       'Boto3Connection.get_account_id'):
+
+                role.create(
+                    ctx=_ctx,
+                    resource_config=None,
+                    iface=mock_iface,
                     params=None)
 
         self.fake_boto.assert_called_with(
@@ -259,17 +297,23 @@ class TestIAMRole(TestBase):
 
         current_ctx.set(_ctx)
 
-        self.fake_client.get_role = MagicMock(return_value={
-            'Role': {
-                'RoleName': "role_name_id",
-                'Arn': "arn_id"
-            }
-        })
-
-        self.fake_client.delete_role = self.mock_return(DELETE_RESPONSE)
-
-        self.fake_client.get_role = MagicMock(return_value={})
-        role.delete(ctx=_ctx, resource_config=None, iface=None)
+        with patch('cloudify_common_sdk.'
+                   'utils.ctx_from_import') as mock_import_ctx:
+            mock_import_ctx.node = _ctx.node
+            mock_import_ctx.instance = _ctx.instance
+            mock_import_ctx.operation = _ctx.operation
+            self.fake_client.get_role = MagicMock(return_value={
+                'Role': {
+                    'RoleName': "role_name_id",
+                    'Arn': "arn_id"
+                }
+            })
+            with patch('cloudify_aws.common.connection.'
+                       'Boto3Connection.get_account_id'):
+                self.fake_client.delete_role = self.mock_return(
+                    DELETE_RESPONSE)
+                self.fake_client.get_role = MagicMock(return_value={})
+                role.delete(ctx=_ctx, resource_config=None, iface=None)
 
         self.fake_boto.assert_called_with(
             'iam',
@@ -288,9 +332,25 @@ class TestIAMRole(TestBase):
                 'Arn': "arn_id"
             }
         })
-
-        test_instance = role.IAMRole(ctx_node, resource_id='role_id',
-                                     client=self.fake_client, logger=None)
+        _ctx = self.get_mock_ctx(
+            'test_poststart',
+            test_properties=NODE_PROPERTIES,
+            test_runtime_properties=DEFAULT_RUNTIME_PROPERTIES,
+            type_hierarchy=ROLE_TH
+        )
+        current_ctx.set(_ctx)
+        with patch('cloudify_common_sdk.'
+                   'utils.ctx_from_import') as mock_import_ctx:
+            mock_import_ctx.node = _ctx.node
+            mock_import_ctx.instance = _ctx.instance
+            mock_import_ctx.operation = _ctx.operation
+            with patch('cloudify_aws.common.connection.'
+                       'Boto3Connection.get_account_id'):
+                test_instance = role.IAMRole(
+                    ctx_node,
+                    resource_id='role_id',
+                    client=self.fake_client,
+                    logger=None)
 
         self.assertEqual(test_instance.properties, {
             'RoleName': "role_name_id",
@@ -308,9 +368,25 @@ class TestIAMRole(TestBase):
                 'Arn': "arn_id"
             }
         })
-
-        test_instance = role.IAMRole(ctx_node, resource_id='role_id',
-                                     client=self.fake_client, logger=None)
+        _ctx = self.get_mock_ctx(
+            'test_poststart',
+            test_properties=NODE_PROPERTIES,
+            test_runtime_properties=DEFAULT_RUNTIME_PROPERTIES,
+            type_hierarchy=ROLE_TH
+        )
+        current_ctx.set(_ctx)
+        with patch('cloudify_common_sdk.'
+                   'utils.ctx_from_import') as mock_import_ctx:
+            mock_import_ctx.node = _ctx.node
+            mock_import_ctx.instance = _ctx.instance
+            mock_import_ctx.operation = _ctx.operation
+            with patch('cloudify_aws.common.connection.'
+                       'Boto3Connection.get_account_id'):
+                test_instance = role.IAMRole(
+                    ctx_node,
+                    resource_id='role_id',
+                    client=self.fake_client,
+                    logger=None)
 
         self.assertEqual(test_instance.status, 'available')
 
@@ -326,11 +402,18 @@ class TestIAMRole(TestBase):
         )
         current_ctx.set(_ctx)
 
-        self.fake_client.attach_role_policy = MagicMock(return_value={})
-
-        role.attach_to(
-            ctx=_ctx, resource_config=None, iface=None
-        )
+        with patch('cloudify_common_sdk.'
+                   'utils.ctx_from_import') as mock_import_ctx:
+            mock_import_ctx.operation = _ctx.operation
+            mock_import_ctx.source = _source_ctx
+            mock_import_ctx.target = _target_ctx
+            self.fake_client.attach_role_policy = MagicMock(
+                return_value={})
+            with patch('cloudify_aws.common.connection.'
+                       'Boto3Connection.get_account_id'):
+                role.attach_to(
+                    ctx=_ctx, resource_config=None, iface=None
+                )
 
         self.fake_client.attach_role_policy.assert_called_with(
             PolicyArn='aws_resource_mock_arn',
@@ -353,12 +436,21 @@ class TestIAMRole(TestBase):
             ['cloudify.nodes.Root', 'cloudify.nodes.aws.iam.Policy']
         )
         current_ctx.set(_ctx)
+        with patch('cloudify_common_sdk.'
+                   'utils.ctx_from_import') as mock_import_ctx:
+            mock_import_ctx.operation = _ctx.operation
+            mock_import_ctx.source = _source_ctx
+            mock_import_ctx.target = _target_ctx
 
-        self.fake_client.detach_role_policy = MagicMock(return_value={})
+            self.fake_client.detach_role_policy = MagicMock(
+                return_value={})
 
-        role.detach_from(
-            ctx=_ctx, resource_config=None, iface=None
-        )
+            with patch('cloudify_aws.common.connection.'
+                       'Boto3Connection.get_account_id'):
+
+                role.detach_from(
+                    ctx=_ctx, resource_config=None, iface=None
+                )
 
         self.fake_client.detach_role_policy.assert_called_with(
             PolicyArn='aws_resource_mock_arn',

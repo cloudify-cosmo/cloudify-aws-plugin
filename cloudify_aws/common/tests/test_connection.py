@@ -93,10 +93,12 @@ class TestConnection(TestBase):
             }
         )
 
-        self.assertEqual(connection.aws_config, {
+        self.assertEqual(
+            connection.aws_config, {
                 'aws_session_token': 'foo',
                 'region_name': 'bar'
-            })
+            }
+        )
 
 
 if __name__ == '__main__':

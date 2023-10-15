@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Standard imports
 from __future__ import unicode_literals
+
+# Standard imports
+import json
 import unittest
 
 # Third party imports
@@ -73,11 +75,22 @@ RUNTIME_PROPERTIES_AFTER_CREATE = {
     'resource_config': {},
 }
 
-POLICY_STRING = (
-    """{"Version": "2012-10-17", "Statement": [{"Action": ["SQS:SendMessag""" +
-    """e", "SQS:ReceiveMessage"], "Sid": "Sid1", "Resource": "test-queue",""" +
-    """ "Effect": "Deny", "Principal": "*"}]}"""
-)
+POLICY_JSON = {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Action": [
+                "SQS:SendMessage",
+                "SQS:ReceiveMessage"
+            ],
+            "Sid": "Sid1",
+            "Resource": "test-queue",
+            "Effect": "Deny",
+            "Principal": "*"
+        }
+    ]
+}
+POLICY_STRING = json.dumps(POLICY_JSON)
 
 
 class TestSQSQueue(TestBase):

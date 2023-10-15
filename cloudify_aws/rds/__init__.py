@@ -30,7 +30,7 @@ class RDSBase(AWSResourceBase):
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
         if not client:
             config_from_utils = get_client_config(
-               ctx_node=ctx_node, alternate_key='aws_config')
+                ctx_node=ctx_node, alternate_key='aws_config')
             check_region_name(config_from_utils.get('region_name'))
 
         AWSResourceBase.__init__(

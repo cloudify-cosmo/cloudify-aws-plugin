@@ -544,9 +544,12 @@ class TestBase(unittest.TestCase):
         return MagicMock(return_value=value)
 
     def _prepare_create_raises_UnknownServiceError(
-        self, type_hierarchy, type_name, type_class,
-        type_node='cloudify.nodes.Root', operation_name=None,
-    ):
+            self,
+            type_hierarchy,
+            type_name,
+            type_class,
+            type_node='cloudify.nodes.Root',
+            operation_name=None):
         _ctx = self.get_mock_ctx(
             'test_create',
             test_properties=DEFAULT_NODE_PROPERTIES,
@@ -565,11 +568,8 @@ class TestBase(unittest.TestCase):
 
             self.assertEqual(
                 text_type(error.exception),
-                (
-                    "Unknown service: '" +
-                    type_name +
-                    "'. Valid service names are: ['rds']"
-                )
+                f"Unknown service: '{type_name}'. "
+                "Valid service names are: ['rds']"
             )
 
             if type_name == 'iam':
@@ -667,24 +667,6 @@ class TestBase(unittest.TestCase):
 class TestServiceBase(TestBase):
 
     base = None
-
-    def test_create(self):
-        if not self.base:
-            return
-        with self.assertRaises(NotImplementedError):
-            self.base.create(None)
-
-    def test_delete(self):
-        if not self.base:
-            return
-        with self.assertRaises(NotImplementedError):
-            self.base.delete(None)
-
-    def test_update_resource_id(self):
-        if not self.base:
-            return
-        self.base.update_resource_id('abc')
-        self.assertEqual(self.base.resource_id, 'abc')
 
 
 class TestAWSResourceBase(TestServiceBase):

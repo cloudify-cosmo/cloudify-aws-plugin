@@ -2,7 +2,7 @@ plugins:
   aws:
     executor: central_deployment_agent
     package_name: cloudify-aws-plugin
-    package_version: '3.1.9'
+    package_version: '3.2.0'
     properties_description: |
       Manage AWS resources.
       Credentials documentation: https://docs.cloudify.co/latest/working_with/official_plugins/infrastructure/aws/#authentication-with-aws.
@@ -1491,6 +1491,41 @@ data_types:
       kwargs:
         description: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/cognito-identity.html#CognitoIdentity.Client.create_identity_pool
         default: {}
+
+  cloudify.datatypes.aws.ecr.AuthenticationToken.config:
+    properties:
+      registryIds:
+        type: list
+        description: A list of Amazon Web Services account IDs that are associated with the registries for which to get AuthorizationData objects. If you do not specify a registry, the default registry is assumed.
+
+  cloudify.datatypes.aws.ecr.Repository.config:
+    properties:
+      registryId:
+        type: string
+        description: The Amazon Web Services account ID associated with the registry to create the repository. If you do not specify a registry, the default registry is assumed.
+        required: false
+      repositoryName:
+        type: string
+        description: The name to use for the repository. The repository name may be specified on its own (such as nginx-web-app) or it can be prepended with a namespace to group the repository into a category (such as project-a/nginx-web-app). The repository name must start with a letter and can only contain lowercase letters, numbers, hyphens, underscores, and forward slashes.
+        required: true
+      tags:
+        type: list
+        description: The metadata that you apply to the repository to help you categorize and organize them. Each tag consists of a key and an optional value, both of which you define.
+        required: false
+      imageTagMutability:
+        type: string
+        description: The tag mutability setting for the repository. If this parameter is omitted, the default setting of MUTABLE will be used which will allow image tags to be overwritten. If IMMUTABLE is specified, all image tags within the repository will be immutable which will prevent them from being overwritten.
+        default: MUTABLE
+      imageScanningConfiguration:
+        type: dict
+        description: The image scanning configuration for the repository. This determines whether images are scanned for known vulnerabilities after being pushed to the repository. One key is accepted, scanOnPush, and its value is expected to be boolean, true or false.
+        default:
+          scanOnPush: true
+      encryptionConfiguration:
+        type: dict
+        description: The encryption configuration for the repository. This determines how the contents of your repository are encrypted at rest. Two keys are expected, encryptionType, a string, and kmsKey, a string.
+        default:
+          encryptionType: AES256
 
 dsl_definitions:
 
@@ -4202,6 +4237,49 @@ node_types:
           inputs: *operation_inputs
         delete:
           implementation: aws.cloudify_aws.cognito.resources.identity_pool.delete
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.ecr.AuthenticationToken:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ecr.AuthenticationToken.config
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.ecr.resources.authorization_token.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.ecr.resources.authorization_token.create
+          inputs: *operation_inputs
+
+  cloudify.nodes.aws.ecr.Repository:
+    derived_from: cloudify.nodes.Root
+    properties:
+      <<: *external_resource
+      <<: *client_config
+      <<: *resource_id
+      resource_config:
+        description: >
+          Configuration key-value data to be passed as-is to the corresponding
+          Boto3 method. Key names must match the case that Boto3 requires.
+        type: cloudify.datatypes.aws.ecr.Repository.config
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          implementation: aws.cloudify_aws.ecr.resources.repository.prepare
+          inputs: *operation_inputs
+        create:
+          implementation: aws.cloudify_aws.ecr.resources.repository.create
+          inputs: *operation_inputs
+        delete:
+          implementation: aws.cloudify_aws.ecr.resources.repository.delete
           inputs: *operation_inputs
 
   cloudify.nodes.resources.AmazonWebServices:

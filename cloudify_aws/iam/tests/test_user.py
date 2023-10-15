@@ -54,8 +54,6 @@ ctx_node = MagicMock(
 )
 
 
-@patch('cloudify_common_sdk.utils.ctx_from_import')
-@patch('cloudify_aws.common.connection.Boto3Connection.get_account_id')
 class TestIAMUser(TestBase):
 
     def setUp(self):
@@ -74,11 +72,13 @@ class TestIAMUser(TestBase):
         super(TestIAMUser, self).tearDown()
 
     def test_create_raises_UnknownServiceError(self, *_):
-        fake_boto = self._prepare_create_raises_UnknownServiceError(
-            type_hierarchy=USER_TH,
-            type_name='iam',
-            type_class=user
-        )
+        with patch('cloudify_aws.common.connection.'
+                   'Boto3Connection.get_account_id'):
+            fake_boto = self._prepare_create_raises_UnknownServiceError(
+                type_hierarchy=USER_TH,
+                type_name='iam',
+                type_class=user
+            )
         fake_boto.assert_called_with(
             'iam',
             aws_access_key_id='xxx',
@@ -86,12 +86,15 @@ class TestIAMUser(TestBase):
             region_name='aq-testzone-1')
 
     def test_create(self, *_):
-        _ctx = self.get_mock_ctx(
-            'test_create',
-            test_properties=NODE_PROPERTIES,
-            test_runtime_properties=DEFAULT_RUNTIME_PROPERTIES,
-            type_hierarchy=USER_TH
-        )
+
+        with patch('cloudify_aws.common.connection.'
+                   'Boto3Connection.get_account_id'):
+            _ctx = self.get_mock_ctx(
+                'test_create',
+                test_properties=NODE_PROPERTIES,
+                test_runtime_properties=DEFAULT_RUNTIME_PROPERTIES,
+                type_hierarchy=USER_TH
+            )
 
         current_ctx.set(_ctx)
         del _ctx.instance.runtime_properties[EXTERNAL_RESOURCE_ID]
@@ -103,7 +106,13 @@ class TestIAMUser(TestBase):
             }
         })
 
-        user.create(ctx=_ctx, resource_config=None, iface=None, params=None)
+        with patch('cloudify_aws.common.connection.'
+                   'Boto3Connection.get_account_id'):
+            user.create(
+                ctx=_ctx,
+                resource_config=None,
+                iface=None,
+                params=None)
         self.fake_boto.assert_called_with(
             'iam',
             aws_access_key_id='xxx',
@@ -119,7 +128,7 @@ class TestIAMUser(TestBase):
             RUNTIME_PROPERTIES_AFTER_CREATE
         )
 
-    def test_delete(self, _, mock_import_ctx, *__):
+    def test_delete(self, *_):
         _ctx = self.get_mock_ctx(
             'test_delete',
             test_properties=NODE_PROPERTIES,
@@ -129,14 +138,18 @@ class TestIAMUser(TestBase):
         )
 
         current_ctx.set(_ctx)
-        current_ctx.set(_ctx)
-        mock_import_ctx.node = _ctx.node
-        mock_import_ctx.instance = _ctx.instance
-        mock_import_ctx.operation = _ctx.operation
+        with patch('cloudify_common_sdk.'
+                   'utils.ctx_from_import') as mock_import_ctx:
+            mock_import_ctx.node = _ctx.node
+            mock_import_ctx.instance = _ctx.instance
+            mock_import_ctx.operation = _ctx.operation
 
-        self.fake_client.delete_user = self.mock_return(DELETE_RESPONSE)
+            self.fake_client.delete_user = self.mock_return(
+                DELETE_RESPONSE)
 
-        user.delete(ctx=_ctx, resource_config=None, iface=None)
+            with patch('cloudify_aws.common.connection.'
+                       'Boto3Connection.get_account_id'):
+                user.delete(ctx=_ctx, resource_config=None, iface=None)
 
         self.fake_boto.assert_called_with(
             'iam',
@@ -430,14 +443,33 @@ class TestIAMUser(TestBase):
                 'Arn': 'arn_id'
             }
         })
+        _ctx = self.get_mock_ctx(
+            'test_properties',
+            test_properties=NODE_PROPERTIES,
+            test_runtime_properties=RUNTIME_PROPERTIES_AFTER_CREATE,
+            type_hierarchy=USER_TH,
+            ctx_operation_name='cloudify.interfaces.lifecycle.delete'
+        )
 
-        test_instance = user.IAMUser(ctx_node, resource_id='user_id',
-                                     client=self.fake_client, logger=None)
+        current_ctx.set(_ctx)
+        with patch('cloudify_common_sdk.'
+                   'utils.ctx_from_import') as mock_import_ctx:
+            mock_import_ctx.node = _ctx.node
+            mock_import_ctx.instance = _ctx.instance
+            mock_import_ctx.operation = _ctx.operation
+            test_instance = user.IAMUser(
+                ctx_node,
+                resource_id='user_id',
+                client=self.fake_client,
+                logger=None)
 
-        self.assertEqual(test_instance.properties, {
-            'UserName': 'user_name_id',
-            'Arn': 'arn_id'
-        })
+            self.assertEqual(
+                test_instance.properties,
+                {
+                    'UserName': 'user_name_id',
+                    'Arn': 'arn_id'
+                }
+            )
 
         self.fake_client.get_user.assert_called_with(
             UserName='user_id'
@@ -451,11 +483,26 @@ class TestIAMUser(TestBase):
             }
         })
 
-        test_instance = user.IAMUser(ctx_node, resource_id='user_id',
-                                     client=self.fake_client, logger=None)
+        _ctx = self.get_mock_ctx(
+            'test_status',
+            test_properties=NODE_PROPERTIES,
+            test_runtime_properties=RUNTIME_PROPERTIES_AFTER_CREATE,
+            type_hierarchy=USER_TH,
+            ctx_operation_name='cloudify.interfaces.lifecycle.delete'
+        )
 
-        self.assertEqual(test_instance.status, 'available')
-
+        current_ctx.set(_ctx)
+        with patch('cloudify_common_sdk.'
+                   'utils.ctx_from_import') as mock_import_ctx:
+            mock_import_ctx.node = _ctx.node
+            mock_import_ctx.instance = _ctx.instance
+            mock_import_ctx.operation = _ctx.operation
+            test_instance = user.IAMUser(
+                ctx_node,
+                resource_id='user_id',
+                client=self.fake_client,
+                logger=None)
+            self.assertEqual(test_instance.status, 'available')
         self.fake_client.get_user.assert_called_with(
             UserName='user_id'
         )

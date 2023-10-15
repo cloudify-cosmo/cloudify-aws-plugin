@@ -13,6 +13,7 @@
 # limitations under the License.
 
 # Standard imports
+import json
 import unittest
 
 # Third party imports
@@ -25,15 +26,21 @@ from cloudify_aws.cloudwatch.resources import rule
 from cloudify_aws.common.tests.test_base import TestBase, CLIENT_CONFIG
 from cloudify_aws.common.tests.test_base import DELETE_RESPONSE
 
-
 # Constants
-RULE_TH = ['cloudify.nodes.Root',
-           'cloudify.nodes.aws.cloudwatch.Rule']
+RULE_TH = [
+    'cloudify.nodes.Root',
+    'cloudify.nodes.aws.cloudwatch.Rule'
+]
 
-EVENT_PATTERN_STR = (
-    '{"detail-type": ["AWS API Call via CloudTrail"], "detail": {"eventSo' +
-    'urce": ["autoscaling.amazonaws.com"]}}'
-)
+EVENT_PATTERN_JSON = {
+    "detail-type": [
+        "AWS API Call via CloudTrail"
+    ],
+    "detail": {
+        "eventSource": ["autoscaling.amazonaws.com"]
+    }
+}
+EVENT_PATTERN_STR = json.dumps(EVENT_PATTERN_JSON)
 
 NODE_PROPERTIES = {
     'use_external_resource': False,

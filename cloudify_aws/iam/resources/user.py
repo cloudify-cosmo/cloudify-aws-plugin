@@ -190,13 +190,13 @@ def attach_to(ctx, iface, resource_config, **_):
     elif utils.is_node_type(ctx.target.node,
                             'cloudify.nodes.aws.iam.LoginProfile'):
         iface.create_login_profile(
-            resource_config or
-            ctx.target.instance.runtime_properties.get('resource_config'))
+            resource_config or ctx.target.instance.runtime_properties.get(
+                'resource_config'))
     elif utils.is_node_type(ctx.target.node,
                             'cloudify.nodes.aws.iam.AccessKey'):
         resp = iface.create_access_key(
-            resource_config or
-            ctx.target.instance.runtime_properties.get('resource_config'))
+            resource_config or ctx.target.instance.runtime_properties.get(
+                'resource_config'))
         utils.update_resource_id(ctx.target.instance, resp['AccessKeyId'])
         ctx.target.instance.runtime_properties['SecretAccessKey'] = \
             resp['SecretAccessKey']

@@ -28,11 +28,11 @@ class AWSCloudFormationBase(AWSResourceBase):
         AWS CloudFormation interface
     """
     def __init__(self, ctx_node, resource_id=None, client=None, logger=None):
-        AWSResourceBase.__init__(self,
-                                 client or
-                                 Boto3Connection(ctx_node)
-                                 .client('cloudformation'),
-                                 resource_id=resource_id, logger=logger)
+        AWSResourceBase.__init__(
+            self,
+            client or Boto3Connection(ctx_node).client('cloudformation'),
+            resource_id=resource_id,
+            logger=logger)
 
     @property
     def properties(self):

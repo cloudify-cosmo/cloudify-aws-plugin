@@ -214,10 +214,10 @@ def create(ctx, iface, resource_config, **_):
         except IOError as error:
             _, _, tb = sys.exc_info()
             raise NonRecoverableError(
-                'Failed to open file {0},'
-                ' with error message {1}'
-                ''.format(path, error.strerror,
-                          causes=[exception_to_error_cause(error, tb)]))
+                'Failed to open file {}, with error message {}'.format(
+                    path,
+                    error.strerror),
+                causes=[exception_to_error_cause(error, tb)])
 
         # Set the updated path url so that it can
         # be uploaded to the AWS S3 bucket

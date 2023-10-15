@@ -60,6 +60,7 @@ commands:
               echo "Failed to get manager status";
               exit 1
           fi
+      - run: pip3 install urllib3==1.26.15 requests-toolbelt==0.10.1
       - run: pip3 install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/refs/heads/master.zip
       - run: git submodule update --init --recursive --remote
 
@@ -87,18 +88,12 @@ commands:
   eks_prepare_test_manager:
     steps:
       - run: ls -alR
-      - run: ecosystem-test prepare-remote-test-manager -es aws_access_key_id2=$aws_access_key_id -es aws_secret_access_key2=$aws_secret_access_key -p $(find ~/project/workspace/build/ -name *manylinux-py311-none-linux_x86_64.wgn*) ~/project/plugin_1_4.yaml
-      - run: ecosystem-test remote-upload-plugin -PN utilities
-      - run: ecosystem-test remote-upload-plugin -PN ansible
-      - run: ecosystem-test remote-upload-plugin -PN kubernetes
+      - run: ecosystem-test prepare-remote-test-manager -es aws_access_key_id2=$aws_access_key_id -es aws_secret_access_key2=$aws_secret_access_key -p $(find ~/project/workspace/build/ -name *manylinux-py311-none-linux_x86_64.wgn*) ~/project/plugin_1_5.yaml
 
   prepare_test_manager:
     steps:
       - run: ls -alR
-      - run: ecosystem-test prepare-remote-test-manager --generate-new-aws-token -es aws_access_key_id=$aws_access_key_id -es aws_secret_access_key=$aws_secret_access_key -p $(find ~/project/workspace/build/ -name *manylinux-py311-none-linux_x86_64.wgn*) ~/project/plugin_1_4.yaml
-      - run: ecosystem-test remote-upload-plugin -PN utilities
-      - run: ecosystem-test remote-upload-plugin -PN ansible
-      - run: ecosystem-test remote-upload-plugin -PN kubernetes
+      - run: ecosystem-test prepare-remote-test-manager --generate-new-aws-token -es aws_access_key_id=$aws_access_key_id -es aws_secret_access_key=$aws_secret_access_key -p $(find ~/project/workspace/build/ -name *manylinux-py311-none-linux_x86_64.wgn*) ~/project/plugin_1_5.yaml
 
   run_hello_world_test:
     steps:

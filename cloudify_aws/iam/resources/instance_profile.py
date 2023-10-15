@@ -43,9 +43,8 @@ class IAMInstanceProfile(IAMBase):
         if not self.resource_id:
             return
         try:
-            resource = \
-                self.client.get_instance_profile(
-                    InstanceProfileName=self.resource_id)
+            resource = self.client.get_instance_profile(
+                InstanceProfileName=self.resource_id)
         except ClientError:
             pass
         else:

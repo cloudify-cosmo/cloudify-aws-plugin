@@ -13,6 +13,7 @@
 # limitations under the License.
 
 # Standard imports
+import json
 import unittest
 
 # Third party imports
@@ -55,11 +56,21 @@ NODE_PROPERTIES = {
     'client_config': CLIENT_CONFIG
 }
 
-POLICY_STR = (
-    '{"Version": "2012-10-17", "Statement": [{"Action": ["ec2:CreateNetworkI' +
-    'nterface", "ec2:DeleteNetworkInterface", "ec2:DescribeNetworkInterfaces' +
-    '"], "Resource": "*", "Effect": "Allow"}]}'
-)
+POLICY_JSON = {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Action": [
+                "ec2:CreateNetworkInterface",
+                "ec2:DeleteNetworkInterface",
+                "ec2:DescribeNetworkInterfaces"
+            ],
+            "Resource": "*",
+            "Effect": "Allow"
+        }
+    ]
+}
+POLICY_STR = json.dumps(POLICY_JSON)
 
 NODE_PROPERTIES_POLICY_STR = {
     'resource_id': 'CloudifyVPCAccessPolicy',
@@ -85,8 +96,6 @@ ctx_node = MagicMock(
 )
 
 
-@patch('cloudify_common_sdk.utils.ctx_from_import')
-@patch('cloudify_aws.common.connection.Boto3Connection.get_account_id')
 class TestIAMPolicy(TestBase):
 
     def setUp(self):
@@ -105,11 +114,13 @@ class TestIAMPolicy(TestBase):
         super(TestIAMPolicy, self).tearDown()
 
     def test_create_raises_UnknownServiceError(self, *_):
-        fake_boto = self._prepare_create_raises_UnknownServiceError(
-            type_hierarchy=POLICY_TH,
-            type_name='iam',
-            type_class=policy
-        )
+        with patch('cloudify_aws.common.connection.'
+                   'Boto3Connection.get_account_id'):
+            fake_boto = self._prepare_create_raises_UnknownServiceError(
+                type_hierarchy=POLICY_TH,
+                type_name='iam',
+                type_class=policy
+            )
         fake_boto.assert_called_with(
             'iam',
             aws_access_key_id='xxx',
@@ -134,7 +145,12 @@ class TestIAMPolicy(TestBase):
             }
         })
 
-        policy.create(ctx=_ctx, resource_config=None, iface=None)
+        with patch('cloudify_aws.common.connection.'
+                   'Boto3Connection.get_account_id'):
+            policy.create(
+                ctx=_ctx,
+                resource_config=None,
+                iface=None)
 
         self.fake_boto.assert_called_with(
             'iam',
@@ -164,7 +180,12 @@ class TestIAMPolicy(TestBase):
             }
         })
 
-        policy.create(ctx=_ctx, resource_config=None, iface=None)
+        with patch('cloudify_aws.common.connection.'
+                   'Boto3Connection.get_account_id'):
+            policy.create(
+                ctx=_ctx,
+                resource_config=None,
+                iface=None)
 
         self.fake_boto.assert_called_with(
             'iam',
@@ -184,8 +205,7 @@ class TestIAMPolicy(TestBase):
             RUNTIME_PROPERTIES_AFTER_CREATE
         )
 
-    def test_delete(self, _, mock_import_ctx, *__):
-
+    def test_delete(self, *_):
         _ctx = self.get_mock_ctx(
             'test_delete',
             test_properties=NODE_PROPERTIES,
@@ -193,15 +213,16 @@ class TestIAMPolicy(TestBase):
             type_hierarchy=POLICY_TH,
             ctx_operation_name='cloudify.interfaces.lifecycle.delete'
         )
-
         current_ctx.set(_ctx)
-        mock_import_ctx.node = _ctx.node
-        mock_import_ctx.instance = _ctx.instance
-        mock_import_ctx.operation = _ctx.operation
-
         self.fake_client.delete_policy = self.mock_return(DELETE_RESPONSE)
-
-        policy.delete(ctx=_ctx, resource_config=None, iface=None)
+        with patch('cloudify_common_sdk.'
+                   'utils.ctx_from_import') as mock_import_ctx:
+            mock_import_ctx.node = _ctx.node
+            mock_import_ctx.instance = _ctx.instance
+            mock_import_ctx.operation = _ctx.operation
+            with patch('cloudify_aws.common.connection.'
+                       'Boto3Connection.get_account_id'):
+                policy.delete(ctx=_ctx, resource_config=None, iface=None)
 
         self.fake_boto.assert_called_with(
             'iam',
@@ -228,10 +249,25 @@ class TestIAMPolicy(TestBase):
             }
         })
 
-        test_instance = policy.IAMPolicy(ctx_node,
-                                         resource_id='queue_id',
-                                         client=self.fake_client,
-                                         logger=None)
+        _ctx = self.get_mock_ctx(
+            'test_poststart',
+            test_properties=NODE_PROPERTIES,
+            test_runtime_properties=DEFAULT_RUNTIME_PROPERTIES,
+            type_hierarchy=POLICY_TH
+        )
+        current_ctx.set(_ctx)
+        with patch('cloudify_common_sdk.'
+                   'utils.ctx_from_import') as mock_import_ctx:
+            mock_import_ctx.node = _ctx.node
+            mock_import_ctx.instance = _ctx.instance
+            mock_import_ctx.operation = _ctx.operation
+            with patch('cloudify_aws.common.connection.'
+                       'Boto3Connection.get_account_id'):
+                test_instance = policy.IAMPolicy(
+                    ctx_node,
+                    resource_id='queue_id',
+                    client=self.fake_client,
+                    logger=None)
 
         self.assertEqual(test_instance.properties, {
             'PolicyName': 'policy_name_id',
@@ -249,11 +285,25 @@ class TestIAMPolicy(TestBase):
                 'Arn': 'arn_id'
             }
         })
-
-        test_instance = policy.IAMPolicy(ctx_node,
-                                         resource_id='queue_id',
-                                         client=self.fake_client,
-                                         logger=None)
+        _ctx = self.get_mock_ctx(
+            'test_poststart',
+            test_properties=NODE_PROPERTIES,
+            test_runtime_properties=DEFAULT_RUNTIME_PROPERTIES,
+            type_hierarchy=POLICY_TH
+        )
+        current_ctx.set(_ctx)
+        with patch('cloudify_common_sdk.'
+                   'utils.ctx_from_import') as mock_import_ctx:
+            mock_import_ctx.node = _ctx.node
+            mock_import_ctx.instance = _ctx.instance
+            mock_import_ctx.operation = _ctx.operation
+            with patch('cloudify_aws.common.connection.'
+                       'Boto3Connection.get_account_id'):
+                test_instance = policy.IAMPolicy(
+                    ctx_node,
+                    resource_id='queue_id',
+                    client=self.fake_client,
+                    logger=None)
 
         self.assertEqual(test_instance.status, 'available')
 
