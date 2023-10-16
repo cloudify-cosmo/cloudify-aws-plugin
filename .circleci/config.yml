@@ -97,7 +97,7 @@ commands:
 
   run_hello_world_test:
     steps:
-      - run: ecosystem-test remote-blueprint-test -b examples/blueprint-examples/hello-world-example/aws.yaml --test-id=hello-world-example-$CIRCLE_BUILD_NUM -i aws_region_name=eu-west-3 --on-failure=uninstall-force --timeout=1800 --nested-test=.circleci/test_cloudwatch.py
+      - run: ecosystem-test remote-blueprint-test -b examples/blueprint-examples/hello-world-example/aws.yaml --test-id=hello-world-example-$CIRCLE_BUILD_NUM -i .circleci/hw.yaml --on-failure=uninstall-force --timeout=1800 --nested-test=.circleci/test_cloudwatch.py
 
   run_cf_test:
     steps:
