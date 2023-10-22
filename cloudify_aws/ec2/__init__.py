@@ -88,7 +88,7 @@ class EC2Base(AWSResourceBase):
         self.logger.debug('Response: %s' % res)
         return res
 
-    def get_available_zone(self, ctx,  params):
+    def get_available_zone(self, ctx, params):
         """method to get the first available zone given a region"""
         self.logger.info('checking available zones given {0}'.format(params))
         valid_zones = []
@@ -105,7 +105,7 @@ class EC2Base(AWSResourceBase):
         for rel in rels:
             ZoneUsed.append(
                 rel.target.instance.runtime_properties['create_response'].get(
-                'AvailabilityZone'))
+                    'AvailabilityZone'))
         self.logger.info('ZoneUsed {0}'.format(ZoneUsed))
         for zone in valid_zones:
             if zone not in ZoneUsed:

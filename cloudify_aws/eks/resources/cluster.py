@@ -259,10 +259,10 @@ def create(ctx, iface, resource_config, **_):
 
     utils.update_resource_id(ctx.instance, resource_id)
     iface = prepare_describe_cluster_filter(resource_config.copy(), iface)
-    utils.exit_on_substring(iface, 
-                            'create', 
-                            resource_config, 
-                            ['UnsupportedAvailabilityZoneException'], 
+    utils.exit_on_substring(iface,
+                            'create',
+                            resource_config,
+                            ['UnsupportedAvailabilityZoneException'],
                             raisable=NonRecoverableError)
     if iface.create_response.get(CLUSTER):
         utils.update_resource_arn(
