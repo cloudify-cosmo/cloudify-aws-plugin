@@ -134,7 +134,7 @@ def prepare(ctx, resource_config, **_):
 def create(ctx, iface, resource_config, **_):
     '''Creates an AWS EC2 Subnet'''
     resource_config = _create_subnet_params(resource_config, ctx.instance)
-    _create(ctx.node, iface, resource_config, ctx.logger)
+    _create(ctx, iface, resource_config)
     utils.update_resource_id(ctx.instance, iface.resource_id)
     _modify_attribute(iface, _.get('modify_subnet_attribute_args'))
 
@@ -209,7 +209,7 @@ def poststart(ctx, iface=None, **_):
     utils.update_expected_configuration(iface, ctx.instance.runtime_properties)
 
 
-def _create(ctx_node, iface, params, logger):
+def _create(ctx, iface, params):
     # Actually create the resource
     try:
         iface.create(params)
@@ -218,22 +218,22 @@ def _create(ctx_node, iface, params, logger):
                 'InvalidParameterValue' not in str(e):
             raise e
         config_from_utils = get_client_config(
-            ctx_node=ctx_node, alternate_key='aws_config')
+            ctx_node=ctx.node, alternate_key='aws_config')
         region_name = config_from_utils.get('region_name')
-        use_available_zones = ctx_node.properties.get(
+        use_available_zones = ctx.node.properties.get(
             'use_available_zones', False)
         if use_available_zones:
-            logger.error(
+            ctx.logger.error(
                 "The Availability Zone chosen {0} "
                 "is not available".format(params['AvailabilityZone']))
             valid_zone = \
-                iface.get_available_zone({
+                iface.get_available_zone(ctx, {
                     'Filters': [
                         {'Name': 'region-name', 'Values': [region_name]}
                     ]
                 })
             if valid_zone:
-                logger.error(
+                ctx.logger.error(
                     "using {0} Availability Zone instead".format(valid_zone))
                 params['AvailabilityZone'] = valid_zone
                 iface.create(params)
