@@ -40,8 +40,8 @@ setup(
         'botocore',
         'datetime',
         'deepdiff==3.3.0',
-        'cloudify-common>=4.5',
+        'cloudify-common>=4.5,<7.0.0',
         'pycryptodome==3.19.0',
-        'cloudify-utilities-plugins-sdk>=0.0.126',
+        'cloudify-utilities-plugins-sdk>=0.0.128',
     ]
 )
