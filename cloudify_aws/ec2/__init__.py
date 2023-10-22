@@ -105,7 +105,7 @@ class EC2Base(AWSResourceBase):
         for rel in rels:
             ZoneUsed.append(
                 rel.target.instance.runtime_properties['create_response'].get(
-                'AvailabilityZone'))
+                    'AvailabilityZone'))
         self.logger.info('ZoneUsed {0}'.format(ZoneUsed))
         for zone in valid_zones:
             if zone not in ZoneUsed:
