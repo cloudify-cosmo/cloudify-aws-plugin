@@ -19,7 +19,7 @@
 
 # Cloudify AWS
 from cloudify_aws.common import AWSResourceBase
-from cloudify_aws.common.utils import check_region_name, find_rels_by_node_type
+from cloudify_aws.common.utils import check_region_name
 from cloudify_common_sdk.utils import get_client_config
 from cloudify_aws.common.connection import Boto3Connection
 
@@ -88,7 +88,7 @@ class EC2Base(AWSResourceBase):
         self.logger.debug('Response: %s' % res)
         return res
 
-    def get_available_zone(self, ctx, params):
+    def get_available_zone(self, rels, params):
         """method to get the first available zone given a region"""
         self.logger.info('checking available zones given {0}'.format(params))
         valid_zones = []
@@ -99,8 +99,6 @@ class EC2Base(AWSResourceBase):
             if zone_state == 'available':
                 valid_zones.append(zone)
         self.logger.info('valid zones {0}'.format(valid_zones))
-        rels = find_rels_by_node_type(ctx.instance,
-                                      'cloudify.nodes.aws.ec2.Subnet')
         ZoneUsed = []
         for rel in rels:
             ZoneUsed.append(

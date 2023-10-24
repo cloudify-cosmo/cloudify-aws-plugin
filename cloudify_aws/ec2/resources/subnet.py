@@ -226,8 +226,11 @@ def _create(ctx, iface, params):
             ctx.logger.error(
                 "The Availability Zone chosen {0} "
                 "is not available".format(params['AvailabilityZone']))
+            rels = utils.find_rels_by_node_type(
+                ctx.instance,
+                'cloudify.nodes.aws.ec2.Subnet')
             valid_zone = \
-                iface.get_available_zone(ctx, {
+                iface.get_available_zone(rels, {
                     'Filters': [
                         {'Name': 'region-name', 'Values': [region_name]}
                     ]
