@@ -1,17 +1,21 @@
+diff --git a/examples/blueprint-examples b/examples/blueprint-examples
+--- a/examples/blueprint-examples
++++ b/examples/blueprint-examples
+@@ -1 +1 @@
+-Subproject commit a31b738d399857b00995b16de9fe47dae9b70c4a
++Subproject commit a31b738d399857b00995b16de9fe47dae9b70c4a-dirty
 diff --git a/setup.py b/setup.py
-index c97bce1..d21c1de 100644
+index 4a8535b..7ad9067 100644
 --- a/setup.py
 +++ b/setup.py
-@@ -39,9 +39,9 @@ setup(
+@@ -39,8 +39,8 @@ setup(
          'boto3',
          'botocore',
          'datetime',
 -        'deepdiff==3.3.0',
--        'cloudify-common>=4.5',
-+        'deepdiff>=5.7.0',
+-        'cloudify-common>=4.5,<7.0.0',
++        'deepdiff==5.7.0',
 +        'cloudify-common>=7.0.0',
          'pycryptodome==3.19.0',
--        'cloudify-utilities-plugins-sdk>=0.0.126',
-+        'cloudify-utilities-plugins-sdk>=0.0.128',
+         'cloudify-utilities-plugins-sdk>=0.0.128',
      ]
- )
