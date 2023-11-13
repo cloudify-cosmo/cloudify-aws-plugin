@@ -187,9 +187,9 @@ jobs:
     environment:
       CLOUDIFY_SSL_TRUST_ALL: true
     steps:
-      - checkout
-      - attach_workspace:
-          at: workspace
+      # - checkout
+      # - attach_workspace:
+      #     at: workspace
       - setup_manager
       - prepare_test_manager
 
@@ -204,9 +204,9 @@ jobs:
     environment:
       CLOUDIFY_SSL_TRUST_ALL: true
     steps:
-      # - checkout
-      # - attach_workspace:
-      #     at: workspace
+      - checkout
+      - attach_workspace:
+          at: workspace
       # - setup_manager
       # - prepare_test_manager
       - run_cf_test
@@ -396,9 +396,9 @@ jobs:
     environment:
       CLOUDIFY_SSL_TRUST_ALL: true
     steps:
-      # - checkout
-      # - attach_workspace:
-      #     at: workspace
+      - checkout
+      - attach_workspace:
+          at: workspace
       # - setup_manager
       # - prepare_test_manager
       - run_hello_world_test
