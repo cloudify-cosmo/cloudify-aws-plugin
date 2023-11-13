@@ -207,7 +207,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: workspace
-      # - setup_manager
+      - setup_manager
       # - prepare_test_manager
       - run_cf_test
 
@@ -399,7 +399,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: workspace
-      # - setup_manager
+      - setup_manager
       # - prepare_test_manager
       - run_hello_world_test
 
