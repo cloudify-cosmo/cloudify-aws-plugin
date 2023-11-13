@@ -444,10 +444,6 @@ workflows:
       - cf_integration_tests_py3:
           requires:
             - prepare_test_manager
-            - wagonorb/wagon
-            - wagonorb/wagon_311
-            - wagonorb/rhel_wagon
-            - wagonorb/arch64_wagon
             # - eks_integration_tests_py3
           filters:
             branches:
@@ -464,10 +460,6 @@ workflows:
       - hw_integration_tests_py3:
           requires:
             - prepare_test_manager
-            - wagonorb/wagon
-            - wagonorb/wagon_311
-            - wagonorb/rhel_wagon
-            - wagonorb/arch64_wagon
             # - eks_integration_tests_py3
           filters:
             branches:
