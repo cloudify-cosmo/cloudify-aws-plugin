@@ -419,16 +419,14 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-      - wagonorb/wagon
-      - wagonorb/wagon_311
-      # - wagonorb/wagon:
-      #     filters:
-      #       branches:
-      #         only: /([0-9\.]*\-build|master|dev)/
-      # - wagonorb/wagon_311:
-      #     filters:
-      #       branches:
-      #         only: /([0-9\.]*\-build|master|dev)/
+      - wagonorb/wagon:
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+      - wagonorb/wagon_311:
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - wagonorb/arch64_wagon:
           filters:
             branches:
@@ -437,44 +435,44 @@ workflows:
           requires:
             - wagonorb/wagon
             - wagonorb/wagon_311
-          #   - wagonorb/rhel_wagon
-          #   - wagonorb/arch64_wagon
-          #   - eks_integration_tests_py3
-          # filters:
-          #   branches:
-          #     only: /([0-9\.]*\-build|master|dev)/
+            - wagonorb/rhel_wagon
+            - wagonorb/arch64_wagon
+            - eks_integration_tests_py3
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
 
       - cf_integration_tests_py3:
           requires:
             - prepare_test_manager
-          #   - wagonorb/wagon
-          #   - wagonorb/wagon_311
-          #   - wagonorb/rhel_wagon
-          #   - wagonorb/arch64_wagon
-          #   - eks_integration_tests_py3
-          # filters:
-          #   branches:
-          #     only: /([0-9\.]*\-build|master|dev)/
-      - eks_integration_tests_py3:
-          requires:
             - wagonorb/wagon
             - wagonorb/wagon_311
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
+            # - eks_integration_tests_py3
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
+      # - eks_integration_tests_py3:
+      #     requires:
+      #       - wagonorb/wagon
+      #       - wagonorb/wagon_311
+      #       - wagonorb/rhel_wagon
+      #       - wagonorb/arch64_wagon
+      #     filters:
+      #       branches:
+      #         only: /([0-9\.]*\-build|master|dev)/
       - hw_integration_tests_py3:
           requires:
             - prepare_test_manager
-          #   - wagonorb/wagon
-          #   - wagonorb/wagon_311
-          #   - wagonorb/rhel_wagon
-          #   - wagonorb/arch64_wagon
-          #   - eks_integration_tests_py3
-          # filters:
-          #   branches:
-          #     only: /([0-9\.]*\-build|master|dev)/
+            - wagonorb/wagon
+            - wagonorb/wagon_311
+            - wagonorb/rhel_wagon
+            - wagonorb/arch64_wagon
+            # - eks_integration_tests_py3
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - releaseorb/release:
           filters:
             branches:
