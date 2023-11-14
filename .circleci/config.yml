@@ -208,7 +208,6 @@ jobs:
       - attach_workspace:
           at: workspace
       - setup_manager
-      # - prepare_test_manager
       - run_cf_test
 
   eks_integration_tests_py3:
@@ -232,7 +231,6 @@ jobs:
       - attach_workspace:
           at: workspace
       - setup_manager
-      - prepare_test_manager
       - run_ec2_image_test
 
   ec2_instance_integration_tests_py3:
@@ -244,7 +242,6 @@ jobs:
       - attach_workspace:
           at: workspace
       - setup_manager
-      - prepare_test_manager
       - run_ec2_instance_test
 
   ec2_keys_integration_tests_py3:
@@ -256,7 +253,6 @@ jobs:
       - attach_workspace:
           at: workspace
       - setup_manager
-      - prepare_test_manager
       - run_ec2_keys_test
 
   ec2_transit_gateway_integration_tests_py3:
@@ -268,7 +264,6 @@ jobs:
       - attach_workspace:
           at: workspace
       - setup_manager
-      - prepare_test_manager
       - run_ec2_transit_gateway_test
 
   ec2_vpc_integration_tests_py3:
@@ -280,7 +275,6 @@ jobs:
       - attach_workspace:
           at: workspace
       - setup_manager
-      - prepare_test_manager
       - run_ec2_vpc_test
 
   autoscaleing_integration_tests_py3:
@@ -292,7 +286,6 @@ jobs:
       - attach_workspace:
           at: workspace
       - setup_manager
-      - prepare_test_manager
       - run_autoscaling_test
 
   cloudformation_integration_tests_py3:
@@ -304,7 +297,6 @@ jobs:
       - attach_workspace:
           at: workspace
       - setup_manager
-      - prepare_test_manager
       - run_cloudformation_test
 
   dynamodb_integration_tests_py3:
@@ -316,7 +308,6 @@ jobs:
       - attach_workspace:
           at: workspace
       - setup_manager
-      - prepare_test_manager
       - run_dynamodb_test
 
   ebs_integration_tests_py3:
@@ -328,7 +319,6 @@ jobs:
       - attach_workspace:
           at: workspace
       - setup_manager
-      - prepare_test_manager
       - run_ebs_test
 
   natgateway_integration_tests_py3:
@@ -340,7 +330,6 @@ jobs:
       - attach_workspace:
           at: workspace
       - setup_manager
-      - prepare_test_manager
       - run_natgateway_test
 
   s3_integration_tests_py3:
@@ -352,7 +341,6 @@ jobs:
       - attach_workspace:
           at: workspace
       - setup_manager
-      - prepare_test_manager
       - run_s3_test
 
   sns_integration_tests_py3:
@@ -388,7 +376,6 @@ jobs:
       - attach_workspace:
           at: workspace
       - setup_manager
-      - prepare_test_manager
       - run_kms_test
 
   hw_integration_tests_py3:
@@ -400,7 +387,6 @@ jobs:
       - attach_workspace:
           at: workspace
       - setup_manager
-      # - prepare_test_manager
       - run_hello_world_test
 
 workflows:
@@ -440,27 +426,26 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-
       - cf_integration_tests_py3:
           requires:
             - prepare_test_manager
-            # - eks_integration_tests_py3
+            - eks_integration_tests_py3
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-      # - eks_integration_tests_py3:
-      #     requires:
-      #       - wagonorb/wagon
-      #       - wagonorb/wagon_311
-      #       - wagonorb/rhel_wagon
-      #       - wagonorb/arch64_wagon
-      #     filters:
-      #       branches:
-      #         only: /([0-9\.]*\-build|master|dev)/
+      - eks_integration_tests_py3:
+          requires:
+            - wagonorb/wagon
+            - wagonorb/wagon_311
+            - wagonorb/rhel_wagon
+            - wagonorb/arch64_wagon
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - hw_integration_tests_py3:
           requires:
             - prepare_test_manager
-            # - eks_integration_tests_py3
+            - eks_integration_tests_py3
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
@@ -475,8 +460,9 @@ workflows:
             - wagonorb/arch64_wagon
             - node/validate_version_job
             - node/validate_documentation_job
+            - prepare_test_manager
             - cf_integration_tests_py3
-            # - eks_integration_tests_py3
+            - eks_integration_tests_py3
             - hw_integration_tests_py3
       - releaseorb/merge_docs_job:
           filters:
@@ -519,15 +505,21 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-      - cf_integration_tests_py3:
-          context: 
-            - plugins-inputs
-          <<: *job-post-steps
+      - prepare_test_manager:
           requires:
             - wagonorb/wagon
             - wagonorb/wagon_311
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+      - cf_integration_tests_py3:
+          context: 
+            - plugins-inputs
+          <<: *job-post-steps
+          requires:
+            - prepare_test_manager
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
@@ -537,10 +529,7 @@ workflows:
           <<: *job-post-steps
           requires:
             - verify_ec2_image
-            - wagonorb/wagon
-            - wagonorb/wagon_311
-            - wagonorb/rhel_wagon
-            - wagonorb/arch64_wagon
+            - prepare_test_manager
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
@@ -550,10 +539,7 @@ workflows:
           <<: *job-post-steps
           requires:
             - verify_ec2_image
-            - wagonorb/wagon
-            - wagonorb/wagon_311
-            - wagonorb/rhel_wagon
-            - wagonorb/arch64_wagon
+            - prepare_test_manager
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
@@ -562,10 +548,7 @@ workflows:
             - plugins-inputs
           <<: *job-post-steps
           requires:
-            - wagonorb/wagon
-            - wagonorb/wagon_311
-            - wagonorb/rhel_wagon
-            - wagonorb/arch64_wagon
+            - prepare_test_manager
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
@@ -615,15 +598,21 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-      - eks_integration_tests_py3:
-          context: 
-            - plugins-inputs
-          <<: *job-post-steps
+      - prepare_test_manager:
           requires:
             - wagonorb/wagon
             - wagonorb/wagon_311
             - wagonorb/rhel_wagon
             - wagonorb/arch64_wagon
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+      - eks_integration_tests_py3:
+          context: 
+            - plugins-inputs
+          <<: *job-post-steps
+          requires:
+            - prepare_test_manager
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
@@ -633,10 +622,7 @@ workflows:
           <<: *job-post-steps
           requires:
             - verify_ec2_image
-            - wagonorb/wagon
-            - wagonorb/wagon_311
-            - wagonorb/rhel_wagon
-            - wagonorb/arch64_wagon
+            - prepare_test_manager
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
@@ -645,10 +631,7 @@ workflows:
             - plugins-inputs
           <<: *job-post-steps
           requires:
-            - wagonorb/wagon
-            - wagonorb/wagon_311
-            - wagonorb/rhel_wagon
-            - wagonorb/arch64_wagon
+            - prepare_test_manager
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
@@ -657,10 +640,7 @@ workflows:
             - plugins-inputs
           <<: *job-post-steps
           requires:
-            - wagonorb/wagon
-            - wagonorb/wagon_311
-            - wagonorb/rhel_wagon
-            - wagonorb/arch64_wagon
+            - prepare_test_manager
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
@@ -669,10 +649,7 @@ workflows:
             - plugins-inputs
           <<: *job-post-steps
           requires:
-            - wagonorb/wagon
-            - wagonorb/wagon_311
-            - wagonorb/rhel_wagon
-            - wagonorb/arch64_wagon
+            - prepare_test_manager
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
@@ -681,10 +658,7 @@ workflows:
             - plugins-inputs
           <<: *job-post-steps
           requires:
-            - wagonorb/wagon
-            - wagonorb/wagon_311
-            - wagonorb/rhel_wagon
-            - wagonorb/arch64_wagon
+            - prepare_test_manager
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
@@ -722,16 +696,22 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
+      - prepare_test_manager:
+          requires:
+            - wagonorb/wagon
+            - wagonorb/wagon_311
+            - wagonorb/rhel_wagon
+            - wagonorb/arch64_wagon
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - hw_integration_tests_py3:
           context: 
             - plugins-inputs
           <<: *job-post-steps
           requires:
             - verify_ec2_image
-            - wagonorb/wagon
-            - wagonorb/wagon_311
-            - wagonorb/rhel_wagon
-            - wagonorb/arch64_wagon
+            - prepare_test_manager
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
@@ -740,10 +720,7 @@ workflows:
             - plugins-inputs
           <<: *job-post-steps
           requires:
-            - wagonorb/wagon
-            - wagonorb/wagon_311
-            - wagonorb/rhel_wagon
-            - wagonorb/arch64_wagon
+            - prepare_test_manager
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
@@ -752,10 +729,7 @@ workflows:
             - plugins-inputs
           <<: *job-post-steps
           requires:
-            - wagonorb/wagon
-            - wagonorb/wagon_311
-            - wagonorb/rhel_wagon
-            - wagonorb/arch64_wagon
+            - prepare_test_manager
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
@@ -764,10 +738,7 @@ workflows:
             - plugins-inputs
           <<: *job-post-steps
           requires:
-            - wagonorb/wagon
-            - wagonorb/wagon_311
-            - wagonorb/rhel_wagon
-            - wagonorb/arch64_wagon
+            - prepare_test_manager
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
@@ -776,10 +747,7 @@ workflows:
             - plugins-inputs
           <<: *job-post-steps
           requires:
-            - wagonorb/wagon
-            - wagonorb/wagon_311
-            - wagonorb/rhel_wagon
-            - wagonorb/arch64_wagon
+            - prepare_test_manager
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
@@ -788,10 +756,7 @@ workflows:
             - plugins-inputs
           <<: *job-post-steps
           requires:
-            - wagonorb/wagon
-            - wagonorb/wagon_311
-            - wagonorb/rhel_wagon
-            - wagonorb/arch64_wagon
+            - prepare_test_manager
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
