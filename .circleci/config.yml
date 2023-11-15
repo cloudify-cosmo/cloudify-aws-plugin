@@ -96,7 +96,7 @@ commands:
   prepare_test_manager:
     steps:
       - run: ls -alR
-      - run: ecosystem-test prepare-remote-test-manager --generate-new-aws-token -es aws_access_key_id=$aws_access_key_id -es aws_secret_access_key=$aws_secret_access_key -p $(find ~/project/workspace/build/ -name *manylinux-py311-none-linux_x86_64.wgn*) ~/project/plugin_1_5.yaml
+      - run: ecosystem-test prepare-remote-test-manager --generate-new-aws-token -es aws_access_key_id=$aws_access_key_id -es aws_secret_access_key=$aws_secret_access_key -p $(find ~/project/workspace/build/ -name *manylinux-py311-none-linux_x86_64.wgn*) ~/project/plugin_1_5.yaml --timeout=3600
       - run: ecosystem-test remote-upload-plugin -PN kubernetes --wagon-type manylinux
       - run: ecosystem-test remote-upload-plugin -PN helm --wagon-type manylinux
       - run: ecosystem-test remote-upload-plugin -PN utilities --wagon-type manylinux
@@ -429,7 +429,7 @@ workflows:
       - cf_integration_tests_py3:
           requires:
             - prepare_test_manager
-            - eks_integration_tests_py3
+            # - eks_integration_tests_py3
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
@@ -445,7 +445,7 @@ workflows:
       - hw_integration_tests_py3:
           requires:
             - prepare_test_manager
-            - eks_integration_tests_py3
+            # - eks_integration_tests_py3
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
