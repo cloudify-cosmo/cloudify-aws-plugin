@@ -429,7 +429,6 @@ workflows:
       - cf_integration_tests_py3:
           requires:
             - prepare_test_manager
-            # - eks_integration_tests_py3
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
@@ -445,7 +444,6 @@ workflows:
       - hw_integration_tests_py3:
           requires:
             - prepare_test_manager
-            # - eks_integration_tests_py3
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
