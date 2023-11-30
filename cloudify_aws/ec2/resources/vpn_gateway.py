@@ -125,7 +125,10 @@ def delete(iface, resource_config, dry_run=False, **_):
         vpn_gateway_id = iface.resource_id
 
     resource_config.update({VPNGATEWAY_ID: vpn_gateway_id})
-    handle_response(iface, 'delete', resource_config, raise_substrings=['Incorrect State'])
+    handle_response(iface, 
+                    'delete', 
+                    resource_config, 
+                    raise_substrings=['Incorrect State'])
 
 
 @decorators.aws_resource(EC2VPNGateway, RESOURCE_TYPE)
