@@ -1,3 +1,4 @@
+3.2.2: NE-10823-aws-VpnGatewayLimitExceeded.
 3.2.1: RND-1195 Add Subnet placement logic.
 3.2.0: Support ECR.
 3.1.9:
