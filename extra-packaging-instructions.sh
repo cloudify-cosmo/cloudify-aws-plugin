@@ -10,6 +10,4 @@ EOF
     touch ./webbrowser/__init__.py
     cat <<EOF > ./webbrowser/__init__.py
 EOF
-    git apply python311.patch
-    echo patch applied
 fi

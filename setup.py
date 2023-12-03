@@ -14,6 +14,7 @@
 
 import os
 import re
+import sys
 import pathlib
 
 from setuptools import setup
@@ -27,21 +28,34 @@ def get_version():
         var = outfile.read()
         return re.search(r'\d+.\d+.\d+', var).group()
 
+install_requires=[
+    'boto3',
+    'botocore',
+    'datetime',
+    'pycryptodome==3.19.0',
+    'cloudify-utilities-plugins-sdk>=0.0.128',
+]
+
+if sys.version_info.major == 3 and sys.version_info.minor == 6:
+    packages = ['cloudify_aws']
+    install_requires += [
+         'deepdiff==3.3.0', 
+         'cloudify-common>=4.5,<7.0.0',
+    ]
+else:
+    packages = find_packages(exclude=['tests*'])
+    install_requires += [
+        'deepdiff==5.7.0',
+        'fusion-common',
+    ] 
+
 setup(
     name='cloudify-aws-plugin',
     version=get_version(),
     author='Cloudify Platform Ltd.',
     author_email='hello@cloudify.co',
     license='LICENSE',
-    packages=find_packages(exclude=['tests*']),
+    packages=packages,
     description='A Cloudify plugin for AWS',
-    install_requires=[
-        'boto3',
-        'botocore',
-        'datetime',
-        'deepdiff==3.3.0',
-        'cloudify-common>=4.5,<7.0.0',
-        'pycryptodome==3.19.0',
-        'cloudify-utilities-plugins-sdk>=0.0.128',
-    ]
+    install_requires=install_requires
 )
