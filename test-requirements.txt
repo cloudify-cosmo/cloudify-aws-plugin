@@ -1,4 +1,3 @@
-tox
 mock
 nose
 flake8

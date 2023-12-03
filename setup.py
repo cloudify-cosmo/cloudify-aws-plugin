@@ -37,14 +37,16 @@ install_requires=[
 ]
 
 if sys.version_info.major == 3 and sys.version_info.minor == 6:
+    packages = ['cloudify_aws']
     install_requires += [
          'deepdiff==3.3.0', 
          'cloudify-common>=4.5,<7.0.0',
     ]
 else:
+    packages = find_packages(exclude=['tests*'])
     install_requires += [
         'deepdiff==5.7.0',
-        'cloudify-common>=7.0.0',
+        'fusion-common',
     ] 
 
 setup(
@@ -53,7 +55,7 @@ setup(
     author='Cloudify Platform Ltd.',
     author_email='hello@cloudify.co',
     license='LICENSE',
-    packages=find_packages(exclude=['tests*']),
+    packages=packages,
     description='A Cloudify plugin for AWS',
     install_requires=install_requires
 )
