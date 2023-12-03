@@ -20,6 +20,7 @@
 from cloudify_aws.common import decorators, utils
 from cloudify_aws.ec2 import EC2Base
 from cloudify_aws.common.constants import EXTERNAL_RESOURCE_ID
+from cloudify_aws.common.utils import handle_response
 
 
 RESOURCE_TYPE = 'EC2 VPN Gateway'
@@ -124,7 +125,10 @@ def delete(iface, resource_config, dry_run=False, **_):
         vpn_gateway_id = iface.resource_id
 
     resource_config.update({VPNGATEWAY_ID: vpn_gateway_id})
-    iface.delete(resource_config)
+    handle_response(iface,
+                    'delete',
+                    resource_config,
+                    raise_substrings=['Incorrect State'])
 
 
 @decorators.aws_resource(EC2VPNGateway, RESOURCE_TYPE)
