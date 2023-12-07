@@ -80,6 +80,7 @@ node_templates:
   pmcfy_iam_user_login_profile:
     type: cloudify.nodes.aws.iam.LoginProfile
     properties:
+      client_config: *client_config
       resource_config:
         UserName: !!str PMCfy=,.@-User
         Password: !!str Cl0ud1fy2017!
@@ -93,7 +94,7 @@ node_templates:
       client_config: *client_config
       resource_config:
         UserName: !!str CloudifyUser=,.@-Test
-        Path: !!str /!"#$%&'()*+,-.0123456789:;<=>?@abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ{|}~/
+        Path: !!str /abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ/
     relationships:
       - type: cloudify.relationships.aws.iam.user.connected_to
         target: pmcfy_iam_group
@@ -106,7 +107,7 @@ node_templates:
       client_config: *client_config
       resource_config:
         GroupName: !!str pmcfy_CloudifyGroup
-        Path: !!str /!"#$%&'()*+,-.0123456789:;<=>?@abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ{|}~/
+        Path: !!str /abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ/
     relationships:
       - type: cloudify.relationships.aws.iam.group.connected_to
         target: pmcfy_iam_policy_vpc_access
