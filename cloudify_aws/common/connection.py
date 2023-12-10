@@ -21,6 +21,7 @@ import os
 # Third party imports
 import boto3
 from botocore.config import Config
+from cloudify import ctx
 
 # Local imports
 from .utils import (
@@ -93,6 +94,7 @@ class Boto3Connection(object):
         self._aws_config = value
 
     def get_sts_client(self, config):
+        ctx.logger.info('2GETTING STS CLIENT: {}'.format(config))
         return boto3.client("sts", **config)
 
     def get_sts_credentials(self, role, config):
@@ -110,8 +112,11 @@ class Boto3Connection(object):
         }
 
     def get_account_id(self):
+        ctx.logger.info('1GETTING aws_config: {}'.format(self.aws_config))
         sts_client = self.get_sts_client(self.aws_config)
+        ctx.logger.info('3GETTING calling identity: {}'.format(sts_client))
         caller_id = sts_client.get_caller_identity()
+        ctx.logger.info('4GETTING caller_id: {}'.format(caller_id))
         if 'Account' in caller_id:
             return caller_id['Account']
 
