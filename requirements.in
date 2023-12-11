@@ -3,3 +3,4 @@
 -e fusion-agent
 -e cloudify-utilities-plugins-sdk
 cryptography>=41.0.5
+cffi==1.14.6
