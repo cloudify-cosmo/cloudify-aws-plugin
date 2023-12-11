@@ -26,6 +26,7 @@ from cloudify import ctx
 ACCESS_KEY_CONFIGURE = 'cloudify_aws.iam.resources.access_key.configure'
 AMI_USER = 'cloudify.nodes.aws.iam.User'
 
+
 class IAMBase(AWSResourceBase):
     '''
         AWS IAM base interface
@@ -34,12 +35,12 @@ class IAMBase(AWSResourceBase):
         AWSResourceBase.__init__(
             self, client or Boto3Connection(ctx_node).client('iam'),
             resource_id=resource_id, logger=logger)
-        
+
         if 'cloudify.nodes.aws.iam.AccessKey' in ctx_node.type_hierarchy:
             if (ctx.operation.name == ACCESS_KEY_CONFIGURE):
-                targ  = utils.find_rel_by_node_type(ctx.instance, AMI_USER)
+                targ = utils.find_rel_by_node_type(ctx.instance, AMI_USER)
                 aws_config = targ.target.node.properties.get('client_config')
-                boto3_connection = Boto3Connection(ctx_node, 
+                boto3_connection = Boto3Connection(ctx_node,
                                                    aws_config=aws_config)
                 self.account_id = boto3_connection.get_account_id()
         else:
