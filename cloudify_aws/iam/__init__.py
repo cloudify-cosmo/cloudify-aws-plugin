@@ -24,7 +24,8 @@ from cloudify import ctx
 
 # pylint: disable=R0903
 ACCESS_KEY_CONFIGURE = 'cloudify_aws.iam.resources.access_key.configure'
-AMI_USER = 'cloudify.nodes.aws.iam.User'
+IAM_USER = 'cloudify.nodes.aws.iam.User'
+IAM_ACCESS = 'cloudify.nodes.aws.iam.AccessKey'
 
 
 class IAMBase(AWSResourceBase):
