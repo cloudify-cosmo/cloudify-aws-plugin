@@ -1333,7 +1333,6 @@ data_types:
     properties:
       registryIds:
         type: list
-        item_type: string
         description: A list of Amazon Web Services account IDs that are associated with the registries for which to get AuthorizationData objects. If you do not specify a registry, the default registry is assumed.
   cloudify.datatypes.aws.ecr.Repository.config:
     properties:
@@ -1510,7 +1509,7 @@ node_types:
   cloudify.nodes.aws.iam.LoginProfile:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *client_config
+      client_config: *id002
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding Boto3 method. Key names must match the case that Boto3 requires.
