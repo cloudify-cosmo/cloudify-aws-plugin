@@ -19,9 +19,12 @@
 # Cloudify AWS
 from cloudify_aws.common import AWSResourceBase
 from cloudify_aws.common.connection import Boto3Connection
+from cloudify_aws.common import utils
+from cloudify import ctx
 
 # pylint: disable=R0903
-
+ACCESS_KEY_CONFIGURE = 'cloudify_aws.iam.resources.access_key.configure'
+AMI_USER = 'cloudify.nodes.aws.iam.User'
 
 class IAMBase(AWSResourceBase):
     '''
@@ -31,7 +34,16 @@ class IAMBase(AWSResourceBase):
         AWSResourceBase.__init__(
             self, client or Boto3Connection(ctx_node).client('iam'),
             resource_id=resource_id, logger=logger)
-        self.account_id = Boto3Connection(ctx_node).get_account_id()
+        
+        if 'cloudify.nodes.aws.iam.AccessKey' in ctx_node.type_hierarchy:
+            if (ctx.operation.name == ACCESS_KEY_CONFIGURE):
+                targ  = utils.find_rel_by_node_type(ctx.instance, AMI_USER)
+                aws_config = targ.target.node.properties.get('client_config')
+                boto3_connection = Boto3Connection(ctx_node, 
+                                                   aws_config=aws_config)
+                self.account_id = boto3_connection.get_account_id()
+        else:
+            self.account_id = Boto3Connection(ctx_node).get_account_id()
 
     @property
     def properties(self):
