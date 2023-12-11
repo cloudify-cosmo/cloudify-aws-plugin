@@ -37,7 +37,7 @@ class IAMBase(AWSResourceBase):
             self, client or Boto3Connection(ctx_node).client('iam'),
             resource_id=resource_id, logger=logger)
 
-        if 'cloudify.nodes.aws.iam.AccessKey' in ctx_node.type_hierarchy:
+        if IAM_ACCESS in ctx_node.type_hierarchy:
             if (ctx.operation.name == ACCESS_KEY_CONFIGURE):
                 targ = utils.find_rel_by_node_type(ctx.instance, AMI_USER)
                 aws_config = targ.target.node.properties.get('client_config')
