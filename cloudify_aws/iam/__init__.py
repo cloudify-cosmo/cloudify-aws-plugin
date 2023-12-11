@@ -39,7 +39,7 @@ class IAMBase(AWSResourceBase):
 
         if IAM_ACCESS in ctx_node.type_hierarchy:
             if (ctx.operation.name == ACCESS_KEY_CONFIGURE):
-                targ = utils.find_rel_by_node_type(ctx.instance, AMI_USER)
+                targ = utils.find_rel_by_node_type(ctx.instance, IAM_USER)
                 aws_config = targ.target.node.properties.get('client_config')
                 boto3_connection = Boto3Connection(ctx_node,
                                                    aws_config=aws_config)
