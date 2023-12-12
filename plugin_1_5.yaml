@@ -2,7 +2,7 @@ plugins:
   aws:
     executor: central_deployment_agent
     package_name: cloudify-aws-plugin
-    package_version: '3.2.2'
+    package_version: '3.2.3'
     properties_description: |
       Manage AWS resources.
       Credentials documentation: https://docs.cloudify.co/latest/working_with/official_plugins/infrastructure/aws/#authentication-with-aws.
@@ -1687,6 +1687,7 @@ node_types:
   cloudify.nodes.aws.iam.LoginProfile:
     derived_from: cloudify.nodes.Root
     properties:
+      <<: *client_config
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
