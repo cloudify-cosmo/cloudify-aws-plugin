@@ -1617,9 +1617,7 @@ node_types:
   cloudify.nodes.aws.dynamodb.Table:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -1638,9 +1636,7 @@ node_types:
   cloudify.nodes.aws.iam.Group:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -1716,9 +1712,7 @@ node_types:
   cloudify.nodes.aws.iam.User:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -1737,9 +1731,7 @@ node_types:
   cloudify.nodes.aws.iam.Role:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       policy_arns:
         description: >
           List of ARN policies to be provided.
@@ -1768,9 +1760,7 @@ node_types:
   cloudify.nodes.aws.iam.RolePolicy:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -1789,9 +1779,7 @@ node_types:
   cloudify.nodes.aws.iam.InstanceProfile:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -1810,9 +1798,7 @@ node_types:
   cloudify.nodes.aws.iam.Policy:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -1831,9 +1817,7 @@ node_types:
   cloudify.nodes.aws.lambda.Function:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -1890,9 +1874,7 @@ node_types:
   cloudify.nodes.aws.lambda.Permission:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -1914,9 +1896,7 @@ node_types:
   cloudify.nodes.aws.rds.Instance:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -1941,9 +1921,7 @@ node_types:
   cloudify.nodes.aws.rds.InstanceReadReplica:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -1965,9 +1943,7 @@ node_types:
   cloudify.nodes.aws.rds.SubnetGroup:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -1989,9 +1965,7 @@ node_types:
   cloudify.nodes.aws.rds.OptionGroup:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -2011,9 +1985,7 @@ node_types:
   cloudify.nodes.aws.rds.Option:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -2030,9 +2002,7 @@ node_types:
   cloudify.nodes.aws.rds.ParameterGroup:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -2055,9 +2025,7 @@ node_types:
   cloudify.nodes.aws.rds.Parameter:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -2074,9 +2042,7 @@ node_types:
   cloudify.nodes.aws.route53.HostedZone:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -2133,9 +2099,7 @@ node_types:
   cloudify.nodes.aws.route53.RecordSet:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -2158,9 +2122,7 @@ node_types:
   cloudify.nodes.aws.SQS.Queue:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -2183,9 +2145,7 @@ node_types:
   cloudify.nodes.aws.SNS.Topic:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -2207,9 +2167,7 @@ node_types:
   cloudify.nodes.aws.SNS.Subscription:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -2234,9 +2192,7 @@ node_types:
   cloudify.nodes.aws.elb.LoadBalancer:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
@@ -2265,9 +2221,7 @@ node_types:
   cloudify.nodes.aws.elb.Classic.LoadBalancer:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
@@ -2296,9 +2250,7 @@ node_types:
   cloudify.nodes.aws.elb.Classic.HealthCheck:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
@@ -2321,9 +2273,7 @@ node_types:
   cloudify.nodes.aws.elb.Listener:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
@@ -2349,9 +2299,7 @@ node_types:
   cloudify.nodes.aws.elb.Classic.Listener:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
@@ -2377,9 +2325,7 @@ node_types:
   cloudify.nodes.aws.elb.Rule:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
@@ -2405,9 +2351,7 @@ node_types:
   cloudify.nodes.aws.elb.TargetGroup:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
@@ -2436,9 +2380,7 @@ node_types:
   cloudify.nodes.aws.elb.Classic.Policy:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
@@ -2482,8 +2424,7 @@ node_types:
   cloudify.nodes.aws.s3.BaseBucket:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *resource_id
+      <<: [*external_resource, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -2505,8 +2446,7 @@ node_types:
   cloudify.nodes.aws.s3.BaseBucketObject:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *resource_id
+      <<: [*external_resource, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -2549,9 +2489,7 @@ node_types:
   cloudify.nodes.aws.s3.BucketPolicy:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -2573,9 +2511,7 @@ node_types:
   cloudify.nodes.aws.s3.BucketLifecycleConfiguration:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -2597,9 +2533,7 @@ node_types:
   cloudify.nodes.aws.s3.BucketTagging:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -2626,10 +2560,7 @@ node_types:
   cloudify.nodes.aws.ec2.BaseType:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
-      <<: *tags_property
+      <<: [*external_resource, *client_config, *resource_id, *tags_property]
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
@@ -2694,9 +2625,7 @@ node_types:
   cloudify.nodes.aws.ec2.VpcPeeringRequest:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -2792,9 +2721,7 @@ node_types:
   cloudify.nodes.aws.ec2.SecurityGroupRuleIngress:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -2816,9 +2743,7 @@ node_types:
   cloudify.nodes.aws.ec2.SecurityGroupRuleEgress:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -2901,10 +2826,7 @@ node_types:
   cloudify.nodes.aws.ec2.Instances:
     derived_from: cloudify.nodes.Compute
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
-      <<: *tags_property
+      <<: [*external_resource, *client_config, *resource_id, *tags_property]
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
@@ -2961,10 +2883,7 @@ node_types:
   cloudify.nodes.aws.ec2.SpotInstances:
     derived_from: cloudify.nodes.Compute
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
-      <<: *tags_property
+      <<: [*external_resource, *client_config, *resource_id, *tags_property]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -3064,10 +2983,7 @@ node_types:
   cloudify.nodes.aws.ec2.ElasticIP:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
-      <<: *tags_property
+      <<: [*external_resource, *client_config, *resource_id, *tags_property]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -3138,9 +3054,7 @@ node_types:
   cloudify.nodes.aws.ec2.NetworkAclEntry:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -3162,9 +3076,7 @@ node_types:
   cloudify.nodes.aws.ec2.DHCPOptions:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -3219,9 +3131,7 @@ node_types:
   cloudify.nodes.aws.ec2.VPNConnection:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -3243,9 +3153,7 @@ node_types:
   cloudify.nodes.aws.ec2.VPNConnectionRoute:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -3364,9 +3272,7 @@ node_types:
   cloudify.nodes.aws.ec2.TransitGatewayRoute:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -3416,9 +3322,7 @@ node_types:
   cloudify.nodes.aws.ec2.Route:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -3444,8 +3348,7 @@ node_types:
         type: boolean
         default: true
         description: indecates if external_resourc should be used
-      <<: *client_config
-      <<: *resource_id
+      <<: [*client_config, *resource_id]
 
       resource_config:
         description: >
@@ -3468,9 +3371,7 @@ node_types:
   cloudify.nodes.aws.ec2.Tags:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -3492,10 +3393,7 @@ node_types:
   cloudify.nodes.aws.ec2.EBSVolume:
     derived_from: cloudify.nodes.aws.ec2.BaseType
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
-      <<: *device_name
+      <<: [*external_resource, *client_config, *resource_id, *device_name]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -3524,9 +3422,7 @@ node_types:
   cloudify.nodes.aws.ec2.EBSAttachment:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -3548,9 +3444,7 @@ node_types:
   cloudify.nodes.aws.autoscaling.Group:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -3575,9 +3469,7 @@ node_types:
   cloudify.nodes.aws.autoscaling.LaunchConfiguration:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -3599,9 +3491,7 @@ node_types:
   cloudify.nodes.aws.autoscaling.Policy:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -3623,9 +3513,7 @@ node_types:
   cloudify.nodes.aws.autoscaling.LifecycleHook:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -3647,9 +3535,7 @@ node_types:
   cloudify.nodes.aws.autoscaling.NotificationConfiguration:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -3671,9 +3557,7 @@ node_types:
   cloudify.nodes.aws.cloudwatch.Alarm:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -3695,9 +3579,7 @@ node_types:
   cloudify.nodes.aws.cloudwatch.Rule:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -3719,9 +3601,7 @@ node_types:
   cloudify.nodes.aws.cloudwatch.Event:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -3740,9 +3620,7 @@ node_types:
   cloudify.nodes.aws.cloudwatch.Target:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -3764,9 +3642,7 @@ node_types:
   cloudify.nodes.aws.efs.FileSystem:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -3788,9 +3664,7 @@ node_types:
   cloudify.nodes.aws.efs.MountTarget:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -3812,9 +3686,7 @@ node_types:
   cloudify.nodes.aws.efs.FileSystemTags:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -3836,9 +3708,7 @@ node_types:
   cloudify.nodes.aws.kms.CustomerMasterKey:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -3866,9 +3736,7 @@ node_types:
   cloudify.nodes.aws.kms.Alias:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -3890,9 +3758,7 @@ node_types:
   cloudify.nodes.aws.kms.Grant:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -3914,9 +3780,7 @@ node_types:
   cloudify.nodes.aws.CloudFormation.Stack:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -3955,9 +3819,7 @@ node_types:
   cloudify.nodes.aws.ecs.Cluster:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -3979,9 +3841,7 @@ node_types:
   cloudify.nodes.aws.ecs.Service:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -4003,9 +3863,7 @@ node_types:
   cloudify.nodes.aws.ecs.TaskDefinition:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -4044,9 +3902,7 @@ node_types:
   cloudify.nodes.aws.eks.Cluster:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
@@ -4086,9 +3942,7 @@ node_types:
   cloudify.nodes.aws.eks.NodeGroup:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       cloudify_tagging:
         description: an automatic tag to identify the ec2 instance
         type: boolean
@@ -4122,9 +3976,7 @@ node_types:
   cloudify.nodes.aws.codepipeline.Pipeline:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -4151,9 +4003,7 @@ node_types:
   cloudify.nodes.aws.cognitoidp.UserPool:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -4174,9 +4024,7 @@ node_types:
   cloudify.nodes.aws.cognitoidp.UserPoolClient:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -4197,9 +4045,7 @@ node_types:
   cloudify.nodes.aws.cognitoidp.IdentityProvider:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -4220,9 +4066,7 @@ node_types:
   cloudify.nodes.aws.cognito.IdentityPool:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -4243,9 +4087,7 @@ node_types:
   cloudify.nodes.aws.ecr.AuthenticationToken:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
@@ -4263,9 +4105,7 @@ node_types:
   cloudify.nodes.aws.ecr.Repository:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *external_resource
-      <<: *client_config
-      <<: *resource_id
+      <<: [*external_resource, *client_config, *resource_id]
       resource_config:
         description: >
           Configuration key-value data to be passed as-is to the corresponding
