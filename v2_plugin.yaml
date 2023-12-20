@@ -2,7 +2,7 @@ plugins:
   aws:
     executor: central_deployment_agent
     package_name: cloudify-aws-plugin
-    package_version: 3.2.3
+    package_version: 3.2.4
 
 data_types:
   cloudify.datatypes.swift.Connection:
@@ -1107,7 +1107,7 @@ dsl_definitions:
       required: false
       default: {}
   external_resource:
-    use_external_resource: &id001
+    use_external_resource: &id003
       type: boolean
       default: false
   client_config:
@@ -1115,7 +1115,7 @@ dsl_definitions:
       type: cloudify.datatypes.aws.ConnectionConfig
       required: false
   resource_id:
-    resource_id: &id003
+    resource_id: &id001
       type: string
       default: ''
   swift_config:
@@ -1138,9 +1138,9 @@ node_types:
   cloudify.nodes.aws.dynamodb.Table:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.dynamodb.Table.config
         required: false
@@ -1163,9 +1163,9 @@ node_types:
   cloudify.nodes.aws.iam.Group:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.iam.Group.config
         required: false
@@ -1223,9 +1223,9 @@ node_types:
   cloudify.nodes.aws.iam.User:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.iam.User.config
         required: false
@@ -1248,9 +1248,9 @@ node_types:
   cloudify.nodes.aws.iam.Role:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       policy_arns:
         type: list
         default: []
@@ -1283,9 +1283,9 @@ node_types:
   cloudify.nodes.aws.iam.RolePolicy:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.iam.RolePolicy.config
         required: false
@@ -1308,9 +1308,9 @@ node_types:
   cloudify.nodes.aws.iam.InstanceProfile:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.iam.InstanceProfile.config
         required: false
@@ -1333,9 +1333,9 @@ node_types:
   cloudify.nodes.aws.iam.Policy:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.iam.Policy.config
         required: false
@@ -1358,9 +1358,9 @@ node_types:
   cloudify.nodes.aws.lambda.Function:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.lambda.Function.config
         required: false
@@ -1402,9 +1402,9 @@ node_types:
   cloudify.nodes.aws.lambda.Permission:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.lambda.Permission.config
         required: false
@@ -1434,9 +1434,9 @@ node_types:
   cloudify.nodes.aws.rds.Instance:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.rds.Instance.config
         required: false
@@ -1473,9 +1473,9 @@ node_types:
   cloudify.nodes.aws.rds.InstanceReadReplica:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.rds.InstanceReadReplica.config
         required: false
@@ -1505,9 +1505,9 @@ node_types:
   cloudify.nodes.aws.rds.SubnetGroup:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.rds.SubnetGroup.config
         required: false
@@ -1537,9 +1537,9 @@ node_types:
   cloudify.nodes.aws.rds.OptionGroup:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.rds.OptionGroup.config
         required: false
@@ -1562,9 +1562,9 @@ node_types:
   cloudify.nodes.aws.rds.Option:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.rds.Option.config
         required: false
@@ -1580,9 +1580,9 @@ node_types:
   cloudify.nodes.aws.rds.ParameterGroup:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.rds.ParameterGroup.config
         required: false
@@ -1612,9 +1612,9 @@ node_types:
   cloudify.nodes.aws.rds.Parameter:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.rds.Parameter.config
         required: false
@@ -1630,9 +1630,9 @@ node_types:
   cloudify.nodes.aws.route53.HostedZone:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.route53.HostedZone.config
         required: false
@@ -1674,9 +1674,9 @@ node_types:
   cloudify.nodes.aws.route53.RecordSet:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.route53.RecordSet.config
         required: false
@@ -1706,9 +1706,9 @@ node_types:
   cloudify.nodes.aws.SQS.Queue:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.SQS.Queue.config
         required: false
@@ -1738,9 +1738,9 @@ node_types:
   cloudify.nodes.aws.SNS.Topic:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.SNS.Topic.config
         required: false
@@ -1770,9 +1770,9 @@ node_types:
   cloudify.nodes.aws.SNS.Subscription:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.SNS.Subscription.config
         required: false
@@ -1809,9 +1809,9 @@ node_types:
   cloudify.nodes.aws.elb.LoadBalancer:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       cloudify_tagging:
         type: boolean
         default: true
@@ -1851,9 +1851,9 @@ node_types:
   cloudify.nodes.aws.elb.Classic.LoadBalancer:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       cloudify_tagging:
         type: boolean
         default: true
@@ -1893,9 +1893,9 @@ node_types:
   cloudify.nodes.aws.elb.Classic.HealthCheck:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       cloudify_tagging:
         type: boolean
         default: true
@@ -1921,9 +1921,9 @@ node_types:
   cloudify.nodes.aws.elb.Listener:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       cloudify_tagging:
         type: boolean
         default: true
@@ -1956,9 +1956,9 @@ node_types:
   cloudify.nodes.aws.elb.Classic.Listener:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       cloudify_tagging:
         type: boolean
         default: true
@@ -1991,9 +1991,9 @@ node_types:
   cloudify.nodes.aws.elb.Rule:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       cloudify_tagging:
         type: boolean
         default: true
@@ -2026,9 +2026,9 @@ node_types:
   cloudify.nodes.aws.elb.TargetGroup:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       cloudify_tagging:
         type: boolean
         default: true
@@ -2068,9 +2068,9 @@ node_types:
   cloudify.nodes.aws.elb.Classic.Policy:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       cloudify_tagging:
         type: boolean
         default: true
@@ -2125,8 +2125,8 @@ node_types:
   cloudify.nodes.aws.s3.BaseBucket:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
-      resource_id: *id003
+      resource_id: *id001
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.s3.Bucket.config
         required: false
@@ -2156,8 +2156,8 @@ node_types:
   cloudify.nodes.aws.s3.BaseBucketObject:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
-      resource_id: *id003
+      resource_id: *id001
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.s3.BucketObject.config
         required: false
@@ -2197,9 +2197,9 @@ node_types:
   cloudify.nodes.aws.s3.BucketPolicy:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.s3.BucketPolicy.config
         required: false
@@ -2229,9 +2229,9 @@ node_types:
   cloudify.nodes.aws.s3.BucketLifecycleConfiguration:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.s3.BucketLifecycleConfiguration.config
         required: false
@@ -2261,9 +2261,9 @@ node_types:
   cloudify.nodes.aws.s3.BucketTagging:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.s3.BucketTagging.config
         required: false
@@ -2297,10 +2297,10 @@ node_types:
   cloudify.nodes.aws.ec2.BaseType:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
-      client_config: *id002
-      resource_id: *id003
       Tags: *id008
+      resource_id: *id001
+      client_config: *id002
+      use_external_resource: *id003
       cloudify_tagging:
         type: boolean
         default: true
@@ -2390,9 +2390,9 @@ node_types:
   cloudify.nodes.aws.ec2.VpcPeeringRequest:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.ec2.VpcPeeringRequest.config
         required: false
@@ -2505,9 +2505,9 @@ node_types:
   cloudify.nodes.aws.ec2.SecurityGroupRuleIngress:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.ec2.SecurityGroupRules.config
         required: false
@@ -2525,9 +2525,9 @@ node_types:
   cloudify.nodes.aws.ec2.SecurityGroupRuleEgress:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.ec2.SecurityGroupRules.config
         required: false
@@ -2646,10 +2646,10 @@ node_types:
   cloudify.nodes.aws.ec2.Instances:
     derived_from: cloudify.nodes.Compute
     properties:
-      use_external_resource: *id001
-      client_config: *id002
-      resource_id: *id003
       Tags: *id008
+      resource_id: *id001
+      client_config: *id002
+      use_external_resource: *id003
       cloudify_tagging:
         type: boolean
         default: true
@@ -2723,10 +2723,10 @@ node_types:
   cloudify.nodes.aws.ec2.SpotInstances:
     derived_from: cloudify.nodes.Compute
     properties:
-      use_external_resource: *id001
-      client_config: *id002
-      resource_id: *id003
       Tags: *id008
+      resource_id: *id001
+      client_config: *id002
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.ec2.SpotInstances.config
         required: false
@@ -2850,10 +2850,10 @@ node_types:
   cloudify.nodes.aws.ec2.ElasticIP:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
-      client_config: *id002
-      resource_id: *id003
       Tags: *id008
+      resource_id: *id001
+      client_config: *id002
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.ec2.ElasticIP.config
         required: false
@@ -2947,9 +2947,9 @@ node_types:
   cloudify.nodes.aws.ec2.NetworkAclEntry:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.ec2.NetworkAclEntry.config
         required: false
@@ -2979,9 +2979,9 @@ node_types:
   cloudify.nodes.aws.ec2.DHCPOptions:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.ec2.DHCPOptions.config
         required: false
@@ -3068,9 +3068,9 @@ node_types:
   cloudify.nodes.aws.ec2.VPNConnection:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.ec2.VPNConnection.config
         required: false
@@ -3100,9 +3100,9 @@ node_types:
   cloudify.nodes.aws.ec2.VPNConnectionRoute:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.ec2.VPNConnectionRoute.config
         required: false
@@ -3277,9 +3277,9 @@ node_types:
   cloudify.nodes.aws.ec2.TransitGatewayRoute:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.ec2.TransitGatewayRoute.config
         required: false
@@ -3353,9 +3353,9 @@ node_types:
   cloudify.nodes.aws.ec2.Route:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.ec2.Route.config
         required: false
@@ -3385,8 +3385,8 @@ node_types:
   cloudify.nodes.aws.ec2.Image:
     derived_from: cloudify.nodes.Root
     properties:
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
       use_external_resource:
         type: boolean
         default: true
@@ -3419,9 +3419,9 @@ node_types:
   cloudify.nodes.aws.ec2.Tags:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.ec2.Tags.config
         required: false
@@ -3451,10 +3451,10 @@ node_types:
   cloudify.nodes.aws.ec2.EBSVolume:
     derived_from: cloudify.nodes.aws.ec2.BaseType
     properties:
-      use_external_resource: *id001
-      client_config: *id002
-      resource_id: *id003
       device_name: *id010
+      resource_id: *id001
+      client_config: *id002
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.ec2.EBSVolume.config
         required: false
@@ -3494,9 +3494,9 @@ node_types:
   cloudify.nodes.aws.ec2.EBSAttachment:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.ec2.EBSAttachment.config
         required: false
@@ -3526,9 +3526,9 @@ node_types:
   cloudify.nodes.aws.autoscaling.Group:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.autoscaling.Group.config
         required: false
@@ -3565,9 +3565,9 @@ node_types:
   cloudify.nodes.aws.autoscaling.LaunchConfiguration:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.autoscaling.LaunchConfiguration.config
         required: false
@@ -3597,9 +3597,9 @@ node_types:
   cloudify.nodes.aws.autoscaling.Policy:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.autoscaling.Policy.config
         required: false
@@ -3629,9 +3629,9 @@ node_types:
   cloudify.nodes.aws.autoscaling.LifecycleHook:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.autoscaling.LifecycleHook.config
         required: false
@@ -3661,9 +3661,9 @@ node_types:
   cloudify.nodes.aws.autoscaling.NotificationConfiguration:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.autoscaling.NotificationConfiguration.config
         required: false
@@ -3693,9 +3693,9 @@ node_types:
   cloudify.nodes.aws.cloudwatch.Alarm:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.cloudwatch.Alarm.config
         required: false
@@ -3725,9 +3725,9 @@ node_types:
   cloudify.nodes.aws.cloudwatch.Rule:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.cloudwatch.Rule.config
         required: false
@@ -3757,9 +3757,9 @@ node_types:
   cloudify.nodes.aws.cloudwatch.Event:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.cloudwatch.Event.config
         required: false
@@ -3782,9 +3782,9 @@ node_types:
   cloudify.nodes.aws.cloudwatch.Target:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.cloudwatch.Target.config
         required: false
@@ -3814,9 +3814,9 @@ node_types:
   cloudify.nodes.aws.efs.FileSystem:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.efs.FileSystem.config
         required: false
@@ -3846,9 +3846,9 @@ node_types:
   cloudify.nodes.aws.efs.MountTarget:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.efs.MountTarget.config
         required: false
@@ -3878,9 +3878,9 @@ node_types:
   cloudify.nodes.aws.efs.FileSystemTags:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.efs.FileSystemTags.config
         required: false
@@ -3910,9 +3910,9 @@ node_types:
   cloudify.nodes.aws.kms.CustomerMasterKey:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.kms.CustomerMasterKey.config
         required: false
@@ -3956,9 +3956,9 @@ node_types:
   cloudify.nodes.aws.kms.Alias:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.kms.Alias.config
         required: false
@@ -3988,9 +3988,9 @@ node_types:
   cloudify.nodes.aws.kms.Grant:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.kms.Grant.config
         required: false
@@ -4020,9 +4020,9 @@ node_types:
   cloudify.nodes.aws.CloudFormation.Stack:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.CloudFormation.Stack.config
         required: false
@@ -4067,9 +4067,9 @@ node_types:
   cloudify.nodes.aws.ecs.Cluster:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.ECS.Cluster.config
         required: false
@@ -4099,9 +4099,9 @@ node_types:
   cloudify.nodes.aws.ecs.Service:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.ECS.Service.config
         required: false
@@ -4131,9 +4131,9 @@ node_types:
   cloudify.nodes.aws.ecs.TaskDefinition:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.ECS.TaskDefinition.config
         required: false
@@ -4171,9 +4171,9 @@ node_types:
   cloudify.nodes.aws.eks.Cluster:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       cloudify_tagging:
         type: boolean
         default: true
@@ -4221,9 +4221,9 @@ node_types:
   cloudify.nodes.aws.eks.NodeGroup:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       cloudify_tagging:
         type: boolean
         default: true
@@ -4268,9 +4268,9 @@ node_types:
   cloudify.nodes.aws.codepipeline.Pipeline:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.codepipeline.Pipeline.config
     interfaces:
@@ -4307,9 +4307,9 @@ node_types:
   cloudify.nodes.aws.cognitoidp.UserPool:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.cognitoidp.UserPool.config
     interfaces:
@@ -4338,9 +4338,9 @@ node_types:
   cloudify.nodes.aws.cognitoidp.UserPoolClient:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.cognitoidp.UserPoolClient.config
     interfaces:
@@ -4369,9 +4369,9 @@ node_types:
   cloudify.nodes.aws.cognitoidp.IdentityProvider:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.cognitoidp.IdentityProvider.config
     interfaces:
@@ -4400,9 +4400,9 @@ node_types:
   cloudify.nodes.aws.cognito.IdentityPool:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.cognito.IdentityPool.config
     interfaces:
@@ -4431,9 +4431,9 @@ node_types:
   cloudify.nodes.aws.ecr.AuthenticationToken:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.ecr.AuthenticationToken.config
     interfaces:
@@ -4455,9 +4455,9 @@ node_types:
   cloudify.nodes.aws.ecr.Repository:
     derived_from: cloudify.nodes.Root
     properties:
-      use_external_resource: *id001
+      resource_id: *id001
       client_config: *id002
-      resource_id: *id003
+      use_external_resource: *id003
       resource_config:
         type: cloudify.datatypes.aws.ecr.Repository.config
     interfaces:
