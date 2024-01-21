@@ -1,4 +1,4 @@
-3.2.4: NE-11404-plugins-and-blueprints-employ-invalid-YAML-merge.
+3.2.4: NE-11404-plugins-and-blueprints-employ-invalid-YAML-merge & update of pycryptodome.
 3.2.3: NE-12058-client-config-LoginProfile 
 3.2.2: NE-10823-aws-VpnGatewayLimitExceeded.
 3.2.1: RND-1195 Add Subnet placement logic.
