@@ -4,6 +4,8 @@ project_exclusion_list:
     - .drp
     - .github
     - examples
+    - Makefile
+    - cloudify_aws/s3/tests
   #   - test
   #   - jenkins
   #   - buildroot
