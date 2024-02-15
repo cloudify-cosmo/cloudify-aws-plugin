@@ -32,7 +32,7 @@ install_requires=[
     'boto3',
     'botocore',
     'datetime',
-    'pycryptodome==3.19.0',
+    'pycryptodome>=3.20.0',
     'cloudify-utilities-plugins-sdk>=0.0.128',
 ]
 

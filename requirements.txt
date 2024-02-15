@@ -29,13 +29,13 @@ aiosignal==1.3.1
     # via aiohttp
 amqp==5.2.0
     # via kombu
-appdirs==1.4.3
+appdirs==1.4.4
     # via fusion-agent
-attrs==23.1.0
+attrs==23.2.0
     # via aiohttp
 azure-common==1.1.28
     # via azure-mgmt-containerservice
-azure-core==1.29.5
+azure-core==1.29.7
     # via
     #   azure-identity
     #   azure-mgmt-core
@@ -46,15 +46,15 @@ azure-mgmt-containerservice==17.0.0
     # via cloudify-utilities-plugins-sdk
 azure-mgmt-core==1.4.0
     # via azure-mgmt-containerservice
-bcrypt==4.0.1
+bcrypt==4.1.2
     # via paramiko
 billiard==4.2.0
     # via celery
-boto3==1.33.1
+boto3==1.34.23
     # via
     #   cloudify-aws-plugin (setup.py)
     #   cloudify-utilities-plugins-sdk
-botocore==1.33.1
+botocore==1.34.23
     # via
     #   boto3
     #   cloudify-aws-plugin (setup.py)
@@ -103,17 +103,17 @@ cryptography==41.0.7
     #   pyjwt
     #   pyspnego
     #   requests-ntlm
-datetime==5.3
+datetime==5.4
     # via cloudify-aws-plugin (setup.py)
 deepdiff==5.7.0
     # via cloudify-aws-plugin (setup.py)
-distro==1.8.0
+distro==1.9.0
     # via fusion-common
 fabric==2.7.1
     # via fusion-agent
 fasteners==0.19
     # via fusion-common
-frozenlist==1.4.0
+frozenlist==1.4.1
     # via
     #   aiohttp
     #   aiosignal
@@ -121,7 +121,7 @@ gitdb==4.0.11
     # via
     #   cloudify-utilities-plugins-sdk
     #   gitpython
-gitpython==3.1.40
+gitpython==3.1.41
     # via cloudify-utilities-plugins-sdk
 google-auth==2.15.0
     # via
@@ -135,7 +135,7 @@ invoke==1.7.3
     # via fabric
 isodate==0.6.1
     # via msrest
-jinja2==3.1.2
+jinja2==3.1.3
     # via
     #   cloudify-utilities-plugins-sdk
     #   fusion-agent
@@ -144,17 +144,17 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-kombu==5.3.4
+kombu==5.3.5
     # via celery
 kubernetes==26.1.0
     # via cloudify-utilities-plugins-sdk
-markupsafe==2.1.3
+markupsafe==2.1.4
     # via jinja2
-msal==1.25.0
+msal==1.26.0
     # via
     #   azure-identity
     #   msal-extensions
-msal-extensions==1.0.0
+msal-extensions==1.1.0
     # via azure-identity
 msrest==0.7.1
     # via
@@ -177,7 +177,8 @@ packaging==21.3
     #   cloudify-utilities-plugins-sdk
     #   fusion-agent
     #   fusion-mgmtworker
-paramiko==3.3.1
+    #   msal-extensions
+paramiko==3.4.0
     # via
     #   cloudify-utilities-plugins-sdk
     #   fabric
@@ -191,11 +192,11 @@ ply==3.11
     # via pysmi
 portalocker==2.8.2
     # via msal-extensions
-prompt-toolkit==3.0.41
+prompt-toolkit==3.0.43
     # via click-repl
 proxy-tools==0.1.0
     # via fusion-common
-psutil==5.9.6
+psutil==5.9.8
     # via cloudify-utilities-plugins-sdk
 psycopg2==2.9.9
     # via fusion-mgmtworker
@@ -211,9 +212,9 @@ pycdlib==1.14.0
     # via cloudify-utilities-plugins-sdk
 pycparser==2.21
     # via cffi
-pycryptodome==3.19.0
+pycryptodome==3.20.0
     # via cloudify-aws-plugin (setup.py)
-pycryptodomex==3.19.0
+pycryptodomex==3.20.0
     # via pysnmp
 pyjwt[crypto]==2.8.0
     # via
@@ -284,7 +285,7 @@ retrying==1.3.4
     # via fusion-mgmtworker
 rsa==4.9
     # via google-auth
-s3transfer==0.8.0
+s3transfer==0.10.0
     # via boto3
 six==1.16.0
     # via
@@ -300,13 +301,14 @@ six==1.16.0
     #   retrying
 smmap==5.0.1
     # via gitdb
-typing-extensions==4.8.0
+typing-extensions==4.9.0
     # via azure-core
-tzdata==2023.3
+tzdata==2023.4
     # via celery
 urllib3==2.0.7
     # via
     #   botocore
+    #   fusion-common
     #   kubernetes
     #   requests
 vine==5.1.0
@@ -316,9 +318,9 @@ vine==5.1.0
     #   kombu
 wagon==1.0.1
     # via fusion-common
-wcwidth==0.2.12
+wcwidth==0.2.13
     # via prompt-toolkit
-websocket-client==1.6.4
+websocket-client==1.7.0
     # via kubernetes
 wheel==0.42.0
     # via wagon
@@ -326,7 +328,7 @@ xmltodict==0.13.0
     # via
     #   cloudify-utilities-plugins-sdk
     #   pywinrm
-yarl==1.9.3
+yarl==1.9.4
     # via aiohttp
 zope-interface==6.1
     # via datetime

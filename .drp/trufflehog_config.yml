@@ -4,9 +4,10 @@ project_exclusion_list:
     - .drp
     - .github
     - examples
+    - cloudify_aws/s3/tests
   #   - test
   #   - jenkins
   #   - buildroot
   #   - buildroot
-  # exclusion_file_paths:
-  #   - package/tpm2-tools/tpm2-tools.hash
+  exclusion_file_paths:
+    - Makefile

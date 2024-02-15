@@ -107,7 +107,7 @@ kubernetes==v26.1.0
     # via cloudify-utilities-plugins-sdk
 markupsafe==2.0.1
     # via jinja2
-msal==1.25.0
+msal==1.26.0
     # via
     #   azure-identity
     #   msal-extensions
@@ -127,7 +127,7 @@ oauthlib==3.2.2
     # via requests-oauthlib
 packaging==21.3
     # via cloudify-utilities-plugins-sdk
-paramiko==3.3.1
+paramiko==3.4.0
     # via cloudify-utilities-plugins-sdk
 pika==1.1.0
     # via cloudify-common
@@ -137,7 +137,7 @@ portalocker==2.7.0
     # via msal-extensions
 proxy_tools==0.1.0
     # via cloudify-common
-psutil==5.9.6
+psutil==5.9.8
     # via cloudify-utilities-plugins-sdk
 pyasn1==0.5.1
     # via
@@ -149,7 +149,7 @@ pycdlib==1.14.0
     # via cloudify-utilities-plugins-sdk
 pycparser==2.21
     # via cffi
-pycryptodome==3.19.0
+pycryptodome==3.20.0
     # via cloudify-aws-plugin (setup.py)
 pyjwt[crypto]==2.4.0
     # via
